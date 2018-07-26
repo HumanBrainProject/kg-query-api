@@ -1,0 +1,238 @@
+{
+  "@context": {
+    "@vocab": "http://schema.hbp.eu/graph_query/",
+    "schema": "http://schema.org/",
+    "minds": "http://hbp.eu/minds#",
+    "search": "http://schema.hbp.eu/search_ui/",
+    "nexus": "https://nexus-dev.humanbrainproject.org/vocabs/nexus/core/terms/v0.1.0/",
+    "nexus_instance": "https://nexus-dev.humanbrainproject.org/v0/schemas/",
+    "fieldname": {
+      "@id": "fieldname",
+      "@type": "@id"
+    },
+    "relative_path": {
+      "@id": "relative_path",
+      "@type": "@id"
+    },
+    "root_schema": {
+      "@id": "root_schema",
+      "@type": "@id"
+    }
+  },
+  "@type": "DataTransformation",
+  "schema:name": "Dataset",
+  "root_schema": "nexus_instance:minds/core/dataset/v0.0.4",
+  "fields": [
+    {
+      "fieldname": "search:license",
+      "relative_path": "minds:license_info",
+      "fields": [
+        {
+          "fieldname": "search:url",
+          "relative_path": "schema:url"
+        },
+        {
+          "fieldname": "search:name",
+          "relative_path": "schema:name"
+        }
+      ]
+    },
+    {
+      "relative_path": "schema:identifier"
+    },
+    {
+      "fieldname": "search:title",
+      "relative_path": "schema:name"
+    },
+    {
+      "fieldname": "search:contributors",
+      "relative_path": "minds:contributors",
+      "fields": [
+        {
+          "fieldname": "search:name",
+          "relative_path": "minds:shortName"
+        },
+        {
+          "fieldname": "search:uuid",
+          "relative_path": "nexus:uuid"
+        },
+        {
+          "fieldname": "search:identifier",
+          "relative_path": "schema:identifier"
+        }
+      ]
+    },
+    {
+      "fieldname": "search:neuroglancer",
+      "relative_path": {"@id": "minds:reference", "reverse": true},
+      "fields": [
+        {
+          "fieldname": "search:url",
+          "relative_path": "minds:postfix"
+        },
+        {
+          "fieldname": "search:name",
+          "relative_path": "schema:name"
+        }
+      ]
+    },
+    {
+      "fieldname": "search:doi",
+      "relative_path": {"@id": "minds:doireference", "reverse": true},
+      "fields": [
+        {
+          "fieldname": "search:doi",
+          "relative_path": "minds:doi"
+        },
+        {
+          "fieldname": "search:citation",
+          "relative_path": "minds:citation"
+        }
+      ]
+    },
+    {
+      "fieldname": "search:component",
+      "relative_path": [
+        "minds:component",
+        "schema:name"
+      ]
+    },
+    {
+      "fieldname": "search:description",
+      "relative_path": "schema:description"
+    },
+    {
+      "fieldname": "search:parcellationAtlas",
+      "relative_path": [
+        "minds:parcellationAtlas",
+        "schema:name"
+      ]
+    },
+    {
+      "fieldname": "search:parcellationRegion",
+      "relative_path": [
+        "minds:parcellationRegion",
+        "schema:name"
+      ]
+    },
+    {
+      "fieldname": "search:publications",
+      "relative_path": "minds:publications",
+      "fields": [
+        {
+          "fieldname": "search:citation",
+          "relative_path": "minds:cite"
+        },
+        {
+          "fieldname": "search:doi",
+          "relative_path": "minds:doi"
+        }
+      ]
+    },
+    {
+      "fieldname": "search:activity",
+      "relative_path": "minds:activity",
+      "fields": [
+        {
+          "fieldname": "search:preparation",
+          "relative_path": [
+            "minds:preparation",
+            "schema:name"
+          ]
+        },
+        {
+          "fieldname": "search:methods",
+          "relative_path": [
+            "minds:methods",
+            "schema:name"
+          ]
+        },
+        {
+          "fieldname": "search:protocols",
+          "relative_path": [
+            "minds:protocols",
+            "schema:name"
+          ]
+        }
+      ]
+    },
+    {
+      "fieldname": "search:embargo",
+      "relative_path": [
+        "minds:embargo_status",
+        "schema:name"
+      ]
+    },
+    {
+      "fieldname": "search:releasedate",
+      "relative_path": "minds:release_date"
+    },
+    {
+      "fieldname": "search:viewer",
+      "relative_path": [{"@id": "minds:reference", "reverse": true}, "minds:postfix"]
+    },
+    {
+      "fieldname": "search:subjects",
+      "relative_path": [
+        "minds:specimen_group",
+        "minds:subjects"
+      ],
+      "fields": [
+        {
+          "fieldname": "search:name",
+          "relative_path": "schema:name"
+        },
+        {
+          "fieldname": "search:sex",
+          "relative_path": [
+            "minds:sex",
+            "schema:name"
+          ]
+        },
+        {
+          "fieldname": "search:strain",
+          "relative_path": "minds:strains"
+        },
+        {
+          "fieldname": "search:genotype",
+          "relative_path": "minds:genotype"
+        },
+        {
+          "fieldname": "search:experimentmethod",
+          "relative_path": [
+            "minds:experimentmethod",
+            "schema:name"
+          ]
+        },
+        {
+          "fieldname": "search:samples",
+          "relative_path": "minds:samples",
+          "fields": [
+            {
+              "fieldname": "search:name",
+              "relative_path": "schema:name"
+            },
+            {
+              "fieldname": "search:uuid",
+              "relative_path": "nexus:uuid"
+            },
+            {
+              "fieldname": "search:identifier",
+              "relative_path": "schema:identifier"
+            },
+            {
+              "fieldname": "search:method",
+              "relative_path": [
+                "minds:methods",
+                "schema:name"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "relative_path": "minds:external_datalink"
+    }
+  ]
+}

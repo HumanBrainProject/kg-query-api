@@ -1,0 +1,15 @@
+:remote connect tinkerpop.server conf/remote.yaml session
+:> mgmt = graph.openManagement()
+:> mgmt.makePropertyKey('@id').dataType(String.class).cardinality(Cardinality.SINGLE).make()
+:> mgmt.buildIndex('@id', Vertex.class).addKey(mgmt.getPropertyKey('@id')).unique().buildCompositeIndex()
+:> mgmt.commit()
+:> mgmt.buildIndex('bySchema', Vertex.class).addKey(schema).buildCompositeIndex()
+
+:> graph.tx().rollback()
+:> schema = mgmt.getPropertyKey('https://nexus-dev.humanbrainproject.org/vocabs/nexus/core/terms/v0.1.0/schema')
+:> mgmt.buildIndex('bySchema', Vertex.class).addKey(schema).buildCompositeIndex()
+:> mgmt.commit()
+:> ManagementSystem.awaitGraphIndexStatus(graph, 'bySchema').call()
+:> mgmt = graph.openManagement()
+:> mgmt.updateIndex(mgmt.getGraphIndex('bySchema'), SchemaAction.REINDEX).get()
+:> mgmt.commit()
