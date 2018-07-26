@@ -40,7 +40,7 @@ public class ArangoSpecificationQuery {
     }
 
     String createQuery(Specification spec){
-        Set<String> collectionLabels = arangoDriver.getOrCreateDB().getCollections().stream().map(CollectionEntity::getName).collect(Collectors.toSet());
+        Set<String> collectionLabels = getCollectionLabels();
         ArangoQueryBuilder queryBuilder = new ArangoQueryBuilder();
         String vertexLabel = namingConvention.getVertexLabel(spec.rootSchema);
         if(collectionLabels.contains(vertexLabel)) {
@@ -51,6 +51,10 @@ public class ArangoSpecificationQuery {
             throw new RuntimeException(String.format("Was not able to find the vertex collection with the name %s", vertexLabel));
         }
         return queryBuilder.build();
+    }
+
+    Set<String> getCollectionLabels() {
+        return arangoDriver.getOrCreateDB().getCollections().stream().map(CollectionEntity::getName).collect(Collectors.toSet());
     }
 
     private void handleFields(List<SpecField> fields, ArangoQueryBuilder queryBuilder, Set<String> collectionLabels){

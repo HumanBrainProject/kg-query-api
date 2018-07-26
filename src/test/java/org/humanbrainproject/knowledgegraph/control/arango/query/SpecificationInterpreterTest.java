@@ -8,6 +8,7 @@ import org.humanbrainproject.knowledgegraph.control.jsonld.JsonLdStandardization
 import org.humanbrainproject.knowledgegraph.control.specification.SpecificationInterpreter;
 import org.humanbrainproject.knowledgegraph.entity.specification.Specification;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.boot.configurationprocessor.json.JSONObject;
@@ -21,6 +22,7 @@ public class SpecificationInterpreterTest {
     SpecificationInterpreter interpreter;
     JSONObject testSpecification;
     ArangoSpecificationQuery query;
+
 
 
     @Before
@@ -40,6 +42,7 @@ public class SpecificationInterpreterTest {
     }
 
     @Test
+    @Ignore("This test requires a backend and is for manual testing only")
     public void readSpecificationAndCreateQuery() throws JSONException {
         Specification specification = interpreter.readSpecification(testSpecification);
         query.queryForSpecification(specification);
