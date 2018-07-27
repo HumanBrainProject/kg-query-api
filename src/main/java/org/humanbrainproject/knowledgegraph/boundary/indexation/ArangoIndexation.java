@@ -1,6 +1,7 @@
 package org.humanbrainproject.knowledgegraph.boundary.indexation;
 
 import com.arangodb.ArangoDatabase;
+import com.arangodb.entity.CollectionEntity;
 import org.humanbrainproject.knowledgegraph.control.arango.ArangoDriver;
 import org.humanbrainproject.knowledgegraph.control.arango.query.ArangoSpecificationQuery;
 import org.humanbrainproject.knowledgegraph.control.arango.ArangoRepository;
@@ -39,7 +40,8 @@ public class ArangoIndexation extends GraphIndexation {
     @Override
     public void clearGraph() {
         ArangoDatabase db = arango.getOrCreateDB();
-        db.drop();
-        db.exists();
+        for (CollectionEntity collectionEntity : db.getCollections()) {
+            db.collection(collectionEntity.getName()).drop();
+        }
     }
 }
