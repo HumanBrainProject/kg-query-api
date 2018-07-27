@@ -35,7 +35,7 @@ public class ArangoIndexationAPI {
     }
 
     @DeleteMapping(value="/{organization}/{domain}/{schema}/{schemaversion}/{id}", produces = MediaType.APPLICATION_JSON)
-    public void updateInstance(@PathVariable("organization") String organization, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("schemaversion") String schemaVersion, @PathVariable("id") String id, @RequestAttribute(value="rev", required = false) Integer rev) throws IOException, JSONException {
+    public void deleteInstance(@PathVariable("organization") String organization, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("schemaversion") String schemaVersion, @PathVariable("id") String id, @RequestAttribute(value="rev", required = false) Integer rev) throws IOException, JSONException {
         indexer.delete(buildEntityName(organization, domain, schema, schemaVersion), id, rev);
     }
 

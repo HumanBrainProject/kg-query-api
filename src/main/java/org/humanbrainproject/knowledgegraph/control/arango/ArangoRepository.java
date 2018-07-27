@@ -51,7 +51,7 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
     @Override
     public void deleteVertex(String entityName, String id, ArangoDriver arango) {
         String vertexLabel = namingConvention.getVertexLabel(entityName);
-        String query = String.format("FOR doc IN `%s` FILTER doc._key==\"%s\" REMOVE doc IN `%s`", vertexLabel, namingConvention.queryKey(id), vertexLabel);
+        String query = String.format("REMOVE \"%s\" IN `%s`", id, vertexLabel);
         arango.getOrCreateDB().query(query, null, new AqlQueryOptions(), String.class);
     }
 
