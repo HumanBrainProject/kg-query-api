@@ -21,6 +21,7 @@ public class ArangoIndexationAPI implements KGIndexationAPI {
     protected Logger log = Logger.getLogger(ArangoIndexationAPI.class.getName());
 
     @PostMapping
+    @PutMapping
     public void uploadToPropertyGraph(@RequestBody String payload, @QueryParam("defaultNamespace") String defaultNamespace, @QueryParam("vertexLabel") String vertexLabel) throws IOException, JSONException {
         log.info(String.format("Processing %s", payload));
         indexer.uploadJsonOrJsonLd(payload, defaultNamespace, vertexLabel);

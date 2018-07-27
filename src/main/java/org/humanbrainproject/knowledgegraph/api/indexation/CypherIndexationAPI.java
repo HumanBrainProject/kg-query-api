@@ -18,6 +18,7 @@ public class CypherIndexationAPI implements KGIndexationAPI {
 
 
     @PostMapping
+    @PutMapping
     public void uploadToPropertyGraph(@RequestBody String payload, @QueryParam("defaultNamespace") String defaultNamespace, @QueryParam("vertexLabel") String vertexLabel) throws IOException, JSONException {
         jsonLd2Cypher.uploadJsonOrJsonLd(payload, defaultNamespace, vertexLabel);
     }
