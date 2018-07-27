@@ -41,7 +41,9 @@ public class ArangoIndexation extends GraphIndexation {
     public void clearGraph() {
         ArangoDatabase db = arango.getOrCreateDB();
         for (CollectionEntity collectionEntity : db.getCollections()) {
-            db.collection(collectionEntity.getName()).drop();
+            if(!collectionEntity.getName().startsWith("_")) {
+                db.collection(collectionEntity.getName()).drop();
+            }
         }
     }
 }
