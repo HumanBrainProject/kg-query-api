@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 @Component
-public class JanusGraphIndexation extends GraphIndexation {
+public class JanusGraphIndexation {
 
     @Autowired
     JanusGraphRepository verticesAndEdgesUploader;
@@ -17,12 +17,10 @@ public class JanusGraphIndexation extends GraphIndexation {
     @Autowired
     JanusGraphDriver janusGraphCluster;
 
-    @Override
     void transactionalJsonLdUpload(List<JsonLdVertex> vertices) {
         verticesAndEdgesUploader.uploadToPropertyGraph(janusGraphCluster.getGraphTraversalSource(), vertices);
     }
 
-    @Override
     public void clearGraph(){
         verticesAndEdgesUploader.clearGraph(janusGraphCluster.getGraphTraversalSource());
     }

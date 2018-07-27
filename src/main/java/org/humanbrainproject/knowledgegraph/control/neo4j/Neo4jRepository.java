@@ -44,12 +44,12 @@ public class Neo4jRepository extends VertexRepository<Transaction> {
     }
 
     @Override
-    protected void deleteVertex(JsonLdVertex vertex, Transaction tx) {
+    public void deleteVertex(String entityName, String identifier,  Transaction tx) {
         StringBuilder query = new StringBuilder();
         query.append(String.format("MATCH (n) OPTIONAL MATCH (n)-[r]-() WHERE n.`%s`=$id DELETE r, n", JsonLdConsts.ID));
         log.info("Delete vertex");
         log.fine(query.toString());
-        tx.run(query.toString(), Values.parameters("id", vertex.getId()));
+        tx.run(query.toString(), Values.parameters("id", identifier));
     }
 
     @Override

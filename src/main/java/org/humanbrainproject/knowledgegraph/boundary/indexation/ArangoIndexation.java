@@ -21,7 +21,7 @@ public class ArangoIndexation extends GraphIndexation {
     ArangoDriver arango;
 
     @Autowired
-    ArangoRepository arangoUploader;
+    ArangoRepository repository;
 
     @Autowired
     SpecificationInterpreter specInterpreter;
@@ -33,8 +33,18 @@ public class ArangoIndexation extends GraphIndexation {
     JsonLdStandardization standardization;
 
     @Override
-    void transactionalJsonLdUpload(List<JsonLdVertex> vertices) throws JSONException {
-        arangoUploader.uploadToPropertyGraph(vertices, arango);
+    void transactionalJsonLdInsertion(List<JsonLdVertex> jsonLdVertices) throws JSONException {
+        repository.uploadToPropertyGraph(jsonLdVertices, arango);
+    }
+
+    @Override
+    void transactionalJsonLdUpdate(List<JsonLdVertex> jsonLdVertices) throws JSONException {
+        repository.uploadToPropertyGraph(jsonLdVertices, arango);
+    }
+
+    @Override
+    void transactionalJsonLdDeletion(String entityName, String rootId, Integer rootRev) throws JSONException {
+        repository.deleteVertex(entityName, rootId, arango);
     }
 
     @Override

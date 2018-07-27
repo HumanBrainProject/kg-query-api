@@ -30,8 +30,8 @@ public class JsonLdToVerticesAndEdges {
      * @param jsonLdPayload
      * @throws JSONException
      */
-    public List<JsonLdVertex> transformFullyQualifiedJsonLdToVerticesAndEdges(String jsonLdPayload, String vertexLabel) throws JSONException {
-        return createVertex(null, new JSONObject(jsonLdPayload), null, new ArrayList<>(), -1, vertexLabel);
+    public List<JsonLdVertex> transformFullyQualifiedJsonLdToVerticesAndEdges(String jsonLdPayload, String entityName, String id, Integer revision) throws JSONException {
+        return createVertex(null, new JSONObject(jsonLdPayload), null, new ArrayList<>(), -1, entityName, id, revision);
     }
 
 
@@ -57,7 +57,7 @@ public class JsonLdToVerticesAndEdges {
 
 
     private List<JsonLdVertex> createVertex(String key, Object object, JsonLdVertex
-            parent, List<JsonLdVertex> vertexCollection, int orderNumber, String vertexLabel) throws JSONException {
+            parent, List<JsonLdVertex> vertexCollection, int orderNumber, String entityName, String id, Integer revision) throws JSONException {
         if (object instanceof JSONObject) {
             JSONObject jsonObject = (JSONObject) object;
             if(jsonObject.length()==0){
@@ -65,15 +65,14 @@ public class JsonLdToVerticesAndEdges {
                 return vertexCollection;
             }
             JsonLdVertex v = new JsonLdVertex();
-            extractVertexLabelFromJSON(jsonObject, v, vertexLabel);
-            extractIdValueFromJsonOrCreateFromParent(key, parent, jsonObject, v, orderNumber);
-            extractUUIDValueFromJsonOrCreateFromParent(key, parent, jsonObject, v, orderNumber);
-            extractRevisionValueFromJsonOrParent(parent, jsonObject, v);
-            extractDeprecatedValueFromJsonOrParent(parent, jsonObject, v);
+            v.setType(entityName);
+            updateId(key, parent, jsonObject, v, entityName, id, orderNumber);
+            updateUuid(key, parent, jsonObject, v, id, orderNumber);
+            updateRevision(parent, jsonObject, v, revision);
             if(jsonObject.has(JsonLdConsts.VALUE)){
-                return createVertex(key, jsonObject.get(JsonLdConsts.VALUE), parent, vertexCollection, orderNumber, v.getType());
+                return createVertex(key, jsonObject.get(JsonLdConsts.VALUE), parent, vertexCollection, orderNumber, v.getType(), id, revision);
             }
-            if (handleOrderedList(key, parent, vertexCollection, jsonObject, v.getType())) {
+            if (handleOrderedList(key, parent, vertexCollection, jsonObject, v.getType(), id, revision)) {
                 //Since it's an ordered list, we already took care of its sub elements and can cancel this branch of recursive execution
                 return vertexCollection;
             }
@@ -86,13 +85,13 @@ public class JsonLdToVerticesAndEdges {
             vertexCollection.add(v);
             while (keys.hasNext()) {
                 String k = (String) keys.next();
-                createVertex(k, jsonObject.get(k), v, vertexCollection, -1, k);
+                createVertex(k, jsonObject.get(k), v, vertexCollection, -1, k, id, revision);
             }
         } else if (object instanceof JSONArray) {
             JSONArray jsonArray = (JSONArray) object;
             //Since it's an array, we iterate through it and continue with the elements recursively.
             for (int i = 0; i < jsonArray.length(); i++) {
-                createVertex(key, jsonArray.get(i), parent, vertexCollection, -1, key);
+                createVertex(key, jsonArray.get(i), parent, vertexCollection, -1, key, id, revision);
             }
         } else {
             //It's a leaf node - add it as a property
@@ -114,17 +113,16 @@ public class JsonLdToVerticesAndEdges {
     }
 
 
-    private boolean handleOrderedList(String key, JsonLdVertex parent, List<JsonLdVertex> vertexCollection, JSONObject jsonObject, String vertexLabel) throws JSONException {
+    private boolean handleOrderedList(String key, JsonLdVertex parent, List<JsonLdVertex> vertexCollection, JSONObject jsonObject, String entityName, String id, Integer revision) throws JSONException {
         if (jsonObject.has(JsonLdConsts.LIST) && jsonObject.get(JsonLdConsts.LIST) instanceof JSONArray) {
             JSONArray listArray = (JSONArray) jsonObject.get(JsonLdConsts.LIST);
             for (int i = 0; i < listArray.length(); i++) {
-                createVertex(key, listArray.get(i), parent, vertexCollection, i, vertexLabel);
+                createVertex(key, listArray.get(i), parent, vertexCollection, i, entityName, id, revision);
             }
             return true;
         }
         return false;
     }
-
 
 
     private JsonLdProperty createJsonLdProperty(String key, Object value) {
@@ -134,52 +132,22 @@ public class JsonLdToVerticesAndEdges {
         return property;
     }
 
-    void extractDeprecatedValueFromJsonOrParent(JsonLdVertex parent, JSONObject jsonObject, JsonLdVertex v) throws JSONException {
-        if (jsonObject.has(configuration.getDeprecated())) {
-            v.setDeprecated(jsonObject.getBoolean(configuration.getDeprecated()));
-        } else if (parent != null && parent.getDeprecated() != null) {
-            v.setDeprecated(parent.getDeprecated());
-            JsonLdProperty p = new JsonLdProperty();
-            p.setName(configuration.getDeprecated());
-            p.setValue(v.getDeprecated());
-            v.getProperties().add(p);
-        }
-    }
-
-    String extractVertexLabelFromJSON(JSONObject jsonObject, JsonLdVertex v, String vertexLabel) throws JSONException {
-        String result = vertexLabel;
-        if(result==null && jsonObject.has(configuration.getSchema())){
-            result = jsonObject.getString(configuration.getSchema());
-        }
-        else if (result==null && jsonObject.has(JsonLdConsts.TYPE)) {
-            Object o = jsonObject.get(JsonLdConsts.TYPE);
-            if(o instanceof JSONArray &&  ((JSONArray)o).length()>0){
-                result = ((JSONArray)o).getString(0);
-            }
-            else {
-                result=jsonObject.getString(JsonLdConsts.TYPE);
-            }
-        }
-        v.setType(result);
-        return result;
-    }
-
-    void extractRevisionValueFromJsonOrParent(JsonLdVertex parent, JSONObject jsonObject, JsonLdVertex v) throws JSONException {
-        if (jsonObject.has(configuration.getRev())) {
-            v.setRevision(jsonObject.getInt(configuration.getRev()));
-        } else if (parent != null && parent.getRevision() != null) {
+    void updateRevision(JsonLdVertex parent, JSONObject jsonObject, JsonLdVertex v, Integer revision) throws JSONException {
+        if (parent==null) {
+            v.setRevision(revision);
+        } else if (parent.getRevision() != null) {
             v.setRevision(parent.getRevision());
-            JsonLdProperty p = new JsonLdProperty();
-            p.setName(configuration.getRev());
-            p.setValue(v.getRevision());
-            v.getProperties().add(p);
         }
+        JsonLdProperty p = new JsonLdProperty();
+        p.setName(configuration.getRev());
+        p.setValue(v.getRevision());
+        v.getProperties().add(p);
     }
 
-    void extractIdValueFromJsonOrCreateFromParent(String key, JsonLdVertex parent, JSONObject jsonObject, JsonLdVertex v, int ordernumber) throws JSONException {
-        if (jsonObject.has(JsonLdConsts.ID)) {
-            v.setId(jsonObject.getString(JsonLdConsts.ID));
-        } else if (parent != null && parent.getId() != null && key != null) {
+    void updateId(String key, JsonLdVertex parent, JSONObject jsonObject, JsonLdVertex v, String entityName, String rootId, int ordernumber) throws JSONException {
+        if (parent==null) {
+            v.setId(String.format("%s/%s", entityName, rootId));
+        } else if (parent.getId() != null && key != null) {
             String id = String.join("#", parent.getId(), key);
             v.setId(ordernumber>-1 ? String.format("%s-%d", id, ordernumber) : id);
             JsonLdProperty p = new JsonLdProperty();
@@ -189,16 +157,12 @@ public class JsonLdToVerticesAndEdges {
         }
     }
 
-    void extractUUIDValueFromJsonOrCreateFromParent(String key, JsonLdVertex parent, JSONObject jsonObject, JsonLdVertex v, int ordernumber) throws JSONException {
-        if (jsonObject.has(configuration.getUUID())) {
-            v.setUuid(jsonObject.getString(configuration.getUUID()));
-        } else if (parent != null && parent.getId() != null && key != null) {
+    void updateUuid(String key, JsonLdVertex parent, JSONObject jsonObject, JsonLdVertex v, String rootId, int ordernumber) throws JSONException {
+        if (parent==null) {
+            v.setUuid(rootId);
+        } else if (parent.getUuid() != null && key != null) {
             String uuid = String.join("#", parent.getUuid(), key);
             v.setUuid(ordernumber>-1 ? String.format("%s-%d", uuid, ordernumber) : uuid);
-            JsonLdProperty p = new JsonLdProperty();
-            p.setName(configuration.getUUID());
-            p.setValue(v.getUuid());
-            v.getProperties().add(p);
         }
     }
 

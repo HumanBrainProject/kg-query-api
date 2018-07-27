@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 @Component
-public class CypherIndexation extends GraphIndexation {
+public class CypherIndexation {
 
     @Autowired
     JsonLdStandardization jsonLdStandardization;
@@ -29,7 +29,6 @@ public class CypherIndexation extends GraphIndexation {
     Neo4JDriver neo4J;
 
 
-    @Override
     void transactionalJsonLdUpload(List<JsonLdVertex> vertices) {
         try(Session session = neo4J.getDriver().session()) {
             session.writeTransaction((TransactionWork<Void>) transaction -> {

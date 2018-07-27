@@ -20,27 +20,28 @@ public abstract class GraphIndexation {
     @Autowired
     JsonLdToVerticesAndEdges jsonLdToVerticesAndEdges;
 
-    /**
-     * Upload the given json or jsonLd payload to the graph. Provide a defaultNamespace that can be used for your JSON or for the not-fully-declared JSON-LD.
-     *
-     * @param jsonOrJsonLdPayload
-     * @param defaultNamespace
-     * @throws IOException
-     * @throws JSONException
-     */
-    public void uploadJsonOrJsonLd(String jsonOrJsonLdPayload, String defaultNamespace, String vertexLabel) throws IOException, JSONException {
-        Object jsonLd = jsonLdStandardization.ensureContext(JsonUtils.fromString(jsonOrJsonLdPayload), defaultNamespace);
-        System.out.println(JsonUtils.toPrettyString(jsonLd));
+    private List<JsonLdVertex> prepareAndParsePayload(String payload, String entityName, String defaultNamespace, String id, Integer revision) throws IOException, JSONException {
+        Object jsonLd = jsonLdStandardization.ensureContext(JsonUtils.fromString(payload), defaultNamespace);
         jsonLd = jsonLdStandardization.fullyQualify(jsonLd);
-        List<JsonLdVertex> jsonLdVertices = jsonLdToVerticesAndEdges.transformFullyQualifiedJsonLdToVerticesAndEdges(JsonUtils.toString(jsonLd), vertexLabel);
-        transactionalJsonLdUpload(jsonLdVertices);
+        return jsonLdToVerticesAndEdges.transformFullyQualifiedJsonLdToVerticesAndEdges(JsonUtils.toString(jsonLd), entityName, id, revision);
     }
 
-    /**
-     * Upload the given vertices to the underlying graph database
-     * @param vertices
-     */
-    abstract void transactionalJsonLdUpload(List<JsonLdVertex> vertices) throws JSONException;
+    public void insertJsonOrJsonLd(String entityName, String rootId, String jsonOrJsonLdPayload, String defaultNamespace) throws IOException, JSONException {
+         transactionalJsonLdInsertion(prepareAndParsePayload(jsonOrJsonLdPayload, entityName, defaultNamespace, rootId, 1));
+    }
+
+    public void updateJsonOrJsonLd(String entityName, String rootId, Integer rootRev, String jsonOrJsonLdPayload,  String defaultNamespace) throws IOException, JSONException {
+        transactionalJsonLdUpdate(prepareAndParsePayload(jsonOrJsonLdPayload, entityName, defaultNamespace, rootId, rootRev));
+    }
+
+    public void delete(String entityName, String id, Integer rev) throws IOException, JSONException {
+       transactionalJsonLdDeletion(entityName, id, rev);
+    }
+
+    abstract void transactionalJsonLdInsertion(List<JsonLdVertex> jsonLdVertices) throws JSONException;
+    abstract void transactionalJsonLdUpdate(List<JsonLdVertex> jsonLdVertices) throws JSONException;
+    abstract void transactionalJsonLdDeletion(String entityName, String rootId, Integer rootRev) throws JSONException;
+
 
     public abstract void clearGraph();
 
