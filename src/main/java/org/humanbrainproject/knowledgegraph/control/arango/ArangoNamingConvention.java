@@ -9,20 +9,23 @@ import org.springframework.util.DigestUtils;
 public class ArangoNamingConvention {
 
     public String replaceSpecialCharacters(String value){
-        return value.replaceAll("https://", "").replaceAll("http://", "").replaceAll("\\.", "_").replaceAll("[^a-zA-Z0-9\\-_]", "-");
+        return value!=null ? value.replaceAll("https://", "").replaceAll("http://", "").replaceAll("\\.", "_").replaceAll("[^a-zA-Z0-9\\-_]", "-") : null;
     }
 
     public String queryKey(String value){
-        return value.replaceAll("-", "_");
+        return value!=null ? value.replaceAll("-", "_") : null;
     }
 
     public String getKeyFromReference(String reference){
-        String s = reduceVertexLabel(reference);
-        String[] split = s.split("(?<=v\\d{1,3}\\.\\d{1,3}\\.\\d{1,3})/");
-        if(split.length>1){
-            return String.format("%s/%s", replaceSpecialCharacters(split[0]), replaceSpecialCharacters(split[1]));
+        if(reference!=null) {
+            String s = reduceVertexLabel(reference);
+            String[] split = s.split("(?<=v\\d{1,3}\\.\\d{1,3}\\.\\d{1,3})/");
+            if (split.length > 1) {
+                return String.format("%s/%s", replaceSpecialCharacters(split[0]), replaceSpecialCharacters(split[1]));
+            }
+            return s;
         }
-        return s;
+        return null;
     }
 
     public String getEdgeLabel(JsonLdEdge edge) {
@@ -38,7 +41,7 @@ public class ArangoNamingConvention {
     }
 
     public String reduceVertexLabel(String vertexLabel) {
-        return vertexLabel.replaceAll(".*/(?=.*/.*/.*/v\\d*\\.\\d*\\.\\d*)", "");
+        return vertexLabel!=null ? vertexLabel.replaceAll(".*/(?=.*/.*/.*/v\\d*\\.\\d*\\.\\d*)", "") : null;
     }
 
     public String getVertexLabel(JsonLdVertex vertex) {

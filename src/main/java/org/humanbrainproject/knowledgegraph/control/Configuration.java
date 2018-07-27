@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 @Scope("singleton")
 public class Configuration {
 
-    @Value("org.humanbrainproject.knowledgegraph.nexus_base")
+    @Value("${org.humanbrainproject.knowledgegraph.nexus_base}")
     private String nexusBase;
 
     private static final String NEXUS_VOCAB_SUBPATH = "vocabs/nexus/core/terms/v0.1.0";
