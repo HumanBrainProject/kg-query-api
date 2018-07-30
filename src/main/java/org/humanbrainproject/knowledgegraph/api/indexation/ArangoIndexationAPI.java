@@ -23,20 +23,29 @@ public class ArangoIndexationAPI {
     @Autowired
     ArangoIndexation indexer;
 
+    protected Logger log = Logger.getLogger(ArangoIndexationAPI.class.getName());
+
+
     @ApiOperation("Creates a new instance")
     @PostMapping(value="/{organization}/{domain}/{schema}/{schemaversion}/{id}", consumes = {MediaType.APPLICATION_JSON, "application/ld+json"}, produces = MediaType.APPLICATION_JSON)
     public void addInstance(@RequestBody String payload, @PathVariable("organization") String organization, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("schemaversion") String schemaVersion, @PathVariable("id") String id) throws IOException, JSONException {
-        indexer.insertJsonOrJsonLd(buildEntityName(organization, domain, schema, schemaVersion), id, payload, buildDefaultNamespace(organization, domain, schema, schemaVersion));
+        String entityName = buildEntityName(organization, domain, schema, schemaVersion);
+        log.info(String.format("Received insert request for %s/%s: %s", entityName, id, payload));
+        indexer.insertJsonOrJsonLd(entityName, id, payload, buildDefaultNamespace(organization, domain, schema, schemaVersion));
     }
 
     @PutMapping(value="/{organization}/{domain}/{schema}/{schemaversion}/{id}/{rev}", consumes = {MediaType.APPLICATION_JSON, "application/ld+json"}, produces = MediaType.APPLICATION_JSON)
     public void updateInstance(@RequestBody String payload, @PathVariable("organization") String organization, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("schemaversion") String schemaVersion, @PathVariable("id") String id, @PathVariable("rev") Integer rev, @QueryParam("defaultNamespace") String defaultNamespace, @QueryParam("vertexLabel") String vertexLabel) throws IOException, JSONException {
-        indexer.updateJsonOrJsonLd(buildEntityName(organization, domain, schema, schemaVersion), id, rev, payload, buildDefaultNamespace(organization, domain, schema, schemaVersion));
+        String entityName = buildEntityName(organization, domain, schema, schemaVersion);
+        log.info(String.format("Received update request for %s/%s in rev %s: %s", entityName, id, rev, payload));
+        indexer.updateJsonOrJsonLd(entityName, id, rev, payload, buildDefaultNamespace(organization, domain, schema, schemaVersion));
     }
 
     @DeleteMapping(value="/{organization}/{domain}/{schema}/{schemaversion}/{id}", produces = MediaType.APPLICATION_JSON)
     public void deleteInstance(@PathVariable("organization") String organization, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("schemaversion") String schemaVersion, @PathVariable("id") String id, @RequestAttribute(value="rev", required = false) Integer rev) throws IOException, JSONException {
-        indexer.delete(buildEntityName(organization, domain, schema, schemaVersion), id, rev);
+        String entityName = buildEntityName(organization, domain, schema, schemaVersion);
+        log.info(String.format("Received delete request for %s/%s in rev %s", entityName, id, rev));
+        indexer.delete(entityName, id, rev);
     }
 
     private String buildEntityName(String organization, String domain, String schema, String schemaVersion){
