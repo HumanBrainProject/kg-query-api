@@ -43,7 +43,7 @@ public class ArangoNamingConvention {
 
 
     public String getEdgeLabel(String edgeLabel) {
-        return reduceLengthOfCharacters(replaceSpecialCharacters(String.format("rel-%s", edgeLabel)));
+        return replaceSpecialCharacters(String.format("rel-%s", reduceLengthOfCharacters(edgeLabel)));
     }
 
     public String getUuid(JsonLdVertex vertex){
