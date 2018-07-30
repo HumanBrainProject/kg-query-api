@@ -8,6 +8,7 @@ import com.arangodb.entity.CollectionType;
 import com.arangodb.model.AqlQueryOptions;
 import com.arangodb.model.CollectionCreateOptions;
 import org.humanbrainproject.knowledgegraph.control.Configuration;
+import org.humanbrainproject.knowledgegraph.entity.Tuple;
 import org.humanbrainproject.knowledgegraph.entity.jsonld.JsonLdEdge;
 import org.humanbrainproject.knowledgegraph.entity.jsonld.JsonLdProperty;
 import org.humanbrainproject.knowledgegraph.entity.jsonld.JsonLdVertex;
@@ -32,6 +33,11 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
         String query = String.format("FOR doc IN `%s` FILTER doc._key==\"%s\" RETURN doc", collectionName, id);
         ArangoCursor<String> q = arango.getOrCreateDB().query(query, null, new AqlQueryOptions(), String.class);
         return q.hasNext() ? q.next() : null;
+    }
+
+    public Tuple<String, Integer> countInstances(String collectionName, ArangoDriver arango){
+        ArangoCursor<Integer> q = arango.getOrCreateDB().query(String.format("RETURN LENGTH(`%s`)", namingConvention.getVertexLabel(collectionName)), null, new AqlQueryOptions(), Integer.class);
+        return q.hasNext() ? new Tuple<>(collectionName, q.next()) : null;
     }
 
 

@@ -29,4 +29,11 @@ public class ArangoQueryAPI implements KGQueryAPI {
     public List<Object> executeStoredQuery(@PathVariable("id") String id) throws Exception {
         return query.queryPropertyGraphByStoredSpecification(id);
     }
+
+
+    @PostMapping(value = "/query/{id}/templates", consumes = {MediaType.TEXT_PLAIN})
+    public List<Object> applyTemplateToApi(@RequestBody String template, @PathVariable("id") String id) throws Exception {
+        return query.queryPropertyGraphByStoredSpecificationAndTemplate(id, template);
+    }
+
 }
