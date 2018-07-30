@@ -36,7 +36,7 @@ public class ArangoNamingConvention {
 
     public String reduceLengthOfCharacters(String original){
         if(original!=null && original.length()>MAX_CHARACTERS){
-            return original.substring(original.length()-MAX_CHARACTERS);
+            return original.substring(original.length()-(MAX_CHARACTERS+1));
         }
         return original;
     }
