@@ -8,6 +8,8 @@ import org.springframework.util.DigestUtils;
 @Component
 public class ArangoNamingConvention {
 
+    public static final int MAX_CHARACTERS=64;
+
     public String replaceSpecialCharacters(String value){
         return value!=null ? value.replaceAll("https://", "").replaceAll("http://", "").replaceAll("\\.", "_").replaceAll("[^a-zA-Z0-9\\-_]", "-") : null;
     }
@@ -32,8 +34,16 @@ public class ArangoNamingConvention {
         return getEdgeLabel(edge.getName());
     }
 
+    public String reduceLengthOfCharacters(String original){
+        if(original!=null && original.length()>MAX_CHARACTERS){
+            return original.substring(original.length()-MAX_CHARACTERS);
+        }
+        return original;
+    }
+
+
     public String getEdgeLabel(String edgeLabel) {
-        return replaceSpecialCharacters(String.format("rel-%s", edgeLabel));
+        return reduceLengthOfCharacters(replaceSpecialCharacters(String.format("rel-%s", edgeLabel)));
     }
 
     public String getUuid(JsonLdVertex vertex){
@@ -49,7 +59,7 @@ public class ArangoNamingConvention {
     }
 
     public String getVertexLabel(String vertexName){
-        return replaceSpecialCharacters(reduceVertexLabel(vertexName));
+        return reduceLengthOfCharacters(replaceSpecialCharacters(reduceVertexLabel(vertexName)));
     }
 
     public String getDocumentHandle(JsonLdVertex vertex){
