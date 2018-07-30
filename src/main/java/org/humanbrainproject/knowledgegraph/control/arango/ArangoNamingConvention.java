@@ -8,7 +8,7 @@ import org.springframework.util.DigestUtils;
 @Component
 public class ArangoNamingConvention {
 
-    public static final int MAX_CHARACTERS=64;
+    public static final int MAX_CHARACTERS=60;
 
     public String replaceSpecialCharacters(String value){
         return value!=null ? value.replaceAll("https://", "").replaceAll("http://", "").replaceAll("\\.", "_").replaceAll("[^a-zA-Z0-9\\-_]", "-") : null;
@@ -36,7 +36,7 @@ public class ArangoNamingConvention {
 
     public String reduceLengthOfCharacters(String original){
         if(original!=null && original.length()>MAX_CHARACTERS){
-            return original.substring(original.length()-(MAX_CHARACTERS+1));
+            return original.substring(original.length()-MAX_CHARACTERS);
         }
         return original;
     }

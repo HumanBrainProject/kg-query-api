@@ -37,4 +37,19 @@ public class ArangoNamingConventionTest {
         String outcome = namingConvention.getKeyFromReference("http://foo.com/somereference");
         assertEquals("http://foo.com/somereference", outcome);
     }
+
+
+    @Test
+    public void reduceLengthOfStringTooLong(){
+        String tooLong = "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz";
+        String result = namingConvention.reduceLengthOfCharacters(tooLong);
+        assertEquals("stuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz", result);
+    }
+
+    @Test
+    public void reduceLengthOfStringExact(){
+        String tooLong = "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh";
+        String result = namingConvention.reduceLengthOfCharacters(tooLong);
+        assertEquals("abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh", result);
+    }
 }
