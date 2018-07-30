@@ -1,5 +1,6 @@
 package org.humanbrainproject.knowledgegraph.api.indexation;
 
+import com.github.jsonldjava.core.JsonLdError;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
@@ -35,7 +36,7 @@ public class ArangoIndexationAPI {
         try {
             indexer.insertJsonOrJsonLd(entityName, id, payload, buildDefaultNamespace(organization, domain, schema, schemaVersion));
             return ResponseEntity.ok(null);
-        } catch (JSONException e) {
+        } catch (JSONException | JsonLdError e) {
             e.printStackTrace();
             return ResponseEntity.badRequest().body(e.getMessage());
         }
@@ -48,7 +49,7 @@ public class ArangoIndexationAPI {
         try {
             indexer.updateJsonOrJsonLd(entityName, id, rev, payload, buildDefaultNamespace(organization, domain, schema, schemaVersion));
             return ResponseEntity.ok(null);
-        } catch (JSONException e) {
+        } catch (JSONException | JsonLdError e) {
             e.printStackTrace();
             return ResponseEntity.badRequest().body(e.getMessage());
         }
@@ -61,7 +62,7 @@ public class ArangoIndexationAPI {
         try {
             indexer.delete(entityName, id, rev);
             return ResponseEntity.ok(null);
-        } catch (JSONException e) {
+        } catch (JSONException | JsonLdError e) {
             e.printStackTrace();
             return ResponseEntity.badRequest().body(e.getMessage());
         }
