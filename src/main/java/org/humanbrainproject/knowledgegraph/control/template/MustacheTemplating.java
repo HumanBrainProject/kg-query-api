@@ -35,7 +35,7 @@ public class MustacheTemplating {
     }
 
 
-    public String applyTemplate(String template, Map<String, Object> json){
+    public String applyTemplate(String template, Object json){
         try(StringReader templ = new StringReader(template)){
             Mustache mustache = getFactory().compile(templ, "template");
             StringWriter stringWriter = new StringWriter();

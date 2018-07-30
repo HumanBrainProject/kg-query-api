@@ -9,15 +9,15 @@ import java.util.List;
 
 @RestController
 @RequestMapping(value = "/arango", consumes = {MediaType.APPLICATION_JSON, "application/ld+json"}, produces = MediaType.APPLICATION_JSON)
-public class ArangoQueryAPI implements KGQueryAPI {
+public class ArangoQueryAPI {
 
     @Autowired
     ArangoQuery query;
 
-    @Override
+
     @PostMapping("/query")
-    public List<Object> queryPropertyGraphBySpecification(@RequestBody String payload) throws Exception {
-        return query.queryPropertyGraphBySpecification(payload);
+    public List<Object> queryPropertyGraphBySpecification(@RequestBody String payload, @RequestParam(value = "usecontext", required = false, defaultValue = "false") boolean useContext) throws Exception {
+        return query.queryPropertyGraphBySpecification(payload, useContext);
     }
 
     @PostMapping("/query/{id}")
@@ -26,8 +26,8 @@ public class ArangoQueryAPI implements KGQueryAPI {
     }
 
     @GetMapping("/query/{id}")
-    public List<Object> executeStoredQuery(@PathVariable("id") String id) throws Exception {
-        return query.queryPropertyGraphByStoredSpecification(id);
+    public List<Object> executeStoredQuery(@PathVariable("id") String id, @RequestParam(value = "usecontext", required = false, defaultValue = "false") boolean useContext) throws Exception {
+        return query.queryPropertyGraphByStoredSpecification(id, useContext);
     }
 
 

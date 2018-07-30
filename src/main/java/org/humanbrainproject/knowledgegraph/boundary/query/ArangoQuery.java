@@ -20,6 +20,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Component
 public class ArangoQuery {
@@ -27,6 +28,8 @@ public class ArangoQuery {
     public static final String SPECIFICATION_QUERIES = "specification_queries";
 
     public static final String SPECIFICATION_TEMPLATES = "specification_templates";
+
+    private static final Gson GSON = new Gson();
 
     @Autowired
     ArangoDriver arango;
@@ -46,15 +49,22 @@ public class ArangoQuery {
     @Autowired
     MustacheTemplating templating;
 
-
-    public List<Object> queryPropertyGraphBySpecification(String specification) throws JSONException, IOException {
+    public List<Object> queryPropertyGraphBySpecification(String specification, boolean useContext) throws JSONException, IOException {
+        Object originalContext = null;
+        if(useContext){
+            originalContext = standardization.getContext(specification);
+        }
         Specification spec = specInterpreter.readSpecification(new JSONObject( JsonUtils.toString(standardization.fullyQualify(specification))));
-        return specificationQuery.queryForSpecification(spec);
+        List<Object> objects = specificationQuery.queryForSpecification(spec);
+        if(originalContext!=null){
+            objects = standardization.applyContext(objects, originalContext);
+        }
+        return objects;
     }
 
-    public List<Object> queryPropertyGraphByStoredSpecification(String id) throws IOException, JSONException {
+    public List<Object> queryPropertyGraphByStoredSpecification(String id, boolean useContext) throws IOException, JSONException {
         String payload = arangoUploader.getById(SPECIFICATION_QUERIES, id, arango);
-        return queryPropertyGraphBySpecification(payload);
+        return queryPropertyGraphBySpecification(payload, useContext);
     }
 
     public void storeSpecificationInDb(String specification, String id) throws JSONException {
@@ -64,29 +74,9 @@ public class ArangoQuery {
         arangoUploader.insertVertexDocument(jsonObject.toString(), SPECIFICATION_QUERIES, arango);
     }
 
-
     public List<Object> queryPropertyGraphByStoredSpecificationAndTemplate(String id, String template) throws IOException, JSONException {
-        String payload = arangoUploader.getById(SPECIFICATION_QUERIES, id, arango);
-        Object originalContext = Collections.emptyMap();
-        Gson gson = new Gson();
-        if(payload!=null){
-            JSONObject jsonObject = new JSONObject(payload);
-            if(jsonObject.has(JsonLdConsts.CONTEXT)){
-                originalContext = gson.fromJson(jsonObject.getJSONObject(JsonLdConsts.CONTEXT).toString(), Map.class);
-            }
-        }
-        List<Object> objects = queryPropertyGraphByStoredSpecification(id);
-        List<Object> result = new ArrayList<>();
-        for (Object object : objects) {
-            Map<String, Object> compact = JsonLdProcessor.compact(object, originalContext, new JsonLdOptions());
-            String jsonString = templating.applyTemplate(template, compact);
-            System.out.println(jsonString);
-            result.add(gson.fromJson(jsonString, Map.class));
-        }
-        return result;
+        List<Object> objects = queryPropertyGraphByStoredSpecification(id, true);
+        return objects.stream().map(o -> GSON.fromJson(templating.applyTemplate(template, o), Map.class)).collect(Collectors.toList());
     }
-
-
-
 
 }

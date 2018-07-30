@@ -4,10 +4,14 @@ import com.github.jsonldjava.core.JsonLdConsts;
 import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
+import com.google.gson.Gson;
+import org.springframework.boot.configurationprocessor.json.JSONException;
+import org.springframework.boot.configurationprocessor.json.JSONObject;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * JSON-LD can appear in many different facets. This class provides tools to harmonize the structure of a JSON / JSON-LD file
@@ -73,8 +77,19 @@ public class JsonLdStandardization {
         return JsonLdProcessor.compact(input, Collections.emptyMap(), EMPTY_OPTIONS);
     }
 
-    private void removeNestedTypeDeclarations(){
+    public List<Object> applyContext(List<Object> objects, Object context){
+        return objects.parallelStream().map(o -> JsonLdProcessor.compact(o, context, EMPTY_OPTIONS)).collect(Collectors.toList());
+    }
 
+    public Object getContext(String specification) throws JSONException {
+        Gson gson = new Gson();
+        if(specification!=null){
+            JSONObject jsonObject = new JSONObject(specification);
+            if(jsonObject.has(JsonLdConsts.CONTEXT)){
+                return gson.fromJson(jsonObject.getJSONObject(JsonLdConsts.CONTEXT).toString(), Map.class);
+            }
+        }
+        return null;
     }
 
     private List collectContextElements(Object input) {
