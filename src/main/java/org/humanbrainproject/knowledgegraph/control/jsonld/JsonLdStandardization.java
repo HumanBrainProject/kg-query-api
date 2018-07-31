@@ -30,7 +30,7 @@ public class JsonLdStandardization {
     /**
      * Takes the given json element and adds a @context with the default namespace as @vocab. This is e.g. required if the input is a JSON-only file.
      *
-     * @param input - a json payload already parsed by {@link JsonUtils}
+     * @param input            - a json payload already parsed by {@link JsonUtils}
      * @param defaultNamespace - a default namespace such as "http://schema.hbp.eu/foo"
      * @return
      */
@@ -78,25 +78,19 @@ public class JsonLdStandardization {
      * @return
      */
     public Object fullyQualify(Object input) {
-        try{
-            input = JsonLdProcessor.expand(input, EMPTY_OPTIONS);
-            return JsonLdProcessor.compact(input, Collections.emptyMap(), EMPTY_OPTIONS);
-        }
-        catch(JsonLdError e){
-            log.log(Level.WARNING, "Not able to fully qualify the json", e);
-            return input;
-        }
+        input = JsonLdProcessor.expand(input, EMPTY_OPTIONS);
+        return JsonLdProcessor.compact(input, Collections.emptyMap(), EMPTY_OPTIONS);
     }
 
-    public List<Object> applyContext(List<Object> objects, Object context){
+    public List<Object> applyContext(List<Object> objects, Object context) {
         return objects.parallelStream().map(o -> JsonLdProcessor.compact(o, context, EMPTY_OPTIONS)).collect(Collectors.toList());
     }
 
     public Object getContext(String specification) throws JSONException {
         Gson gson = new Gson();
-        if(specification!=null){
+        if (specification != null) {
             JSONObject jsonObject = new JSONObject(specification);
-            if(jsonObject.has(JsonLdConsts.CONTEXT)){
+            if (jsonObject.has(JsonLdConsts.CONTEXT)) {
                 return gson.fromJson(jsonObject.getJSONObject(JsonLdConsts.CONTEXT).toString(), Map.class);
             }
         }

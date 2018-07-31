@@ -62,7 +62,7 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
         ArangoDatabase db = arango.getOrCreateDB();
         if(db.collection(vertexLabel).exists()) {
             db.query(query, null, new AqlQueryOptions(), String.class);
-        }else{
+        } else {
             log.log(Level.WARNING, String.format("Tried to delete instance %s in collection %s although the collection doesn't exist. Skip.", id, vertexLabel));
         }
     }
