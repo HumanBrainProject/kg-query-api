@@ -32,6 +32,10 @@ public class ArangoIndexation extends GraphIndexation {
     @Autowired
     JsonLdStandardization standardization;
 
+    public String getById(String entityName, String id){
+        return repository.getById(entityName, id, arango);
+    }
+
     @Override
     void transactionalJsonLdInsertion(List<JsonLdVertex> jsonLdVertices) throws JSONException {
         repository.uploadToPropertyGraph(jsonLdVertices, arango);

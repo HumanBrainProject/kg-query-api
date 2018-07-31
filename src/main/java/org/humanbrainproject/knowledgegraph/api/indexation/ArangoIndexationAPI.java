@@ -28,6 +28,18 @@ public class ArangoIndexationAPI {
     protected Logger log = Logger.getLogger(ArangoIndexationAPI.class.getName());
 
 
+    @GetMapping(value="/{organization}/{domain}/{schema}/{schemaversion}/{id}", produces = MediaType.APPLICATION_JSON)
+    public ResponseEntity<String> fetchInstance(@PathVariable("organization") String organization, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("schemaversion") String schemaVersion, @PathVariable("id") String id) throws IOException {
+        String entityName = buildEntityName(organization, domain, schema, schemaVersion);
+        log.info(String.format("Received get request for %s/%s", entityName, id));
+        try {
+            return ResponseEntity.ok(indexer.getById(entityName, id));
+        } catch (JsonLdError e) {
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
     @ApiOperation("Creates a new instance")
     @PostMapping(value="/{organization}/{domain}/{schema}/{schemaversion}/{id}", consumes = {MediaType.APPLICATION_JSON, "application/ld+json"}, produces = MediaType.APPLICATION_JSON)
     public ResponseEntity<String> addInstance(@RequestBody String payload, @PathVariable("organization") String organization, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("schemaversion") String schemaVersion, @PathVariable("id") String id) throws IOException {

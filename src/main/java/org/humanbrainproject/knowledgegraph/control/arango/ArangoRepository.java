@@ -31,7 +31,8 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
     Configuration configuration;
 
     public String getById(String collectionName, String id, ArangoDriver arango){
-        String query = String.format("FOR doc IN `%s` FILTER doc._key==\"%s\" RETURN doc", collectionName, id);
+        String vertexLabel = namingConvention.getVertexLabel(collectionName);
+        String query = String.format("FOR doc IN `%s` FILTER doc._key==\"%s\" RETURN doc", vertexLabel, id);
         ArangoCursor<String> q = arango.getOrCreateDB().query(query, null, new AqlQueryOptions(), String.class);
         return q.hasNext() ? q.next() : null;
     }
