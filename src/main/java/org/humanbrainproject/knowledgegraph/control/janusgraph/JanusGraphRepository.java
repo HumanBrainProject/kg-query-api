@@ -6,17 +6,19 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.humanbrainproject.knowledgegraph.api.indexation.ArangoIndexationAPI;
 import org.humanbrainproject.knowledgegraph.control.Configuration;
 import org.humanbrainproject.knowledgegraph.entity.jsonld.JsonLdEdge;
 import org.humanbrainproject.knowledgegraph.entity.jsonld.JsonLdProperty;
 import org.humanbrainproject.knowledgegraph.entity.jsonld.JsonLdVertex;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import sun.security.krb5.Config;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.logging.Logger;
 
 /**
  * Provides the functionality to upload previously built vertices and edges structures ({@see JsonLdToVerticesAndEdges})
@@ -27,7 +29,7 @@ public class JanusGraphRepository {
 
     public static final String UNRESOLVED_LINKS = "http://schema.hbp.eu/propertygraph/unresolved";
 
-    Logger log = Logger.getLogger(JanusGraphRepository.class.getName());
+    Logger logger = LoggerFactory.getLogger(JanusGraphRepository.class);
 
     @Autowired
     Configuration configuration;
@@ -87,14 +89,14 @@ public class JanusGraphRepository {
         } else {
             if (!vertices.isEmpty()) {
                 //Update
-                log.info("Update vertex");
+                logger.info("Update vertex");
                 updateVertexPropertiesIfNewRevision(newVertex, g, vertices.get(0));
             }
             if (vertices.isEmpty()) {
                 //Insert
-                log.info("Insert vertex");
+                logger.info("Insert vertex");
                 updateProperties(newVertex, g.addV(newVertex.getType())).tryNext();
-                log.fine("Add new vertex "+newVertex);
+                logger.debug("Add new vertex %s", newVertex);
             }
             if(vertices.size()>1){
                 //Remove duplicates
@@ -114,7 +116,7 @@ public class JanusGraphRepository {
         Object rev = g.V(fromGraph).has(configuration.getRev()).values(configuration.getRev()).tryNext().orElse(null);
         if (rev == null || newVertex.getRevision() == null || !(rev instanceof Number) || newVertex.getRevision() > ((Number)rev).intValue()) {
             g.V(fromGraph).properties().drop().tryNext();
-            log.fine("Removed  all properties of vertex "+fromGraph);
+            logger.debug("Removed  all properties of vertex %s", fromGraph);
             updateProperties(newVertex, g.V(fromGraph)).tryNext();
 
         }
@@ -129,7 +131,7 @@ public class JanusGraphRepository {
     private void removeVertices(GraphTraversalSource g, List<Vertex> vertices) {
         for (Vertex vertex : vertices) {
             g.V(vertex).drop().tryNext();
-            log.info("Removed vertex "+vertex);
+            logger.info("Removed vertex %s", vertex);
         }
     }
 
@@ -154,15 +156,15 @@ public class JanusGraphRepository {
                 revisionDefined = true;
             }
             traversal.property(property.getName(), property.getValue());
-            log.fine("Add property "+property.getName()+" for vertex "+newVertex);
+            logger.debug("Add property %s for vertex %s", property.getName(), newVertex);
         }
         if (!idDefined) {
             traversal.property(JsonLdConsts.ID, newVertex.getId());
-            log.fine("Add property "+JsonLdConsts.ID+" for vertex "+newVertex);
+            logger.debug("Add property %s for vertex %s", JsonLdConsts.ID, newVertex);
         }
         if (!revisionDefined) {
             traversal.property(configuration.getRev(), newVertex.getRevision());
-            log.fine("Add property "+ configuration.getRev()+" for vertex "+newVertex);
+            logger.debug("Add property %s for vertex %s", configuration.getRev(), newVertex);
         }
         return traversal;
     }

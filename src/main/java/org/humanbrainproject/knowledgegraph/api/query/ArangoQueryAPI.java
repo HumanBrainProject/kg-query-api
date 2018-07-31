@@ -36,4 +36,5 @@ public class ArangoQueryAPI {
         return query.queryPropertyGraphByStoredSpecificationAndTemplate(id, template);
     }
 
+
 }

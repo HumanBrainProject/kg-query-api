@@ -1,12 +1,15 @@
 package org.humanbrainproject.knowledgegraph.control;
 
+import org.humanbrainproject.knowledgegraph.api.indexation.ArangoIndexationAPI;
 import org.humanbrainproject.knowledgegraph.entity.jsonld.JsonLdEdge;
 import org.humanbrainproject.knowledgegraph.entity.jsonld.JsonLdVertex;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.configurationprocessor.json.JSONException;
 
 import java.util.List;
-import java.util.logging.Logger;
+
 
 public abstract class VertexRepository<T> {
 
@@ -15,7 +18,8 @@ public abstract class VertexRepository<T> {
     @Autowired
     Configuration configuration;
 
-    protected Logger log = Logger.getLogger(VertexRepository.class.getName());
+    protected Logger logger = LoggerFactory.getLogger(VertexRepository.class);
+
 
     public void uploadToPropertyGraph(List<JsonLdVertex> vertices, T transactionOrConnection) throws JSONException {
         for (JsonLdVertex vertex : vertices) {
@@ -24,7 +28,7 @@ public abstract class VertexRepository<T> {
                 if (revision < vertex.getRevision()) {
                     updateVertex(vertex, transactionOrConnection);
                 } else {
-                   log.fine("No new revision - no update");
+                   logger.debug("No new revision - no update");
                 }
             } else {
                 insertVertex(vertex, transactionOrConnection);

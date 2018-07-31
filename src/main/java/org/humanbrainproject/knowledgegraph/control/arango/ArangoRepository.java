@@ -19,7 +19,6 @@ import org.springframework.boot.configurationprocessor.json.JSONObject;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
-import java.util.logging.Level;
 
 @Component
 public class ArangoRepository extends VertexRepository<ArangoDriver> {
@@ -64,7 +63,7 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
         if(db.collection(vertexLabel).exists() && db.collection(vertexLabel).documentExists(id)) {
             db.query(query, null, new AqlQueryOptions(), String.class);
         } else {
-            log.log(Level.WARNING, String.format("Tried to delete instance %s in collection %s although the collection doesn't exist. Skip.", id, vertexLabel));
+            logger.warn("Tried to delete instance %s in collection %s although the collection doesn't exist. Skip.", id, vertexLabel);
         }
     }
 

@@ -47,8 +47,8 @@ public class Neo4jRepository extends VertexRepository<Transaction> {
     public void deleteVertex(String entityName, String identifier,  Transaction tx) {
         StringBuilder query = new StringBuilder();
         query.append(String.format("MATCH (n) OPTIONAL MATCH (n)-[r]-() WHERE n.`%s`=$id DELETE r, n", JsonLdConsts.ID));
-        log.info("Delete vertex");
-        log.fine(query.toString());
+        logger.info("Delete vertex");
+        logger.debug(query.toString());
         tx.run(query.toString(), Values.parameters("id", identifier));
     }
 
@@ -68,8 +68,8 @@ public class Neo4jRepository extends VertexRepository<Transaction> {
         query.append("}");
         propertyMap.put("id", vertex.getId());
         String q = query.toString();
-        log.info("Update vertex");
-        log.fine(q);
+        logger.info("Update vertex");
+        logger.debug(q);
         tx.run(q, propertyMap);
     }
 
@@ -100,8 +100,8 @@ public class Neo4jRepository extends VertexRepository<Transaction> {
             propertyMap.put(String.format("propertyValue%d", propertyMap.size()), vertex.getRevision());
         }
         String q = query.toString();
-        log.info(String.format("Insert vertex %s", vertex.getId()));
-        log.fine(q);
+        logger.info(String.format("Insert vertex %s", vertex.getId()));
+        logger.debug(q);
         tx.run(q, propertyMap).list();
     }
 
@@ -110,15 +110,15 @@ public class Neo4jRepository extends VertexRepository<Transaction> {
         String conn = String.format("MATCH p=(o)-[r]->(t) WHERE o.`%s`=$originId AND t.`%s`=$targetId RETURN p", JsonLdConsts.ID, JsonLdConsts.ID);
         List<Record> results = tx.run(conn, Values.parameters("originId", vertex.getId(), "targetId", edge.getReference())).list();
         if (results != null && !results.isEmpty()) {
-            log.info("Relation already exists - check for update");
+            logger.info("Relation already exists - check for update");
         } else {
             String findTarget = String.format("MATCH (target) WHERE target.`%s`=$targetId RETURN target", JsonLdConsts.ID);
             if (!tx.run(findTarget, Values.parameters("targetId", edge.getReference())).hasNext()) {
-                log.info("Relation does not exists - but can not find related element. Create placeholder");
+                logger.info("Relation does not exists - but can not find related element. Create placeholder");
                 String createQuery = String.format("CREATE (e:`%s`) SET e.`%s`=$id", UNRESOLVED_LINKS, JsonLdConsts.ID);
                 tx.run(createQuery, Values.parameters("id", edge.getReference())).consume();
             } else {
-                log.info("Relation does not exists - but target does. We create the edge");
+                logger.info("Relation does not exists - but target does. We create the edge");
             }
             StringBuilder query = new StringBuilder();
             query.append(String.format("MATCH (origin) WHERE origin.`%s`=$originId\n MATCH (target) WHERE target.`%s`=$targetId\n", JsonLdConsts.ID, JsonLdConsts.ID));
