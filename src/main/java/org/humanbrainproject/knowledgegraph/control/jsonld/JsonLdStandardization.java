@@ -12,6 +12,7 @@ import org.springframework.boot.configurationprocessor.json.JSONObject;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -78,8 +79,13 @@ public class JsonLdStandardization {
      * @return
      */
     public Object fullyQualify(Object input) {
-        input = JsonLdProcessor.expand(input, EMPTY_OPTIONS);
-        return JsonLdProcessor.compact(input, Collections.emptyMap(), EMPTY_OPTIONS);
+        try {
+            input = JsonLdProcessor.expand(input, EMPTY_OPTIONS);
+            return JsonLdProcessor.compact(input, Collections.emptyMap(), EMPTY_OPTIONS);
+        }
+        catch(Exception e){
+            throw new JsonLdError(JsonLdError.Error.UNKNOWN_ERROR, "Was not able to fully qualify the content", e);
+        }
     }
 
     public List<Object> applyContext(List<Object> objects, Object context) {
