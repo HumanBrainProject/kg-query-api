@@ -1,16 +1,20 @@
 package org.humanbrainproject.knowledgegraph.control.jsonld;
 
 import com.github.jsonldjava.core.JsonLdConsts;
+import com.github.jsonldjava.core.JsonLdError;
 import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.gson.Gson;
+import org.humanbrainproject.knowledgegraph.api.echo.EchoAPI;
 import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.boot.configurationprocessor.json.JSONObject;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 /**
@@ -20,6 +24,7 @@ import java.util.stream.Collectors;
 @Component
 public class JsonLdStandardization {
 
+    protected Logger log = Logger.getLogger(JsonLdStandardization.class.getName());
     private static final JsonLdOptions EMPTY_OPTIONS = new JsonLdOptions();
 
     /**
@@ -73,8 +78,14 @@ public class JsonLdStandardization {
      * @return
      */
     public Object fullyQualify(Object input) {
-        input = JsonLdProcessor.expand(input, EMPTY_OPTIONS);
-        return JsonLdProcessor.compact(input, Collections.emptyMap(), EMPTY_OPTIONS);
+        try{
+            input = JsonLdProcessor.expand(input, EMPTY_OPTIONS);
+            return JsonLdProcessor.compact(input, Collections.emptyMap(), EMPTY_OPTIONS);
+        }
+        catch(JsonLdError e){
+            log.log(Level.WARNING, "Not able to fully qualify the json", e);
+            return input;
+        }
     }
 
     public List<Object> applyContext(List<Object> objects, Object context){
