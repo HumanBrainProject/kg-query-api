@@ -60,7 +60,7 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
         String vertexLabel = namingConvention.getVertexLabel(entityName);
         String query = String.format("REMOVE \"%s\" IN `%s`", id, vertexLabel);
         ArangoDatabase db = arango.getOrCreateDB();
-        if(db.collection(vertexLabel).exists()) {
+        if(db.collection(vertexLabel).exists() && db.collection(vertexLabel).documentExists(id)) {
             db.query(query, null, new AqlQueryOptions(), String.class);
         } else {
             log.log(Level.WARNING, String.format("Tried to delete instance %s in collection %s although the collection doesn't exist. Skip.", id, vertexLabel));
