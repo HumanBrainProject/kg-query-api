@@ -17,7 +17,6 @@ import org.springframework.stereotype.Component;
  * The connection establishment to the JanusGraphCluster including message serialization configuration.
  */
 @Component
-@Scope(scopeName = "singleton")
 public class JanusGraphDriver {
 
     @Value("${org.humanbrainproject.knowledgegraph.janusgraph.contactPoint}")

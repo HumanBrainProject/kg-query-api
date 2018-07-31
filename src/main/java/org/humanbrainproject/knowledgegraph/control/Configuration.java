@@ -5,7 +5,6 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 @Component
-@Scope("singleton")
 public class Configuration {
 
     private static final String DEFAULT_NAMESPACE = "http://schema.hbp.eu/kgquery#";

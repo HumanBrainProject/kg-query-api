@@ -5,9 +5,9 @@ import com.arangodb.ArangoDatabase;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
+import org.springframework.web.context.WebApplicationContext;
 
 @Component
-@Scope(scopeName = "singleton")
 public class ArangoDriver {
 
     @Value("${org.humanbrainproject.knowledgegraph.arango.host}")

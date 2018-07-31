@@ -8,7 +8,6 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 @Component
-@Scope(scopeName = "singleton")
 public class Neo4JDriver {
 
     @Value("${org.humanbrainproject.knowledgegraph.neo4j.uri}")
