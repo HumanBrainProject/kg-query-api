@@ -20,7 +20,7 @@ public class ArangoNamingConventionTest {
     public void getVertexLabel(){
         JsonLdVertex v = new JsonLdVertex();
         v.setType("http://nexus.humanbrainproject.org/v0/schema/org/domain/schema/v0.0.4");
-        String outcome = namingConvention.getVertexLabel(v);
+        String outcome = namingConvention.getVertexLabel(v.getType());
         assertEquals("org-domain-schema-v0_0_4", outcome);
     }
 

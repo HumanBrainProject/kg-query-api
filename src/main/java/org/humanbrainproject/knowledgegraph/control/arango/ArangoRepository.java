@@ -7,6 +7,7 @@ import com.arangodb.ArangoDatabase;
 import com.arangodb.entity.CollectionType;
 import com.arangodb.model.AqlQueryOptions;
 import com.arangodb.model.CollectionCreateOptions;
+import com.google.gson.Gson;
 import org.humanbrainproject.knowledgegraph.control.Configuration;
 import org.humanbrainproject.knowledgegraph.entity.Tuple;
 import org.humanbrainproject.knowledgegraph.entity.jsonld.JsonLdEdge;
@@ -19,6 +20,7 @@ import org.springframework.boot.configurationprocessor.json.JSONObject;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Component
 public class ArangoRepository extends VertexRepository<ArangoDriver> {
@@ -28,6 +30,9 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
 
     @Autowired
     Configuration configuration;
+
+
+    private static final String NAME_LOOKUP_MAP = "name_lookup";
 
     public String getById(String collectionName, String id, ArangoDriver arango){
         String vertexLabel = namingConvention.getVertexLabel(collectionName);
@@ -46,7 +51,7 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
     protected Integer getRevisionById(JsonLdVertex vertex, ArangoDriver arango) {
         ArangoDatabase db = arango.getOrCreateDB();
         try{
-            String query = String.format("FOR doc IN `%s` FILTER doc._key==\"%s\" RETURN doc.`%s`", namingConvention.getVertexLabel(vertex), namingConvention.getUuid(vertex), configuration.getRev());
+            String query = String.format("FOR doc IN `%s` FILTER doc._key==\"%s\" RETURN doc.`%s`", namingConvention.getVertexLabel(vertex.getType()), namingConvention.getUuid(vertex), configuration.getRev());
             ArangoCursor<Integer> q = db.query(query, null, new AqlQueryOptions(), Integer.class);
             return q.hasNext() ? q.next() : null;
         }
@@ -54,6 +59,16 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
             return null;
         }
     }
+
+
+    public Map<String, String> getArangoNameMapping(ArangoDatabase db){
+        String query = String.format("FOR doc IN `%s` RETURN doc", NAME_LOOKUP_MAP);
+        ArangoCursor<String> q = db.query(query, null, new AqlQueryOptions(), String.class);
+        Gson gson = new Gson();
+        List<String> instances = q.asListRemaining();
+        return instances.stream().map(s -> gson.fromJson(s, Map.class)).collect(
+                HashMap::new, (map, item) -> map.put((String)item.get("arangoName"), (String)item.get("orginalName")), Map::putAll);
+   }
 
     @Override
     public void deleteVertex(String entityName, String id, ArangoDriver arango) {
@@ -67,25 +82,42 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
         }
     }
 
+
+    public Map<String, Object> getPropertyCount(String collectionName, ArangoDatabase db){
+        String query = String.format("LET attributesPerDocument = ( FOR doc IN `%s` RETURN ATTRIBUTES(doc, true) )\n" +
+                "FOR attributeArray IN attributesPerDocument\n" +
+                "    FOR attribute IN attributeArray\n" +
+                "        COLLECT attr = attribute WITH COUNT INTO count\n" +
+                "        SORT count DESC\n" +
+                "        RETURN {attr, count}", collectionName);
+        ArangoCursor<Map> result = db.query(query, null, new AqlQueryOptions(), Map.class);
+        return result.asListRemaining().stream().sorted(Comparator.comparing(a -> ((String) a.get("attr")))).collect(LinkedHashMap::new, (map, item) -> map.put((String)item.get("attr"), (Long)item.get("count")), Map::putAll);
+    }
+
+
     @Override
     protected void updateVertex(JsonLdVertex vertex, ArangoDriver arango) throws JSONException {
-        String query = String.format("REPLACE %s IN `%s`", toJSONString(vertex), namingConvention.getVertexLabel(vertex));
+        String query = String.format("REPLACE %s IN `%s`", toJSONString(vertex), namingConvention.getVertexLabel(vertex.getType()));
         System.out.println(query);
         arango.getOrCreateDB().query(query, null, new AqlQueryOptions(), Void.class);
     }
 
     @Override
     protected void insertVertex(JsonLdVertex vertex, ArangoDriver arango) throws JSONException {
-        String vertexLabel = namingConvention.getVertexLabel(vertex);
-        insertVertexDocument(toJSONString(vertex), vertexLabel, arango);
+        insertVertexDocument(toJSONString(vertex), vertex.getType(), arango);
     }
 
-    public void insertVertexDocument(String jsonLd, String vertexLabel, ArangoDriver arango) throws JSONException {
+    public void insertVertexDocument(String jsonLd, String vertexName, ArangoDriver arango) throws JSONException {
+        String originalName = vertexName;
+        String vertexLabel = namingConvention.getVertexLabel(vertexName);
         ArangoDatabase db = arango.getOrCreateDB();
         ArangoCollection collection = db.collection(vertexLabel);
         if(!collection.exists()) {
             System.out.println(String.format("Create collection %s", vertexLabel));
             db.createCollection(vertexLabel);
+            if(!vertexName.equals(NAME_LOOKUP_MAP)) {
+                insertVertexDocument(String.format("{\"orginalName\": \"%s\", \"arangoName\": \"%s\"}", originalName, vertexLabel), NAME_LOOKUP_MAP, arango);
+            }
         }
         String query = String.format("INSERT %s IN `%s`", jsonLd, vertexLabel);
         System.out.println(query);
@@ -95,6 +127,7 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
             System.out.println(result);
         }
     }
+
 
     @Override
     protected void createEdge(JsonLdVertex vertex, JsonLdEdge edge, int orderNumber, ArangoDriver arango) throws JSONException {

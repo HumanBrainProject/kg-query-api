@@ -55,16 +55,12 @@ public class ArangoNamingConvention {
         return vertexLabel!=null ? vertexLabel.replaceAll(".*/(?=.*/.*/.*/v\\d*\\.\\d*\\.\\d*)", "") : null;
     }
 
-    public String getVertexLabel(JsonLdVertex vertex) {
-        return getVertexLabel(vertex.getType());
-    }
-
     public String getVertexLabel(String vertexName){
         return reduceLengthOfCharacters(replaceSpecialCharacters(reduceVertexLabel(vertexName)));
     }
 
     public String getDocumentHandle(JsonLdVertex vertex){
-        return String.format("%s/%s", getVertexLabel(vertex), getUuid(vertex));
+        return String.format("%s/%s", getVertexLabel(vertex.getType()), getUuid(vertex));
     }
 
 

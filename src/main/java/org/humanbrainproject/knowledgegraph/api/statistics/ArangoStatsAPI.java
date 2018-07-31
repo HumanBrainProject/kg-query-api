@@ -16,7 +16,6 @@ public class ArangoStatsAPI  {
 
     @GetMapping
     public Map<String, Object> getStatistics(){
-        return statistics.getCountsPerCollection();
+        return statistics.getStructure();
     }
-
 }
