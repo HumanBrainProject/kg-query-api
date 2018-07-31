@@ -47,7 +47,8 @@ public class ArangoNamingConvention {
     }
 
     public String getUuid(JsonLdVertex vertex){
-        return replaceSpecialCharacters(vertex.getUuid());
+        String uuid = replaceSpecialCharacters(vertex.getUuid());
+        return uuid == null || uuid.length()<=MAX_CHARACTERS ? uuid : DigestUtils.md5DigestAsHex(uuid.getBytes());
     }
 
     public String reduceVertexLabel(String vertexLabel) {
