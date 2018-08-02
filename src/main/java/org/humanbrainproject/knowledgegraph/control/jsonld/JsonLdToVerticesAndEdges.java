@@ -30,8 +30,8 @@ public class JsonLdToVerticesAndEdges {
      * @param jsonLdPayload
      * @throws JSONException
      */
-    public List<JsonLdVertex> transformFullyQualifiedJsonLdToVerticesAndEdges(String jsonLdPayload, String entityName, String id, Integer revision) throws JSONException {
-        return createVertex(null, new JSONObject(jsonLdPayload), null, new ArrayList<>(), -1, entityName, id, revision);
+    public List<JsonLdVertex> transformFullyQualifiedJsonLdToVerticesAndEdges(String jsonLdPayload, String entityName, String permissionGroup, String id, Integer revision) throws JSONException {
+        return createVertex(null, new JSONObject(jsonLdPayload), null, new ArrayList<>(), -1, entityName, permissionGroup, id, revision);
     }
 
 
@@ -57,7 +57,7 @@ public class JsonLdToVerticesAndEdges {
 
 
     private List<JsonLdVertex> createVertex(String key, Object object, JsonLdVertex
-            parent, List<JsonLdVertex> vertexCollection, int orderNumber, String entityName, String id, Integer revision) throws JSONException {
+            parent, List<JsonLdVertex> vertexCollection, int orderNumber, String entityName, String permissionGroup, String id, Integer revision) throws JSONException {
         if (object instanceof JSONObject) {
             JSONObject jsonObject = (JSONObject) object;
             if(jsonObject.length()==0){
@@ -69,10 +69,11 @@ public class JsonLdToVerticesAndEdges {
             updateId(key, parent, jsonObject, v, entityName, id, orderNumber);
             updateUuid(key, parent, jsonObject, v, id, orderNumber);
             updateRevision(parent, jsonObject, v, revision);
+            updatePermissionGroup(v, permissionGroup);
             if(jsonObject.has(JsonLdConsts.VALUE)){
-                return createVertex(key, jsonObject.get(JsonLdConsts.VALUE), parent, vertexCollection, orderNumber, v.getType(), id, revision);
+                return createVertex(key, jsonObject.get(JsonLdConsts.VALUE), parent, vertexCollection, orderNumber, v.getType(), permissionGroup, id, revision);
             }
-            if (handleOrderedList(key, parent, vertexCollection, jsonObject, v.getType(), id, revision)) {
+            if (handleOrderedList(key, parent, vertexCollection, jsonObject, v.getType(), permissionGroup, id, revision)) {
                 //Since it's an ordered list, we already took care of its sub elements and can cancel this branch of recursive execution
                 return vertexCollection;
             }
@@ -85,13 +86,13 @@ public class JsonLdToVerticesAndEdges {
             vertexCollection.add(v);
             while (keys.hasNext()) {
                 String k = (String) keys.next();
-                createVertex(k, jsonObject.get(k), v, vertexCollection, -1, k, id, revision);
+                createVertex(k, jsonObject.get(k), v, vertexCollection, -1, k, permissionGroup, id, revision);
             }
         } else if (object instanceof JSONArray) {
             JSONArray jsonArray = (JSONArray) object;
             //Since it's an array, we iterate through it and continue with the elements recursively.
             for (int i = 0; i < jsonArray.length(); i++) {
-                createVertex(key, jsonArray.get(i), parent, vertexCollection, -1, key, id, revision);
+                createVertex(key, jsonArray.get(i), parent, vertexCollection, -1, key, id, permissionGroup, revision);
             }
         } else {
             //It's a leaf node - add it as a property
@@ -113,11 +114,11 @@ public class JsonLdToVerticesAndEdges {
     }
 
 
-    private boolean handleOrderedList(String key, JsonLdVertex parent, List<JsonLdVertex> vertexCollection, JSONObject jsonObject, String entityName, String id, Integer revision) throws JSONException {
+    private boolean handleOrderedList(String key, JsonLdVertex parent, List<JsonLdVertex> vertexCollection, JSONObject jsonObject, String entityName, String permissionGroup, String id, Integer revision) throws JSONException {
         if (jsonObject.has(JsonLdConsts.LIST) && jsonObject.get(JsonLdConsts.LIST) instanceof JSONArray) {
             JSONArray listArray = (JSONArray) jsonObject.get(JsonLdConsts.LIST);
             for (int i = 0; i < listArray.length(); i++) {
-                createVertex(key, listArray.get(i), parent, vertexCollection, i, entityName, id, revision);
+                createVertex(key, listArray.get(i), parent, vertexCollection, i, entityName, id, permissionGroup, revision);
             }
             return true;
         }
@@ -142,6 +143,13 @@ public class JsonLdToVerticesAndEdges {
         p.setName(configuration.getRev());
         p.setValue(v.getRevision());
         v.getProperties().add(p);
+    }
+
+    void updatePermissionGroup(JsonLdVertex vertex, String permissionGroup) {
+        JsonLdProperty p = new JsonLdProperty();
+        p.setName(configuration.getPermissionGroup());
+        p.setValue(permissionGroup);
+        vertex.getProperties().add(p);
     }
 
     void updateId(String key, JsonLdVertex parent, JSONObject jsonObject, JsonLdVertex v, String entityName, String rootId, int ordernumber) throws JSONException {

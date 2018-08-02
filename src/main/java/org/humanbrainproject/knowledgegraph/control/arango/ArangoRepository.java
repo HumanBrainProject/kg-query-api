@@ -107,7 +107,6 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
     @Override
     protected void updateVertex(JsonLdVertex vertex, ArangoDriver arango) throws JSONException {
         String query = String.format("REPLACE %s IN `%s`", toJSONString(vertex), namingConvention.getVertexLabel(vertex.getType()));
-        System.out.println(query);
         arango.getOrCreateDB().query(query, null, new AqlQueryOptions(), Void.class);
     }
 
@@ -122,18 +121,18 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
         ArangoDatabase db = arango.getOrCreateDB();
         ArangoCollection collection = db.collection(vertexLabel);
         if(!collection.exists()) {
-            System.out.println(String.format("Create collection %s", vertexLabel));
+            logger.info("Create collection {}", vertexLabel);
             db.createCollection(vertexLabel);
             if(!vertexName.equals(NAME_LOOKUP_MAP)) {
                 insertVertexDocument(String.format("{\"orginalName\": \"%s\", \"_key\": \"%s\"}", originalName, vertexLabel), NAME_LOOKUP_MAP, arango);
             }
         }
         String query = String.format("INSERT %s IN `%s`", jsonLd, vertexLabel);
-        System.out.println(query);
+        logger.debug(query);
         ArangoCursor<String> q = db.query(query, null, new AqlQueryOptions(), String.class);
         while(q.hasNext()){
             String result = q.next();
-            System.out.println(result);
+            logger.debug(result);
         }
     }
 
@@ -146,7 +145,7 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
         if(!collection.exists()){
             CollectionCreateOptions collectionCreateOptions = new CollectionCreateOptions();
             collectionCreateOptions.type(CollectionType.EDGES);
-            System.out.println(String.format("Create edge collection %s", edgeLabel));
+            logger.info("Create edge collection {}", edgeLabel);
             db.createCollection(edgeLabel, collectionCreateOptions);
         }
         JSONObject o = new JSONObject();
@@ -163,7 +162,7 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
             o.put(jsonLdProperty.getName(), jsonLdProperty.getValue());
         }
         String query = String.format("INSERT %s IN `%s`", o.toString(), edgeLabel);
-        System.out.println(query);
+        logger.debug(query);
         db.query(query, null, new AqlQueryOptions(), String.class);
     }
 
@@ -187,7 +186,7 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
 
     @Override
     protected void updateEdge(JsonLdVertex vertex, JsonLdEdge edge, int orderNumber, ArangoDriver arango) throws JSONException {
-        System.out.println("Update edge");
+        logger.info("Update edge");
     }
 
     @Override

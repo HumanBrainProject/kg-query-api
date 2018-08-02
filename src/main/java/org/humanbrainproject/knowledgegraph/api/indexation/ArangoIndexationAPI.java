@@ -44,7 +44,7 @@ public class ArangoIndexationAPI {
         logger.info("Received insert request for {}/{}", entityName, id);
         logger.debug("Payload for insert request {}/{}: {}", entityName, id, payload);
         try {
-            indexer.insertJsonOrJsonLd(entityName, id, payload, buildDefaultNamespace(organization, domain, schema, schemaVersion));
+            indexer.insertJsonOrJsonLd(entityName, organization, id, payload, buildDefaultNamespace(organization, domain, schema, schemaVersion));
             return ResponseEntity.ok(null);
         } catch (JSONException | JsonLdError e) {
             e.printStackTrace();
@@ -58,7 +58,7 @@ public class ArangoIndexationAPI {
         logger.info("Received update request for {}/{} in rev {}", entityName, id, rev);
         logger.debug("Payload for update request {}/{} in rev {}: {}", entityName, id, rev, payload);
         try {
-            indexer.updateJsonOrJsonLd(entityName, id, rev, payload, buildDefaultNamespace(organization, domain, schema, schemaVersion));
+            indexer.updateJsonOrJsonLd(entityName, organization, id, rev, payload, buildDefaultNamespace(organization, domain, schema, schemaVersion));
             return ResponseEntity.ok(null);
         } catch (JSONException | JsonLdError e) {
             e.printStackTrace();

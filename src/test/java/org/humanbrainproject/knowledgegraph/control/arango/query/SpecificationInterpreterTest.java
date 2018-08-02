@@ -14,6 +14,7 @@ import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.boot.configurationprocessor.json.JSONObject;
 
 import java.io.IOException;
+import java.util.Collections;
 
 import static org.junit.Assert.*;
 
@@ -45,6 +46,6 @@ public class SpecificationInterpreterTest {
     @Ignore("This test requires a backend and is for manual testing only")
     public void readSpecificationAndCreateQuery() throws JSONException {
         Specification specification = interpreter.readSpecification(testSpecification);
-        query.queryForSpecification(specification);
+        query.queryForSpecification(specification, Collections.EMPTY_SET, null, null);
     }
 }

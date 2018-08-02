@@ -1,5 +1,10 @@
 package org.humanbrainproject.knowledgegraph.control.arango.query;
 
+import org.springframework.boot.configurationprocessor.json.JSONArray;
+import org.springframework.boot.configurationprocessor.json.JSONException;
+import org.springframework.boot.configurationprocessor.json.JSONObject;
+
+import java.util.Set;
 import java.util.Stack;
 
 public class ArangoQueryBuilder {
@@ -10,6 +15,15 @@ public class ArangoQueryBuilder {
     StringBuilder sb = new StringBuilder();
     private boolean simpleReturn = true;
     private boolean firstReturnEntry = true;
+    private Integer size;
+    private Integer start;
+    private String permissionGroupFieldName;
+
+    public ArangoQueryBuilder(Integer size, Integer start, String permissionGroupFieldName) {
+        this.size = size;
+        this.start = start;
+        this.permissionGroupFieldName = permissionGroupFieldName;
+    }
 
     public String build(){
         return sb.toString();
@@ -34,6 +48,7 @@ public class ArangoQueryBuilder {
     }
 
     public void startReturnStructure(boolean simple){
+        addFilter();
         sb.append(String.format("\n%s  RETURN %s", getIndentation(), simple ? "": "{\n"));
         simpleReturn = simple;
     }
@@ -51,11 +66,29 @@ public class ArangoQueryBuilder {
         currentAlias = previousAlias.pop();
     }
 
-    public ArangoQueryBuilder addRoot(String rootCollection){
-        sb.append(String.format("FOR %s_%s IN `%s`", ROOT_ALIAS, DOC_POSTFIX, rootCollection));
+    public ArangoQueryBuilder addRoot(String rootCollection, Set<String> whiteListOrganizations) throws JSONException {
+        JSONArray array = new JSONArray();
+        for (String whiteListOrganization : whiteListOrganizations) {
+            array.put(whiteListOrganization);
+        }
+
+        sb.append(String.format("LET whitelist_organizations=%s\n", array.toString()));
+        sb.append(String.format("FOR %s_%s IN `%s`\n", ROOT_ALIAS, DOC_POSTFIX, rootCollection));
+        if(size!=null){
+            if(start!=null){
+                sb.append(String.format("LIMIT %d, %d\n", start, size));
+            }
+            else{
+                sb.append(String.format("LIMIT %d\n", size));
+            }
+        }
+        addFilter();
         return this;
     }
 
+    private void addFilter() {
+        sb.append(String.format(" FILTER %s_%s.`%s` IN whitelist_organizations ", currentAlias, DOC_POSTFIX, permissionGroupFieldName));
+    }
 
     public void addTraversalResultField(String targetName, String alias){
         if(!firstReturnEntry){
@@ -76,6 +109,7 @@ public class ArangoQueryBuilder {
     public void addSimpleLeafResultField(String leaf_field){
         if(!firstReturnEntry){
             sb.append(",\n");
+            addFilter();
         }
         sb.append(String.format("\n%s  RETURN %s_%s.`%s`\n", getIndentation(), currentAlias, DOC_POSTFIX, leaf_field));
         firstReturnEntry = true;

@@ -1,0 +1,48 @@
+{
+    "protocol": [
+{{#search:activity.search:protocols}}
+        { "value": "{{.}}" },
+{{/search:activity.search:protocols}}
+    ],
+    "methods": [
+        {{#search:activity.search:methods}}
+        { "value": "{{.}}" },
+        {{/search:activity.search:methods}}
+    ],
+    "contributors": [
+        {{#search:contributors}}
+            {
+                "reference": "Person/{{search:identifier}}",
+                "uuid": "{{search:uuid}}",
+                "value": "{{search:name}}"
+            },
+        {{/search:contributors}}
+    ],
+    "viewer": [
+        {{#search:neuroglancer}}
+            { "url": "https://kg.humanbrainproject.org/viewer?{{search:url}}" ,
+              "value": "Show {{search:name}}"
+            }
+        {{/search:neuroglancer}}
+    ],
+    "license_info":[
+        {{#search:license}}
+            {
+              "url": "{{search:url}}",
+              "value": "{{search:name}}"
+            }
+        {{/search:license}}
+    ],
+    "preparation": [
+        {{#search:activity.search:preparation}}
+            { "value": "Show {{.}}" }
+        {{/search:activity.search:preparation}}
+    ],
+    "title": {"value": "{{search:title}}"},
+    "subjects": [
+
+
+    ]
+
+}
+

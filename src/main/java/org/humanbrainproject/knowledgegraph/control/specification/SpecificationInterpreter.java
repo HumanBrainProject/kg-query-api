@@ -1,9 +1,12 @@
 package org.humanbrainproject.knowledgegraph.control.specification;
 
 import com.github.jsonldjava.core.JsonLdConsts;
+import org.humanbrainproject.knowledgegraph.control.VertexRepository;
 import org.humanbrainproject.knowledgegraph.entity.specification.SpecField;
 import org.humanbrainproject.knowledgegraph.entity.specification.SpecTraverse;
 import org.humanbrainproject.knowledgegraph.entity.specification.Specification;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.configurationprocessor.json.JSONArray;
 import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.boot.configurationprocessor.json.JSONObject;
@@ -24,6 +27,9 @@ public class SpecificationInterpreter {
    private static final String GRAPH_QUERY_REVERSE = GRAPH_QUERY_VOCAB+"/reverse";
    private static final String SCHEMA_ORG_NAME = "http://schema.org/name";
 
+
+    protected Logger logger = LoggerFactory.getLogger(SpecificationInterpreter.class);
+
    public Specification readSpecification(JSONObject jsonObject) throws JSONException {
        String originalContext = null;
        if(jsonObject.has(JsonLdConsts.CONTEXT)){
@@ -40,7 +46,6 @@ public class SpecificationInterpreter {
        List<SpecField> specFields = null;
        if(jsonObject.has(GRAPH_QUERY_FIELDS)) {
            specFields = createSpecFields(jsonObject.get(GRAPH_QUERY_FIELDS));
-           System.out.println(specFields);
        }
        return new Specification(originalContext,  name, rootSchema, specFields);
    }

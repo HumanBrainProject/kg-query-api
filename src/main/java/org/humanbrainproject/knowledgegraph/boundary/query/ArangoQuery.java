@@ -9,6 +9,7 @@ import com.google.gson.Gson;
 import org.humanbrainproject.knowledgegraph.control.arango.ArangoDriver;
 import org.humanbrainproject.knowledgegraph.control.arango.query.ArangoSpecificationQuery;
 import org.humanbrainproject.knowledgegraph.control.arango.ArangoRepository;
+import org.humanbrainproject.knowledgegraph.control.authorization.AuthorizationController;
 import org.humanbrainproject.knowledgegraph.control.jsonld.JsonLdStandardization;
 import org.humanbrainproject.knowledgegraph.control.specification.SpecificationInterpreter;
 import org.humanbrainproject.knowledgegraph.control.template.MustacheTemplating;
@@ -49,33 +50,38 @@ public class ArangoQuery {
     @Autowired
     MustacheTemplating templating;
 
-    public List<Object> queryPropertyGraphBySpecification(String specification, boolean useContext) throws JSONException, IOException {
+    @Autowired
+    AuthorizationController authorization;
+
+
+    public List<Object> queryPropertyGraphBySpecification(String specification, boolean useContext, String authorizationToken, Integer size, Integer start) throws JSONException, IOException {
+        Set<String> readableOrganizations = authorization.getOrganizations(authorizationToken);
         Object originalContext = null;
         if(useContext){
             originalContext = standardization.getContext(specification);
         }
         Specification spec = specInterpreter.readSpecification(new JSONObject( JsonUtils.toString(standardization.fullyQualify(specification))));
-        List<Object> objects = specificationQuery.queryForSpecification(spec);
+        List<Object> objects = specificationQuery.queryForSpecification(spec, readableOrganizations, size, start);
         if(originalContext!=null){
             objects = standardization.applyContext(objects, originalContext);
         }
         return objects;
     }
 
-    public List<Object> queryPropertyGraphByStoredSpecification(String id, boolean useContext) throws IOException, JSONException {
+    public List<Object> queryPropertyGraphByStoredSpecification(String id, boolean useContext, String authorizationToken, Integer size, Integer start) throws IOException, JSONException {
         String payload = arangoUploader.getById(SPECIFICATION_QUERIES, id, arango);
-        return queryPropertyGraphBySpecification(payload, useContext);
+        return queryPropertyGraphBySpecification(payload, useContext, authorizationToken, size, start);
     }
 
-    public void storeSpecificationInDb(String specification, String id) throws JSONException {
+    public void storeSpecificationInDb(String specification, String id, String authorizationToken) throws JSONException {
         JSONObject jsonObject = new JSONObject(specification);
         jsonObject.put("_key", id);
         jsonObject.put("_id", id);
         arangoUploader.insertVertexDocument(jsonObject.toString(), SPECIFICATION_QUERIES, arango);
     }
 
-    public List<Object> queryPropertyGraphByStoredSpecificationAndTemplate(String id, String template) throws IOException, JSONException {
-        List<Object> objects = queryPropertyGraphByStoredSpecification(id, true);
+    public List<Object> queryPropertyGraphByStoredSpecificationAndTemplate(String id, String template, String authorizationToken, Integer size, Integer start) throws IOException, JSONException {
+        List<Object> objects = queryPropertyGraphByStoredSpecification(id, true, authorizationToken, size, start);
         return objects.stream().map(o -> GSON.fromJson(templating.applyTemplate(template, o), Map.class)).collect(Collectors.toList());
     }
 

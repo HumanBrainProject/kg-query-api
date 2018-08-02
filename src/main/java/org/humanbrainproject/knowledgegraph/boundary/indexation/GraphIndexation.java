@@ -20,21 +20,21 @@ public abstract class GraphIndexation {
     @Autowired
     JsonLdToVerticesAndEdges jsonLdToVerticesAndEdges;
 
-    private List<JsonLdVertex> prepareAndParsePayload(String payload, String entityName, String defaultNamespace, String id, Integer revision) throws IOException, JSONException {
+    private List<JsonLdVertex> prepareAndParsePayload(String payload, String entityName, String permissionGroup, String defaultNamespace, String id, Integer revision) throws IOException, JSONException {
         Object jsonLd = jsonLdStandardization.ensureContext(JsonUtils.fromString(payload), defaultNamespace);
         jsonLd = jsonLdStandardization.fullyQualify(jsonLd);
-        return jsonLdToVerticesAndEdges.transformFullyQualifiedJsonLdToVerticesAndEdges(JsonUtils.toString(jsonLd), entityName, id, revision);
+        return jsonLdToVerticesAndEdges.transformFullyQualifiedJsonLdToVerticesAndEdges(JsonUtils.toString(jsonLd), entityName, permissionGroup, id, revision);
     }
 
-    public void insertJsonOrJsonLd(String entityName, String rootId, String jsonOrJsonLdPayload, String defaultNamespace) throws IOException, JSONException {
-         transactionalJsonLdInsertion(prepareAndParsePayload(jsonOrJsonLdPayload, entityName, defaultNamespace, rootId, 1));
+    public void insertJsonOrJsonLd(String entityName, String permissionGroup, String rootId, String jsonOrJsonLdPayload, String defaultNamespace) throws IOException, JSONException {
+         transactionalJsonLdInsertion(prepareAndParsePayload(jsonOrJsonLdPayload, entityName,permissionGroup, defaultNamespace, rootId, 1));
     }
 
-    public void updateJsonOrJsonLd(String entityName, String rootId, Integer rootRev, String jsonOrJsonLdPayload,  String defaultNamespace) throws IOException, JSONException {
-        transactionalJsonLdUpdate(prepareAndParsePayload(jsonOrJsonLdPayload, entityName, defaultNamespace, rootId, rootRev));
+    public void updateJsonOrJsonLd(String entityName, String permissionGroup, String rootId, Integer rootRev, String jsonOrJsonLdPayload,  String defaultNamespace) throws IOException, JSONException {
+        transactionalJsonLdUpdate(prepareAndParsePayload(jsonOrJsonLdPayload, entityName,permissionGroup, defaultNamespace, rootId, rootRev));
     }
 
-    public void delete(String entityName, String id, Integer rev) throws IOException, JSONException {
+    public void delete(String entityName, String id, Integer rev) throws JSONException {
        transactionalJsonLdDeletion(entityName, id, rev);
     }
 

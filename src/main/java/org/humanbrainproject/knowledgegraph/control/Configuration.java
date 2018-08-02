@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class Configuration {
 
-    private static final String DEFAULT_NAMESPACE = "http://schema.hbp.eu/kgquery#";
+    private static final String DEFAULT_NAMESPACE = "http://schema.hbp.eu/internal#";
 
     @Value("${org.humanbrainproject.knowledgegraph.nexus_base}")
     private String nexusBase;
@@ -19,6 +19,10 @@ public class Configuration {
 
     public String getRev(){
         return String.format("%s%s", DEFAULT_NAMESPACE, "rev");
+    }
+
+    public String getPermissionGroup(){
+        return String.format("%s%s", DEFAULT_NAMESPACE, "permissionGroup");
     }
 
 

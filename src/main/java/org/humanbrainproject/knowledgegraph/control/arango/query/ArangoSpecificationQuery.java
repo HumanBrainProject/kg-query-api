@@ -3,12 +3,14 @@ package org.humanbrainproject.knowledgegraph.control.arango.query;
 import com.arangodb.entity.CollectionEntity;
 import com.arangodb.model.AqlQueryOptions;
 import com.github.jsonldjava.utils.JsonUtils;
+import org.humanbrainproject.knowledgegraph.control.Configuration;
 import org.humanbrainproject.knowledgegraph.control.arango.ArangoDriver;
 import org.humanbrainproject.knowledgegraph.control.arango.ArangoNamingConvention;
 import org.humanbrainproject.knowledgegraph.entity.specification.SpecField;
 import org.humanbrainproject.knowledgegraph.entity.specification.SpecTraverse;
 import org.humanbrainproject.knowledgegraph.entity.specification.Specification;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -24,10 +26,12 @@ public class ArangoSpecificationQuery {
     @Autowired
     ArangoDriver arangoDriver;
 
+    @Autowired
+    Configuration configuration;
 
-    public List<Object> queryForSpecification(Specification spec) {
-        String query = createQuery(spec);
-        System.out.println(query);
+
+    public List<Object> queryForSpecification(Specification spec, Set<String> whiteListOrganizations, Integer size, Integer start) throws JSONException {
+        String query = createQuery(spec, whiteListOrganizations, size, start);
         List<String> strings = arangoDriver.getOrCreateDB().query(query, null, new AqlQueryOptions(), String.class).asListRemaining();
         return strings.parallelStream().map(s -> {
             try {
@@ -39,12 +43,12 @@ public class ArangoSpecificationQuery {
         }).collect(Collectors.toList());
     }
 
-    String createQuery(Specification spec){
+    String createQuery(Specification spec, Set<String> whitelistOrganizations, Integer size, Integer start) throws JSONException {
         Set<String> collectionLabels = getCollectionLabels();
-        ArangoQueryBuilder queryBuilder = new ArangoQueryBuilder();
+        ArangoQueryBuilder queryBuilder = new ArangoQueryBuilder(size, start, configuration.getPermissionGroup());
         String vertexLabel = namingConvention.getVertexLabel(spec.rootSchema);
         if(collectionLabels.contains(vertexLabel)) {
-            queryBuilder.addRoot(vertexLabel);
+            queryBuilder.addRoot(vertexLabel, whitelistOrganizations);
             handleFields(spec.fields, queryBuilder, collectionLabels);
         }
         else{

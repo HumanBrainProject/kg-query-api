@@ -143,7 +143,7 @@ public class Neo4jRepository extends VertexRepository<Transaction> {
         String query = String.format("MATCH (n:`http://schema.hbp.eu/propertygraph/unresolved`) MATCH (n)<-[r]-(s) MATCH (s)-[r2]->(x) WHERE n.`%s`=$id AND x.`%s`=$id AND NOT x:`http://schema.hbp.eu/propertygraph/unresolved` RETURN n, r, s", JsonLdConsts.ID, JsonLdConsts.ID);
         StatementResult result = tx.run(query, Values.parameters("id", vertex.getId()));
         for (Record record : result.list()) {
-            System.out.println(record);
+            logger.debug(record.toString());
         }
     }
 
