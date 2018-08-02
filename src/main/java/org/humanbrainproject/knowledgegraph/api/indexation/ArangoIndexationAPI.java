@@ -53,7 +53,7 @@ public class ArangoIndexationAPI {
     }
 
     @PutMapping(value="/{organization}/{domain}/{schema}/{schemaversion}/{id}/{rev}", consumes = {MediaType.APPLICATION_JSON, "application/ld+json"}, produces = MediaType.APPLICATION_JSON)
-    public ResponseEntity<String> updateInstance(@RequestBody String payload, @PathVariable("organization") String organization, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("schemaversion") String schemaVersion, @PathVariable("id") String id, @PathVariable("rev") Integer rev, @RequestParam("defaultNamespace") String defaultNamespace, @RequestParam("vertexLabel") String vertexLabel, @RequestParam(value = "authorId", required = false) String authorId, @RequestParam(value = "timestamp", required = false) String timestamp) throws IOException {
+    public ResponseEntity<String> updateInstance(@RequestBody String payload, @PathVariable("organization") String organization, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("schemaversion") String schemaVersion, @PathVariable("id") String id, @PathVariable("rev") Integer rev, @RequestParam(value = "authorId", required = false) String authorId, @RequestParam(value = "timestamp", required = false) String timestamp) throws IOException {
         String entityName = buildEntityName(organization, domain, schema, schemaVersion);
         logger.info("Received update request for {}/{} in rev {}", entityName, id, rev);
         logger.debug("Payload for update request {}/{} in rev {}: {}", entityName, id, rev, payload);
