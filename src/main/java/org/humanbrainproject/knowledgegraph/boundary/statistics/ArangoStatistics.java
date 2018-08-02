@@ -11,10 +11,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Component
 public class ArangoStatistics {
@@ -29,7 +27,7 @@ public class ArangoStatistics {
     public Map<String, Object> getStructure() {
         ArangoDatabase db = arangoDriver.getOrCreateDB();
         Map<String, String> arangoNameMapping = repository.getArangoNameMapping(db);
-        LinkedHashMap<String, Integer> collectionCount = db.getCollections().parallelStream().filter(c -> c.getIsSystem() != null && !c.getIsSystem() && c.getType() == CollectionType.DOCUMENT).map(c -> repository.countInstances(c.getName(), arangoDriver)).sorted(Comparator.comparing(Tuple::getValue1)).collect(
+        LinkedHashMap<String, Long> collectionCount = db.getCollections().parallelStream().filter(c -> c.getIsSystem() != null && !c.getIsSystem() && c.getType() == CollectionType.DOCUMENT).map(c -> repository.countInstances(c.getName(), arangoDriver)).sorted(Comparator.comparing(Tuple::getValue1)).collect(
                 LinkedHashMap::new, (map, item) -> map.put(item.getValue1(), item.getValue2()), Map::putAll);
         Map<String, Object> map = new LinkedHashMap<>();
         for (String collectionName : collectionCount.keySet()) {

@@ -96,7 +96,7 @@ public class JanusGraphRepository {
                 //Insert
                 logger.info("Insert vertex");
                 updateProperties(newVertex, g.addV(newVertex.getType())).tryNext();
-                logger.debug("Add new vertex %s", newVertex);
+                logger.debug("Add new vertex {}", newVertex);
             }
             if(vertices.size()>1){
                 //Remove duplicates
@@ -116,7 +116,7 @@ public class JanusGraphRepository {
         Object rev = g.V(fromGraph).has(configuration.getRev()).values(configuration.getRev()).tryNext().orElse(null);
         if (rev == null || newVertex.getRevision() == null || !(rev instanceof Number) || newVertex.getRevision() > ((Number)rev).intValue()) {
             g.V(fromGraph).properties().drop().tryNext();
-            logger.debug("Removed  all properties of vertex %s", fromGraph);
+            logger.debug("Removed  all properties of vertex {}", fromGraph);
             updateProperties(newVertex, g.V(fromGraph)).tryNext();
 
         }
@@ -131,7 +131,7 @@ public class JanusGraphRepository {
     private void removeVertices(GraphTraversalSource g, List<Vertex> vertices) {
         for (Vertex vertex : vertices) {
             g.V(vertex).drop().tryNext();
-            logger.info("Removed vertex %s", vertex);
+            logger.info("Removed vertex {}", vertex);
         }
     }
 
@@ -156,15 +156,15 @@ public class JanusGraphRepository {
                 revisionDefined = true;
             }
             traversal.property(property.getName(), property.getValue());
-            logger.debug("Add property %s for vertex %s", property.getName(), newVertex);
+            logger.debug("Add property {} for vertex {}", property.getName(), newVertex);
         }
         if (!idDefined) {
             traversal.property(JsonLdConsts.ID, newVertex.getId());
-            logger.debug("Add property %s for vertex %s", JsonLdConsts.ID, newVertex);
+            logger.debug("Add property {} for vertex {}", JsonLdConsts.ID, newVertex);
         }
         if (!revisionDefined) {
             traversal.property(configuration.getRev(), newVertex.getRevision());
-            logger.debug("Add property %s for vertex %s", configuration.getRev(), newVertex);
+            logger.debug("Add property {} for vertex {}", configuration.getRev(), newVertex);
         }
         return traversal;
     }

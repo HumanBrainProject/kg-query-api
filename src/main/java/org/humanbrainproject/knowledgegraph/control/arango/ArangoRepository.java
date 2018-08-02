@@ -7,7 +7,6 @@ import com.arangodb.ArangoDatabase;
 import com.arangodb.entity.CollectionType;
 import com.arangodb.model.AqlQueryOptions;
 import com.arangodb.model.CollectionCreateOptions;
-import com.google.gson.Gson;
 import org.humanbrainproject.knowledgegraph.control.Configuration;
 import org.humanbrainproject.knowledgegraph.entity.Tuple;
 import org.humanbrainproject.knowledgegraph.entity.jsonld.JsonLdEdge;
@@ -20,7 +19,6 @@ import org.springframework.boot.configurationprocessor.json.JSONObject;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Component
 public class ArangoRepository extends VertexRepository<ArangoDriver> {
@@ -41,19 +39,24 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
         return q.hasNext() ? q.next() : null;
     }
 
-    public Tuple<String, Integer> countInstances(String collectionName, ArangoDriver arango){
-        ArangoCursor<Integer> q = arango.getOrCreateDB().query(String.format("RETURN LENGTH(`%s`)", namingConvention.getVertexLabel(collectionName)), null, new AqlQueryOptions(), Integer.class);
-        return q.hasNext() ? new Tuple<>(collectionName, q.next()) : null;
+    public Tuple<String, Long> countInstances(String collectionName, ArangoDriver arango){
+        Long count = arango.getOrCreateDB().collection(namingConvention.getVertexLabel(collectionName)).count().getCount();
+        return new Tuple<>(collectionName, count);
     }
 
 
     @Override
-    protected Integer getRevisionById(JsonLdVertex vertex, ArangoDriver arango) {
+    protected Long getRevisionById(JsonLdVertex vertex, ArangoDriver arango) {
         ArangoDatabase db = arango.getOrCreateDB();
         try{
-            String query = String.format("FOR doc IN `%s` FILTER doc._key==\"%s\" RETURN doc.`%s`", namingConvention.getVertexLabel(vertex.getType()), namingConvention.getUuid(vertex), configuration.getRev());
-            ArangoCursor<Integer> q = db.query(query, null, new AqlQueryOptions(), Integer.class);
-            return q.hasNext() ? q.next() : null;
+            ArangoCollection collection = db.collection(namingConvention.getVertexLabel(vertex.getType()));
+            if(collection!=null){
+                Map document = collection.getDocument(namingConvention.getUuid(vertex), Map.class);
+                if(document!=null){
+                    return (Long)document.get(configuration.getRev());
+                }
+            }
+            return null;
         }
         catch (ArangoDBException e){
             return null;
@@ -62,23 +65,29 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
 
 
     public Map<String, String> getArangoNameMapping(ArangoDatabase db){
-        String query = String.format("FOR doc IN `%s` RETURN doc", NAME_LOOKUP_MAP);
-        ArangoCursor<String> q = db.query(query, null, new AqlQueryOptions(), String.class);
-        Gson gson = new Gson();
-        List<String> instances = q.asListRemaining();
-        return instances.stream().map(s -> gson.fromJson(s, Map.class)).collect(
-                HashMap::new, (map, item) -> map.put((String)item.get("arangoName"), (String)item.get("orginalName")), Map::putAll);
+
+
+        String query = String.format("FOR doc IN `%s` RETURN {\"arango\": doc._key, \"original\": doc.orginalName}", NAME_LOOKUP_MAP);
+        ArangoCursor<Map> q = db.query(query, null, new AqlQueryOptions(), Map.class);
+        List<Map> instances = q.asListRemaining();
+        return instances.stream().collect(HashMap::new, (map, item) -> map.put((String)item.get("arango"), (String)item.get("original")), Map::putAll);
    }
 
     @Override
     public void deleteVertex(String entityName, String id, ArangoDriver arango) {
         String vertexLabel = namingConvention.getVertexLabel(entityName);
-        String query = String.format("REMOVE \"%s\" IN `%s`", id, vertexLabel);
+        //String query = String.format("REMOVE \"%s\" IN `%s`", id, vertexLabel);
         ArangoDatabase db = arango.getOrCreateDB();
-        if(db.collection(vertexLabel).exists() && db.collection(vertexLabel).documentExists(id)) {
-            db.query(query, null, new AqlQueryOptions(), String.class);
+        ArangoCollection collection = db.collection(vertexLabel);
+        if(collection.exists() && collection.documentExists(id)) {
+            collection.deleteDocument(id);
+            //  db.query(query, null, new AqlQueryOptions(), String.class);
+            if(collection.count().getCount()==0){
+                collection.drop();
+                db.collection(NAME_LOOKUP_MAP).deleteDocument(vertexLabel);
+            }
         } else {
-            logger.warn("Tried to delete instance %s in collection %s although the collection doesn't exist. Skip.", id, vertexLabel);
+            logger.warn("Tried to delete instance {} in collection {} although the collection doesn't exist. Skip.", id, vertexLabel);
         }
     }
 
@@ -116,7 +125,7 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
             System.out.println(String.format("Create collection %s", vertexLabel));
             db.createCollection(vertexLabel);
             if(!vertexName.equals(NAME_LOOKUP_MAP)) {
-                insertVertexDocument(String.format("{\"orginalName\": \"%s\", \"arangoName\": \"%s\"}", originalName, vertexLabel), NAME_LOOKUP_MAP, arango);
+                insertVertexDocument(String.format("{\"orginalName\": \"%s\", \"_key\": \"%s\"}", originalName, vertexLabel), NAME_LOOKUP_MAP, arango);
             }
         }
         String query = String.format("INSERT %s IN `%s`", jsonLd, vertexLabel);

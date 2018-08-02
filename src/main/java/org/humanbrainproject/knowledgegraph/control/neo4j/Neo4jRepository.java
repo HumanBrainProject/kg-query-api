@@ -26,14 +26,14 @@ public class Neo4jRepository extends VertexRepository<Transaction> {
     Configuration configuration;
 
     @Override
-    protected Integer getRevisionById(JsonLdVertex vertex, Transaction tx) {
+    protected Long getRevisionById(JsonLdVertex vertex, Transaction tx) {
         String id = vertex.getId();
         String type = vertex.getType();
         List<Record> results = tx.run(String.format("MATCH (n:`%s`) WHERE n.`%s`=$id RETURN n.`%s` as rev", type, JsonLdConsts.ID, configuration.getRev()), Values.parameters("id", id)).list();
         if (results == null || results.isEmpty()) {
             return null;
         }
-        int maxRev = 0;
+        long maxRev = 0;
         for (Record result : results) {
             int rev = result.get("rev", -1);
             if (rev > maxRev) {
@@ -100,7 +100,7 @@ public class Neo4jRepository extends VertexRepository<Transaction> {
             propertyMap.put(String.format("propertyValue%d", propertyMap.size()), vertex.getRevision());
         }
         String q = query.toString();
-        logger.info(String.format("Insert vertex %s", vertex.getId()));
+        logger.info(String.format("Insert vertex {}", vertex.getId()));
         logger.debug(q);
         tx.run(q, propertyMap).list();
     }

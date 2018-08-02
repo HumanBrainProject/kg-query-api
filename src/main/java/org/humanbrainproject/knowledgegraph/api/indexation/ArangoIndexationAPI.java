@@ -28,7 +28,7 @@ public class ArangoIndexationAPI {
     @GetMapping(value="/{organization}/{domain}/{schema}/{schemaversion}/{id}", produces = MediaType.APPLICATION_JSON)
     public ResponseEntity<String> fetchInstance(@PathVariable("organization") String organization, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("schemaversion") String schemaVersion, @PathVariable("id") String id) throws IOException {
         String entityName = buildEntityName(organization, domain, schema, schemaVersion);
-        logger.info(String.format("Received get request for %s/%s", entityName, id));
+        logger.info(String.format("Received get request for {}/{}", entityName, id));
         try {
             return ResponseEntity.ok(indexer.getById(entityName, id));
         } catch (JsonLdError e) {
@@ -41,8 +41,8 @@ public class ArangoIndexationAPI {
     @PostMapping(value="/{organization}/{domain}/{schema}/{schemaversion}/{id}", consumes = {MediaType.APPLICATION_JSON, "application/ld+json"}, produces = MediaType.APPLICATION_JSON)
     public ResponseEntity<String> addInstance(@RequestBody String payload, @PathVariable("organization") String organization, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("schemaversion") String schemaVersion, @PathVariable("id") String id, @RequestParam(value = "authorId", required = false) String authorId, @RequestParam(value = "timestamp", required = false) String timestamp) throws IOException {
         String entityName = buildEntityName(organization, domain, schema, schemaVersion);
-        logger.info("Received insert request for %s/%s", entityName, id);
-        logger.debug("Payload for insert request %s/%s: %s", entityName, id, payload);
+        logger.info("Received insert request for {}/{}", entityName, id);
+        logger.debug("Payload for insert request {}/{}: {}", entityName, id, payload);
         try {
             indexer.insertJsonOrJsonLd(entityName, id, payload, buildDefaultNamespace(organization, domain, schema, schemaVersion));
             return ResponseEntity.ok(null);
@@ -55,8 +55,8 @@ public class ArangoIndexationAPI {
     @PutMapping(value="/{organization}/{domain}/{schema}/{schemaversion}/{id}/{rev}", consumes = {MediaType.APPLICATION_JSON, "application/ld+json"}, produces = MediaType.APPLICATION_JSON)
     public ResponseEntity<String> updateInstance(@RequestBody String payload, @PathVariable("organization") String organization, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("schemaversion") String schemaVersion, @PathVariable("id") String id, @PathVariable("rev") Integer rev, @RequestParam("defaultNamespace") String defaultNamespace, @RequestParam("vertexLabel") String vertexLabel, @RequestParam(value = "authorId", required = false) String authorId, @RequestParam(value = "timestamp", required = false) String timestamp) throws IOException {
         String entityName = buildEntityName(organization, domain, schema, schemaVersion);
-        logger.info("Received update request for %s/%s in rev %s", entityName, id, rev);
-        logger.debug("Payload for update request %s/%s in rev %s: %s", entityName, id, rev, payload);
+        logger.info("Received update request for {}/{} in rev {}", entityName, id, rev);
+        logger.debug("Payload for update request {}/{} in rev {}: {}", entityName, id, rev, payload);
         try {
             indexer.updateJsonOrJsonLd(entityName, id, rev, payload, buildDefaultNamespace(organization, domain, schema, schemaVersion));
             return ResponseEntity.ok(null);
@@ -69,7 +69,7 @@ public class ArangoIndexationAPI {
     @DeleteMapping(value="/{organization}/{domain}/{schema}/{schemaversion}/{id}", produces = MediaType.APPLICATION_JSON)
     public ResponseEntity<String> deleteInstance(@PathVariable("organization") String organization, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("schemaversion") String schemaVersion, @PathVariable("id") String id, @RequestAttribute(value="rev", required = false) Integer rev, @RequestParam(value = "authorId", required = false) String authorId, @RequestParam(value = "timestamp", required = false) String timestamp) throws IOException {
         String entityName = buildEntityName(organization, domain, schema, schemaVersion);
-        logger.info(String.format("Received delete request for %s/%s in rev %d", entityName, id, rev));
+        logger.info(String.format("Received delete request for {}/{} in rev {}", entityName, id, rev));
         try {
             indexer.delete(entityName, id, rev);
             return ResponseEntity.ok(null);

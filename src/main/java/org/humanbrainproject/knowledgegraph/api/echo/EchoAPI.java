@@ -17,7 +17,7 @@ public class EchoAPI {
     @DeleteMapping
     @PatchMapping
     public String echo(@RequestBody String request){
-        logger.info(String.format("Echoing %s", request));
+        logger.info("Echoing {}", request);
         return request;
     }
 

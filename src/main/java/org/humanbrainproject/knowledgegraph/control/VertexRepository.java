@@ -23,7 +23,7 @@ public abstract class VertexRepository<T> {
 
     public void uploadToPropertyGraph(List<JsonLdVertex> vertices, T transactionOrConnection) throws JSONException {
         for (JsonLdVertex vertex : vertices) {
-            Integer revision = getRevisionById(vertex, transactionOrConnection);
+            Long revision = getRevisionById(vertex, transactionOrConnection);
             if (revision != null) {
                 if (revision < vertex.getRevision()) {
                     updateVertex(vertex, transactionOrConnection);
@@ -63,7 +63,7 @@ public abstract class VertexRepository<T> {
         return true;
     }
 
-    protected abstract Integer getRevisionById(JsonLdVertex vertex, T transactionOrConnection);
+    protected abstract Long getRevisionById(JsonLdVertex vertex, T transactionOrConnection);
 
     public abstract void deleteVertex(String entityName, String identifier, T transactionOrConnection);
 
