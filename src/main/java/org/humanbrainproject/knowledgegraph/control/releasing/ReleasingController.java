@@ -43,21 +43,20 @@ public class ReleasingController {
     public List<JsonLdVertex> getVerticesToBeReleased(List<JsonLdVertex> originalVertices) throws JSONException {
         for (JsonLdVertex originalVertex : originalVertices) {
             JsonLdProperty releaseInstances = originalVertex.getPropertyByName(RELEASE_INSTANCE_PROPERTYNAME);
-            if(releaseInstances.getValue() instanceof List){
-                for (Object o : ((List) releaseInstances.getValue())) {
-                    if(o instanceof JSONObject){
-                        releaseInstance((JSONObject)o);
+            if(releaseInstances!=null) {
+                if (releaseInstances.getValue() instanceof List) {
+                    for (Object o : ((List) releaseInstances.getValue())) {
+                        if (o instanceof JSONObject) {
+                            releaseInstance((JSONObject) o);
+                        } else {
+                            throw new RuntimeException(String.format("Was not able to release instance! Release structure passed non-interpretable type %s", o.getClass()));
+                        }
                     }
-                    else{
-                        throw new RuntimeException(String.format("Was not able to release instance! Release structure passed non-interpretable type %s", o.getClass()));
-                    }
+                } else if (releaseInstances.getValue() instanceof JSONObject) {
+                    releaseInstance((JSONObject) releaseInstances.getValue());
+                } else {
+                    throw new RuntimeException(String.format("Was not able to release instance! Release structure passed non-interpretable type %s", releaseInstances.getValue().getClass()));
                 }
-            }
-            else if(releaseInstances.getValue() instanceof JSONObject){
-                releaseInstance((JSONObject)releaseInstances.getValue());
-            }
-            else{
-                throw new RuntimeException(String.format("Was not able to release instance! Release structure passed non-interpretable type %s", releaseInstances.getValue().getClass()));
             }
         }
         return originalVertices;
