@@ -25,5 +25,9 @@ public class Configuration {
         return String.format("%s%s", DEFAULT_NAMESPACE, "permissionGroup");
     }
 
+    public String getEmbedded(){
+        return String.format("%s%s", DEFAULT_NAMESPACE, "embedded");
+    }
+
 
 }

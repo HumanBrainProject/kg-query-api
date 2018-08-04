@@ -4,6 +4,7 @@ import com.github.jsonldjava.core.JsonLdError;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.humanbrainproject.knowledgegraph.boundary.indexation.ArangoIndexation;
+import org.humanbrainproject.knowledgegraph.boundary.indexation.GraphIndexation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,7 +45,9 @@ public class ArangoIndexationAPI {
         logger.info("Received insert request for {}/{}", entityName, id);
         logger.debug("Payload for insert request {}/{}: {}", entityName, id, payload);
         try {
-            indexer.insertJsonOrJsonLd(entityName, organization, id, payload, buildDefaultNamespace(organization, domain, schema, schemaVersion));
+            GraphIndexation.GraphIndexationSpec spec = new GraphIndexation.GraphIndexationSpec();
+            spec.setPermissionGroup(organization).setEntityName(entityName).setId(id).setDefaultNamespace(buildDefaultNamespace(organization, domain, schema, schemaVersion));
+            indexer.insertJsonOrJsonLd(payload, spec);
             return ResponseEntity.ok(null);
         } catch (JSONException | JsonLdError e) {
             e.printStackTrace();
@@ -58,7 +61,10 @@ public class ArangoIndexationAPI {
         logger.info("Received update request for {}/{} in rev {}", entityName, id, rev);
         logger.debug("Payload for update request {}/{} in rev {}: {}", entityName, id, rev, payload);
         try {
-            indexer.updateJsonOrJsonLd(entityName, organization, id, rev, payload, buildDefaultNamespace(organization, domain, schema, schemaVersion));
+            GraphIndexation.GraphIndexationSpec spec = new GraphIndexation.GraphIndexationSpec();
+            spec.setPermissionGroup(organization).setEntityName(entityName).setId(id).setRevision(rev).setDefaultNamespace(buildDefaultNamespace(organization, domain, schema, schemaVersion));
+
+            indexer.updateJsonOrJsonLd(payload, spec);
             return ResponseEntity.ok(null);
         } catch (JSONException | JsonLdError e) {
             e.printStackTrace();

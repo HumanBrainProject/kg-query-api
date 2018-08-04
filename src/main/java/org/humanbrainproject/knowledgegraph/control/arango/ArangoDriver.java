@@ -7,8 +7,7 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.WebApplicationContext;
 
-@Component
-public class ArangoDriver {
+public abstract class ArangoDriver {
 
     @Value("${org.humanbrainproject.knowledgegraph.arango.host}")
     String host;
@@ -19,9 +18,13 @@ public class ArangoDriver {
     @Value("${org.humanbrainproject.knowledgegraph.arango.pwd}")
     String pwd;
 
+    private final String databaseName;
+
     ArangoDB arangoDB;
 
-    private static final String DATABASE_NAME="kg";
+    public ArangoDriver(String databaseName) {
+        this.databaseName = databaseName;
+    }
 
     private ArangoDB getArangoDB(){
         if(arangoDB==null){
@@ -31,7 +34,7 @@ public class ArangoDriver {
     }
 
     public ArangoDatabase getOrCreateDB(){
-        ArangoDatabase kg = getArangoDB().db(DATABASE_NAME);
+        ArangoDatabase kg = getArangoDB().db(databaseName);
         if(!kg.exists()){
             kg.create();
         }

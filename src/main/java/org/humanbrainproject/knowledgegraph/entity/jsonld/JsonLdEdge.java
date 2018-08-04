@@ -49,4 +49,9 @@ public class JsonLdEdge {
     public Set<JsonLdProperty> getProperties() {
         return properties;
     }
+
+    public boolean isEmbedded() {
+        return getTarget()!=null;
+    }
+
 }

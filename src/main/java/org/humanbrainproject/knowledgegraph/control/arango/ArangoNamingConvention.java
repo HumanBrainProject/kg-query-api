@@ -8,63 +8,77 @@ import org.springframework.util.DigestUtils;
 @Component
 public class ArangoNamingConvention {
 
-    public static final int MAX_CHARACTERS=60;
+    public static final int MAX_CHARACTERS = 60;
 
-    public String replaceSpecialCharacters(String value){
-        return value!=null ? value.replaceAll("https://", "").replaceAll("http://", "").replaceAll("\\.", "_").replaceAll("[^a-zA-Z0-9\\-_]", "-") : null;
+    public String replaceSpecialCharacters(String value) {
+        return reduceStringToMaxSizeByHashing(value != null ? value.replaceAll("https://", "").replaceAll("http://", "").replaceAll("\\.", "_").replaceAll("[^a-zA-Z0-9\\-_]", "-") : null);
     }
 
-    public String queryKey(String value){
-        return value!=null ? value.replaceAll("-", "_") : null;
+    public String queryKey(String value) {
+        return reduceStringToMaxSizeByHashing(value != null ? value.replaceAll("-", "_") : null);
     }
 
-    public String getKeyFromReference(String reference){
-        if(reference!=null) {
-            String s = reduceVertexLabel(reference);
-            String[] split = s.split("(?<=v\\d{1,3}\\.\\d{1,3}\\.\\d{1,3})/");
-            if (split.length > 1) {
-                return String.format("%s/%s", replaceSpecialCharacters(split[0]), replaceSpecialCharacters(split[1]));
+    public String getKeyFromReference(String reference, boolean isEmbedded) {
+        if (reference != null) {
+            String collectionName=null;
+            String id = null;
+            if(isEmbedded){
+                String[] split = reference.split("@");
+                if(split.length>1) {
+                    collectionName = split[0];
+                    id = reference;
+                }
             }
-            return s;
+            else{
+                String s = reduceVertexLabel(reference);
+                String[] split = s.split("(?<=v\\d{1,3}\\.\\d{1,3}\\.\\d{1,3})/");
+                if (split.length == 2) {
+                    collectionName = split[0];
+                    id = split[1];
+                }
+            }
+            if(collectionName!=null && id!=null)    {
+                return createId(collectionName, id);
+            } else {
+                return reference;
+            }
         }
         return null;
+    }
+
+    public String createId(String collectionName, String id) {
+        return String.format("%s/%s", reduceStringToMaxSizeByHashing(replaceSpecialCharacters(collectionName)), reduceStringToMaxSizeByHashing(replaceSpecialCharacters(id)));
     }
 
     public String getEdgeLabel(JsonLdEdge edge) {
         return getEdgeLabel(edge.getName());
     }
 
-    public String reduceLengthOfCharacters(String original){
-        if(original!=null && original.length()>MAX_CHARACTERS){
-            return original.substring(original.length()-MAX_CHARACTERS);
-        }
-        return original;
+    private String reduceStringToMaxSizeByHashing(String string) {
+        return string == null || string.length() <= MAX_CHARACTERS ? string : DigestUtils.md5DigestAsHex(string.getBytes());
     }
-
 
     public String getEdgeLabel(String edgeLabel) {
-        return replaceSpecialCharacters(String.format("rel-%s", reduceLengthOfCharacters(edgeLabel)));
+        return replaceSpecialCharacters(String.format("rel-%s", reduceStringToMaxSizeByHashing(edgeLabel)));
     }
 
-    public String getUuid(JsonLdVertex vertex){
-        String uuid = replaceSpecialCharacters(vertex.getUuid());
-        return uuid == null || uuid.length()<=MAX_CHARACTERS ? uuid : DigestUtils.md5DigestAsHex(uuid.getBytes());
+    public String getKey(JsonLdVertex vertex) {
+        return reduceStringToMaxSizeByHashing(replaceSpecialCharacters(vertex.getId()));
     }
 
-    public String reduceVertexLabel(String vertexLabel) {
-        return vertexLabel!=null ? vertexLabel.replaceAll(".*/(?=.*/.*/.*/v\\d*\\.\\d*\\.\\d*)", "") : null;
+    private String reduceVertexLabel(String vertexLabel) {
+        return vertexLabel != null ? vertexLabel.replaceAll(".*/(?=.*/.*/.*/v\\d*\\.\\d*\\.\\d*)", "") : null;
     }
 
-    public String getVertexLabel(String vertexName){
-        return reduceLengthOfCharacters(replaceSpecialCharacters(reduceVertexLabel(vertexName)));
+    public String getVertexLabel(String vertexName) {
+        return reduceStringToMaxSizeByHashing(replaceSpecialCharacters(reduceVertexLabel(vertexName)));
     }
 
-    public String getDocumentHandle(JsonLdVertex vertex){
-        return String.format("%s/%s", getVertexLabel(vertex.getType()), getUuid(vertex));
+    public String getDocumentHandle(JsonLdVertex vertex) {
+        return String.format("%s/%s", getVertexLabel(vertex.getEntityName()), getKey(vertex));
     }
 
-
-    public String getReferenceKey(String from, String to){
+    public String getReferenceKey(String from, String to) {
         return DigestUtils.md5DigestAsHex(String.format("%s-to-%s", from, to).getBytes());
     }
 }

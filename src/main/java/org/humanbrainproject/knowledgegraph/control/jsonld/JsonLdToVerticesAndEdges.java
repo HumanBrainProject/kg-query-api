@@ -2,6 +2,7 @@ package org.humanbrainproject.knowledgegraph.control.jsonld;
 
 
 import com.github.jsonldjava.core.JsonLdConsts;
+import org.humanbrainproject.knowledgegraph.boundary.indexation.GraphIndexation;
 import org.humanbrainproject.knowledgegraph.control.Configuration;
 import org.humanbrainproject.knowledgegraph.entity.jsonld.JsonLdEdge;
 import org.humanbrainproject.knowledgegraph.entity.jsonld.JsonLdProperty;
@@ -30,8 +31,11 @@ public class JsonLdToVerticesAndEdges {
      * @param jsonLdPayload
      * @throws JSONException
      */
-    public List<JsonLdVertex> transformFullyQualifiedJsonLdToVerticesAndEdges(String jsonLdPayload, String entityName, String permissionGroup, String id, Integer revision) throws JSONException {
-        return createVertex(null, new JSONObject(jsonLdPayload), null, new ArrayList<>(), -1, entityName, permissionGroup, id, revision);
+    public List<JsonLdVertex> transformFullyQualifiedJsonLdToVerticesAndEdges(String jsonLdPayload, GraphIndexation.GraphIndexationSpec spec) throws JSONException {
+        List<JsonLdVertex> vertices = createVertex(null, new JSONObject(jsonLdPayload), null, new ArrayList<>(), -1, spec.getEntityName(), spec.getPermissionGroup(), spec.getId(), spec.getRevision());
+        //Due to the nature of list creation, inner elements are at the end of the list. since the inner elements are dependent on their parents, they should be inserted first though. this is why we invert the list.
+        Collections.reverse(vertices);
+        return vertices;
     }
 
 
@@ -44,7 +48,6 @@ public class JsonLdToVerticesAndEdges {
         } else {
             //An edge shall be created without an explicit "@id". This means it is a nested object. We therefore save the linked vertex as well.
             edge.setTarget(linkedVertex);
-            edge.setReference(linkedVertex.getId());
         }
         //Append properties on the relation to the edge
         Iterator keys = jsonObject.keys();
@@ -56,8 +59,7 @@ public class JsonLdToVerticesAndEdges {
     }
 
 
-    private List<JsonLdVertex> createVertex(String key, Object object, JsonLdVertex
-            parent, List<JsonLdVertex> vertexCollection, int orderNumber, String entityName, String permissionGroup, String id, Integer revision) throws JSONException {
+    private List<JsonLdVertex> createVertex(String key, Object object, JsonLdVertex parent, List<JsonLdVertex> vertexCollection, int orderNumber, String entityName, String permissionGroup, String id, Integer revision) throws JSONException {
         if (object instanceof JSONObject) {
             JSONObject jsonObject = (JSONObject) object;
             if(jsonObject.length()==0){
@@ -65,19 +67,18 @@ public class JsonLdToVerticesAndEdges {
                 return vertexCollection;
             }
             JsonLdVertex v = new JsonLdVertex();
-            v.setType(entityName);
-            updateId(key, parent, jsonObject, v, entityName, id, orderNumber);
-            updateUuid(key, parent, jsonObject, v, id, orderNumber);
+            updateId(key, parent, v, entityName, id, orderNumber);
             updateRevision(parent, jsonObject, v, revision);
             updatePermissionGroup(v, permissionGroup);
             if(jsonObject.has(JsonLdConsts.VALUE)){
-                return createVertex(key, jsonObject.get(JsonLdConsts.VALUE), parent, vertexCollection, orderNumber, v.getType(), permissionGroup, id, revision);
+                return createVertex(key, jsonObject.get(JsonLdConsts.VALUE), parent, vertexCollection, orderNumber, v.getEntityName(), permissionGroup, id, revision);
             }
-            if (handleOrderedList(key, parent, vertexCollection, jsonObject, v.getType(), permissionGroup, id, revision)) {
+            if (handleOrderedList(key, parent, vertexCollection, jsonObject, v.getEntityName(), permissionGroup, id, revision)) {
                 //Since it's an ordered list, we already took care of its sub elements and can cancel this branch of recursive execution
                 return vertexCollection;
             }
             JsonLdEdge edgeForVertex = createEdgesForVertex(key, parent, orderNumber, jsonObject, v);
+            updateEmbedded(v);
             if (edgeForVertex!=null && edgeForVertex.isExternal()){
                 //Since it is an external connection (
                 return vertexCollection;
@@ -104,6 +105,7 @@ public class JsonLdToVerticesAndEdges {
     private JsonLdEdge createEdgesForVertex(String key, JsonLdVertex parent, int orderNumber, JSONObject jsonObject, JsonLdVertex v) throws JSONException {
         if (parent != null) {
             JsonLdEdge edge = createEdge(jsonObject, v, key);
+            v.setEmbedded(edge.isEmbedded());
             parent.getEdges().add(edge);
             if (orderNumber >= 0) {
                 edge.setOrderNumber(orderNumber);
@@ -133,7 +135,7 @@ public class JsonLdToVerticesAndEdges {
         return property;
     }
 
-    void updateRevision(JsonLdVertex parent, JSONObject jsonObject, JsonLdVertex v, Integer revision) throws JSONException {
+    private void updateRevision(JsonLdVertex parent, JSONObject jsonObject, JsonLdVertex v, Integer revision) throws JSONException {
         if (parent==null) {
             v.setRevision(revision);
         } else if (parent.getRevision() != null) {
@@ -145,19 +147,30 @@ public class JsonLdToVerticesAndEdges {
         v.getProperties().add(p);
     }
 
-    void updatePermissionGroup(JsonLdVertex vertex, String permissionGroup) {
+    private void updatePermissionGroup(JsonLdVertex vertex, String permissionGroup) {
         JsonLdProperty p = new JsonLdProperty();
         p.setName(configuration.getPermissionGroup());
         p.setValue(permissionGroup);
         vertex.getProperties().add(p);
     }
 
-    void updateId(String key, JsonLdVertex parent, JSONObject jsonObject, JsonLdVertex v, String entityName, String rootId, int ordernumber) throws JSONException {
+
+    private void updateEmbedded(JsonLdVertex vertex) {
+        if(vertex.isEmbedded()) {
+            JsonLdProperty p = new JsonLdProperty();
+            p.setName(configuration.getEmbedded());
+            p.setValue(true);
+            vertex.getProperties().add(p);
+        }
+    }
+
+    private void updateId(String key, JsonLdVertex parent, JsonLdVertex v, String entityName, String rootId, int ordernumber) throws JSONException {
         if (parent==null) {
-            v.setId(String.format("%s/%s", entityName, rootId));
+            v.setEntityName(entityName);
+            v.setId(rootId);
         } else if (parent.getId() != null && key != null) {
-            String id = String.join("#", parent.getId(), key);
-            v.setId(ordernumber>-1 ? String.format("%s-%d", id, ordernumber) : id);
+            v.setEntityName(key);
+            v.setId(buildEmbeddedId(key, parent.getId(), ordernumber));
             JsonLdProperty p = new JsonLdProperty();
             p.setName(JsonLdConsts.ID);
             p.setValue(v.getId());
@@ -165,13 +178,8 @@ public class JsonLdToVerticesAndEdges {
         }
     }
 
-    void updateUuid(String key, JsonLdVertex parent, JSONObject jsonObject, JsonLdVertex v, String rootId, int ordernumber) throws JSONException {
-        if (parent==null) {
-            v.setUuid(rootId);
-        } else if (parent.getUuid() != null && key != null) {
-            String uuid = String.join("#", parent.getUuid(), key);
-            v.setUuid(ordernumber>-1 ? String.format("%s-%d", uuid, ordernumber) : uuid);
-        }
+    private String buildEmbeddedId(String key, String root, int ordernumber){
+        return String.format("%s#%s-%d", key, root, ordernumber);
     }
 
 }

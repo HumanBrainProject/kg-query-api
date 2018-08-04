@@ -4,6 +4,7 @@ import com.arangodb.entity.CollectionEntity;
 import com.arangodb.model.AqlQueryOptions;
 import com.github.jsonldjava.utils.JsonUtils;
 import org.humanbrainproject.knowledgegraph.control.Configuration;
+import org.humanbrainproject.knowledgegraph.control.arango.ArangoDefaultDatabaseDriver;
 import org.humanbrainproject.knowledgegraph.control.arango.ArangoDriver;
 import org.humanbrainproject.knowledgegraph.control.arango.ArangoNamingConvention;
 import org.humanbrainproject.knowledgegraph.entity.specification.SpecField;
@@ -24,7 +25,7 @@ public class ArangoSpecificationQuery {
     ArangoNamingConvention namingConvention;
 
     @Autowired
-    ArangoDriver arangoDriver;
+    ArangoDefaultDatabaseDriver arangoDriver;
 
     @Autowired
     Configuration configuration;

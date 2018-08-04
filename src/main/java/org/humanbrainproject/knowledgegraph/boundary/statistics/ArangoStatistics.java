@@ -4,6 +4,7 @@ import com.arangodb.ArangoDatabase;
 import com.arangodb.entity.CollectionEntity;
 import com.arangodb.entity.CollectionPropertiesEntity;
 import com.arangodb.entity.CollectionType;
+import org.humanbrainproject.knowledgegraph.control.arango.ArangoDefaultDatabaseDriver;
 import org.humanbrainproject.knowledgegraph.control.arango.ArangoDriver;
 import org.humanbrainproject.knowledgegraph.control.arango.ArangoRepository;
 import org.humanbrainproject.knowledgegraph.entity.Tuple;
@@ -21,7 +22,7 @@ public class ArangoStatistics {
     ArangoRepository repository;
 
     @Autowired
-    ArangoDriver arangoDriver;
+    ArangoDefaultDatabaseDriver arangoDriver;
 
 
     public Map<String, Object> getStructure() {

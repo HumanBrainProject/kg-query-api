@@ -37,12 +37,13 @@ public abstract class VertexRepository<T> {
         for (JsonLdVertex vertex : vertices) {
             //We update the edge in a second step to make sure, instances created within the same step are reflected when resolving.
             for (int i = 0; i < vertex.getEdges().size(); i++) {
-                if(vertex.getEdges().get(i).getReference()!=null && isInternalEdge(vertex.getEdges().get(i), configuration.getNexusBase())) {
-                    if(!hasEdge(vertex, vertex.getEdges().get(i), transactionOrConnection)) {
-                        createEdge(vertex, vertex.getEdges().get(i), i, transactionOrConnection);
+                JsonLdEdge edge = vertex.getEdges().get(i);
+                if(edge.isEmbedded() || isInternalEdge(edge, configuration.getNexusBase())) {
+                    if(!hasEdge(vertex, edge, transactionOrConnection)) {
+                        createEdge(vertex, edge, i, transactionOrConnection);
                     }
                     else{
-                        updateEdge(vertex, vertex.getEdges().get(i), i, transactionOrConnection);
+                        updateEdge(vertex, edge, i, transactionOrConnection);
                     }
                 }
             }

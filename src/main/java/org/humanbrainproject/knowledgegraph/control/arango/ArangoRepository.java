@@ -49,9 +49,9 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
     protected Long getRevisionById(JsonLdVertex vertex, ArangoDriver arango) {
         ArangoDatabase db = arango.getOrCreateDB();
         try{
-            ArangoCollection collection = db.collection(namingConvention.getVertexLabel(vertex.getType()));
+            ArangoCollection collection = db.collection(namingConvention.getVertexLabel(vertex.getEntityName()));
             if(collection!=null){
-                Map document = collection.getDocument(namingConvention.getUuid(vertex), Map.class);
+                Map document = collection.getDocument(namingConvention.getKey(vertex), Map.class);
                 if(document!=null){
                     return (Long)document.get(configuration.getRev());
                 }
@@ -65,8 +65,6 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
 
 
     public Map<String, String> getArangoNameMapping(ArangoDatabase db){
-
-
         String query = String.format("FOR doc IN `%s` RETURN {\"arango\": doc._key, \"original\": doc.orginalName}", NAME_LOOKUP_MAP);
         ArangoCursor<Map> q = db.query(query, null, new AqlQueryOptions(), Map.class);
         List<Map> instances = q.asListRemaining();
@@ -106,13 +104,13 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
 
     @Override
     protected void updateVertex(JsonLdVertex vertex, ArangoDriver arango) throws JSONException {
-        String query = String.format("REPLACE %s IN `%s`", toJSONString(vertex), namingConvention.getVertexLabel(vertex.getType()));
+        String query = String.format("REPLACE %s IN `%s`", toJSONString(vertex), namingConvention.getVertexLabel(vertex.getEntityName()));
         arango.getOrCreateDB().query(query, null, new AqlQueryOptions(), Void.class);
     }
 
     @Override
     protected void insertVertex(JsonLdVertex vertex, ArangoDriver arango) throws JSONException {
-        insertVertexDocument(toJSONString(vertex), vertex.getType(), arango);
+        insertVertexDocument(toJSONString(vertex), vertex.getEntityName(), arango);
     }
 
     public void insertVertexDocument(String jsonLd, String vertexName, ArangoDriver arango) throws JSONException {
@@ -151,7 +149,16 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
         JSONObject o = new JSONObject();
         String from = namingConvention.getDocumentHandle(vertex);
         o.put("_from", from);
-        String to = namingConvention.getKeyFromReference(edge.getReference());
+        String to;
+        if(edge.isEmbedded() && edge.getTarget()!=null){
+            to = namingConvention.getDocumentHandle(edge.getTarget());
+        }
+        else if(!edge.isEmbedded() && edge.getReference()!=null){
+            to = namingConvention.getKeyFromReference(edge.getReference(), edge.isEmbedded());
+        }
+        else{
+            to = null;
+        }
         o.put("_to", to);
         String key = namingConvention.getReferenceKey(from, to);
         o.put("_key", key);
@@ -173,7 +180,7 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
         ArangoDatabase db = arango.getOrCreateDB();
         String edgeLabel = namingConvention.getEdgeLabel(edge);
         String from = namingConvention.getDocumentHandle(vertex);
-        String to = namingConvention.getKeyFromReference(edge.getReference());
+        String to = namingConvention.getKeyFromReference(edge.getReference(), edge.isEmbedded());
         try{
             String query = String.format("FOR rel IN `%s` FILTER rel._from==\"%s\" AND rel._to==\"%s\" RETURN rel", edgeLabel, from, to);
             ArangoCursor<String> q = db.query(query, null, new AqlQueryOptions(), String.class);
@@ -206,8 +213,8 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
     private String toJSONString(JsonLdVertex vertex) throws JSONException {
         rebuildEmbeddedDocumentFromEdges(vertex);
         JSONObject o = recreateObjectFromProperties(vertex.getProperties());
-        o.put("_key", namingConvention.getUuid(vertex));
-        o.put("_id", namingConvention.getUuid(vertex));
+        o.put("_key", namingConvention.getKey(vertex));
+        o.put("_id", namingConvention.getKey(vertex));
         return o.toString(4);
     }
 

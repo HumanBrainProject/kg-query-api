@@ -1,26 +1,20 @@
 package org.humanbrainproject.knowledgegraph.entity.jsonld;
 
+import com.github.jsonldjava.core.JsonLdProcessor;
+
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
 public class JsonLdVertex {
-    private String uuid;
+    private String entityName;
     private String id;
     private Integer revision;
-    private String type;
     private List<JsonLdEdge> edges = new ArrayList<>();
     private final Set<JsonLdProperty> properties = new LinkedHashSet<>();
     private Boolean deprecated;
-
-    public String getUuid() {
-        return uuid;
-    }
-
-    public void setUuid(String uuid) {
-        this.uuid = uuid;
-    }
+    private boolean embedded;
 
     public String getId() {
         return id;
@@ -30,20 +24,20 @@ public class JsonLdVertex {
         this.id = id;
     }
 
+    public String getEntityName() {
+        return entityName;
+    }
+
+    public void setEntityName(String entityName) {
+        this.entityName = entityName;
+    }
+
     public Integer getRevision() {
         return revision;
     }
 
     public void setRevision(Integer revision) {
         this.revision = revision;
-    }
-
-    public String getType() {
-        return type;
-    }
-
-    public void setType(String type) {
-        this.type = type;
     }
 
     public List<JsonLdEdge> getEdges() {
@@ -66,4 +60,20 @@ public class JsonLdVertex {
         this.deprecated = deprecated;
     }
 
+    public JsonLdProperty getTypeProperty(){
+        for (JsonLdProperty property : properties) {
+            if(property.isTypeProperty()){
+                return property;
+            }
+        }
+        return null;
+    }
+
+    public boolean isEmbedded() {
+        return embedded;
+    }
+
+    public void setEmbedded(boolean embedded) {
+        this.embedded = embedded;
+    }
 }

@@ -6,6 +6,7 @@ import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.core.JsonLdUtils;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.gson.Gson;
+import org.humanbrainproject.knowledgegraph.control.arango.ArangoDefaultDatabaseDriver;
 import org.humanbrainproject.knowledgegraph.control.arango.ArangoDriver;
 import org.humanbrainproject.knowledgegraph.control.arango.query.ArangoSpecificationQuery;
 import org.humanbrainproject.knowledgegraph.control.arango.ArangoRepository;
@@ -33,7 +34,7 @@ public class ArangoQuery {
     private static final Gson GSON = new Gson();
 
     @Autowired
-    ArangoDriver arango;
+    ArangoDefaultDatabaseDriver arango;
 
     @Autowired
     ArangoRepository arangoUploader;
