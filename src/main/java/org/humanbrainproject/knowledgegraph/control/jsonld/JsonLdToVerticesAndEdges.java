@@ -32,10 +32,7 @@ public class JsonLdToVerticesAndEdges {
      * @throws JSONException
      */
     public List<JsonLdVertex> transformFullyQualifiedJsonLdToVerticesAndEdges(String jsonLdPayload, GraphIndexation.GraphIndexationSpec spec) throws JSONException {
-        List<JsonLdVertex> vertices = createVertex(null, new JSONObject(jsonLdPayload), null, new ArrayList<>(), -1, spec.getEntityName(), spec.getPermissionGroup(), spec.getId(), spec.getRevision());
-        //Due to the nature of list creation, inner elements are at the end of the list. since the inner elements are dependent on their parents, they should be inserted first though. this is why we invert the list.
-        Collections.reverse(vertices);
-        return vertices;
+        return createVertex(null, new JSONObject(jsonLdPayload), null, new ArrayList<>(), -1, spec.getEntityName(), spec.getPermissionGroup(), spec.getId(), spec.getRevision());
     }
 
 

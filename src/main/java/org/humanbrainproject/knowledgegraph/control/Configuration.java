@@ -10,7 +10,7 @@ public class Configuration {
     private static final String DEFAULT_NAMESPACE = "http://schema.hbp.eu/internal#";
 
     @Value("${org.humanbrainproject.knowledgegraph.nexus_base}")
-    private String nexusBase;
+    String nexusBase;
 
 
     public String getNexusBase() {

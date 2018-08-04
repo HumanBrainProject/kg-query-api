@@ -60,9 +60,9 @@ public class JsonLdVertex {
         this.deprecated = deprecated;
     }
 
-    public JsonLdProperty getTypeProperty(){
+    public JsonLdProperty getPropertyByName(String name){
         for (JsonLdProperty property : properties) {
-            if(property.isTypeProperty()){
+            if(name.equals(property.getName())){
                 return property;
             }
         }

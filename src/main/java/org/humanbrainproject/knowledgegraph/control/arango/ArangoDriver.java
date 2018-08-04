@@ -2,10 +2,15 @@ package org.humanbrainproject.knowledgegraph.control.arango;
 
 import com.arangodb.ArangoDB;
 import com.arangodb.ArangoDatabase;
+import com.arangodb.entity.CollectionEntity;
+import com.arangodb.entity.CollectionType;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.WebApplicationContext;
+
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public abstract class ArangoDriver {
 
@@ -32,6 +37,11 @@ public abstract class ArangoDriver {
         }
         return arangoDB;
     }
+
+    public Set<String> getEdgesCollectionNames(){
+        return getOrCreateDB().getCollections().stream().filter(c -> !c.getIsSystem() && c.getType() == CollectionType.EDGES).map(CollectionEntity::getName).collect(Collectors.toSet());
+    }
+
 
     public ArangoDatabase getOrCreateDB(){
         ArangoDatabase kg = getArangoDB().db(databaseName);

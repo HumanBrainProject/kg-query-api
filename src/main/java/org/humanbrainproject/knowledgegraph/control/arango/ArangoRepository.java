@@ -19,6 +19,7 @@ import org.springframework.boot.configurationprocessor.json.JSONObject;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Component
 public class ArangoRepository extends VertexRepository<ArangoDriver> {
@@ -43,6 +44,52 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
         Long count = arango.getOrCreateDB().collection(namingConvention.getVertexLabel(collectionName)).count().getCount();
         return new Tuple<>(collectionName, count);
     }
+
+    public void stageElementsToReleased(Set<String> vertexIds, ArangoDriver defaultDb, ArangoDriver releasedDb){
+        System.out.println("Now releasing...");
+        Map<String, String> arangoNameMapping = getArangoNameMapping(defaultDb.getOrCreateDB());
+        for (String vertexId : vertexIds) {
+            String collectionName = namingConvention.getCollectionNameFromKey(vertexId);
+            ArangoCollection collection = defaultDb.getOrCreateDB().collection(collectionName);
+            String documentId = namingConvention.getIdFromKey(vertexId);
+            if(collection.exists() && collection.documentExists(documentId)){
+                String document = collection.getDocument(documentId, String.class);
+                insertDocument(collectionName, arangoNameMapping.get(collectionName), document, collection.getInfo().getType(), releasedDb);
+            }
+            System.out.println(String.format("%s", vertexId));
+        }
+    }
+
+
+    public Set<String> getEmbeddedInstances(List<String> ids, ArangoDriver arango, Set<String> edgeCollectionNames, Set<String> result){
+        for (String id : ids) {
+            String keyFromReference = namingConvention.getKeyFromReference(id, false);
+            if(!result.contains(keyFromReference)) {
+                result.add(keyFromReference);
+
+                ArangoCursor<Map> q = arango.getOrCreateDB().query(createEmbeddedInstancesQuery(edgeCollectionNames, keyFromReference), null, new AqlQueryOptions(), Map.class);
+                List<Map> queryResult = q.asListRemaining();
+                if (queryResult != null) {
+                    List<String> embeddedIds = queryResult.stream().filter(e -> (Boolean)e.get("isEmbedded")).map(e -> e.get("vertexId").toString()).collect(Collectors.toList());
+                    if(!embeddedIds.isEmpty()) {
+                        getEmbeddedInstances(embeddedIds, arango, edgeCollectionNames, result);
+                        result.addAll(embeddedIds);
+                    }
+                    result.addAll(queryResult.stream().map(e -> e.get("edgeId").toString()).collect(Collectors.toSet()));
+                }
+            }
+        }
+        return result;
+    }
+
+    String createEmbeddedInstancesQuery(Set<String> edgeCollectionNames, String id){
+        String names = String.join("`, `", edgeCollectionNames);
+        String query = String.format("FOR v, e IN 1..1 OUTBOUND \"%s\" `%s` \n" +
+                "        \n"+
+                "        return {\"vertexId\":v._id, \"edgeId\": e._id, \"isEmbedded\": v.`%s`==true}", id, names, configuration.getEmbedded());
+        return query;
+    }
+
 
 
     @Override
@@ -104,7 +151,11 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
 
     @Override
     protected void updateVertex(JsonLdVertex vertex, ArangoDriver arango) throws JSONException {
-        String query = String.format("REPLACE %s IN `%s`", toJSONString(vertex), namingConvention.getVertexLabel(vertex.getEntityName()));
+        updateVertex(namingConvention.getVertexLabel(vertex.getEntityName()), toJSONString(vertex), arango);
+    }
+
+    protected void updateVertex(String collectionName, String jsonPayload, ArangoDriver arango){
+        String query = String.format("REPLACE %s IN `%s`", jsonPayload, collectionName);
         arango.getOrCreateDB().query(query, null, new AqlQueryOptions(), Void.class);
     }
 
@@ -113,19 +164,23 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
         insertVertexDocument(toJSONString(vertex), vertex.getEntityName(), arango);
     }
 
-    public void insertVertexDocument(String jsonLd, String vertexName, ArangoDriver arango) throws JSONException {
-        String originalName = vertexName;
-        String vertexLabel = namingConvention.getVertexLabel(vertexName);
+    public void insertVertexDocument(String jsonLd, String vertexName, ArangoDriver arango) {
+         insertDocument(namingConvention.getVertexLabel(vertexName), vertexName, jsonLd, CollectionType.DOCUMENT, arango);
+    }
+
+    private void insertDocument(String collectionName, String originalName, String jsonLd, CollectionType collectionType, ArangoDriver arango){
         ArangoDatabase db = arango.getOrCreateDB();
-        ArangoCollection collection = db.collection(vertexLabel);
+        ArangoCollection collection = db.collection(collectionName);
         if(!collection.exists()) {
-            logger.info("Create collection {}", vertexLabel);
-            db.createCollection(vertexLabel);
-            if(!vertexName.equals(NAME_LOOKUP_MAP)) {
-                insertVertexDocument(String.format("{\"orginalName\": \"%s\", \"_key\": \"%s\"}", originalName, vertexLabel), NAME_LOOKUP_MAP, arango);
+            logger.info("Create {} collection {}", collectionType, collectionName);
+            CollectionCreateOptions collectionCreateOptions = new CollectionCreateOptions();
+            collectionCreateOptions.type(collectionType);
+            db.createCollection(collectionName, collectionCreateOptions);
+            if(!collectionName.equals(NAME_LOOKUP_MAP) && originalName!=null) {
+                insertDocument(NAME_LOOKUP_MAP, null, String.format("{\"orginalName\": \"%s\", \"_key\": \"%s\"}", originalName, collectionName), CollectionType.DOCUMENT, arango);
             }
         }
-        String query = String.format("INSERT %s IN `%s`", jsonLd, vertexLabel);
+        String query = String.format("INSERT %s IN `%s`", jsonLd, collectionName);
         logger.debug(query);
         ArangoCursor<String> q = db.query(query, null, new AqlQueryOptions(), String.class);
         while(q.hasNext()){
@@ -134,18 +189,10 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
         }
     }
 
-
     @Override
     protected void createEdge(JsonLdVertex vertex, JsonLdEdge edge, int orderNumber, ArangoDriver arango) throws JSONException {
         ArangoDatabase db = arango.getOrCreateDB();
         String edgeLabel = namingConvention.getEdgeLabel(edge);
-        ArangoCollection collection = db.collection(edgeLabel);
-        if(!collection.exists()){
-            CollectionCreateOptions collectionCreateOptions = new CollectionCreateOptions();
-            collectionCreateOptions.type(CollectionType.EDGES);
-            logger.info("Create edge collection {}", edgeLabel);
-            db.createCollection(edgeLabel, collectionCreateOptions);
-        }
         JSONObject o = new JSONObject();
         String from = namingConvention.getDocumentHandle(vertex);
         o.put("_from", from);
@@ -168,12 +215,8 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
         for (JsonLdProperty jsonLdProperty : edge.getProperties()) {
             o.put(jsonLdProperty.getName(), jsonLdProperty.getValue());
         }
-        String query = String.format("INSERT %s IN `%s`", o.toString(), edgeLabel);
-        logger.debug(query);
-        db.query(query, null, new AqlQueryOptions(), String.class);
+        insertDocument(edgeLabel, null, o.toString(), CollectionType.EDGES, arango);
     }
-
-
 
     @Override
     protected boolean hasEdge(JsonLdVertex vertex, JsonLdEdge edge, ArangoDriver arango) throws JSONException {

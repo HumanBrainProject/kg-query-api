@@ -50,6 +50,18 @@ public class ArangoNamingConvention {
         return String.format("%s/%s", reduceStringToMaxSizeByHashing(replaceSpecialCharacters(collectionName)), reduceStringToMaxSizeByHashing(replaceSpecialCharacters(id)));
     }
 
+    public String getCollectionNameFromKey(String key){
+        return key.split("/")[0];
+    }
+
+    public String getIdFromKey(String key){
+        int length = getCollectionNameFromKey(key).length();
+        if(length+1<key.length()) {
+            return key.substring(length+1);
+        }
+        return null;
+    }
+
     public String getEdgeLabel(JsonLdEdge edge) {
         return getEdgeLabel(edge.getName());
     }

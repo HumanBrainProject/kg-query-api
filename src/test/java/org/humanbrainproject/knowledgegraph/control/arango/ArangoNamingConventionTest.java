@@ -40,8 +40,8 @@ public class ArangoNamingConventionTest {
 
     @Test
     public void getKeyFromEmbeddedInstance(){
-        String outcome = namingConvention.getKeyFromReference("minds/ethics/approval/v0.0.4/8542d679-9e15-471d-97e2-cbe915163a18@http://www.w3.org/ns/prov#qualifiedAssociation", true);
-        assertEquals("www_w3_org-ns-prov-qualifiedAssociation/xxxx", outcome);
+        String outcome = namingConvention.getKeyFromReference("http://www.w3.org/ns/prov#qualifiedAssociation@minds/ethics/approval/v0.0.4/8542d679-9e15-471d-97e2-cbe915163a18", true);
+        assertEquals("www_w3_org-ns-prov-qualifiedAssociation/8b37ce04a01732c7669adaaa0589a480", outcome);
     }
 
 
