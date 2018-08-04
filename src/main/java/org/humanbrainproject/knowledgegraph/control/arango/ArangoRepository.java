@@ -54,7 +54,13 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
             String documentId = namingConvention.getIdFromKey(vertexId);
             if (collection.exists() && collection.documentExists(documentId)) {
                 String document = collection.getDocument(documentId, String.class);
-                insertDocument(collectionName, arangoNameMapping.get(collectionName), document, collection.getInfo().getType(), releasedDb);
+                ArangoCollection releaseCollection = releasedDb.getOrCreateDB().collection(collectionName);
+                if(releaseCollection.exists() && releaseCollection.documentExists(documentId)){
+                    replaceDocument(collectionName, document, releasedDb);
+                }
+                else {
+                    insertDocument(collectionName, arangoNameMapping.get(collectionName), document, collection.getInfo().getType(), releasedDb);
+                }
             }
             System.out.println(String.format("%s", vertexId));
         }
@@ -93,11 +99,14 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
 
     @Override
     protected Long getRevisionById(JsonLdVertex vertex, ArangoDriver arango) {
-        ArangoDatabase db = arango.getOrCreateDB();
+        return getRevisionById(namingConvention.getVertexLabel(vertex.getEntityName()), namingConvention.getKey(vertex), arango);
+    }
+
+    private Long getRevisionById(String collectionName, String documentKey, ArangoDriver arango){
         try {
-            ArangoCollection collection = db.collection(namingConvention.getVertexLabel(vertex.getEntityName()));
+            ArangoCollection collection = arango.getOrCreateDB().collection(collectionName);
             if (collection != null) {
-                Map document = collection.getDocument(namingConvention.getKey(vertex), Map.class);
+                Map document = collection.getDocument(documentKey, Map.class);
                 if (document != null) {
                     return (Long) document.get(configuration.getRev());
                 }
@@ -149,10 +158,10 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
 
     @Override
     protected void updateVertex(JsonLdVertex vertex, ArangoDriver arango) throws JSONException {
-        updateVertex(namingConvention.getVertexLabel(vertex.getEntityName()), toJSONString(vertex), arango);
+        replaceDocument(namingConvention.getVertexLabel(vertex.getEntityName()), toJSONString(vertex), arango);
     }
 
-    protected void updateVertex(String collectionName, String jsonPayload, ArangoDriver arango) {
+    private void replaceDocument(String collectionName, String jsonPayload, ArangoDriver arango) {
         String query = String.format("REPLACE %s IN `%s`", jsonPayload, collectionName);
         arango.getOrCreateDB().query(query, null, new AqlQueryOptions(), Void.class);
     }
