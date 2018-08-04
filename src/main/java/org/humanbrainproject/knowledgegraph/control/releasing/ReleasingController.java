@@ -32,7 +32,7 @@ public class ReleasingController {
     public boolean isRelevantForReleasing(List<JsonLdVertex> vertices){
         for (JsonLdVertex vertex : vertices) {
             JsonLdProperty typeProperty = vertex.getPropertyByName(JsonLdConsts.TYPE);
-            if(RELEASE_TYPE.equals(typeProperty.getValue())){
+            if(typeProperty!=null && RELEASE_TYPE.equals(typeProperty.getValue())){
                 return true;
             }
         }
