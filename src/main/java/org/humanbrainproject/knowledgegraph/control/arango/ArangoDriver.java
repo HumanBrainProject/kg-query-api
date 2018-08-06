@@ -12,7 +12,7 @@ import org.springframework.web.context.WebApplicationContext;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public abstract class ArangoDriver {
+public class ArangoDriver {
 
     @Value("${org.humanbrainproject.knowledgegraph.arango.host}")
     String host;

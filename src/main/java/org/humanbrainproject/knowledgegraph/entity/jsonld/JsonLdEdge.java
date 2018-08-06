@@ -14,32 +14,36 @@ public class JsonLdEdge {
         return target;
     }
 
-    public void setTarget(JsonLdVertex target) {
+    public JsonLdEdge setTarget(JsonLdVertex target) {
         this.target = target;
+        return this;
     }
 
     public String getReference() {
         return reference;
     }
 
-    public void setReference(String reference) {
+    public JsonLdEdge setReference(String reference) {
         this.reference = reference;
+        return this;
     }
 
     public String getName() {
         return name;
     }
 
-    public void setName(String name) {
+    public JsonLdEdge setName(String name) {
         this.name = name;
+        return this;
     }
 
     public Integer getOrderNumber() {
         return orderNumber;
     }
 
-    public void setOrderNumber(Integer orderNumber) {
+    public JsonLdEdge setOrderNumber(Integer orderNumber) {
         this.orderNumber = orderNumber;
+        return this;
     }
 
     public boolean isExternal() {

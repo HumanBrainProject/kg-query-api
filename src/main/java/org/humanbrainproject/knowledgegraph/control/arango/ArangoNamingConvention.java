@@ -47,17 +47,17 @@ public class ArangoNamingConvention {
     }
 
     public String createId(String collectionName, String id) {
-        return String.format("%s/%s", reduceStringToMaxSizeByHashing(replaceSpecialCharacters(collectionName)), reduceStringToMaxSizeByHashing(replaceSpecialCharacters(id)));
+        return String.format("%s/%s", getVertexLabel(collectionName), reduceStringToMaxSizeByHashing(replaceSpecialCharacters(id)));
     }
 
-    public String getCollectionNameFromKey(String key){
-        return key.split("/")[0];
+    public String getCollectionNameFromId(String id){
+        return id.split("/")[0];
     }
 
-    public String getIdFromKey(String key){
-        int length = getCollectionNameFromKey(key).length();
-        if(length+1<key.length()) {
-            return key.substring(length+1);
+    public String getKeyFromId(String id){
+        int length = getCollectionNameFromId(id).length();
+        if(length+1<id.length()) {
+            return id.substring(length+1);
         }
         return null;
     }
@@ -75,7 +75,7 @@ public class ArangoNamingConvention {
     }
 
     public String getKey(JsonLdVertex vertex) {
-        return reduceStringToMaxSizeByHashing(replaceSpecialCharacters(vertex.getId()));
+        return reduceStringToMaxSizeByHashing(replaceSpecialCharacters(vertex.getKey()));
     }
 
     private String reduceVertexLabel(String vertexLabel) {
@@ -86,11 +86,27 @@ public class ArangoNamingConvention {
         return reduceStringToMaxSizeByHashing(replaceSpecialCharacters(reduceVertexLabel(vertexName)));
     }
 
-    public String getDocumentHandle(JsonLdVertex vertex) {
+    public String getId(JsonLdVertex vertex) {
         return String.format("%s/%s", getVertexLabel(vertex.getEntityName()), getKey(vertex));
     }
+
 
     public String getReferenceKey(String from, String to) {
         return DigestUtils.md5DigestAsHex(String.format("%s-to-%s", from, to).getBytes());
     }
+
+    public String getReferenceKey(JsonLdVertex vertex, JsonLdEdge edge){
+        return getReferenceKey(getId(vertex), getEdgeTarget(edge));
+    }
+
+    public String getEdgeTarget(JsonLdEdge edge) {
+        if (edge.isEmbedded() && edge.getTarget() != null) {
+            return getId(edge.getTarget());
+        } else if (!edge.isEmbedded() && edge.getReference() != null) {
+            return getKeyFromReference(edge.getReference(), edge.isEmbedded());
+        }
+        return null;
+    }
+
+
 }

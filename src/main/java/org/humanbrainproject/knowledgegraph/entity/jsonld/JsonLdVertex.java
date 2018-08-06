@@ -1,7 +1,5 @@
 package org.humanbrainproject.knowledgegraph.entity.jsonld;
 
-import com.github.jsonldjava.core.JsonLdProcessor;
-
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -9,43 +7,42 @@ import java.util.Set;
 
 public class JsonLdVertex {
     private String entityName;
-    private String id;
+    private String key;
     private Integer revision;
-    private List<JsonLdEdge> edges = new ArrayList<>();
+    private final List<JsonLdEdge> edges = new ArrayList<>();
     private final Set<JsonLdProperty> properties = new LinkedHashSet<>();
     private Boolean deprecated;
     private boolean embedded;
 
-    public String getId() {
-        return id;
+    public String getKey() {
+        return key;
     }
 
-    public void setId(String id) {
-        this.id = id;
+    public JsonLdVertex setKey(String key) {
+        this.key = key;
+        return this;
     }
 
     public String getEntityName() {
         return entityName;
     }
 
-    public void setEntityName(String entityName) {
+    public JsonLdVertex setEntityName(String entityName) {
         this.entityName = entityName;
+        return this;
     }
 
     public Integer getRevision() {
         return revision;
     }
 
-    public void setRevision(Integer revision) {
+    public JsonLdVertex setRevision(Integer revision) {
         this.revision = revision;
+        return this;
     }
 
     public List<JsonLdEdge> getEdges() {
         return edges;
-    }
-
-    public void setEdges(List<JsonLdEdge> edges) {
-        this.edges = edges;
     }
 
     public Set<JsonLdProperty> getProperties() {
@@ -56,8 +53,8 @@ public class JsonLdVertex {
         return deprecated;
     }
 
-    public void setDeprecated(Boolean deprecated) {
-        this.deprecated = deprecated;
+    public JsonLdVertex setDeprecated(Boolean deprecated) {
+        this.deprecated = deprecated; return this;
     }
 
     public JsonLdProperty getPropertyByName(String name){
@@ -73,7 +70,18 @@ public class JsonLdVertex {
         return embedded;
     }
 
-    public void setEmbedded(boolean embedded) {
+    public JsonLdVertex setEmbedded(boolean embedded) {
         this.embedded = embedded;
+        return this;
+    }
+
+    public JsonLdVertex addProperty(JsonLdProperty property){
+        this.properties.add(property);
+        return this;
+    }
+
+    public JsonLdVertex addEdge(JsonLdEdge edge){
+        this.edges.add(edge);
+        return this;
     }
 }

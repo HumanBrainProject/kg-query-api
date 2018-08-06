@@ -1,12 +1,7 @@
 package org.humanbrainproject.knowledgegraph.boundary.query;
 
-import com.github.jsonldjava.core.JsonLdConsts;
-import com.github.jsonldjava.core.JsonLdOptions;
-import com.github.jsonldjava.core.JsonLdProcessor;
-import com.github.jsonldjava.core.JsonLdUtils;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.gson.Gson;
-import org.humanbrainproject.knowledgegraph.control.arango.ArangoDefaultDatabaseDriver;
 import org.humanbrainproject.knowledgegraph.control.arango.ArangoDriver;
 import org.humanbrainproject.knowledgegraph.control.arango.query.ArangoSpecificationQuery;
 import org.humanbrainproject.knowledgegraph.control.arango.ArangoRepository;
@@ -16,6 +11,7 @@ import org.humanbrainproject.knowledgegraph.control.specification.SpecificationI
 import org.humanbrainproject.knowledgegraph.control.template.MustacheTemplating;
 import org.humanbrainproject.knowledgegraph.entity.specification.Specification;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.boot.configurationprocessor.json.JSONObject;
 import org.springframework.stereotype.Component;
@@ -34,7 +30,8 @@ public class ArangoQuery {
     private static final Gson GSON = new Gson();
 
     @Autowired
-    ArangoDefaultDatabaseDriver arango;
+    @Qualifier("default")
+    ArangoDriver arango;
 
     @Autowired
     ArangoRepository arangoUploader;
@@ -70,7 +67,7 @@ public class ArangoQuery {
     }
 
     public List<Object> queryPropertyGraphByStoredSpecification(String id, boolean useContext, String authorizationToken, Integer size, Integer start) throws IOException, JSONException {
-        String payload = arangoUploader.getById(SPECIFICATION_QUERIES, id, arango);
+        String payload = arangoUploader.getByKey(SPECIFICATION_QUERIES, id, String.class, arango);
         return queryPropertyGraphBySpecification(payload, useContext, authorizationToken, size, start);
     }
 

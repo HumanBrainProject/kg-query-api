@@ -10,16 +10,18 @@ public class JsonLdProperty {
         return name;
     }
 
-    public void setName(String name) {
+    public JsonLdProperty setName(String name) {
         this.name = name;
+        return this;
     }
 
     public Object getValue() {
         return value;
     }
 
-    public void setValue(Object value) {
+    public JsonLdProperty setValue(Object value) {
         this.value = value;
+        return this;
     }
 
     public boolean isTypeProperty(){

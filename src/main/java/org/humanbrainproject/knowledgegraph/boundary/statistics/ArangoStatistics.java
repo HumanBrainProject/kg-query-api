@@ -1,14 +1,12 @@
 package org.humanbrainproject.knowledgegraph.boundary.statistics;
 
 import com.arangodb.ArangoDatabase;
-import com.arangodb.entity.CollectionEntity;
-import com.arangodb.entity.CollectionPropertiesEntity;
 import com.arangodb.entity.CollectionType;
-import org.humanbrainproject.knowledgegraph.control.arango.ArangoDefaultDatabaseDriver;
 import org.humanbrainproject.knowledgegraph.control.arango.ArangoDriver;
 import org.humanbrainproject.knowledgegraph.control.arango.ArangoRepository;
 import org.humanbrainproject.knowledgegraph.entity.Tuple;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.util.Comparator;
@@ -22,7 +20,8 @@ public class ArangoStatistics {
     ArangoRepository repository;
 
     @Autowired
-    ArangoDefaultDatabaseDriver arangoDriver;
+    @Qualifier("default")
+    ArangoDriver arangoDriver;
 
 
     public Map<String, Object> getStructure() {

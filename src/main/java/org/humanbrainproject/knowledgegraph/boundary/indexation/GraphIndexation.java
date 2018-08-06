@@ -21,25 +21,25 @@ public abstract class GraphIndexation {
     @Autowired
     JsonLdToVerticesAndEdges jsonLdToVerticesAndEdges;
 
-    private List<JsonLdVertex> prepareAndParsePayload(String payload, GraphIndexationSpec spec) throws IOException, JSONException {
-        Object jsonLd = jsonLdStandardization.ensureContext(JsonUtils.fromString(payload), spec.getDefaultNamespace());
+    private List<JsonLdVertex> prepareAndParsePayload(GraphIndexationSpec spec) throws IOException, JSONException {
+        Object jsonLd = jsonLdStandardization.ensureContext(JsonUtils.fromString(spec.getJsonOrJsonLdPayload()), spec.getDefaultNamespace());
         jsonLd = jsonLdStandardization.fullyQualify(jsonLd);
         return jsonLdToVerticesAndEdges.transformFullyQualifiedJsonLdToVerticesAndEdges(JsonUtils.toString(jsonLd), spec);
     }
 
-    public void insertJsonOrJsonLd(String jsonOrJsonLdPayload, GraphIndexationSpec spec) throws IOException, JSONException {
+    public void insertJsonOrJsonLd(GraphIndexationSpec spec) throws IOException, JSONException {
          spec.setRevision(1);
-        List<JsonLdVertex> jsonLdVertices = prepareAndParsePayload(jsonOrJsonLdPayload, spec);
+        List<JsonLdVertex> jsonLdVertices = prepareAndParsePayload(spec);
         transactionalJsonLdInsertion(jsonLdVertices);
     }
 
-    public void updateJsonOrJsonLd(String jsonOrJsonLdPayload, GraphIndexationSpec spec) throws IOException, JSONException {
-        List<JsonLdVertex> jsonLdVertices = prepareAndParsePayload(jsonOrJsonLdPayload, spec);
+    public void updateJsonOrJsonLd(GraphIndexationSpec spec) throws IOException, JSONException {
+        List<JsonLdVertex> jsonLdVertices = prepareAndParsePayload(spec);
         transactionalJsonLdUpdate(jsonLdVertices);
     }
 
-    public void delete(String entityName, String id, Integer rev) throws JSONException {
-       transactionalJsonLdDeletion(entityName, id, rev);
+    public void delete(String entityName, String key, Integer rev) throws JSONException {
+       transactionalJsonLdDeletion(entityName, key, rev);
     }
 
     abstract void transactionalJsonLdInsertion(List<JsonLdVertex> jsonLdVertices) throws JSONException;

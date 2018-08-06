@@ -46,8 +46,8 @@ public class ArangoIndexationAPI {
         logger.debug("Payload for insert request {}/{}: {}", entityName, id, payload);
         try {
             GraphIndexation.GraphIndexationSpec spec = new GraphIndexation.GraphIndexationSpec();
-            spec.setPermissionGroup(organization).setEntityName(entityName).setId(id).setDefaultNamespace(buildDefaultNamespace(organization, domain, schema, schemaVersion));
-            indexer.insertJsonOrJsonLd(payload, spec);
+            spec.setJsonOrJsonLdPayload(payload).setPermissionGroup(organization).setEntityName(entityName).setId(id).setDefaultNamespace(buildDefaultNamespace(organization, domain, schema, schemaVersion));
+            indexer.insertJsonOrJsonLd(spec);
             return ResponseEntity.ok(null);
         } catch (JSONException | JsonLdError e) {
             e.printStackTrace();
@@ -62,9 +62,8 @@ public class ArangoIndexationAPI {
         logger.debug("Payload for update request {}/{} in rev {}: {}", entityName, id, rev, payload);
         try {
             GraphIndexation.GraphIndexationSpec spec = new GraphIndexation.GraphIndexationSpec();
-            spec.setPermissionGroup(organization).setEntityName(entityName).setId(id).setRevision(rev).setDefaultNamespace(buildDefaultNamespace(organization, domain, schema, schemaVersion));
-
-            indexer.updateJsonOrJsonLd(payload, spec);
+            spec.setJsonOrJsonLdPayload(payload).setPermissionGroup(organization).setEntityName(entityName).setId(id).setRevision(rev).setDefaultNamespace(buildDefaultNamespace(organization, domain, schema, schemaVersion));
+            indexer.updateJsonOrJsonLd(spec);
             return ResponseEntity.ok(null);
         } catch (JSONException | JsonLdError e) {
             e.printStackTrace();

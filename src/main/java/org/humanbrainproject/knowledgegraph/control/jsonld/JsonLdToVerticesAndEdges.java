@@ -164,13 +164,13 @@ public class JsonLdToVerticesAndEdges {
     private void updateId(String key, JsonLdVertex parent, JsonLdVertex v, String entityName, String rootId, int ordernumber) throws JSONException {
         if (parent==null) {
             v.setEntityName(entityName);
-            v.setId(rootId);
-        } else if (parent.getId() != null && key != null) {
+            v.setKey(rootId);
+        } else if (parent.getKey() != null && key != null) {
             v.setEntityName(key);
-            v.setId(buildEmbeddedId(key, parent.getId(), ordernumber));
+            v.setKey(buildEmbeddedId(key, parent.getKey(), ordernumber));
             JsonLdProperty p = new JsonLdProperty();
             p.setName(JsonLdConsts.ID);
-            p.setValue(v.getId());
+            p.setValue(v.getKey());
             v.getProperties().add(p);
         }
     }

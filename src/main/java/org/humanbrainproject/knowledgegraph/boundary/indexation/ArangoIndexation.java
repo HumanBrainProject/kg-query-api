@@ -1,29 +1,33 @@
 package org.humanbrainproject.knowledgegraph.boundary.indexation;
 
-import com.arangodb.ArangoDatabase;
-import com.arangodb.entity.CollectionEntity;
-import org.humanbrainproject.knowledgegraph.control.arango.ArangoDefaultDatabaseDriver;
-import org.humanbrainproject.knowledgegraph.control.arango.ArangoReleasedDatabaseDriver;
+import org.humanbrainproject.knowledgegraph.control.arango.ArangoDriver;
 import org.humanbrainproject.knowledgegraph.control.arango.query.ArangoSpecificationQuery;
 import org.humanbrainproject.knowledgegraph.control.arango.ArangoRepository;
 import org.humanbrainproject.knowledgegraph.control.jsonld.JsonLdStandardization;
 import org.humanbrainproject.knowledgegraph.control.releasing.ReleasingController;
 import org.humanbrainproject.knowledgegraph.control.specification.SpecificationInterpreter;
+import org.humanbrainproject.knowledgegraph.entity.jsonld.JsonLdEdge;
 import org.humanbrainproject.knowledgegraph.entity.jsonld.JsonLdVertex;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.stereotype.Component;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Component
 public class ArangoIndexation extends GraphIndexation {
 
     @Autowired
-    ArangoDefaultDatabaseDriver defaultDB;
+    @Qualifier("default")
+    ArangoDriver defaultDB;
 
     @Autowired
-    ArangoReleasedDatabaseDriver releasedDB;
+    @Qualifier("released")
+    ArangoDriver releasedDB;
 
     @Autowired
     ArangoRepository repository;
@@ -41,7 +45,7 @@ public class ArangoIndexation extends GraphIndexation {
     ReleasingController releasingController;
 
     public String getById(String entityName, String id){
-        return repository.getById(entityName, id, defaultDB);
+        return repository.getByKey(entityName, id, String.class, defaultDB);
     }
 
     @Override
@@ -49,40 +53,45 @@ public class ArangoIndexation extends GraphIndexation {
         repository.uploadToPropertyGraph(jsonLdVertices, defaultDB);
         if(releasingController.isRelevantForReleasing(jsonLdVertices)){
             //Upload to released database
-            List<JsonLdVertex> verticesToBeReleased = releasingController.getVerticesToBeReleased(jsonLdVertices);
-            repository.uploadToPropertyGraph(verticesToBeReleased, releasedDB);
+            releasingController.releaseVertices(jsonLdVertices, defaultDB, releasedDB);
         }
     }
 
     @Override
     void transactionalJsonLdUpdate(List<JsonLdVertex> jsonLdVertices) throws JSONException {
+        boolean relevantForReleasing = releasingController.isRelevantForReleasing(jsonLdVertices);
+        List<List<String>> verticesToBeUnreleased = Collections.emptyList();
+        if(relevantForReleasing){
+            verticesToBeUnreleased = jsonLdVertices.stream().map(v -> {
+                List<JsonLdEdge> edgesToBeRemoved = repository.getEdgesToBeRemoved(v, defaultDB);
+                return edgesToBeRemoved.stream().map(e -> repository.getTargetVertexId(e, defaultDB)).collect(Collectors.toList());
+            }).collect(Collectors.toList());
+        }
         repository.uploadToPropertyGraph(jsonLdVertices, defaultDB);
-        if(releasingController.isRelevantForReleasing(jsonLdVertices)){
+        if(relevantForReleasing){
             //Upload to released database
-            List<JsonLdVertex> verticesToBeReleased = releasingController.getVerticesToBeReleased(jsonLdVertices);
-            repository.uploadToPropertyGraph(verticesToBeReleased, releasedDB);
+            releasingController.releaseVertices(jsonLdVertices, defaultDB, releasedDB);
+            verticesToBeUnreleased.forEach(vertices -> vertices.forEach(v -> releasingController.unreleaseInstance(v, releasedDB)));
         }
     }
 
     @Override
-    void transactionalJsonLdDeletion(String entityName, String rootId, Integer rootRev) {
-        repository.deleteVertex(entityName, rootId, defaultDB);
-        repository.deleteVertex(entityName, rootId, releasedDB);
+    void transactionalJsonLdDeletion(String entityName, String key, Integer rootRev) {
+        Map instance = repository.getByKey(entityName, key, Map.class, defaultDB);
+        if(instance!=null) {
+            repository.deleteVertex(entityName, key, defaultDB);
+            if (releasingController.isRelevantForReleasing(instance)) {
+                releasingController.unreleaseVertices(instance, releasedDB);
+            }
+            repository.deleteVertex(entityName, key, defaultDB);
+        }
     }
 
     @Override
     public void clearGraph() {
-        ArangoDatabase db = defaultDB.getOrCreateDB();
-        for (CollectionEntity collectionEntity : db.getCollections()) {
-            if(!collectionEntity.getName().startsWith("_")) {
-                db.collection(collectionEntity.getName()).drop();
-            }
-        }
-        db = releasedDB.getOrCreateDB();
-        for (CollectionEntity collectionEntity : db.getCollections()) {
-            if(!collectionEntity.getName().startsWith("_")) {
-                db.collection(collectionEntity.getName()).drop();
-            }
+        repository.clearDatabase(defaultDB.getOrCreateDB());
+        if(releasedDB!=null) {
+            repository.clearDatabase(releasedDB.getOrCreateDB());
         }
     }
 }

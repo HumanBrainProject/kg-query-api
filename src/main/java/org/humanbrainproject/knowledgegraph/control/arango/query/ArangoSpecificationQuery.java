@@ -4,13 +4,13 @@ import com.arangodb.entity.CollectionEntity;
 import com.arangodb.model.AqlQueryOptions;
 import com.github.jsonldjava.utils.JsonUtils;
 import org.humanbrainproject.knowledgegraph.control.Configuration;
-import org.humanbrainproject.knowledgegraph.control.arango.ArangoDefaultDatabaseDriver;
 import org.humanbrainproject.knowledgegraph.control.arango.ArangoDriver;
 import org.humanbrainproject.knowledgegraph.control.arango.ArangoNamingConvention;
 import org.humanbrainproject.knowledgegraph.entity.specification.SpecField;
 import org.humanbrainproject.knowledgegraph.entity.specification.SpecTraverse;
 import org.humanbrainproject.knowledgegraph.entity.specification.Specification;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.stereotype.Component;
 
@@ -25,7 +25,8 @@ public class ArangoSpecificationQuery {
     ArangoNamingConvention namingConvention;
 
     @Autowired
-    ArangoDefaultDatabaseDriver arangoDriver;
+    @Qualifier("default")
+    ArangoDriver arangoDriver;
 
     @Autowired
     Configuration configuration;

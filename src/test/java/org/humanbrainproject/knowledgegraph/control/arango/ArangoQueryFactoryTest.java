@@ -3,23 +3,21 @@ package org.humanbrainproject.knowledgegraph.control.arango;
 import org.humanbrainproject.knowledgegraph.control.Configuration;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Mockito;
 
 import java.util.HashSet;
 import java.util.Set;
 
 import static org.junit.Assert.*;
 
-public class ArangoRepositoryTest {
+public class ArangoQueryFactoryTest {
 
-    ArangoRepository repository;
+    ArangoQueryFactory repository;
 
     @Before
     public void setup(){
-        repository = new ArangoRepository();
+        repository = new ArangoQueryFactory();
         repository.configuration = new Configuration();
     }
-
 
     @Test
     public void createEmbeddedInstancesQuery() {
@@ -30,6 +28,5 @@ public class ArangoRepositoryTest {
         assertEquals("FOR v, e IN 1..1 OUTBOUND \"helloWorld\" `http://bar.org/foo`, `http://foo.org/bar` \n" +
                 "        \n" +
                 "        return {\"vertexId\":v._id, \"edgeId\": e._id, \"isEmbedded\": v.`http://schema.hbp.eu/internal#embedded`==true}", query);
-
     }
 }

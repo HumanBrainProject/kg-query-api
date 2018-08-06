@@ -21,34 +21,36 @@ public abstract class VertexRepository<T> {
     protected Logger logger = LoggerFactory.getLogger(VertexRepository.class);
 
 
+    public abstract List<JsonLdEdge> getEdgesToBeRemoved(JsonLdVertex vertex, T transactionOrConnection);
+
+    private void insertOrUpdateEdges(JsonLdVertex vertex, T transactionOrConnection) throws JSONException {
+        for (int i = 0; i < vertex.getEdges().size(); i++) {
+            JsonLdEdge edge = vertex.getEdges().get(i);
+            if(edge.isEmbedded() || isInternalEdge(edge, configuration.getNexusBase())){
+                edge.setOrderNumber(i);
+                if(!hasEdge(vertex, edge, transactionOrConnection)){
+                    createEdge(vertex, edge, transactionOrConnection);
+                }
+                else{
+                    replaceEdge(vertex, edge, transactionOrConnection);
+                }
+            }
+        }
+    }
+
+
     public void uploadToPropertyGraph(List<JsonLdVertex> vertices, T transactionOrConnection) throws JSONException {
         for (JsonLdVertex vertex : vertices) {
-            Long revision = getRevisionById(vertex, transactionOrConnection);
-            if (revision != null) {
-                if (revision < vertex.getRevision()) {
-                    updateVertex(vertex, transactionOrConnection);
-                } else {
-                   logger.debug("No new revision - no update");
-                }
+            if (alreadyExists(vertex, transactionOrConnection)) {
+                updateVertex(vertex, transactionOrConnection);
             } else {
                 insertVertex(vertex, transactionOrConnection);
             }
-        }
-        for (JsonLdVertex vertex : vertices) {
-            //We update the edge in a second step to make sure, instances created within the same step are reflected when resolving.
-            for (int i = 0; i < vertex.getEdges().size(); i++) {
-                JsonLdEdge edge = vertex.getEdges().get(i);
-                if(edge.isEmbedded() || isInternalEdge(edge, configuration.getNexusBase())) {
-                    if(!hasEdge(vertex, edge, transactionOrConnection)) {
-                        createEdge(vertex, edge, i, transactionOrConnection);
-                    }
-                    else{
-                        updateEdge(vertex, edge, i, transactionOrConnection);
-                    }
-                }
+            for (JsonLdEdge edge : getEdgesToBeRemoved(vertex, transactionOrConnection)) {
+                removeEdge(vertex, edge, transactionOrConnection);
             }
+            insertOrUpdateEdges(vertex, transactionOrConnection);
         }
-
         for (JsonLdVertex vertex : vertices) {
             for (int i = 0; i < vertex.getEdges().size(); i++) {
                 updateUnresolved(vertex, transactionOrConnection);
@@ -64,9 +66,7 @@ public abstract class VertexRepository<T> {
         return true;
     }
 
-    protected abstract Long getRevisionById(JsonLdVertex vertex, T transactionOrConnection);
-
-    public abstract void deleteVertex(String entityName, String identifier, T transactionOrConnection);
+    protected abstract boolean alreadyExists(JsonLdVertex vertex, T transactionOrConnection);
 
     protected abstract void updateVertex(JsonLdVertex vertex, T transactionOrConnection) throws JSONException;
 
@@ -74,9 +74,11 @@ public abstract class VertexRepository<T> {
 
     protected abstract boolean hasEdge(JsonLdVertex vertex, JsonLdEdge edge, T transactionOrConnection) throws JSONException;
 
-    protected abstract void createEdge(JsonLdVertex vertex, JsonLdEdge edge, int orderNumber, T transactionOrConnection) throws JSONException;
+    protected abstract void createEdge(JsonLdVertex vertex, JsonLdEdge edge, T transactionOrConnection) throws JSONException;
 
-    protected abstract void updateEdge(JsonLdVertex vertex, JsonLdEdge edge, int orderNumber, T transactionOrConnection) throws JSONException;
+    protected abstract void replaceEdge(JsonLdVertex vertex, JsonLdEdge edge, T transactionOrConnection) throws JSONException;
+
+    protected abstract void removeEdge(JsonLdVertex vertex, JsonLdEdge edge, T transactionOrConnection) throws JSONException;
 
     public abstract void updateUnresolved(JsonLdVertex vertex, T transactionOrConnection);
 
