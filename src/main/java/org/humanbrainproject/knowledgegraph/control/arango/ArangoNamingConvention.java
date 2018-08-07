@@ -1,7 +1,10 @@
 package org.humanbrainproject.knowledgegraph.control.arango;
 
+import org.humanbrainproject.knowledgegraph.control.VertexRepository;
 import org.humanbrainproject.knowledgegraph.entity.jsonld.JsonLdEdge;
 import org.humanbrainproject.knowledgegraph.entity.jsonld.JsonLdVertex;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.DigestUtils;
 
@@ -9,6 +12,8 @@ import org.springframework.util.DigestUtils;
 public class ArangoNamingConvention {
 
     public static final int MAX_CHARACTERS = 60;
+    protected Logger logger = LoggerFactory.getLogger(ArangoNamingConvention.class);
+
 
     public String replaceSpecialCharacters(String value) {
         return reduceStringToMaxSizeByHashing(value != null ? value.replaceAll("https://", "").replaceAll("http://", "").replaceAll("\\.", "_").replaceAll("[^a-zA-Z0-9\\-_]", "-") : null);
@@ -18,7 +23,7 @@ public class ArangoNamingConvention {
         return reduceStringToMaxSizeByHashing(value != null ? value.replaceAll("-", "_") : null);
     }
 
-    public String getKeyFromReference(String reference, boolean isEmbedded) {
+    public String getIdFromReference(String reference, boolean isEmbedded) {
         if (reference != null) {
             String collectionName=null;
             String id = null;
@@ -90,9 +95,10 @@ public class ArangoNamingConvention {
         return String.format("%s/%s", getVertexLabel(vertex.getEntityName()), getKey(vertex));
     }
 
-
-    public String getReferenceKey(String from, String to) {
-        return DigestUtils.md5DigestAsHex(String.format("%s-to-%s", from, to).getBytes());
+    private String getReferenceKey(String from, String to) {
+        String hash = DigestUtils.md5DigestAsHex(String.format("%s-to-%s", from, to).getBytes());
+        logger.info("Calculate reference hash: from \"{}\" to \"{}\" results in \"{}\"", from, to, hash);
+        return hash;
     }
 
     public String getReferenceKey(JsonLdVertex vertex, JsonLdEdge edge){
@@ -103,7 +109,7 @@ public class ArangoNamingConvention {
         if (edge.isEmbedded() && edge.getTarget() != null) {
             return getId(edge.getTarget());
         } else if (!edge.isEmbedded() && edge.getReference() != null) {
-            return getKeyFromReference(edge.getReference(), edge.isEmbedded());
+            return getIdFromReference(edge.getReference(), edge.isEmbedded());
         }
         return null;
     }

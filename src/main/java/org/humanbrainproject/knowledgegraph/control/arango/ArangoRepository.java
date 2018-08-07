@@ -8,7 +8,6 @@ import com.arangodb.entity.CollectionEntity;
 import com.arangodb.entity.CollectionType;
 import com.arangodb.model.AqlQueryOptions;
 import com.arangodb.model.CollectionCreateOptions;
-import com.github.jsonldjava.core.JsonLdConsts;
 import org.humanbrainproject.knowledgegraph.control.Configuration;
 import org.humanbrainproject.knowledgegraph.entity.Tuple;
 import org.humanbrainproject.knowledgegraph.entity.jsonld.JsonLdEdge;
@@ -68,7 +67,7 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
 
     public Set<String> getEmbeddedInstances(List<String> ids, ArangoDriver arango, Set<String> edgeCollectionNames, Set<String> result) {
         for (String id : ids) {
-            String keyFromReference = namingConvention.getKeyFromReference(id, false);
+            String keyFromReference = namingConvention.getIdFromReference(id, false);
             if (!result.contains(keyFromReference)) {
                 result.add(keyFromReference);
                 if(!edgeCollectionNames.isEmpty()) {
@@ -114,20 +113,25 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
     }
 
     void deleteDocument(String vertexId, ArangoDatabase db) {
-        String documentId = namingConvention.getKeyFromId(vertexId);
-        String collectionName = namingConvention.getCollectionNameFromId(vertexId);
-        ArangoCollection collection = db.collection(collectionName);
-        if (collection.exists() && collection.documentExists(documentId)) {
-            collection.deleteDocument(documentId);
-            if (collection.count().getCount() == 0) {
-                collection.drop();
-                ArangoCollection namelookup = db.collection(NAME_LOOKUP_MAP);
-                if (namelookup.exists() && namelookup.documentExists(collectionName)) {
-                    namelookup.deleteDocument(collectionName);
+        if(vertexId!=null) {
+            String documentId = namingConvention.getKeyFromId(vertexId);
+            String collectionName = namingConvention.getCollectionNameFromId(vertexId);
+            ArangoCollection collection = db.collection(collectionName);
+            if (collection.exists() && collection.documentExists(documentId)) {
+                collection.deleteDocument(documentId);
+                if (collection.count().getCount() == 0) {
+                    collection.drop();
+                    ArangoCollection namelookup = db.collection(NAME_LOOKUP_MAP);
+                    if (namelookup.exists() && namelookup.documentExists(collectionName)) {
+                        namelookup.deleteDocument(collectionName);
+                    }
                 }
+            } else {
+                logger.warn("Tried to delete {} although the collection doesn't exist. Skip.", vertexId);
             }
-        } else {
-            logger.warn("Tried to delete {} although the collection doesn't exist. Skip.", vertexId);
+        }
+        else{
+            logger.error("Was not able to delete document due to missing id");
         }
     }
 
@@ -144,7 +148,12 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
     }
 
     private void replaceDocument(String collectionName, String documentKey, String jsonPayload, ArangoDriver arango) {
-        arango.getOrCreateDB().collection(collectionName).replaceDocument(documentKey, jsonPayload);
+        if(collectionName!=null && documentKey!=null && jsonPayload!=null) {
+            arango.getOrCreateDB().collection(collectionName).replaceDocument(documentKey, jsonPayload);
+        }
+        else{
+            logger.error("Incomplete data. Was not able to update the document in {}/{} with payload {}", collectionName, documentKey, jsonPayload);
+        }
     }
 
     @Override
@@ -157,19 +166,24 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
     }
 
     private void insertDocument(String collectionName, String originalName, String jsonLd, CollectionType collectionType, ArangoDriver arango) {
-        ArangoDatabase db = arango.getOrCreateDB();
-        ArangoCollection collection = db.collection(collectionName);
-        if (!collection.exists()) {
-            logger.info("Create {} collection {}", collectionType, collectionName);
-            CollectionCreateOptions collectionCreateOptions = new CollectionCreateOptions();
-            collectionCreateOptions.type(collectionType);
-            db.createCollection(collectionName, collectionCreateOptions);
-            collection = db.collection(collectionName);
-            if (!collectionName.equals(NAME_LOOKUP_MAP) && originalName != null) {
-                insertDocument(NAME_LOOKUP_MAP, null, String.format("{\"orginalName\": \"%s\", \"_key\": \"%s\"}", originalName, collectionName), CollectionType.DOCUMENT, arango);
+        if(collectionName!=null && jsonLd!=null) {
+            ArangoDatabase db = arango.getOrCreateDB();
+            ArangoCollection collection = db.collection(collectionName);
+            if (!collection.exists()) {
+                logger.info("Create {} collection {}", collectionType, collectionName);
+                CollectionCreateOptions collectionCreateOptions = new CollectionCreateOptions();
+                collectionCreateOptions.type(collectionType);
+                db.createCollection(collectionName, collectionCreateOptions);
+                collection = db.collection(collectionName);
+                if (!collectionName.equals(NAME_LOOKUP_MAP) && originalName != null) {
+                    insertDocument(NAME_LOOKUP_MAP, null, String.format("{\"orginalName\": \"%s\", \"_key\": \"%s\"}", originalName, collectionName), CollectionType.DOCUMENT, arango);
+                }
             }
+            collection.insertDocument(jsonLd);
         }
-        collection.insertDocument(jsonLd);
+        else{
+            logger.error("Incomplete data. Was not able to insert the document in {} with payload {}", collectionName, jsonLd);
+        }
     }
 
     @Override

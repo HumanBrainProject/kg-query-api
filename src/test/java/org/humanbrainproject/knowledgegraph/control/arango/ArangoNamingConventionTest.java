@@ -26,21 +26,21 @@ public class ArangoNamingConventionTest {
 
 
     @Test
-    public void getKeyFromReference(){
-        String outcome = namingConvention.getKeyFromReference("http://nexus.humanbrainproject.org/v0/schema/org/domain/schema/v0.0.4/id/dfs", false);
+    public void getIdFromReference(){
+        String outcome = namingConvention.getIdFromReference("http://nexus.humanbrainproject.org/v0/schema/org/domain/schema/v0.0.4/id/dfs", false);
         assertEquals("org-domain-schema-v0_0_4/id-dfs", outcome);
     }
 
 
     @Test
-    public void getKeyFromExternalReference(){
-        String outcome = namingConvention.getKeyFromReference("http://foo.com/somereference", false);
+    public void getIdFromExternalReference(){
+        String outcome = namingConvention.getIdFromReference("http://foo.com/somereference", false);
         assertEquals("http://foo.com/somereference", outcome);
     }
 
     @Test
-    public void getKeyFromEmbeddedInstance(){
-        String outcome = namingConvention.getKeyFromReference("http://www.w3.org/ns/prov#qualifiedAssociation@minds/ethics/approval/v0.0.4/8542d679-9e15-471d-97e2-cbe915163a18", true);
+    public void getIdFromEmbeddedInstance(){
+        String outcome = namingConvention.getIdFromReference("http://www.w3.org/ns/prov#qualifiedAssociation@minds/ethics/approval/v0.0.4/8542d679-9e15-471d-97e2-cbe915163a18", true);
         assertEquals("www_w3_org-ns-prov-qualifiedAssociation/8b37ce04a01732c7669adaaa0589a480", outcome);
     }
 
