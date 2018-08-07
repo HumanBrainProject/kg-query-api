@@ -1,6 +1,5 @@
 package org.humanbrainproject.knowledgegraph.control.arango;
 
-import org.humanbrainproject.knowledgegraph.control.VertexRepository;
 import org.humanbrainproject.knowledgegraph.entity.jsonld.JsonLdEdge;
 import org.humanbrainproject.knowledgegraph.entity.jsonld.JsonLdVertex;
 import org.slf4j.Logger;
@@ -97,7 +96,6 @@ public class ArangoNamingConvention {
 
     private String getReferenceKey(String from, String to) {
         String hash = DigestUtils.md5DigestAsHex(String.format("%s-to-%s", from, to).getBytes());
-        logger.info("Calculate reference hash: from \"{}\" to \"{}\" results in \"{}\"", from, to, hash);
         return hash;
     }
 

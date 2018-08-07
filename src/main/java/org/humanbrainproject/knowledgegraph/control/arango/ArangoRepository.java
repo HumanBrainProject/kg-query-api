@@ -209,6 +209,7 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
         o.put("_to", to);
         String key = namingConvention.getReferenceKey(vertex, edge);
         o.put("_key", key);
+        logger.info("Created edge from \"{}\" to \"{}\" with hash \"{}\"");
         if (edge.getOrderNumber() != null && edge.getOrderNumber() >= 0) {
             o.put("orderNumber", edge.getOrderNumber());
         }
