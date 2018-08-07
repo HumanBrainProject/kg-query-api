@@ -105,10 +105,16 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
     }
 
     public void deleteVertex(String id, ArangoDriver arango) {
-        Set<String> edgesCollectionNames = arango.getEdgesCollectionNames();
-        Set<String> embeddedInstances = getEmbeddedInstances(Collections.singletonList(id), arango, edgesCollectionNames, new LinkedHashSet<>());
-        for (String embeddedInstance : embeddedInstances) {
-            deleteDocument(embeddedInstance, arango.getOrCreateDB());
+        ArangoCollection collection = arango.getOrCreateDB().collection(namingConvention.getCollectionNameFromId(id));
+        if(collection.exists() && collection.documentExists(namingConvention.getKeyFromId(id))) {
+            Set<String> edgesCollectionNames = arango.getEdgesCollectionNames();
+            Set<String> embeddedInstances = getEmbeddedInstances(Collections.singletonList(id), arango, edgesCollectionNames, new LinkedHashSet<>());
+            for (String embeddedInstance : embeddedInstances) {
+                deleteDocument(embeddedInstance, arango.getOrCreateDB());
+            }
+        }
+        else{
+            logger.warn("No deletion of {} because it does not exist in the database", id);
         }
     }
 

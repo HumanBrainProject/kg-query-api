@@ -74,7 +74,7 @@ public class ArangoIndexationAPI {
     @DeleteMapping(value="/{organization}/{domain}/{schema}/{schemaversion}/{id}", produces = MediaType.APPLICATION_JSON)
     public ResponseEntity<String> deleteInstance(@PathVariable("organization") String organization, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("schemaversion") String schemaVersion, @PathVariable("id") String id, @RequestAttribute(value="rev", required = false) Integer rev, @RequestParam(value = "authorId", required = false) String authorId, @RequestParam(value = "timestamp", required = false) String timestamp) throws IOException {
         String entityName = buildEntityName(organization, domain, schema, schemaVersion);
-        logger.info(String.format("Received delete request for {}/{} in rev {}", entityName, id, rev));
+        logger.info("Received delete request for {}/{} in rev {}", entityName, id, rev);
         try {
             indexer.delete(entityName, id, rev);
             return ResponseEntity.ok(null);
