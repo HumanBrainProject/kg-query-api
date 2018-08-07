@@ -107,6 +107,8 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
     public void deleteVertex(String id, ArangoDriver arango) {
         ArangoCollection collection = arango.getOrCreateDB().collection(namingConvention.getCollectionNameFromId(id));
         if(collection.exists() && collection.documentExists(namingConvention.getKeyFromId(id))) {
+
+
             Set<String> edgesCollectionNames = arango.getEdgesCollectionNames();
             Set<String> embeddedInstances = getEmbeddedInstances(Collections.singletonList(id), arango, edgesCollectionNames, new LinkedHashSet<>());
             for (String embeddedInstance : embeddedInstances) {
@@ -126,13 +128,13 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
             if (collection.exists() && collection.documentExists(documentId)) {
                 logger.info("Delete document: {}", documentId);
                 collection.deleteDocument(documentId);
-                if (collection.count().getCount() == 0) {
-                    collection.drop();
-                    ArangoCollection namelookup = db.collection(NAME_LOOKUP_MAP);
-                    if (namelookup.exists() && namelookup.documentExists(collectionName)) {
-                        namelookup.deleteDocument(collectionName);
-                    }
-                }
+//                if (collection.count().getCount() == 0) {
+//                    collection.drop();
+//                    ArangoCollection namelookup = db.collection(NAME_LOOKUP_MAP);
+//                    if (namelookup.exists() && namelookup.documentExists(collectionName)) {
+//                        namelookup.deleteDocument(collectionName);
+//                    }
+//                }
             } else {
                 logger.warn("Tried to delete {} although the collection doesn't exist. Skip.", vertexId);
             }
