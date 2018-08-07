@@ -119,6 +119,7 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
             ArangoCollection collection = db.collection(collectionName);
             if (collection.exists() && collection.documentExists(documentId)) {
                 collection.deleteDocument(documentId);
+                logger.info("Document deleted: {}", documentId);
                 if (collection.count().getCount() == 0) {
                     collection.drop();
                     ArangoCollection namelookup = db.collection(NAME_LOOKUP_MAP);
@@ -150,6 +151,7 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
     private void replaceDocument(String collectionName, String documentKey, String jsonPayload, ArangoDriver arango) {
         if(collectionName!=null && documentKey!=null && jsonPayload!=null) {
             arango.getOrCreateDB().collection(collectionName).replaceDocument(documentKey, jsonPayload);
+            logger.info("Document updated: {}", jsonPayload);
         }
         else{
             logger.error("Incomplete data. Was not able to update the document in {}/{} with payload {}", collectionName, documentKey, jsonPayload);
@@ -180,6 +182,7 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
                 }
             }
             collection.insertDocument(jsonLd);
+            logger.info("Document inserted: {}", jsonLd);
         }
         else{
             logger.error("Incomplete data. Was not able to insert the document in {} with payload {}", collectionName, jsonLd);
@@ -198,6 +201,8 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
 
     @Override
     protected void removeEdge(JsonLdVertex vertex, JsonLdEdge edge, ArangoDriver transactionOrConnection) throws JSONException {
+
+
         deleteDocument(namingConvention.getEdgeTarget(edge), transactionOrConnection.getOrCreateDB());
     }
 
@@ -209,7 +214,6 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
         o.put("_to", to);
         String key = namingConvention.getReferenceKey(vertex, edge);
         o.put("_key", key);
-        logger.info("Created edge from \"{}\" to \"{}\" with hash \"{}\"");
         if (edge.getOrderNumber() != null && edge.getOrderNumber() >= 0) {
             o.put("orderNumber", edge.getOrderNumber());
         }
