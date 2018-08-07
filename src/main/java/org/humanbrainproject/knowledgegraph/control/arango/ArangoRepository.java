@@ -197,7 +197,10 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
             collection = db.collection(collectionName);
         }
         if (!collectionName.equals(NAME_LOOKUP_MAP) && originalName != null) {
-            insertDocument(NAME_LOOKUP_MAP, null, String.format("{\"originalName\": \"%s\", \"_key\": \"%s\"}", originalName, collectionName), CollectionType.DOCUMENT, arango);
+            ArangoCollection namelookup = createCollectionIfNotExists(NAME_LOOKUP_MAP, null, CollectionType.DOCUMENT, arango);
+            if(!namelookup.documentExists(collectionName)) {
+                insertDocument(NAME_LOOKUP_MAP, null, String.format("{\"originalName\": \"%s\", \"_key\": \"%s\"}", originalName, collectionName), CollectionType.DOCUMENT, arango);
+            }
         }
         return collection;
     }
