@@ -1,6 +1,5 @@
 package org.humanbrainproject.knowledgegraph.control.arango;
 
-import com.arangodb.ArangoDatabase;
 import org.humanbrainproject.knowledgegraph.control.Configuration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -14,7 +13,7 @@ public class ArangoQueryFactory {
     Configuration configuration;
 
     public String queryEdgesToBeRemoved(String documentId, Set<String> edgeCollectionNames, Set<String> excludeIds, ArangoDriver driver){
-        Set<String> collectionLabels= driver!=null ? driver.filterExistingCollectionLabels(edgeCollectionNames) : edgeCollectionNames;
+        Set<String> collectionLabels=driver!=null ? driver.filterExistingCollectionLabels(edgeCollectionNames) : edgeCollectionNames;
         return String.format("LET doc = DOCUMENT(\"%s\")\n" +
                 "    FOR v, e IN OUTBOUND doc `%s`\n" +
                 "       FILTER e._id NOT IN [\"%s\"]\n" +
@@ -35,7 +34,7 @@ public class ArangoQueryFactory {
     }
 
     public String queryArangoNameMappings(String lookupCollection){
-        return String.format("FOR doc IN `%s` RETURN {\"arango\": doc._key, \"original\": doc.orginalName}", lookupCollection);
+        return String.format("FOR doc IN `%s` RETURN {\"arango\": doc._key, \"original\": doc.originalName}", lookupCollection);
     }
 
     public String createEmbeddedInstancesQuery(Set<String> edgeCollectionNames, String id, ArangoDriver driver) {

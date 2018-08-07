@@ -195,9 +195,9 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
             collectionCreateOptions.type(collectionType);
             db.createCollection(collectionName, collectionCreateOptions);
             collection = db.collection(collectionName);
-            if (!collectionName.equals(NAME_LOOKUP_MAP) && originalName != null) {
-                insertDocument(NAME_LOOKUP_MAP, null, String.format("{\"orginalName\": \"%s\", \"_key\": \"%s\"}", originalName, collectionName), CollectionType.DOCUMENT, arango);
-            }
+        }
+        if (!collectionName.equals(NAME_LOOKUP_MAP) && originalName != null) {
+            insertDocument(NAME_LOOKUP_MAP, null, String.format("{\"originalName\": \"%s\", \"_key\": \"%s\"}", originalName, collectionName), CollectionType.DOCUMENT, arango);
         }
         return collection;
     }
