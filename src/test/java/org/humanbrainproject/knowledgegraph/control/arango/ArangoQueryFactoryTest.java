@@ -22,11 +22,12 @@ public class ArangoQueryFactoryTest {
     @Test
     public void createEmbeddedInstancesQuery() {
         Set<String> collectionNames = new HashSet<String>();
-        collectionNames.add("http://foo.org/bar");
-        collectionNames.add("http://bar.org/foo");
-        String query = repository.createEmbeddedInstancesQuery(collectionNames, "helloWorld");
-        assertEquals("FOR v, e IN 1..1 OUTBOUND \"helloWorld\" `http://bar.org/foo`, `http://foo.org/bar` \n" +
+        collectionNames.add("foo-org-bar-v0_0_1");
+        collectionNames.add("bar-org-foo-v0_0_1");
+        String query = repository.createEmbeddedInstancesQuery(collectionNames, "helloWorld", null);
+        assertEquals("FOR v, e IN 1..1 OUTBOUND \"helloWorld\" `bar-org-foo-v0_0_1`, `foo-org-bar-v0_0_1` \n" +
                 "        \n" +
                 "        return {\"vertexId\":v._id, \"edgeId\": e._id, \"isEmbedded\": v.`http://schema.hbp.eu/internal#embedded`==true}", query);
+        System.out.print(query);
     }
 }

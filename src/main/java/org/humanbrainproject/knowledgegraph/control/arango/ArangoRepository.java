@@ -71,7 +71,7 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
             if (!result.contains(keyFromReference)) {
                 result.add(keyFromReference);
                 if(!edgeCollectionNames.isEmpty()) {
-                    ArangoCursor<Map> q = arango.getOrCreateDB().query(queryFactory.createEmbeddedInstancesQuery(edgeCollectionNames, keyFromReference), null, new AqlQueryOptions(), Map.class);
+                    ArangoCursor<Map> q = arango.getOrCreateDB().query(queryFactory.createEmbeddedInstancesQuery(edgeCollectionNames, keyFromReference, arango), null, new AqlQueryOptions(), Map.class);
                     List<Map> queryResult = q.asListRemaining();
                     if (queryResult != null) {
                         List<String> embeddedIds = queryResult.stream().filter(e -> (Boolean) e.get("isEmbedded")).map(e -> e.get("vertexId").toString()).collect(Collectors.toList());
@@ -309,7 +309,7 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
         //Query for edges of this vertex not containing the edges to be created
         Set<String> edgesCollectionNames = arango.getEdgesCollectionNames();
         if (!edgesCollectionNames.isEmpty()) {
-            String query = queryFactory.queryEdgesToBeRemoved(namingConvention.getId(vertex), edgesCollectionNames, idsOfNewEdges);
+            String query = queryFactory.queryEdgesToBeRemoved(namingConvention.getId(vertex), edgesCollectionNames, idsOfNewEdges, arango);
             List<String> ids = arango.getOrCreateDB().query(query, null, new AqlQueryOptions(), String.class).asListRemaining();
             return ids.parallelStream().map(i -> {
                 JsonLdEdge e = new JsonLdEdge();

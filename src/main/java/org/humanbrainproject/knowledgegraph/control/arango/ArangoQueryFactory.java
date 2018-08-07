@@ -1,5 +1,6 @@
 package org.humanbrainproject.knowledgegraph.control.arango;
 
+import com.arangodb.ArangoDatabase;
 import org.humanbrainproject.knowledgegraph.control.Configuration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -12,11 +13,12 @@ public class ArangoQueryFactory {
     @Autowired
     Configuration configuration;
 
-    public String queryEdgesToBeRemoved(String documentId, Set<String> edgeCollectionNames, Set<String> excludeIds){
+    public String queryEdgesToBeRemoved(String documentId, Set<String> edgeCollectionNames, Set<String> excludeIds, ArangoDriver driver){
+        Set<String> collectionLabels= driver!=null ? driver.filterExistingCollectionLabels(edgeCollectionNames) : edgeCollectionNames;
         return String.format("LET doc = DOCUMENT(\"%s\")\n" +
                 "    FOR v, e IN OUTBOUND doc `%s`\n" +
                 "       FILTER e._id NOT IN [\"%s\"]\n" +
-                "       return e._id", documentId, String.join("`, `", edgeCollectionNames), String.join("\", \"", excludeIds));
+                "       return e._id", documentId, String.join("`, `", collectionLabels), String.join("\", \"", excludeIds));
     }
 
     public String queryEdgeByFromAndTo(String edgeLabel, String from, String to){
@@ -36,12 +38,12 @@ public class ArangoQueryFactory {
         return String.format("FOR doc IN `%s` RETURN {\"arango\": doc._key, \"original\": doc.orginalName}", lookupCollection);
     }
 
-    public String createEmbeddedInstancesQuery(Set<String> edgeCollectionNames, String id) {
-        String names = String.join("`, `", edgeCollectionNames);
-        String query = String.format("FOR v, e IN 1..1 OUTBOUND \"%s\" `%s` \n" +
+    public String createEmbeddedInstancesQuery(Set<String> edgeCollectionNames, String id, ArangoDriver driver) {
+        Set<String> collectionLabels= driver!=null ? driver.filterExistingCollectionLabels(edgeCollectionNames) : edgeCollectionNames;
+        String names = String.join("`, `", collectionLabels);
+        return String.format("FOR v, e IN 1..1 OUTBOUND \"%s\" `%s` \n" +
                 "        \n" +
                 "        return {\"vertexId\":v._id, \"edgeId\": e._id, \"isEmbedded\": v.`%s`==true}", id, names, configuration.getEmbedded());
-        return query;
     }
 
 }

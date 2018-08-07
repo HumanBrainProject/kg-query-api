@@ -50,4 +50,14 @@ public class ArangoDriver {
         }
         return kg;
     }
+
+    public Set<String> getCollectionLabels() {
+        return getOrCreateDB().getCollections().stream().map(CollectionEntity::getName).collect(Collectors.toSet());
+    }
+
+    public Set<String> filterExistingCollectionLabels(Set<String> collectionLabels){
+        Set<String> existingCollectionLabels = getCollectionLabels();
+        return collectionLabels.stream().filter(existingCollectionLabels::contains).collect(Collectors.toSet());
+    }
+
 }
