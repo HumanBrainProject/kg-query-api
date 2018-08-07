@@ -177,18 +177,7 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
 
     private void insertDocument(String collectionName, String originalName, String jsonLd, CollectionType collectionType, ArangoDriver arango) {
         if(collectionName!=null && jsonLd!=null) {
-            ArangoDatabase db = arango.getOrCreateDB();
-            ArangoCollection collection = db.collection(collectionName);
-            if (!collection.exists()) {
-                logger.info("Create {} collection {}", collectionType, collectionName);
-                CollectionCreateOptions collectionCreateOptions = new CollectionCreateOptions();
-                collectionCreateOptions.type(collectionType);
-                db.createCollection(collectionName, collectionCreateOptions);
-                collection = db.collection(collectionName);
-                if (!collectionName.equals(NAME_LOOKUP_MAP) && originalName != null) {
-                    insertDocument(NAME_LOOKUP_MAP, null, String.format("{\"orginalName\": \"%s\", \"_key\": \"%s\"}", originalName, collectionName), CollectionType.DOCUMENT, arango);
-                }
-            }
+            ArangoCollection collection = createCollectionIfNotExists(collectionName, originalName, collectionType, arango);
             logger.info("Insert document: {}", jsonLd);
             collection.insertDocument(jsonLd);
         }
@@ -197,29 +186,44 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
         }
     }
 
-    @Override
-    protected void createEdge(JsonLdVertex vertex, JsonLdEdge edge, ArangoDriver arango) throws JSONException {
-        insertDocument(namingConvention.getEdgeLabel(edge), null, createEdgeDocument(vertex, edge).toString(), CollectionType.EDGES, arango);
+    private ArangoCollection createCollectionIfNotExists(String collectionName, String originalName, CollectionType collectionType, ArangoDriver arango) {
+        ArangoDatabase db = arango.getOrCreateDB();
+        ArangoCollection collection = db.collection(collectionName);
+        if (!collection.exists()) {
+            logger.info("Create {} collection {}", collectionType, collectionName);
+            CollectionCreateOptions collectionCreateOptions = new CollectionCreateOptions();
+            collectionCreateOptions.type(collectionType);
+            db.createCollection(collectionName, collectionCreateOptions);
+            collection = db.collection(collectionName);
+            if (!collectionName.equals(NAME_LOOKUP_MAP) && originalName != null) {
+                insertDocument(NAME_LOOKUP_MAP, null, String.format("{\"orginalName\": \"%s\", \"_key\": \"%s\"}", originalName, collectionName), CollectionType.DOCUMENT, arango);
+            }
+        }
+        return collection;
     }
 
     @Override
-    protected void replaceEdge(JsonLdVertex vertex, JsonLdEdge edge, ArangoDriver transactionOrConnection) throws JSONException {
-        replaceDocument(namingConvention.getEdgeLabel(edge), namingConvention.getReferenceKey(vertex, edge), createEdgeDocument(vertex, edge).toString(), transactionOrConnection);
+    protected void createEdge(JsonLdVertex vertex, JsonLdEdge edge, ArangoDriver arango) throws JSONException {
+        insertDocument(namingConvention.getEdgeLabel(edge), null, createEdgeDocument(vertex, edge, arango).toString(), CollectionType.EDGES, arango);
+    }
+
+    @Override
+    protected void replaceEdge(JsonLdVertex vertex, JsonLdEdge edge, ArangoDriver arango) throws JSONException {
+        replaceDocument(namingConvention.getEdgeLabel(edge), namingConvention.getReferenceKey(vertex, edge), createEdgeDocument(vertex, edge, arango).toString(), arango);
     }
 
     @Override
     protected void removeEdge(JsonLdVertex vertex, JsonLdEdge edge, ArangoDriver transactionOrConnection) throws JSONException {
-
-
         deleteDocument(namingConvention.getEdgeTarget(edge), transactionOrConnection.getOrCreateDB());
     }
 
-    private JSONObject createEdgeDocument(JsonLdVertex vertex, JsonLdEdge edge) throws JSONException {
+    private JSONObject createEdgeDocument(JsonLdVertex vertex, JsonLdEdge edge, ArangoDriver arango) throws JSONException {
         JSONObject o = new JSONObject();
         String from = namingConvention.getId(vertex);
         o.put("_from", from);
         String to = namingConvention.getEdgeTarget(edge);
         o.put("_to", to);
+        createCollectionIfNotExists(namingConvention.getCollectionNameFromId(to), null, CollectionType.DOCUMENT, arango);
         String key = namingConvention.getReferenceKey(vertex, edge);
         o.put("_key", key);
         if (edge.getOrderNumber() != null && edge.getOrderNumber() >= 0) {
