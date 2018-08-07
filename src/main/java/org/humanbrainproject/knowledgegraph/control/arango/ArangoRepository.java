@@ -118,8 +118,8 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
             String collectionName = namingConvention.getCollectionNameFromId(vertexId);
             ArangoCollection collection = db.collection(collectionName);
             if (collection.exists() && collection.documentExists(documentId)) {
+                logger.info("Delete document: {}", documentId);
                 collection.deleteDocument(documentId);
-                logger.info("Document deleted: {}", documentId);
                 if (collection.count().getCount() == 0) {
                     collection.drop();
                     ArangoCollection namelookup = db.collection(NAME_LOOKUP_MAP);
@@ -150,8 +150,8 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
 
     private void replaceDocument(String collectionName, String documentKey, String jsonPayload, ArangoDriver arango) {
         if(collectionName!=null && documentKey!=null && jsonPayload!=null) {
+            logger.info("Update document: {}", jsonPayload);
             arango.getOrCreateDB().collection(collectionName).replaceDocument(documentKey, jsonPayload);
-            logger.info("Document updated: {}", jsonPayload);
         }
         else{
             logger.error("Incomplete data. Was not able to update the document in {}/{} with payload {}", collectionName, documentKey, jsonPayload);
@@ -181,8 +181,8 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
                     insertDocument(NAME_LOOKUP_MAP, null, String.format("{\"orginalName\": \"%s\", \"_key\": \"%s\"}", originalName, collectionName), CollectionType.DOCUMENT, arango);
                 }
             }
+            logger.info("Insert document: {}", jsonLd);
             collection.insertDocument(jsonLd);
-            logger.info("Document inserted: {}", jsonLd);
         }
         else{
             logger.error("Incomplete data. Was not able to insert the document in {} with payload {}", collectionName, jsonLd);
