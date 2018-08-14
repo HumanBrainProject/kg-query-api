@@ -3,6 +3,7 @@ package org.humanbrainproject.knowledgegraph.control.arango.query;
 import com.arangodb.entity.CollectionEntity;
 import com.arangodb.model.AqlQueryOptions;
 import com.github.jsonldjava.utils.JsonUtils;
+import com.google.gson.Gson;
 import org.humanbrainproject.knowledgegraph.control.Configuration;
 import org.humanbrainproject.knowledgegraph.control.arango.ArangoDriver;
 import org.humanbrainproject.knowledgegraph.control.arango.ArangoNamingConvention;
@@ -31,67 +32,90 @@ public class ArangoSpecificationQuery {
     @Autowired
     Configuration configuration;
 
+    Gson gson = new Gson();
 
-    public List<Object> queryForSpecification(Specification spec, Set<String> whiteListOrganizations, Integer size, Integer start) throws JSONException {
+
+    public List<Map> queryForSpecification(Specification spec, Set<String> whiteListOrganizations, Integer size, Integer start) throws JSONException {
         String query = createQuery(spec, whiteListOrganizations, size, start);
         List<String> strings = arangoDriver.getOrCreateDB().query(query, null, new AqlQueryOptions(), String.class).asListRemaining();
-        return strings.parallelStream().map(s -> {
-            try {
-                return JsonUtils.fromString(s);
-            } catch (IOException e) {
-                e.printStackTrace();
-                return null;
-            }
-        }).collect(Collectors.toList());
+        return strings.parallelStream().map(s -> gson.fromJson(s, Map.class)).collect(Collectors.toList());
     }
 
     String createQuery(Specification spec, Set<String> whitelistOrganizations, Integer size, Integer start) throws JSONException {
         Set<String> collectionLabels = arangoDriver.getCollectionLabels();
         ArangoQueryBuilder queryBuilder = new ArangoQueryBuilder(size, start, configuration.getPermissionGroup());
         String vertexLabel = namingConvention.getVertexLabel(spec.rootSchema);
-        if(collectionLabels.contains(vertexLabel)) {
+        if (collectionLabels.contains(vertexLabel)) {
             queryBuilder.addRoot(vertexLabel, whitelistOrganizations);
-            handleFields(spec.fields, queryBuilder, collectionLabels);
-        }
-        else{
+            handleFields(spec.fields, queryBuilder, collectionLabels, true);
+        } else {
             throw new RuntimeException(String.format("Was not able to find the vertex collection with the name %s", vertexLabel));
         }
         return queryBuilder.build();
     }
 
-    private void handleFields(List<SpecField> fields, ArangoQueryBuilder queryBuilder, Set<String> collectionLabels){
+    private void handleFields(List<SpecField> fields, ArangoQueryBuilder queryBuilder, Set<String> collectionLabels, boolean isRoot) {
         Set<String> skipFields = new HashSet<>();
         for (SpecField field : fields) {
-            if(field.needsTraversal()){
+            if (field.needsTraversal()) {
                 String fieldName = namingConvention.replaceSpecialCharacters(field.fieldName);
                 SpecTraverse firstTraversal = field.getFirstTraversal();
                 String edgeLabel = namingConvention.getEdgeLabel(firstTraversal.pathName);
-                if(collectionLabels.contains(edgeLabel)) {
+                if (collectionLabels.contains(edgeLabel)) {
                     queryBuilder.enterTraversal(namingConvention.queryKey(fieldName), field.numberOfDirectTraversals(), firstTraversal.reverse, edgeLabel);
                     for (SpecTraverse traversal : field.getAdditionalDirectTraversals()) {
                         edgeLabel = namingConvention.getEdgeLabel(traversal.pathName);
-                        if(collectionLabels.contains(edgeLabel)){
+                        if (collectionLabels.contains(edgeLabel)) {
                             queryBuilder.addTraversal(traversal.reverse, edgeLabel);
-                        }
-                        else{
+                        } else {
                             skipFields.add(field.fieldName);
                         }
                     }
                     if (field.fields.isEmpty()) {
+                        if (field.isSortAlphabetically()){
+                            queryBuilder.addSortByLeafField(Collections.singleton(field.getLeafPath().pathName));
+                        }
                         queryBuilder.addSimpleLeafResultField(field.getLeafPath().pathName);
                     } else {
-                        handleFields(field.fields, queryBuilder, collectionLabels);
+                        handleFields(field.fields, queryBuilder, collectionLabels, false);
                     }
                     queryBuilder.leaveTraversal();
-                }
-                else{
+                } else {
                     skipFields.add(field.fieldName);
                 }
             }
         }
+        queryBuilder.addFilter();
+        for (SpecField field : fields) {
+            if (!skipFields.contains(field.fieldName)) {
+                if(field.isRequired()){
+                    if (field.needsTraversal()) {
+                        queryBuilder.addTraversalFieldRequiredFilter(namingConvention.queryKey(namingConvention.replaceSpecialCharacters(field.fieldName)));
+                    } else if (field.isLeaf()) {
+                        queryBuilder.addComplexFieldRequiredFilter(field.getLeafPath().pathName);
+                    }
+                }
+            }
+        }
+        if(isRoot){
+            queryBuilder.addLimit();
+        }
+
+        Set<String> sortFields = new LinkedHashSet<>();
+        for (SpecField field : fields) {
+            if (!skipFields.contains(field.fieldName)) {
+                if(field.isLeaf() && field.isSortAlphabetically()){
+                    sortFields.add(field.getLeafPath().pathName);
+                }
+            }
+        }
+        if(!sortFields.isEmpty()) {
+            queryBuilder.addSortByLeafField(sortFields);
+        }
+
         queryBuilder.startReturnStructure(false);
         for (SpecField field : fields) {
-            if(!skipFields.contains(field.fieldName)) {
+            if (!skipFields.contains(field.fieldName)) {
                 if (field.needsTraversal()) {
                     queryBuilder.addTraversalResultField(field.fieldName, namingConvention.queryKey(namingConvention.replaceSpecialCharacters(field.fieldName)));
                 } else if (field.isLeaf()) {

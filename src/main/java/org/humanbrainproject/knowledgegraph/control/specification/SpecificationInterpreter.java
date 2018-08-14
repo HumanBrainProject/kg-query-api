@@ -24,7 +24,9 @@ public class SpecificationInterpreter {
    private static final String GRAPH_QUERY_FIELDNAME = GRAPH_QUERY_VOCAB+"/fieldname";
    private static final String GRAPH_QUERY_RELATIVE_PATH = GRAPH_QUERY_VOCAB+"/relative_path";
    private static final String GRAPH_QUERY_FIELDS = GRAPH_QUERY_VOCAB+"/fields";
+   private static final String GRAPH_QUERY_REQUIRED = GRAPH_QUERY_VOCAB+"/required";
    private static final String GRAPH_QUERY_REVERSE = GRAPH_QUERY_VOCAB+"/reverse";
+   private static final String GRAPH_QUERY_SORT=GRAPH_QUERY_VOCAB+"/sort";
    private static final String SCHEMA_ORG_NAME = "http://schema.org/name";
 
 
@@ -68,6 +70,8 @@ public class SpecificationInterpreter {
 
                        String fieldName = null;
                        List<SpecField> specFields = null;
+                       boolean required = false;
+                       boolean sortAlphabetically=false;
                        if(originObj.has(GRAPH_QUERY_FIELDNAME)) {
                            fieldName = originObj.getJSONObject(GRAPH_QUERY_FIELDNAME).getString(JsonLdConsts.ID);
                        }
@@ -78,7 +82,13 @@ public class SpecificationInterpreter {
                        if(originObj.has(GRAPH_QUERY_FIELDS)) {
                            specFields = createSpecFields(originObj.get(GRAPH_QUERY_FIELDS));
                        }
-                       return Collections.singletonList(new SpecField(fieldName, specFields, traversalPath));
+                       if(originObj.has(GRAPH_QUERY_REQUIRED)){
+                           required =  originObj.getBoolean(GRAPH_QUERY_REQUIRED);
+                       }
+                       if(originObj.has(GRAPH_QUERY_SORT)){
+                           sortAlphabetically = originObj.getBoolean(GRAPH_QUERY_SORT);
+                       }
+                       return Collections.singletonList(new SpecField(fieldName, specFields, traversalPath, required, sortAlphabetically));
                    }
                }
            }

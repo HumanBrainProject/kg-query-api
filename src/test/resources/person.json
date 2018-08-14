@@ -1,0 +1,136 @@
+{
+  "@context": {
+    "@vocab": "http://schema.hbp.eu/graph_query/",
+    "schema": "http://schema.org/",
+    "minds": "http://hbp.eu/minds#",
+    "search": "http://schema.hbp.eu/search_ui/",
+    "nexus": "https://nexus-dev.humanbrainproject.org/vocabs/nexus/core/terms/v0.1.0/",
+    "nexus_instance": "https://nexus-dev.humanbrainproject.org/v0/schemas/",
+    "fieldname": {
+      "@id": "fieldname",
+      "@type": "@id"
+    },
+    "relative_path": {
+      "@id": "relative_path",
+      "@type": "@id"
+    },
+    "root_schema": {
+      "@id": "root_schema",
+      "@type": "@id"
+    }
+  },
+  "@type": "DataTransformation",
+  "schema:name": "Person",
+  "root_schema": "nexus_instance:minds/core/person/v0.0.4",
+  "fields": [
+    {
+      "relative_path": "schema:identifier",
+      "required": true
+    },
+    {
+      "fieldname": "search:title",
+      "relative_path": "schema:name",
+      "required": true
+    },
+    {
+      "fieldname": "search:description",
+      "relative_path": "schema:description"
+    },
+    {
+      "fieldname": "search:email",
+      "relative_path": "schema:email"
+    },
+    {
+      "fieldname": "search:phone",
+      "relative_path": "schema:telephone"
+    },
+    {
+      "fieldname": "search:address",
+      "relative_path": "schema:address"
+    },
+    {
+      "fieldname": "search:organizations",
+      "relative_path": ["minds:affiliations", "schema:name"]
+    },
+    {
+      "fieldname": "search:custodian_of",
+      "relative_path": {"@id": "minds:owners", "reverse": true},
+      "fields": [
+        {
+          "fieldname": "search:name",
+          "relative_path": "schema:name"
+        },
+        {
+          "fieldname": "search:uuid",
+          "relative_path": "nexus:uuid"
+        },
+        {
+          "fieldname": "search:identifier",
+          "relative_path": "schema:identifier"
+        },
+        {
+          "fieldname": "search:datasetComponent",
+          "relative_path": ["minds:component", "schema:name"]
+        }
+      ]
+    },
+    {
+      "fieldname": "search:publications",
+      "relative_path": {"@id": "minds:authors", "reverse":true},
+      "fields": [
+        {
+          "fieldname": "search:citation",
+          "relative_path": "minds:cite"
+        },
+        {
+          "fieldname": "search:doi",
+          "relative_path": "minds:doi"
+        }
+      ]
+    },
+    {
+      "fieldname": "search:owner_of",
+      "relative_path": {"@id": "minds:owners", "reverse": true},
+      "fields": [
+        {
+          "fieldname": "search:name",
+          "relative_path": "schema:name"
+        },
+        {
+          "fieldname": "search:uuid",
+          "relative_path": "nexus:uuid"
+        },
+        {
+          "fieldname": "search:identifier",
+          "relative_path": "schema:identifier"
+        },
+        {
+          "fieldname": "search:datasetComponent",
+          "relative_path": ["minds:component", "schema:name"]
+        }
+      ]
+    },
+    {
+      "fieldname": "search:contributions",
+      "relative_path": {"@id": "minds:contributors", "reverse": true},
+      "fields": [
+        {
+          "fieldname": "search:name",
+          "relative_path": "schema:name"
+        },
+        {
+          "fieldname": "search:uuid",
+          "relative_path": "nexus:uuid"
+        },
+        {
+          "fieldname": "search:identifier",
+          "relative_path": "schema:identifier"
+        },
+        {
+          "fieldname": "search:datasetComponent",
+          "relative_path": ["minds:component", "schema:name"]
+        }
+      ]
+    }
+  ]
+}

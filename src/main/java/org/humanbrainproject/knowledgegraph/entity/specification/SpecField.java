@@ -8,11 +8,19 @@ public class SpecField {
     public final String fieldName;
     public final List<SpecField> fields;
     public final List<SpecTraverse> traversePath;
+    public final boolean required;
+    public final boolean sortAlphabetically;
 
-    public SpecField(String fieldName, List<SpecField> fields, List<SpecTraverse> traversePath) {
+    public SpecField(String fieldName, List<SpecField> fields, List<SpecTraverse> traversePath, boolean required, boolean sortAlphabetically) {
         this.fieldName = fieldName;
+        this.required = required;
         this.fields = fields == null ? Collections.emptyList() : Collections.unmodifiableList(fields);
         this.traversePath = Collections.unmodifiableList(traversePath);
+        this.sortAlphabetically = sortAlphabetically;
+    }
+
+    public boolean isRequired() {
+        return required;
     }
 
     public boolean isLeaf(){
@@ -56,4 +64,7 @@ public class SpecField {
         }
     }
 
+    public boolean isSortAlphabetically() {
+        return sortAlphabetically;
+    }
 }

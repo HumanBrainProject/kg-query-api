@@ -4,8 +4,11 @@ import org.springframework.boot.configurationprocessor.json.JSONArray;
 import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.boot.configurationprocessor.json.JSONObject;
 
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.Stack;
+import java.util.stream.Collectors;
 
 public class ArangoQueryBuilder {
     private static String DOC_POSTFIX = "doc";
@@ -47,8 +50,17 @@ public class ArangoQueryBuilder {
         sb.append(String.format(", %s `%s`", reverse ? "INBOUND" : "OUTBOUND", relationCollection));
     }
 
+    public void addComplexFieldRequiredFilter(String leaf_field){
+        sb.append(String.format("\n%s AND %s_%s.`%s` != null ", getIndentation(), currentAlias, DOC_POSTFIX, leaf_field));
+    }
+
+    public void addTraversalFieldRequiredFilter(String alias){
+        sb.append(String.format("\n%s AND %s != []", getIndentation(), alias));
+    }
+
+
+
     public void startReturnStructure(boolean simple){
-        addFilter();
         sb.append(String.format("\n%s  RETURN %s", getIndentation(), simple ? "": "{\n"));
         simpleReturn = simple;
     }
@@ -71,23 +83,25 @@ public class ArangoQueryBuilder {
         for (String whiteListOrganization : whiteListOrganizations) {
             array.put(whiteListOrganization);
         }
-
         sb.append(String.format("LET whitelist_organizations=%s\n", array.toString()));
         sb.append(String.format("FOR %s_%s IN `%s`\n", ROOT_ALIAS, DOC_POSTFIX, rootCollection));
-        if(size!=null){
-            if(start!=null){
-                sb.append(String.format("LIMIT %d, %d\n", start, size));
-            }
-            else{
-                sb.append(String.format("LIMIT %d\n", size));
-            }
-        }
         addFilter();
         return this;
     }
 
-    private void addFilter() {
+    public void addFilter() {
         sb.append(String.format(" FILTER %s_%s.`%s` IN whitelist_organizations ", currentAlias, DOC_POSTFIX, permissionGroupFieldName));
+    }
+
+    public void addLimit(){
+        if(size!=null){
+            if(start!=null){
+                sb.append(String.format("\nLIMIT %d, %d\n", start, size));
+            }
+            else{
+                sb.append(String.format("\nLIMIT %d\n", size));
+            }
+        }
     }
 
     public void addTraversalResultField(String targetName, String alias){
@@ -96,6 +110,12 @@ public class ArangoQueryBuilder {
         }
         sb.append(String.format("%s    \"%s\": %s", getIndentation(), targetName, alias));
         firstReturnEntry = false;
+    }
+
+    public void addSortByLeafField(Set<String> fields){
+        List<String> fullSortFields = fields.stream().map(s -> String.format("%s_%s.`%s`", currentAlias, DOC_POSTFIX, s)).collect(Collectors.toList());
+        String concat = String.join(", ", fullSortFields);
+        sb.append(String.format("%s   SORT %s ASC\n", getIndentation(), concat));
     }
 
     public void addComplexLeafResultField(String targetName, String leaf_field){
@@ -111,7 +131,7 @@ public class ArangoQueryBuilder {
             sb.append(",\n");
             addFilter();
         }
-        sb.append(String.format("\n%s  RETURN %s_%s.`%s`\n", getIndentation(), currentAlias, DOC_POSTFIX, leaf_field));
+        sb.append(String.format("\n%s  RETURN DISTINCT %s_%s.`%s`\n", getIndentation(), currentAlias, DOC_POSTFIX, leaf_field));
         firstReturnEntry = true;
     }
 

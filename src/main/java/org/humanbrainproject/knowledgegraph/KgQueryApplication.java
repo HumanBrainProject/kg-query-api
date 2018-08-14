@@ -23,6 +23,12 @@ public class KgQueryApplication {
 	}
 
 	@Bean
+	@Qualifier("internal-test")
+	public ArangoDriver createInternalTestDb() {
+		return new ArangoDriver("kg_internal");
+	}
+
+	@Bean
 	@Qualifier("released-test")
 	public ArangoDriver createReleasedTestDb() {
 		return new ArangoDriver("kg_released-test");
@@ -32,6 +38,12 @@ public class KgQueryApplication {
 	@Qualifier("default")
 	public ArangoDriver createDefaultDb() {
 		return new ArangoDriver("kg");
+	}
+
+	@Bean
+	@Qualifier("internal")
+	public ArangoDriver createInternalDb() {
+		return new ArangoDriver("kg_internal");
 	}
 
 	@Bean
