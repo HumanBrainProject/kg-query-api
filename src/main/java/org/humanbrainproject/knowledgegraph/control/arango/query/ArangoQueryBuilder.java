@@ -1,5 +1,6 @@
 package org.humanbrainproject.knowledgegraph.control.arango.query;
 
+import org.humanbrainproject.knowledgegraph.entity.specification.SpecField;
 import org.springframework.boot.configurationprocessor.json.JSONArray;
 import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.boot.configurationprocessor.json.JSONObject;
@@ -32,10 +33,10 @@ public class ArangoQueryBuilder {
         return sb.toString();
     }
 
-    public void enterTraversal(String targetName, int numberOfTraversals, boolean reverse, String relationCollection){
+    public void enterTraversal(String targetName, int numberOfTraversals, boolean reverse, String relationCollection, boolean hasGroup){
         previousAlias.push(currentAlias);
         currentAlias = targetName;
-        sb.append(String.format("\n%sLET %s = ( FOR %s_%s IN %d..%d %s %s_%s `%s`", getIndentation(), currentAlias, currentAlias, DOC_POSTFIX, numberOfTraversals, numberOfTraversals, reverse? "INBOUND" : "OUTBOUND", previousAlias.peek(), DOC_POSTFIX, relationCollection));
+        sb.append(String.format("\n%sLET %s = %s ( FOR %s_%s IN %d..%d %s %s_%s `%s`", getIndentation(), currentAlias, hasGroup ? " (FOR grp IN " : "", currentAlias, DOC_POSTFIX, numberOfTraversals, numberOfTraversals, reverse? "INBOUND" : "OUTBOUND", previousAlias.peek(), DOC_POSTFIX, relationCollection));
     }
 
     private String getIndentation(){
@@ -73,9 +74,28 @@ public class ArangoQueryBuilder {
         firstReturnEntry = true;
     }
 
+
     public void leaveTraversal(){
         sb.append(")\n");
         currentAlias = previousAlias.pop();
+    }
+
+    public void buildGrouping(String groupedInstancesLabel, List<String> groupingFields, List<String> nonGroupingFields){
+        sb.append("COLLECT ");
+        List<String> groupings = groupingFields.stream().map(f -> String.format("`%s` = grp.`%s`", f, f)).collect(Collectors.toList());
+        sb.append(String.join(", ", groupings));
+        sb.append(" INTO group\n");
+        sb.append( "LET instances = ( FOR el IN group RETURN {\n");
+
+        List<String> nonGrouping = nonGroupingFields.stream().map(s -> String.format("\"%s\": el.grp.`%s`", s, s)).collect(Collectors.toList());
+        sb.append(String.join(",\n", nonGrouping));
+        sb.append("\n} )\n");
+        sb.append("RETURN {\n");
+
+        List<String> returnGrouped = groupingFields.stream().map(f -> String.format("\"%s\": `%s`", f, f)).collect(Collectors.toList());
+        sb.append(String.join(",\n", returnGrouped));
+        sb.append(String.format(",\n \"%s\": instances\n", groupedInstancesLabel));
+        sb.append("} )");
     }
 
     public ArangoQueryBuilder addRoot(String rootCollection, Set<String> whiteListOrganizations) throws JSONException {
@@ -133,6 +153,10 @@ public class ArangoQueryBuilder {
         }
         sb.append(String.format("\n%s  RETURN DISTINCT %s_%s.`%s`\n", getIndentation(), currentAlias, DOC_POSTFIX, leaf_field));
         firstReturnEntry = true;
+    }
+
+    public void addMerge(String leaf_field, Set<String> merged_fields, boolean sorted){
+        sb.append(String.format("\n%s LET %s = %s APPEND(%s, true) %s\n", getIndentation(), leaf_field, sorted ? "( FOR el IN": "", String.join(", ", merged_fields), sorted ? " SORT el ASC RETURN el)" : ""));
     }
 
 }

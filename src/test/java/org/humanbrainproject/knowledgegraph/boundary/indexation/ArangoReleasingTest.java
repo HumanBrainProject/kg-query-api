@@ -166,8 +166,8 @@ public class ArangoReleasingTest {
         ArangoCollection releasedCollection = releasedDatabase.collection(namingConvention.getVertexLabel(v.getEntityName()));
         assertFalse(releasedCollection.documentExists("foobar"));
         assertTrue(releasedCollection.documentExists("foo"));
-        assertFalse(releasedDatabase.collection("rel-test-nested").exists());
-        assertFalse(releasedDatabase.collection("test-nested").exists());
+        assertEquals(Long.valueOf(0), (releasedDatabase.collection("rel-test-nested").count().getCount()));
+        assertEquals(Long.valueOf(0), (releasedDatabase.collection("test-nested").count().getCount()));
         assertEquals(Long.valueOf(1), releasedCollection.count().getCount());
     }
 
@@ -187,9 +187,9 @@ public class ArangoReleasingTest {
         assertEquals(Long.valueOf(1), collection.count().getCount());
 
         ArangoCollection releasedCollection = releasedDatabase.collection(namingConvention.getVertexLabel(v.getEntityName()));
-        assertFalse(releasedCollection.exists());
-        assertFalse(releasedDatabase.collection("rel-test-nested").exists());
-        assertFalse(releasedDatabase.collection("test-nested").exists());
+        assertEquals(Long.valueOf(0), releasedCollection.count().getCount());
+        assertEquals(Long.valueOf(0), releasedDatabase.collection("rel-test-nested").count().getCount());
+        assertEquals(Long.valueOf(0), releasedDatabase.collection("test-nested").count().getCount());
     }
 
 }

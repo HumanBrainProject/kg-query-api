@@ -21,15 +21,14 @@
                 "species": <@ref "Species" subject "search:species" "search:identifier" "search:name" "search:uuid"/>
             }
         }</@for>,
-        "datasets":
-        <@group_by el "search:datasets" "search:componentName"; groupName, instances>
+        "datasets":<@for el "search:datasets" ; datasetGrp>
         {
             "children": {
-                "component": <@direct_print groupName/>,
-                "name": <@direct_ref "Dataset" instances "search:identifier" "search:name" "search:uuid"/>
+                "component": <@value datasetGrp "search:componentName"/>,
+                "name": <@ref "Dataset" datasetGrp "search:instances" "search:identifier" "search:name" "search:uuid"/>
             }
         }
-        </@group_by>
+        </@for>
   }<#sep>,
 </#list>
 ]

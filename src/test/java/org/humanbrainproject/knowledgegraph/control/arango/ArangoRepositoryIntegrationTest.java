@@ -103,7 +103,7 @@ public class ArangoRepositoryIntegrationTest {
         repository.deleteDocument(namingConvention.getId(v), db);
 
         //then
-        assertFalse(db.collection(namingConvention.getVertexLabel(v.getEntityName())).exists());
+        assertEquals(Long.valueOf(0), db.collection(namingConvention.getVertexLabel(v.getEntityName())).count().getCount());
     }
 
 
@@ -112,7 +112,7 @@ public class ArangoRepositoryIntegrationTest {
         //given
         //Setup a structure with two vertices and one edge connecting them.
         JsonLdProperty p = new JsonLdProperty().setName("hello").setValue("world");
-        JsonLdEdge edge = new JsonLdEdge().setReference("http://nexus-test/bar/foo/foobar/v0.0.1/bar").setName("bla");
+        JsonLdEdge edge = new JsonLdEdge().setReference("http://test/bar/foo/foobar/v0.0.1/bar").setName("bla");
         JsonLdVertex v = new JsonLdVertex().setEntityName("foo/bar/barfoo/v0.0.1").setKey("foo").addProperty(p).addEdge(edge);
         JsonLdVertex v2 = new JsonLdVertex().setEntityName("bar/foo/foobar/v0.0.1").setKey("bar");
         repository.uploadToPropertyGraph(Arrays.asList(v, v2), driver);
@@ -124,7 +124,7 @@ public class ArangoRepositoryIntegrationTest {
 
         //when
         //Replace the previous edge with another (unresolved) edge
-        JsonLdEdge edgeNew = new JsonLdEdge().setReference("http://nexus-test/bar/foo/foobar/v0.0.1/bar2").setName("blabla");
+        JsonLdEdge edgeNew = new JsonLdEdge().setReference("http://test/bar/foo/foobar/v0.0.1/bar2").setName("blabla");
         v.getEdges().clear();
         v.addEdge(edgeNew);
         repository.uploadToPropertyGraph(Arrays.asList(v, v2), driver);
@@ -133,7 +133,7 @@ public class ArangoRepositoryIntegrationTest {
         assertTrue(db.collection(namingConvention.getVertexLabel(v.getEntityName())).documentExists(v.getKey()));
         assertTrue(db.collection(namingConvention.getVertexLabel(v2.getEntityName())).documentExists(v2.getKey()));
         assertTrue(db.collection(namingConvention.getEdgeLabel(edgeNew.getName())).documentExists(namingConvention.getReferenceKey(v, edgeNew)));
-        assertFalse(db.collection(namingConvention.getEdgeLabel(edge.getName())).exists());
+        assertEquals(Long.valueOf(0), db.collection(namingConvention.getEdgeLabel(edge.getName())).count().getCount());
 
     }
 

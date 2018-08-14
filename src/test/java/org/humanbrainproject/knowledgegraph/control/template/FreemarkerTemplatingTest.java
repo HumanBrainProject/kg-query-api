@@ -5,6 +5,7 @@ import freemarker.template.Configuration;
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
 import org.humanbrainproject.knowledgegraph.entity.query.QueryResult;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -26,6 +27,7 @@ public class FreemarkerTemplatingTest {
             "]<#sep>,</#list>]";
 
     @Test
+    @Ignore("Normalization is deprecated. We've simplified the logic on the freemarker side")
     public void normalizeLookupPathSingleString() {
         String template = "<#include \"searchuinew\">\n<#assign path = normalizeLookupPath(\"hello:world\")/>"+EXTRACT_PATH;
         QueryResult<List<Map>> queryResult = new QueryResult<>();
@@ -35,6 +37,7 @@ public class FreemarkerTemplatingTest {
     }
 
     @Test
+    @Ignore("Normalization is deprecated. We've simplified the logic on the freemarker side")
     public void normalizeLookupPathArray() {
         String template = "<#include \"searchuinew\">\n<#assign path = normalizeLookupPath([\"hello:world\", \"foo:bar\"])/>"+EXTRACT_PATH;
         QueryResult<List<Map>> queryResult = new QueryResult<>();
@@ -44,6 +47,7 @@ public class FreemarkerTemplatingTest {
     }
 
     @Test
+    @Ignore("Normalization is deprecated. We've simplified the logic on the freemarker side")
     public void normalizeLookupPathArray2() {
         String template = "<#include \"searchuinew\">\n<#assign path = normalizeLookupPath([[\"hello:world\", \"foo:bar\"]])/>"+EXTRACT_PATH;
         QueryResult<List<Map>> queryResult = new QueryResult<>();
@@ -53,6 +57,7 @@ public class FreemarkerTemplatingTest {
     }
 
     @Test
+    @Ignore("Normalization is deprecated. We've simplified the logic on the freemarker side")
     public void normalizeLookupPathFullDepth() {
         String template = "<#include \"searchuinew\">\n<#assign path = normalizeLookupPath([[\"hello:world\", \"bar:foo\"], [\"foo:bar\"]])/>"+EXTRACT_PATH;
         QueryResult<List<Map>> queryResult = new QueryResult<>();
@@ -62,6 +67,7 @@ public class FreemarkerTemplatingTest {
     }
 
     @Test
+    @Ignore("Normalization is deprecated. We've simplified the logic on the freemarker side")
     public void normalizeLookupPathMixedDepth() {
         String template = "<#include \"searchuinew\">\n<#assign path = normalizeLookupPath([[\"hello:world\", \"bar:foo\"], \"foo:bar\"])/>"+EXTRACT_PATH;
         QueryResult<List<Map>> queryResult = new QueryResult<>();
@@ -71,6 +77,7 @@ public class FreemarkerTemplatingTest {
     }
 
     @Test
+    @Ignore("Flatten is deprecated. This should be handled as part of the API specification")
     public void flattenDistinct() {
         String template = "<#include \"searchuinew\">\n" +
                 "<#list results as el>" +

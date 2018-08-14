@@ -47,22 +47,38 @@ public class ArangoSpecificationQuery {
         String vertexLabel = namingConvention.getVertexLabel(spec.rootSchema);
         if (collectionLabels.contains(vertexLabel)) {
             queryBuilder.addRoot(vertexLabel, whitelistOrganizations);
-            handleFields(spec.fields, queryBuilder, collectionLabels, true);
+            handleFields(spec.fields, queryBuilder, collectionLabels, true, false);
         } else {
             throw new RuntimeException(String.format("Was not able to find the vertex collection with the name %s", vertexLabel));
         }
         return queryBuilder.build();
     }
 
-    private void handleFields(List<SpecField> fields, ArangoQueryBuilder queryBuilder, Set<String> collectionLabels, boolean isRoot) {
+    private List<String> getGroupingFields(SpecField field){
+        return field.fields.stream().filter(SpecField::isGroupby).map(f -> f.fieldName).collect(Collectors.toList());
+    }
+
+    private List<String> getNonGroupingFields(SpecField field){
+        return field.fields.stream().filter(f -> !f.isGroupby()).map(f -> f.fieldName).collect(Collectors.toList());
+    }
+
+
+    private void handleFields(List<SpecField> fields, ArangoQueryBuilder queryBuilder, Set<String> collectionLabels, boolean isRoot, boolean isMerge) {
         Set<String> skipFields = new HashSet<>();
         for (SpecField field : fields) {
-            if (field.needsTraversal()) {
+            if(field.isMerge()){
+                handleFields(field.fields, queryBuilder, collectionLabels, false, true);
+                Set<String> mergedFields = field.fields.stream().map(f -> namingConvention.queryKey(namingConvention.replaceSpecialCharacters(f.fieldName))).collect(Collectors.toSet());
+                queryBuilder.addMerge(namingConvention.queryKey(namingConvention.replaceSpecialCharacters(field.fieldName)), mergedFields, field.sortAlphabetically);
+            }
+            else if (field.needsTraversal()) {
                 String fieldName = namingConvention.replaceSpecialCharacters(field.fieldName);
                 SpecTraverse firstTraversal = field.getFirstTraversal();
                 String edgeLabel = namingConvention.getEdgeLabel(firstTraversal.pathName);
                 if (collectionLabels.contains(edgeLabel)) {
-                    queryBuilder.enterTraversal(namingConvention.queryKey(fieldName), field.numberOfDirectTraversals(), firstTraversal.reverse, edgeLabel);
+                    List<String> groupingFields = getGroupingFields(field);
+                    queryBuilder.enterTraversal(namingConvention.queryKey(fieldName), field.numberOfDirectTraversals(), firstTraversal.reverse, edgeLabel, !groupingFields.isEmpty());
+
                     for (SpecTraverse traversal : field.getAdditionalDirectTraversals()) {
                         edgeLabel = namingConvention.getEdgeLabel(traversal.pathName);
                         if (collectionLabels.contains(edgeLabel)) {
@@ -77,53 +93,60 @@ public class ArangoSpecificationQuery {
                         }
                         queryBuilder.addSimpleLeafResultField(field.getLeafPath().pathName);
                     } else {
-                        handleFields(field.fields, queryBuilder, collectionLabels, false);
+                        handleFields(field.fields, queryBuilder, collectionLabels, false, false);
                     }
+
                     queryBuilder.leaveTraversal();
+                    if(!groupingFields.isEmpty()){
+                        queryBuilder.buildGrouping(field.getGroupedInstances(), groupingFields, getNonGroupingFields(field));
+                    }
                 } else {
                     skipFields.add(field.fieldName);
                 }
             }
         }
-        queryBuilder.addFilter();
-        for (SpecField field : fields) {
-            if (!skipFields.contains(field.fieldName)) {
-                if(field.isRequired()){
-                    if (field.needsTraversal()) {
-                        queryBuilder.addTraversalFieldRequiredFilter(namingConvention.queryKey(namingConvention.replaceSpecialCharacters(field.fieldName)));
-                    } else if (field.isLeaf()) {
-                        queryBuilder.addComplexFieldRequiredFilter(field.getLeafPath().pathName);
+        if(!isMerge) {
+            queryBuilder.addFilter();
+            for (SpecField field : fields) {
+                if (!skipFields.contains(field.fieldName)) {
+                    if (field.isRequired()) {
+                        if (field.needsTraversal()) {
+                            queryBuilder.addTraversalFieldRequiredFilter(namingConvention.queryKey(namingConvention.replaceSpecialCharacters(field.fieldName)));
+                        } else if (field.isLeaf()) {
+                            queryBuilder.addComplexFieldRequiredFilter(field.getLeafPath().pathName);
+                        }
                     }
                 }
             }
-        }
-        if(isRoot){
-            queryBuilder.addLimit();
-        }
+            if (isRoot) {
+                queryBuilder.addLimit();
+            }
 
-        Set<String> sortFields = new LinkedHashSet<>();
-        for (SpecField field : fields) {
-            if (!skipFields.contains(field.fieldName)) {
-                if(field.isLeaf() && field.isSortAlphabetically()){
-                    sortFields.add(field.getLeafPath().pathName);
+            Set<String> sortFields = new LinkedHashSet<>();
+            for (SpecField field : fields) {
+                if (!skipFields.contains(field.fieldName)) {
+                    if (field.isLeaf() && field.isSortAlphabetically()) {
+                        sortFields.add(field.getLeafPath().pathName);
+                    }
                 }
             }
-        }
-        if(!sortFields.isEmpty()) {
-            queryBuilder.addSortByLeafField(sortFields);
-        }
+            if (!sortFields.isEmpty()) {
+                queryBuilder.addSortByLeafField(sortFields);
+            }
 
-        queryBuilder.startReturnStructure(false);
-        for (SpecField field : fields) {
-            if (!skipFields.contains(field.fieldName)) {
-                if (field.needsTraversal()) {
-                    queryBuilder.addTraversalResultField(field.fieldName, namingConvention.queryKey(namingConvention.replaceSpecialCharacters(field.fieldName)));
-                } else if (field.isLeaf()) {
-                    queryBuilder.addComplexLeafResultField(field.fieldName, field.getLeafPath().pathName);
+            queryBuilder.startReturnStructure(false);
+            for (SpecField field : fields) {
+                if (!skipFields.contains(field.fieldName)) {
+                    if (field.needsTraversal()) {
+                        queryBuilder.addTraversalResultField(field.fieldName, namingConvention.queryKey(namingConvention.replaceSpecialCharacters(field.fieldName)));
+                    } else if (field.isLeaf()) {
+                        queryBuilder.addComplexLeafResultField(field.fieldName, field.getLeafPath().pathName);
+                    }
                 }
             }
+            queryBuilder.endReturnStructure();
         }
-        queryBuilder.endReturnStructure();
+
     }
 
 }

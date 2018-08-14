@@ -17,6 +17,10 @@
     "root_schema": {
       "@id": "root_schema",
       "@type": "@id"
+    },
+    "grouped_instances": {
+      "@id": "grouped_instances",
+      "@type": "@id"
     }
   },
   "@type": "DataTransformation",
@@ -110,10 +114,12 @@
           "reverse": true
         }
       ],
+      "grouped_instances": "search:instances",
       "fields": [
         {
           "fieldname": "search:name",
-          "relative_path": "schema:name"
+          "relative_path": "schema:name",
+          "sort": true
         },
         {
           "fieldname": "search:uuid",
@@ -125,7 +131,8 @@
         },
         {
           "fieldname": "search:componentName",
-          "relative_path": ["minds:component", "schema:name"]
+          "relative_path": ["minds:component", "schema:name"],
+          "group_by": true
         }
       ]
     }

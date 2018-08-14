@@ -106,13 +106,17 @@ public class ArangoIndexationTest {
 
         //then
         ArangoCollection collection = db.collection(namingConvention.getVertexLabel(v.getEntityName()));
-        assertFalse(collection.exists());
+        assertTrue("We don't delete once defined collections since they could be referenced by relations", collection.exists());
+        assertEquals(Long.valueOf(0), collection.count().getCount());
+
 
         ArangoCollection nestedCollection = db.collection("test-nested");
-        assertFalse(nestedCollection.exists());
+        assertTrue("We don't delete once defined collections since they could be referenced by relations", nestedCollection.exists());
+        assertEquals(Long.valueOf(0), nestedCollection.count().getCount());
 
         ArangoCollection edgeCollection = db.collection("rel-test-nested");
-        assertFalse(edgeCollection.exists());
+        assertTrue("We don't delete once defined collections since they could be referenced by relations", edgeCollection.exists());
+        assertEquals(Long.valueOf(0), edgeCollection.count().getCount());
     }
 
 

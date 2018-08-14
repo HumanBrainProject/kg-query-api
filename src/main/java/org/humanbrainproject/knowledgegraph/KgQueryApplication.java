@@ -15,7 +15,6 @@ public class KgQueryApplication {
 		SpringApplication.run(KgQueryApplication.class, args);
 	}
 
-
 	@Bean
 	@Qualifier("default-test")
 	public ArangoDriver createDefaultTestDb() {

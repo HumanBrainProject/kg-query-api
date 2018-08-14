@@ -1,4 +1,4 @@
-<#include "searchuinew">
+<#include "searchuifast">
 [
 <#list results as el>
   {
@@ -20,13 +20,11 @@
     "atlas": <@value el "search:parcellationAtlas"/>,
     "region": <@value el "search:parcellationRegion"/>,
     "preparation": <@value el "search:preparation"/>,
-    <#assign methods = [["search:methods"], ["search:methodsFromSubjects"]]>
-    "methods": <@value el methods/>,
+    "methods": <@value el "search:methods"/>,
     "protocol": <@value el "search:protocols"/>,
     "license_info": <@link el "search:license" "search:url" "search:name"/>,
     "external_datalink": <@value el "search:external_datalink"/>,
-    <#assign files = [["search:files"], ["search:filesFromSubjects"]]>
-    "files": <@fileDownload el files "search:absolute_path" "search:name"/>,
+    "files": <@fileDownload el "search:files" "search:absolute_path" "search:name"/>,
     "viewer": <@link el "search:neuroglancer" "search:url" {"text": "Show in brain atlas viewer"}/>,
     "subjects": <@for el "search:subjects" ; subject>
         {

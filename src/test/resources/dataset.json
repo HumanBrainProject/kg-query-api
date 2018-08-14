@@ -10,6 +10,10 @@
       "@id": "fieldname",
       "@type": "@id"
     },
+    "merge": {
+      "@id": "merge",
+      "@type": "@id"
+    },
     "relative_path": {
       "@id": "relative_path",
       "@type": "@id"
@@ -24,7 +28,8 @@
   "root_schema": "nexus_instance:minds/core/dataset/v0.0.4",
   "fields": [
     {
-      "relative_path": "schema:identifier"
+      "relative_path": "schema:identifier",
+      "required": true
     },
     {
       "fieldname": "search:title",
@@ -33,7 +38,10 @@
     },
     {
       "fieldname": "search:doi",
-      "relative_path": {"@id": "minds:doireference", "reverse": true},
+      "relative_path": {
+        "@id": "minds:doireference",
+        "reverse": true
+      },
       "fields": [
         {
           "fieldname": "search:doi",
@@ -48,7 +56,7 @@
     {
       "fieldname": "search:component",
       "relative_path": "minds:component",
-      "fields":[
+      "fields": [
         {
           "fieldname": "search:uuid",
           "relative_path": "nexus:uuid"
@@ -59,13 +67,13 @@
         },
         {
           "fieldname": "search:name",
-          "relative_path":"schema:name"
+          "relative_path": "schema:name"
         }
       ]
     },
     {
       "fieldname": "search:description",
-      "relative_path":"schema:description"
+      "relative_path": "schema:description"
     },
     {
       "fieldname": "search:contributors",
@@ -119,6 +127,7 @@
     },
     {
       "fieldname": "search:parcellationAtlas",
+      "sort": true,
       "relative_path": [
         "minds:parcellationAtlas",
         "schema:name"
@@ -126,6 +135,7 @@
     },
     {
       "fieldname": "search:parcellationRegion",
+      "sort": true,
       "relative_path": [
         "minds:parcellationRegion",
         "schema:name"
@@ -133,22 +143,45 @@
     },
     {
       "fieldname": "search:preparation",
+      "sort": true,
       "relative_path": [
-        "minds:activity", "minds:preparation", "schema:name"
+        "minds:activity",
+        "minds:preparation",
+        "schema:name"
       ]
     },
     {
       "fieldname": "search:methods",
       "sort": true,
-      "relative_path": [
-        "minds:activity", "minds:methods", "schema:name"
+      "merge": [
+        {
+          "relative_path": [
+            "minds:activity",
+            "minds:methods",
+            "schema:name"
+          ]
+        },
+        {
+          "relative_path": [
+            "minds:specimen_group",
+            "minds:subjects",
+            {
+              "@id": "minds:associated_entity",
+              "reverse": true
+            },
+            "minds:methods",
+            "schema:name"
+          ]
+        }
       ]
     },
     {
       "fieldname": "search:protocols",
       "sort": true,
       "relative_path": [
-        "minds:activity", "minds:protocols", "schema:name"
+        "minds:activity",
+        "minds:protocols",
+        "schema:name"
       ]
     },
     {
@@ -161,7 +194,8 @@
         },
         {
           "fieldname": "search:name",
-          "relative_path": "schema:name"
+          "relative_path": "schema:name",
+          "sort": true
         }
       ]
     },
@@ -171,8 +205,30 @@
     },
     {
       "fieldname": "search:files",
-      "relative_path": [{"@id": "minds:associated_entity", "reverse": true}, "minds:file"],
-      "fields":[
+      "merge": [
+        {
+          "relative_path": [
+            {
+              "@id": "minds:associated_entity",
+              "reverse": true
+            },
+            "minds:file"
+          ]
+        },
+        {
+          "relative_path": [
+            "minds:specimen_group",
+            "minds:subjects",
+            "minds:samples",
+            {
+              "@id": "minds:associated_entity",
+              "reverse": true
+            },
+            "minds:file"
+          ]
+        }
+      ],
+      "fields": [
         {
           "fieldname": "search:name",
           "relative_path": "schema:name"
@@ -182,29 +238,13 @@
           "relative_path": "minds:absolute_path"
         }
       ]
-    },
-
-    {
-      "fieldname": "search:filesFromSubjects",
-      "relative_path": ["minds:specimen_group", "minds:subjects", {"@id": "minds:associated_entity", "reverse": true}, "minds:file"],
-      "fields":[
-        {
-          "fieldname": "search:name",
-          "relative_path": "schema:name"
-        },
-        {
-          "fieldname": "search:absolute_path",
-          "relative_path": "minds:absolute_path"
-        }
-      ]
-    },
-    {
-      "fieldname": "search:methodsFromSubjects",
-      "relative_path": ["minds:specimen_group", "minds:subjects", {"@id": "minds:associated_entity", "reverse": true}, "minds:methods", "schema:name"]
     },
     {
       "fieldname": "search:neuroglancer",
-      "relative_path": {"@id": "minds:reference", "reverse": true},
+      "relative_path": {
+        "@id": "minds:reference",
+        "reverse": true
+      },
       "fields": [
         {
           "fieldname": "search:url",
@@ -309,7 +349,13 @@
     },
     {
       "fieldname": "search:brainAtlasViewer",
-      "relative_path": [{"@id": "minds:reference", "reverse": true}, "minds:postfix"]
+      "relative_path": [
+        {
+          "@id": "minds:reference",
+          "reverse": true
+        },
+        "minds:postfix"
+      ]
     }
   ]
 }
