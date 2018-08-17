@@ -7,7 +7,6 @@ import freemarker.cache.StringTemplateLoader;
 import freemarker.template.Configuration;
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
-import org.humanbrainproject.knowledgegraph.boundary.query.ArangoQuery;
 import org.humanbrainproject.knowledgegraph.control.arango.ArangoDriver;
 import org.humanbrainproject.knowledgegraph.control.arango.ArangoNamingConvention;
 import org.humanbrainproject.knowledgegraph.control.arango.ArangoRepository;
@@ -74,13 +73,21 @@ public class FreemarkerTemplating {
     }
 
 
-    public String applyTemplate(String template, QueryResult<List<Map>> queryResult, ArangoDriver driver) {
-        return applyTemplate(template, queryResult, repository.getAll(LIBRARIES, org.humanbrainproject.knowledgegraph.entity.Template.class, driver));
+    public String applyTemplate(String template, QueryResult<List<Map>> queryResult, String library, ArangoDriver driver) {
+        return applyTemplate(template, queryResult, library, repository.getAll(LIBRARIES, org.humanbrainproject.knowledgegraph.entity.Template.class, driver));
     }
 
-    String applyTemplate(String template, QueryResult<List<Map>> queryResult, List<org.humanbrainproject.knowledgegraph.entity.Template> libraries) {
-        queryResult.getResults().forEach(this::replaceSpecialCharacters);
-        try (StringWriter writer = new StringWriter(); StringReader reader = new StringReader(template)) {
+    String applyTemplate(String template, QueryResult<List<Map>> queryResult, String chosenLibrary, List<org.humanbrainproject.knowledgegraph.entity.Template> libraries) {
+        //queryResult.getResults().forEach(this::replaceSpecialCharacters);
+        String finalTemplate;
+        if(chosenLibrary!=null){
+            finalTemplate = String.format("<#include \"%s\">\n\n%s", chosenLibrary, template);
+        }
+        else{
+            finalTemplate = template;
+        }
+
+        try (StringWriter writer = new StringWriter(); StringReader reader = new StringReader(finalTemplate)) {
             Configuration cfg = new Configuration(Configuration.VERSION_2_3_28);
             cfg.setEncoding(Locale.ENGLISH, "utf-8");
             cfg.setURLEscapingCharset("utf-8");

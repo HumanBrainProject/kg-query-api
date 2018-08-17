@@ -1,34 +1,35 @@
-<#include "searchuinew">
+<#include "searchui">
 [
 <#list results as el>
   {
-    "title": <@value el "search:title"/>,
-    "weightPreFixation": <@value el "search:weightPrefixation"/>,
-    "parcellationAtlas": <@value el "search:parcellationAtlas"/>,
-    "parcellationRegion": <@value el "search:parcellationRegion"/>,
-    "viewer": <@link el "search:brainViewer" "search:link" "search:name"/>,
-    "methods":  <@value el "search:methods"/>,
-    "files": <@fileDownload el "search:files" "search:absolutePath" "search:name"/>,
-    "subject": <@for el "search:subjects" ; subject>
+    "title": <@value el "http://schema.hbp.eu/dataset/search/title"/>,
+    "weightPreFixation": <@value el "http://schema.hbp.eu/dataset/search/weightPreFixation"/>,
+    "parcellationAtlas": <@value el "http://schema.hbp.eu/dataset/search/parcellationAtlas"/>,
+    "parcellationRegion": <@value el "http://schema.hbp.eu/dataset/search/parcellationRegion"/>,
+    "viewer": <@link el "http://schema.hbp.eu/dataset/search/brainViewer" "." {"text": "Show "+get_value(el "http://schema.hbp.eu/dataset/search/title")+" in brainviewer"}/>,
+    "methods":  <@value el "http://schema.hbp.eu/dataset/search/methods"/>,
+    "files": <@fileDownload el "http://schema.hbp.eu/dataset/search/files" "http://schema.hbp.eu/dataset/search/absolutePath" "http://schema.hbp.eu/dataset/search/name"/>,
+    "subject": <@for el "http://schema.hbp.eu/dataset/search/subjects" ; subject>
         {
+    <@meta el "http://schema.hbp.eu/dataset/search/subjects"/>
             "children": {
-                "genotype": <@value subject "search:genotype"/>,
-                "weight": <@value subject "search:weight"/>,
-                "age": <@value subject "search:age"/>,
-                "subject_name": <@direct_ref "Subject" subject "search:identifier" "search:name" "search:uuid"/>,
-                "sex": <@value subject "search:sex"/>,
-                "strain": <@value subject "search:strain"/>,
-                "species": <@ref "Species" subject "search:species" "search:identifier" "search:name" "search:uuid"/>
+                "genotype": <@value subject "http://schema.hbp.eu/dataset/search/genotype"/>,
+                "weight": <@value subject "http://schema.hbp.eu/dataset/search/weight"/>,
+                "age": <@value subject "http://schema.hbp.eu/dataset/search/age"/>,
+                "subject_name": <@direct_ref "Subject" subject "http://schema.hbp.eu/dataset/search/identifier" "http://schema.hbp.eu/dataset/search/name" "http://schema.hbp.eu/dataset/search/uuid"/>,
+                "strain": <@value subject "http://schema.hbp.eu/dataset/search/strain"/>,
+                "species": <@ref "Species" subject "http://schema.hbp.eu/dataset/search/species" "http://schema.hbp.eu/dataset/search/identifier" "http://schema.hbp.eu/dataset/search/name" "http://schema.hbp.eu/dataset/search/uuid"/>
             }
         }</@for>,
-        "datasets":<@for el "search:datasets" ; datasetGrp>
+        "datasets":<@for el "http://schema.hbp.eu/dataset/search/datasets" ; datasetGrp>
         {
+    <@meta el "http://schema.hbp.eu/dataset/search/datasets"/>
             "children": {
-                "component": <@value datasetGrp "search:componentName"/>,
-                "name": <@ref "Dataset" datasetGrp "search:instances" "search:identifier" "search:name" "search:uuid"/>
+                "component": <@value datasetGrp "http://schema.hbp.eu/dataset/search/componentName"/>,
+                "name": <@ref "Dataset" datasetGrp "http://schema.hbp.eu/dataset/search/instances" "http://schema.hbp.eu/dataset/search/identifier" "http://schema.hbp.eu/dataset/search/name" "http://schema.hbp.eu/dataset/search/uuid"/>
             }
         }
-        </@for>
+</@for>
   }<#sep>,
 </#list>
 ]

@@ -3,7 +3,8 @@
     "@vocab": "http://schema.hbp.eu/graph_query/",
     "schema": "http://schema.org/",
     "minds": "http://hbp.eu/minds#",
-    "search": "http://schema.hbp.eu/search_ui/",
+    "this": "http://schema.hbp.eu/dataset/search/",
+    "searchui": "http://schema.hbp.eu/search_ui/",
     "nexus": "https://nexus-dev.humanbrainproject.org/vocabs/nexus/core/terms/v0.1.0/",
     "nexus_instance": "https://nexus-dev.humanbrainproject.org/v0/schemas/",
     "fieldname": {
@@ -25,61 +26,64 @@
   },
   "@type": "DataTransformation",
   "schema:name": "Sample",
+  "icon": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 512 512\" ><path fill=\"grey\" d=\"M177.38 206.64L39.03 344.97A24.01 24.01 0 0 0 32 361.94V424L0 480l32 32 56-32h62.06c6.36 0 12.47-2.53 16.97-7.03l138.35-138.33-128-128zm225.552 30.47l16.952 16.95c9.37 9.37 9.37 24.57 0 33.94l-40.973 40.97c-9.292 9.312-24.506 9.434-33.94 0L183.028 167.03c-9.37-9.37-9.37-24.57 0-33.94L224 92.12c9.289-9.309 24.502-9.438 33.94 0l16.992 16.99 82.606-82.601c35.19-35.19 92.5-35.5 128 0 40.49 48.08 29.66 98.34 0 128l-82.606 82.601z\"></path></svg>",
   "root_schema": "nexus_instance:minds/experiment/sample/v0.0.4",
   "fields": [
     {
       "relative_path": "schema:identifier",
-      "required": true
+      "required": true,
+      "searchui:visible": false
     },
     {
-      "fieldname": "search:title",
+      "fieldname": "this:title",
       "relative_path": "schema:name",
-      "required": true
+      "label": "Name",
+      "required": true,
+      "searchui:boost": 20,
+      "searchui:sort": true
     },
     {
-      "fieldname": "search:weightPreFixation",
-      "relative_path": "minds:weightPreFixation"
+      "fieldname": "this:weightPreFixation",
+      "relative_path": "minds:weightPreFixation",
+      "label": "Weight pre fixation"
     },
     {
-      "fieldname": "search:parcellationAtlas",
+      "fieldname": "this:parcellationAtlas",
       "relative_path": [
         "minds:parcellationAtlas",
         "schema:name"
-      ]
+      ],
+      "label": "Brain atlas"
     },
     {
-      "fieldname": "search:parcellationRegion",
+      "fieldname": "this:parcellationRegion",
       "relative_path": [
         "minds:parcellationRegion",
         "schema:name"
-      ]
+      ],
+      "label": "Region"
     },
     {
-      "fieldname": "search:brainViewer",
-      "relative_path": {
+      "fieldname": "this:brainViewer",
+      "relative_path": [{
         "@id": "minds:reference",
         "reverse": true
-      },
-      "fields": [
-        {
-          "fieldname": "search:link",
-          "relative_path": "minds:link"
         },
-        {
-          "fieldname": "search:name",
-          "relative_path": "schema:name"
-        }
-      ]
+        "minds:link"
+      ],
+      "label": "Viewer"
     },
     {
-      "fieldname": "search:methods",
+      "fieldname": "this:methods",
       "relative_path": [
         "minds:methods",
         "schema:name"
-      ]
+      ],
+      "label": "Methods"
     },
     {
-      "fieldname": "search:files",
+      "fieldname": "this:files",
+      "label": "Files",
       "relative_path": [
         {
           "@id": "minds:associated_entity",
@@ -87,75 +91,110 @@
         },
         "minds:file"
       ],
+      "searchui:aggregate": "count",
+      "searchui:detail_label": "Terms of use",
       "fields": [
         {
-          "fieldname": "search:name",
-          "relative_path": "schema:name"
+          "fieldname": "this:name",
+          "relative_path": "schema:name",
+          "required": true,
+          "searchui:visible": false
         },
         {
-          "fieldname": "search:absolutePath",
-          "relative_path": "minds:absolute_path"
+          "fieldname": "this:absolutePath",
+          "relative_path": "minds:absolute_path",
+          "required": true,
+          "searchui:visible": false
         }
       ]
     },
     {
-      "fieldname": "search:subjects",
+      "fieldname": "this:subjects",
       "relative_path": {
         "@id": "minds:samples",
         "reverse": true
       },
+      "label": "Subject",
+      "searchui:overview": true,
+      "searchui:hint": "Experimental subject that this sample was obtained from.",
       "fields": [
         {
-          "fieldname": "search:name",
-          "relative_path": "schema:name"
+          "fieldname": "this:name",
+          "relative_path": "schema:name",
+          "label": "Name"
         },
         {
-          "fieldname": "search:uuid",
-          "relative_path": "nexus:uuid"
+          "fieldname": "this:uuid",
+          "relative_path": "nexus:uuid",
+          "label": "Species",
+          "searchui:type": "text",
+          "searchui:facet": "list",
+          "searchui:overview": true
         },
         {
-          "fieldname": "search:identifier",
-          "relative_path": "schema:identifier"
+          "fieldname": "this:identifier",
+          "relative_path": "schema:identifier",
+          "searchui:visible": false
         },
         {
-          "fieldname": "search:age",
-          "relative_path": "minds:age"
+          "fieldname": "this:age",
+          "relative_path": "minds:age",
+          "label": "Age",
+          "search:overview": true
         },
         {
-          "fieldname": "search:weight",
-          "relative_path": "minds:weight"
+          "fieldname": "this:sex",
+          "relative_path": "minds:sex",
+          "label": "Sex",
+          "search:overview": true
         },
         {
-          "fieldname": "search:strain",
-          "relative_path": "minds:strains"
+          "fieldname": "this:weight",
+          "relative_path": "minds:weight",
+          "label": "Weight"
         },
         {
-          "fieldname": "search:genotype",
-          "relative_path": "minds:genotype"
+          "fieldname": "this:strain",
+          "relative_path": "minds:strains",
+          "label": "Strain"
         },
         {
-          "fieldname": "search:species",
+          "fieldname": "this:genotype",
+          "relative_path": "minds:genotype",
+          "label": "Genotype"
+        },
+        {
+          "fieldname": "this:species",
           "relative_path": "minds:species",
+          "label": "Species",
+          "searchui:type": "text",
+          "searchui:facet": "list",
+          "searchui:facet_order": "bycount",
+          "searchui:overview": true,
           "fields": [
             {
-              "fieldname": "search:name",
-              "relative_path": "schema:name"
+              "fieldname": "this:name",
+              "relative_path": "schema:name",
+              "searchui:visible": false
             },
             {
-              "fieldname": "search:uuid",
-              "relative_path": "nexus:uuid"
+              "fieldname": "this:uuid",
+              "relative_path": "nexus:uuid",
+              "searchui:visible": false
             },
             {
-              "fieldname": "search:identifier",
-              "relative_path": "schema:identifier"
+              "fieldname": "this:identifier",
+              "relative_path": "schema:identifier",
+              "searchui:visible": false
             }
           ]
         }
       ]
     },
     {
-      "fieldname": "search:datasets",
+      "fieldname": "this:datasets",
       "required": true,
+      "label": "Datasets",
       "relative_path": [
         {
           "@id": "minds:samples",
@@ -170,26 +209,35 @@
           "reverse": true
         }
       ],
-      "grouped_instances": "search:instances",
+      "grouped_instances": "this:instances",
       "fields":[
         {
-          "fieldname": "search:name",
-          "relative_path": "schema:name"
+          "fieldname": "this:name",
+          "relative_path": "schema:name",
+          "label": "",
+          "searchui:type": "text"
         },
         {
-          "fieldname": "search:uuid",
-          "relative_path": "nexus:uuid"
+          "fieldname": "this:uuid",
+          "relative_path": "nexus:uuid",
+          "searchui:visible": false
         },
         {
-          "fieldname": "search:identifier",
-          "relative_path": "schema:identifier"
+          "fieldname": "this:identifier",
+          "relative_path": "schema:identifier",
+          "searchui:visible": false
         },
         {
-          "fieldname": "search:componentName",
+          "fieldname": "this:componentName",
           "relative_path": ["minds:component", "schema:name"],
-          "group_by": true
+          "group_by": true,
+          "label": ""
         }
-      ]
+      ],
+      "searchui:hint": "List of datasets in which the sample was used to produce data.",
+      "searchui:type": "text",
+      "searchui:facet": "exists",
+      "searchui:facet_order": "bycount"
     }
   ]
 }

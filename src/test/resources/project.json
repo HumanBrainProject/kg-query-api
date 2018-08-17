@@ -115,7 +115,8 @@
         },
         {
           "fieldname": "search:name",
-          "relative_path": "schema:name"
+          "relative_path": "schema:name",
+          "sort": true
         },
         {
           "fieldname": "search:uuid",

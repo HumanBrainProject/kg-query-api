@@ -2,9 +2,17 @@ package org.humanbrainproject.knowledgegraph.entity;
 
 public class Template {
 
-    private String queryId;
     private String _key;
     private String templateContent;
+    private String library;
+
+    public String getLibrary() {
+        return library;
+    }
+
+    public void setLibrary(String library) {
+        this.library = library;
+    }
 
     public String get_key() {
         return _key;
@@ -12,14 +20,6 @@ public class Template {
 
     public void set_key(String _key) {
         this._key = _key;
-    }
-
-    public String getQueryId() {
-        return queryId;
-    }
-
-    public void setQueryId(String queryId) {
-        this.queryId = queryId;
     }
 
     public String getTemplateContent() {

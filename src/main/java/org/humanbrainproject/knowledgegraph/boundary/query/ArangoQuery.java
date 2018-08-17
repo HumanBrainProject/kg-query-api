@@ -61,7 +61,7 @@ public class ArangoQuery {
     AuthorizationController authorization;
 
 
-    public QueryResult<List<Map>> queryPropertyGraphBySpecification(String specification, boolean useContext, String authorizationToken, Integer size, Integer start) throws JSONException, IOException {
+    private Set<String> getReadableOrganizations(String authorizationToken){
         //Set<String> readableOrganizations = authorization.getOrganizations(authorizationToken);
         Set<String> readableOrganizations = new LinkedHashSet<>();
         readableOrganizations.add("minds");
@@ -71,23 +71,43 @@ public class ArangoQuery {
         readableOrganizations.add("licenses");
         readableOrganizations.add("minds2");
         readableOrganizations.add("neuroglancer");
+        return readableOrganizations;
+    }
+
+    public QueryResult<List<Map>> reflectQueryBySpecification(String specificationId, String specification, String authorizationToken, Integer size, Integer start) throws JSONException, IOException {
+        Set<String> readableOrganizations = getReadableOrganizations(authorizationToken);
+        Specification spec = specInterpreter.readSpecification(JsonUtils.toString(standardization.fullyQualify(specification)));
+        spec.setSpecificationId(specificationId);
+        QueryResult<List<Map>> result = specificationQuery.queryForSpecification(spec, readableOrganizations, size, start);
+        return result;
+    }
+
+    public QueryResult<List<Map>> metaQueryBySpecification(String specification, String authorizationToken) throws JSONException, IOException {
+        Specification spec = specInterpreter.readSpecification(JsonUtils.toString(standardization.fullyQualify(specification)));
+        return specificationQuery.metaSpecification(spec);
+    }
+
+    public QueryResult<List<Map>> queryPropertyGraphBySpecification(String specification, boolean useContext, String authorizationToken, Integer size, Integer start) throws JSONException, IOException {
+        Set<String> readableOrganizations = getReadableOrganizations(authorizationToken);
         Object originalContext = null;
         if (useContext) {
             originalContext = standardization.getContext(specification);
         }
-        Specification spec = specInterpreter.readSpecification(new JSONObject(JsonUtils.toString(standardization.fullyQualify(specification))));
-        List<Map> objects = specificationQuery.queryForSpecification(spec, readableOrganizations, size, start);
+        Specification spec = specInterpreter.readSpecification(JsonUtils.toString(standardization.fullyQualify(specification)));
+        QueryResult<List<Map>> result = specificationQuery.queryForSpecification(spec, readableOrganizations, size, start);
         if (originalContext != null) {
-            objects = standardization.applyContext(objects, originalContext);
+            result.setResults(standardization.applyContext(result.getResults(), originalContext));
         }
-        QueryResult<List<Map>> result = new QueryResult<>();
-        result.setApiName(spec.name);
-        result.setResults(objects);
         return result;
     }
 
+    public QueryResult<List<Map>> metaQueryPropertyGraphByStoredSpecification(String id, String authorizationToken) throws IOException, JSONException {
+        String payload = arangoUploader.getByKey(SPECIFICATION_QUERIES, id, String.class, arangoInternal);
+        return metaQueryBySpecification(payload, authorizationToken);
+    }
+
     public QueryResult<List<Map>> queryPropertyGraphByStoredSpecification(String id, boolean useContext, String authorizationToken, Integer size, Integer start) throws IOException, JSONException {
-        String payload = arangoUploader.getByKey(SPECIFICATION_QUERIES, id, String.class, arango);
+        String payload = arangoUploader.getByKey(SPECIFICATION_QUERIES, id, String.class, arangoInternal);
         return queryPropertyGraphBySpecification(payload, useContext, authorizationToken, size, start);
     }
 
@@ -95,11 +115,11 @@ public class ArangoQuery {
         JSONObject jsonObject = new JSONObject(specification);
         jsonObject.put("_key", id);
         jsonObject.put("_id", id);
-        Map spec = arangoUploader.getByKey(SPECIFICATION_QUERIES, id, Map.class, arango);
+        Map spec = arangoUploader.getByKey(SPECIFICATION_QUERIES, id, Map.class, arangoInternal);
         if (spec != null) {
-            arangoUploader.replaceDocument(SPECIFICATION_QUERIES, id, jsonObject.toString(), arango);
+            arangoUploader.replaceDocument(SPECIFICATION_QUERIES, id, jsonObject.toString(), arangoInternal);
         } else {
-            arangoUploader.insertVertexDocument(jsonObject.toString(), SPECIFICATION_QUERIES, arango);
+            arangoUploader.insertVertexDocument(jsonObject.toString(), SPECIFICATION_QUERIES, arangoInternal);
         }
     }
 
@@ -110,9 +130,15 @@ public class ArangoQuery {
         return queryResult;
     }
 
-    public String queryPropertyGraphByStoredSpecificationAndFreemarkerTemplate(String id, String template, String authorizationToken, Integer size, Integer start) throws IOException, JSONException {
-        QueryResult<List<Map>> queryResult = queryPropertyGraphByStoredSpecification(id, true, authorizationToken, size, start);
-        return freemarkerTemplating.applyTemplate(template, queryResult, arangoInternal);
+    public String queryPropertyGraphByStoredSpecificationAndFreemarkerTemplate(String id, String template, String authorizationToken, Integer size, Integer start, String library) throws IOException, JSONException {
+        QueryResult<List<Map>> queryResult = queryPropertyGraphByStoredSpecification(id, false, authorizationToken, size, start);
+        return freemarkerTemplating.applyTemplate(template, queryResult, library, arangoInternal);
+    }
+
+
+    public String metaQueryPropertyGraphByStoredSpecificationAndFreemarkerTemplate(String id, String template, String authorizationToken) throws IOException, JSONException {
+        QueryResult<List<Map>> queryResult = metaQueryPropertyGraphByStoredSpecification(id,authorizationToken);
+        return freemarkerTemplating.applyTemplate(template, queryResult, "meta", arangoInternal);
     }
 
 }

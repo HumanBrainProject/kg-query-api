@@ -11,9 +11,10 @@ public class SpecField {
     public boolean required;
     public boolean sortAlphabetically;
     public boolean groupby;
+    public boolean ensureOrder;
     public final String groupedInstances;
 
-    public SpecField(String fieldName, List<SpecField> fields, List<SpecTraverse> traversePath, String groupedInstances, boolean required, boolean sortAlphabetically, boolean groupby) {
+    public SpecField(String fieldName, List<SpecField> fields, List<SpecTraverse> traversePath, String groupedInstances, boolean required, boolean sortAlphabetically, boolean groupby, boolean ensureOrder) {
         this.fieldName = fieldName;
         this.required = required;
         this.fields = fields == null ? Collections.emptyList() : Collections.unmodifiableList(fields);
@@ -21,6 +22,7 @@ public class SpecField {
         this.sortAlphabetically = sortAlphabetically;
         this.groupby = groupby;
         this.groupedInstances = groupedInstances;
+        this.ensureOrder = ensureOrder;
     }
 
     public String getGroupedInstances() {
@@ -82,5 +84,17 @@ public class SpecField {
 
     public boolean isSortAlphabetically() {
         return sortAlphabetically;
+    }
+
+
+    public boolean hasNestedGrouping(){
+        if(fields!=null && !fields.isEmpty()){
+            for (SpecField field : fields) {
+                if(field.isGroupby() || field.hasNestedGrouping()){
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }

@@ -21,7 +21,7 @@ import static org.junit.Assert.*;
 public class SpecificationInterpreterTest {
 
     SpecificationInterpreter interpreter;
-    JSONObject testSpecification;
+    String testSpecification;
     ArangoSpecificationQuery query;
 
 
@@ -30,7 +30,7 @@ public class SpecificationInterpreterTest {
     public void setup() throws IOException, JSONException {
         interpreter = new SpecificationInterpreter();
         String json = IOUtils.toString(this.getClass().getResourceAsStream("/specification.json"), "UTF-8");
-        testSpecification = new JSONObject(JsonUtils.toString(new JsonLdStandardization().fullyQualify(json)));
+        testSpecification = JsonUtils.toString(new JsonLdStandardization().fullyQualify(json));
         query = new ArangoSpecificationQuery();
         query.namingConvention = new ArangoNamingConvention();
     }

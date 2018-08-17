@@ -29,6 +29,7 @@ public class SpecificationInterpreter {
     private static final String GRAPH_QUERY_MERGE = GRAPH_QUERY_VOCAB + "/merge";
     private static final String GRAPH_QUERY_SORT = GRAPH_QUERY_VOCAB + "/sort";
     private static final String GRAPH_QUERY_GROUP_BY = GRAPH_QUERY_VOCAB + "/group_by";
+    private static final String GRAPH_QUERY_ENSURE_ORDER = GRAPH_QUERY_VOCAB + "/ensure_order";
     private static final String GRAPH_QUERY_GROUPED_INSTANCES = GRAPH_QUERY_VOCAB + "/grouped_instances";
     private static final String GRAPH_QUERY_GROUPED_INSTANCES_DEFAULT = GRAPH_QUERY_VOCAB + "/instances";
 
@@ -37,7 +38,8 @@ public class SpecificationInterpreter {
 
     protected Logger logger = LoggerFactory.getLogger(SpecificationInterpreter.class);
 
-    public Specification readSpecification(JSONObject jsonObject) throws JSONException {
+    public Specification readSpecification(String json) throws JSONException {
+        JSONObject jsonObject = new JSONObject(json);
         String originalContext = null;
         if (jsonObject.has(JsonLdConsts.CONTEXT)) {
             originalContext = jsonObject.getString(JsonLdConsts.CONTEXT);
@@ -54,7 +56,7 @@ public class SpecificationInterpreter {
         if (jsonObject.has(GRAPH_QUERY_FIELDS)) {
             specFields = createSpecFields(jsonObject.get(GRAPH_QUERY_FIELDS));
         }
-        return new Specification(originalContext, name, rootSchema, specFields);
+        return new Specification(originalContext, name, rootSchema, json, specFields);
     }
 
     private List<SpecField> createSpecFields(Object origin) throws JSONException {
@@ -84,6 +86,7 @@ public class SpecificationInterpreter {
                             boolean required = false;
                             boolean sortAlphabetically = false;
                             boolean groupBy = false;
+                            boolean ensureOrder=false;
                             String groupedInstances = GRAPH_QUERY_GROUPED_INSTANCES_DEFAULT;
                             if (originObj.has(GRAPH_QUERY_FIELDNAME)) {
                                 fieldName = originObj.getJSONObject(GRAPH_QUERY_FIELDNAME).getString(JsonLdConsts.ID);
@@ -101,13 +104,16 @@ public class SpecificationInterpreter {
                             if (originObj.has(GRAPH_QUERY_SORT)) {
                                 sortAlphabetically = originObj.getBoolean(GRAPH_QUERY_SORT);
                             }
+                            if (originObj.has(GRAPH_QUERY_ENSURE_ORDER)){
+                                ensureOrder = originObj.getBoolean(GRAPH_QUERY_ENSURE_ORDER);
+                            }
                             if (originObj.has(GRAPH_QUERY_GROUPED_INSTANCES)) {
                                 groupedInstances = originObj.getJSONObject(GRAPH_QUERY_GROUPED_INSTANCES).getString(JsonLdConsts.ID);
                             }
                             if (originObj.has(GRAPH_QUERY_GROUP_BY)) {
                                 groupBy = originObj.getBoolean(GRAPH_QUERY_GROUP_BY);
                             }
-                            fieldsPerRelativePath.add(new SpecField(fieldName, specFields, traversalPath, groupedInstances, required, sortAlphabetically, groupBy));
+                            fieldsPerRelativePath.add(new SpecField(fieldName, specFields, traversalPath, groupedInstances, required, sortAlphabetically, groupBy, ensureOrder));
                         }
                     }
                 }
@@ -116,7 +122,7 @@ public class SpecificationInterpreter {
                     for (int i = 0; i < fieldsPerRelativePath.size(); i++) {
                         SpecField specField = fieldsPerRelativePath.get(i);
                         if(rootField==null) {
-                            rootField = new SpecField(specField.fieldName, fieldsPerRelativePath, Collections.emptyList(), specField.groupedInstances, specField.required, specField.sortAlphabetically, specField.groupby);
+                            rootField = new SpecField(specField.fieldName, fieldsPerRelativePath, Collections.emptyList(), specField.groupedInstances, specField.required, specField.sortAlphabetically, specField.groupby, specField.ensureOrder);
                         }
                         specField.sortAlphabetically = false;
                         specField.groupby = false;

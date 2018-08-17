@@ -79,7 +79,7 @@
         <#if instance?is_sequence>
             <#local hasValidElements=false/>
             <#list instance as i>
-                <#if i?has_content && i[_normalize(identifierPropertyName)]?has_content && i[_normalize(labelPropertyName)]?has_content>
+                <#if i?has_content && i[identifierPropertyName]?has_content && i[labelPropertyName]?has_content>
                     <#local hasValidElements=true/>
                 </#if>
             </#list>
@@ -90,11 +90,11 @@
             <#else>
                 null
             </#if>
-        <#elseif instance?has_content && instance[_normalize(identifierPropertyName)]?has_content>
+        <#elseif instance?has_content && instance[identifierPropertyName]?has_content && !instance[identifierPropertyName]?is_hash>
             {
-                "reference": "${target}/${instance[_normalize(identifierPropertyName)]}",
-            <#if instance[_normalize(uuidPropertyName)]?has_content>"uuid": "${instance[_normalize(uuidPropertyName)]}",</#if>
-                "value": "${instance[_normalize(labelPropertyName)]?json_string}"
+                "reference": "${target}/${instance[identifierPropertyName]}",
+            <#if instance[uuidPropertyName]?has_content>"uuid": "${instance[uuidPropertyName]}",</#if>
+                "value": "${instance[labelPropertyName]?json_string}"
             }
         <#else>
             null
@@ -109,7 +109,7 @@
         <#if instance?is_sequence>
             <#local hasValidElements=false/>
             <#list instance as i>
-                <#if i?has_content && i[_normalize(url)]?has_content && _get_label(i label)?has_content>
+                <#if i?has_content && (url=="." || i[url]?has_content) && _get_label(i label)?has_content>
                     <#local hasValidElements=true/>
                 </#if>
             </#list>
@@ -122,9 +122,13 @@
                     null
             </#if>
         <#else>
-            <#if instance[_normalize(url)]?has_content && _get_label(instance label)?has_content>
+            <#if ((url=="." && !instance?is_hash) || (instance[url]?has_content && !instance[url]?is_hash)) && _get_label(instance label)?has_content>
             {
-                "url": "${urlbase}${instance[_normalize(url)]}",
+                <#if url==".">
+                    "url": "${urlbase}${instance}",
+                <#else>
+                    "url": "${urlbase}${instance[url]}",
+                </#if>
                 <#if detail!="">"detail": "${detail?json_string}",</#if>
                 "value": "${_get_label(instance label)}"
             }
@@ -156,7 +160,7 @@
     </#if>
 </#macro>
 
-<#macro meta propertyName>
+<#macro meta instance propertyName>
 </#macro>
 
 <#macro direct_print value separator=" ">
@@ -188,7 +192,7 @@
     <#if v?has_content>
         <#if v?is_string>
             <#return "\""+v?json_string+"\""/>
-        <#else>
+        <#elseif !v?is_hash && !v?is_sequence>
             <#return v/>
         </#if>
     <#else>
@@ -209,8 +213,10 @@
                 </#list>
                 <#return result[0..result?length-1]/>
             </#if>
-        <#else>
+        <#elseif !value?is_hash>
             <#return value/>
+        <#else>
+            <#return ""/>
         </#if>
     <#else>
         <#return ""/>
@@ -221,25 +227,17 @@
     <#if labelProperty?is_hash>
         <#return labelProperty.text>
     <#else>
-        <#return instance[_normalize(labelProperty)]>
+        <#return instance[labelProperty]>
     </#if>
 </#function>
 
 <#function _value instance propertyName>
-    <#if instance?has_content && propertyName?has_content  && instance[_normalize(propertyName)]?has_content>
-        <#if instance[_normalize(propertyName)]?is_sequence>
-            <#return instance[_normalize(propertyName)]/>
+    <#if instance?has_content && propertyName?has_content  && instance[propertyName]?has_content>
+        <#if instance[propertyName]?is_sequence>
+            <#return instance[propertyName]/>
         <#else>
-            <#return [instance[_normalize(propertyName)]]/>
+            <#return [instance[propertyName]]/>
         </#if>
     </#if>
     <#return []/>
-</#function>
-
-<#function _normalize propertyName>
-    <#if propertyName?has_content>
-        <#return propertyName?replace(":", "_")>
-    <#else>
-        <#return "">
-    </#if>
 </#function>

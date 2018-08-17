@@ -21,7 +21,7 @@
   },
   "@type": "DataTransformation",
   "schema:name": "Dataset",
-  "root_schema": "nexus_instance:minds/core/dataset/v0.0.4",
+  "root_schema": "nexus_instance:minds/core/samp/v0.0.4",
   "fields": [
     {
       "fieldname": "search:license",
