@@ -10,13 +10,18 @@ import org.humanbrainproject.knowledgegraph.control.jsonld.JsonLdStandardization
 import org.humanbrainproject.knowledgegraph.control.specification.SpecificationInterpreter;
 import org.humanbrainproject.knowledgegraph.control.template.FreemarkerTemplating;
 import org.humanbrainproject.knowledgegraph.control.template.MustacheTemplating;
+import org.humanbrainproject.knowledgegraph.entity.Template;
 import org.humanbrainproject.knowledgegraph.entity.query.QueryResult;
 import org.humanbrainproject.knowledgegraph.entity.specification.Specification;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.boot.configurationprocessor.json.JSONObject;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 
 import java.io.IOException;
 import java.util.*;
@@ -141,4 +146,20 @@ public class ArangoQuery {
         return freemarkerTemplating.applyTemplate(template, queryResult, "meta", arangoInternal);
     }
 
+
+    public String applyFreemarkerTemplateToJSON(String json, String template, String authorizationToken) throws IOException, JSONException {
+        QueryResult<List<Map>> queryResult = new QueryResult<>();
+        queryResult.setResults(GSON.fromJson(json, List.class));
+        return freemarkerTemplating.applyTemplate(template, queryResult, null, arangoInternal);
+    }
+
+
+    public String applyFreemarkerOnMetaQueryBasedOnTemplate(String metaTemplate, String targetTemplate, String queryId, String authorization) throws IOException, JSONException {
+        QueryResult<List<Map>> queryResult = metaQueryPropertyGraphByStoredSpecification(queryId,authorization);
+        String meta = freemarkerTemplating.applyTemplate(metaTemplate, queryResult, "meta", arangoInternal);
+        QueryResult<List<Map>> metaQueryResult = new QueryResult<>();
+        metaQueryResult.setApiName(queryResult.getApiName());
+        metaQueryResult.setResults(GSON.fromJson(meta, List.class));
+        return freemarkerTemplating.applyTemplate(targetTemplate, metaQueryResult, null, arangoInternal);
+    }
 }

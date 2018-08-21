@@ -1,6 +1,5 @@
 package org.humanbrainproject.knowledgegraph.control;
 
-import org.humanbrainproject.knowledgegraph.api.indexation.ArangoIndexationAPI;
 import org.humanbrainproject.knowledgegraph.entity.jsonld.JsonLdEdge;
 import org.humanbrainproject.knowledgegraph.entity.jsonld.JsonLdVertex;
 import org.slf4j.Logger;

@@ -144,7 +144,7 @@
         },
         {
           "fieldname": "this:sex",
-          "relative_path": "minds:sex",
+          "relative_path": ["minds:sex", "schema:name"],
           "label": "Sex",
           "search:overview": true
         },

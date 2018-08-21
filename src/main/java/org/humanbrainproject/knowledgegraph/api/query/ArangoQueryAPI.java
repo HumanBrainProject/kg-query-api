@@ -1,5 +1,6 @@
 package org.humanbrainproject.knowledgegraph.api.query;
 
+import io.swagger.annotations.Api;
 import org.humanbrainproject.knowledgegraph.boundary.query.ArangoQuery;
 import org.humanbrainproject.knowledgegraph.boundary.query.Templating;
 import org.humanbrainproject.knowledgegraph.entity.Template;
@@ -15,6 +16,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping(value = "/arango", produces = MediaType.APPLICATION_JSON)
+@Api(value="/arango", description = "The API for querying the knowledge graph")
 public class ArangoQueryAPI {
 
     @Autowired
@@ -120,6 +122,15 @@ public class ArangoQueryAPI {
         Template template = templating.getTemplateById(String.format("%s_%s", queryId, templateId));
         return applyFreemarkerTemplateToMetaApi(template.getTemplateContent(), queryId, authorization);
     }
+
+
+    @PostMapping(value = "/query/{queryId}/template/{templateId}/meta", consumes = {MediaType.TEXT_PLAIN})
+    public ResponseEntity<String> applyFreemarkerOnMetaQueryBasedOnTemplate(@RequestBody String template, @PathVariable("queryId") String queryId, @PathVariable("templateId") String templateId, @RequestHeader(value = "Authorization", required = false) String authorization) throws Exception {
+        Template metaTemplate = templating.getTemplateById(String.format("%s_%s", queryId, templateId));
+        String s = query.applyFreemarkerOnMetaQueryBasedOnTemplate(metaTemplate.getTemplateContent(), template, queryId, authorization);
+        return ResponseEntity.ok(s);
+    }
+
 
     @PutMapping(value = "/libraries/{libraryId}", consumes = {MediaType.TEXT_PLAIN})
     public ResponseEntity<Void> saveFreemarkerLibrary(@RequestBody String template, @PathVariable("libraryId") String libraryId) throws Exception {

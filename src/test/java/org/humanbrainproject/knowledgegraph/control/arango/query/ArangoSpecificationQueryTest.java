@@ -7,19 +7,14 @@ import org.humanbrainproject.knowledgegraph.control.arango.ArangoDriver;
 import org.humanbrainproject.knowledgegraph.control.arango.ArangoNamingConvention;
 import org.humanbrainproject.knowledgegraph.control.jsonld.JsonLdStandardization;
 import org.humanbrainproject.knowledgegraph.control.specification.SpecificationInterpreter;
-import org.humanbrainproject.knowledgegraph.entity.query.QueryResult;
 import org.humanbrainproject.knowledgegraph.entity.specification.Specification;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
-import org.springframework.boot.configurationprocessor.json.JSONArray;
 import org.springframework.boot.configurationprocessor.json.JSONException;
-import org.springframework.boot.configurationprocessor.json.JSONObject;
 
 import java.io.IOException;
 import java.util.*;
-
-import static org.junit.Assert.*;
 
 public class ArangoSpecificationQueryTest {
 
@@ -29,7 +24,7 @@ public class ArangoSpecificationQueryTest {
 
     @Before
     public void setup() throws IOException, JSONException {
-        String json = IOUtils.toString(this.getClass().getResourceAsStream("/sample.json"), "UTF-8");
+        String json = IOUtils.toString(this.getClass().getResourceAsStream("/apiSpec/sample.json"), "UTF-8");
         String collectionLabels = IOUtils.toString(this.getClass().getResourceAsStream("/collectionLabels.json"), "UTF-8");
         Gson gson = new Gson();
         String specification = JsonUtils.toString(new JsonLdStandardization().fullyQualify(json));

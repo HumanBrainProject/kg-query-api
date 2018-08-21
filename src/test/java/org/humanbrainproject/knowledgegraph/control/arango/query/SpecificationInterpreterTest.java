@@ -3,7 +3,6 @@ package org.humanbrainproject.knowledgegraph.control.arango.query;
 import com.github.jsonldjava.utils.JsonUtils;
 import org.apache.commons.io.IOUtils;
 import org.humanbrainproject.knowledgegraph.control.arango.ArangoNamingConvention;
-import org.humanbrainproject.knowledgegraph.control.arango.query.ArangoSpecificationQuery;
 import org.humanbrainproject.knowledgegraph.control.jsonld.JsonLdStandardization;
 import org.humanbrainproject.knowledgegraph.control.specification.SpecificationInterpreter;
 import org.humanbrainproject.knowledgegraph.entity.specification.Specification;
@@ -11,7 +10,6 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.boot.configurationprocessor.json.JSONException;
-import org.springframework.boot.configurationprocessor.json.JSONObject;
 
 import java.io.IOException;
 import java.util.Collections;

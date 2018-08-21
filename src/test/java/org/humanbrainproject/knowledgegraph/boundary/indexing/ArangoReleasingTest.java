@@ -1,11 +1,9 @@
-package org.humanbrainproject.knowledgegraph.boundary.indexation;
+package org.humanbrainproject.knowledgegraph.boundary.indexing;
 
 import com.arangodb.ArangoCollection;
 import com.arangodb.ArangoDatabase;
-import com.arangodb.entity.CollectionType;
 import org.humanbrainproject.knowledgegraph.control.arango.ArangoDriver;
 import org.humanbrainproject.knowledgegraph.control.arango.ArangoNamingConvention;
-import org.humanbrainproject.knowledgegraph.entity.jsonld.JsonLdProperty;
 import org.humanbrainproject.knowledgegraph.entity.jsonld.JsonLdVertex;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -20,7 +18,6 @@ import org.springframework.test.context.junit4.SpringRunner;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Map;
 
 import static org.junit.Assert.*;
 
@@ -29,7 +26,7 @@ import static org.junit.Assert.*;
 @Ignore("These tests require an arango execution environment. Make sure you have one properly configured first!")
 public class ArangoReleasingTest {
     @Autowired
-    ArangoIndexation indexation;
+    ArangoIndexing indexation;
 
     @Autowired
     @Qualifier("default-test")
@@ -69,7 +66,7 @@ public class ArangoReleasingTest {
         String releaseJson = "{\"@type\": \"http://hbp.eu/minds#Release\", " +
                 "\"http://hbp.eu/minds#releaseinstance\": {\"@id\": \"http://test/foo/bar/barfoo/v0.0.1/foo\"}}";
 
-        GraphIndexation.GraphIndexationSpec spec = new GraphIndexation.GraphIndexationSpec();
+        GraphIndexing.GraphIndexationSpec spec = new GraphIndexing.GraphIndexationSpec();
         spec.setJsonOrJsonLdPayload(releaseJson).setEntityName("foo/prov/release/v0.0.1").setId("foo");
 
         indexation.updateJsonOrJsonLd(spec);
@@ -91,7 +88,7 @@ public class ArangoReleasingTest {
     public void releaseNestedInstance() throws JSONException, IOException {
         //given
         String nestedJson = "{\"hello\": \"world\", \"nested\": {\"hi\": \"knowledgegraph\"}}";
-        GraphIndexation.GraphIndexationSpec spec = new GraphIndexation.GraphIndexationSpec();
+        GraphIndexing.GraphIndexationSpec spec = new GraphIndexing.GraphIndexationSpec();
         spec.setEntityName("foo/bar/barfoo/v0.0.1").setId("foobar").setJsonOrJsonLdPayload(nestedJson).setDefaultNamespace("http://test/");
         indexation.insertJsonOrJsonLd(spec);
 
@@ -125,7 +122,7 @@ public class ArangoReleasingTest {
         //when
         String releaseJson = "{\"@type\": \"http://hbp.eu/minds#Release\", " +
                 "\"http://hbp.eu/minds#releaseinstance\": [{\"@id\": \"http://test/foo/bar/barfoo/v0.0.1/foobar\"}, {\"@id\": \"http://test/foo/bar/barfoo/v0.0.1/foo\"}]}";
-        GraphIndexation.GraphIndexationSpec spec = new GraphIndexation.GraphIndexationSpec();
+        GraphIndexing.GraphIndexationSpec spec = new GraphIndexing.GraphIndexationSpec();
         spec.setJsonOrJsonLdPayload(releaseJson).setEntityName("foo/prov/release/v0.0.1").setId("foo");
         indexation.updateJsonOrJsonLd(spec);
 
@@ -152,7 +149,7 @@ public class ArangoReleasingTest {
         //when
         String releaseJson = "{\"@type\": \"http://hbp.eu/minds#Release\", " +
                 "\"http://hbp.eu/minds#releaseinstance\": [{\"@id\": \"http://test/foo/bar/barfoo/v0.0.1/foo\"}]}";
-        GraphIndexation.GraphIndexationSpec spec = new GraphIndexation.GraphIndexationSpec();
+        GraphIndexing.GraphIndexationSpec spec = new GraphIndexing.GraphIndexationSpec();
         spec.setJsonOrJsonLdPayload(releaseJson).setEntityName("foo/prov/release/v0.0.1").setId("foo");
         indexation.updateJsonOrJsonLd(spec);
 

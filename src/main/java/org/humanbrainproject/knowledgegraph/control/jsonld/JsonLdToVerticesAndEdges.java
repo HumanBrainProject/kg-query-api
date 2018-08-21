@@ -2,7 +2,7 @@ package org.humanbrainproject.knowledgegraph.control.jsonld;
 
 
 import com.github.jsonldjava.core.JsonLdConsts;
-import org.humanbrainproject.knowledgegraph.boundary.indexation.GraphIndexation;
+import org.humanbrainproject.knowledgegraph.boundary.indexing.GraphIndexing;
 import org.humanbrainproject.knowledgegraph.control.Configuration;
 import org.humanbrainproject.knowledgegraph.entity.jsonld.JsonLdEdge;
 import org.humanbrainproject.knowledgegraph.entity.jsonld.JsonLdProperty;
@@ -31,7 +31,7 @@ public class JsonLdToVerticesAndEdges {
      * @param jsonLdPayload
      * @throws JSONException
      */
-    public List<JsonLdVertex> transformFullyQualifiedJsonLdToVerticesAndEdges(String jsonLdPayload, GraphIndexation.GraphIndexationSpec spec) throws JSONException {
+    public List<JsonLdVertex> transformFullyQualifiedJsonLdToVerticesAndEdges(String jsonLdPayload, GraphIndexing.GraphIndexationSpec spec) throws JSONException {
         return createVertex(null, new JSONObject(jsonLdPayload), null, new ArrayList<>(), -1, spec.getEntityName(), spec.getPermissionGroup(), spec.getId(), spec.getRevision());
     }
 

@@ -1,4 +1,4 @@
-package org.humanbrainproject.knowledgegraph.boundary.indexation;
+package org.humanbrainproject.knowledgegraph.boundary.indexing;
 
 import org.humanbrainproject.knowledgegraph.control.arango.ArangoDriver;
 import org.humanbrainproject.knowledgegraph.control.arango.query.ArangoSpecificationQuery;
@@ -19,7 +19,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Component
-public class ArangoIndexation extends GraphIndexation {
+public class ArangoIndexing extends GraphIndexing {
 
     @Autowired
     @Qualifier("default")

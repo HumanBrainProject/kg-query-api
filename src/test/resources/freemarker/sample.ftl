@@ -16,6 +16,7 @@
                 "genotype": <@value subject "http://schema.hbp.eu/dataset/search/genotype"/>,
                 "weight": <@value subject "http://schema.hbp.eu/dataset/search/weight"/>,
                 "age": <@value subject "http://schema.hbp.eu/dataset/search/age"/>,
+                "sex": <@value subject "http://schema.hbp.eu/dataset/search/sex"/>,
                 "subject_name": <@direct_ref "Subject" subject "http://schema.hbp.eu/dataset/search/identifier" "http://schema.hbp.eu/dataset/search/name" "http://schema.hbp.eu/dataset/search/uuid"/>,
                 "strain": <@value subject "http://schema.hbp.eu/dataset/search/strain"/>,
                 "species": <@ref "Species" subject "http://schema.hbp.eu/dataset/search/species" "http://schema.hbp.eu/dataset/search/identifier" "http://schema.hbp.eu/dataset/search/name" "http://schema.hbp.eu/dataset/search/uuid"/>
