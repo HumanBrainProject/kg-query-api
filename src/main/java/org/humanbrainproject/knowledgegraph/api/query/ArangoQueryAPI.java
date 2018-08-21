@@ -15,8 +15,8 @@ import javax.ws.rs.core.MediaType;
 import java.util.List;
 
 @RestController
-@RequestMapping(value = "/arango", produces = MediaType.APPLICATION_JSON)
-@Api(value="/arango", description = "The API for querying the knowledge graph")
+@RequestMapping(value = "/kg", produces = MediaType.APPLICATION_JSON)
+@Api(value="/kg", description = "The API for querying the knowledge graph")
 public class ArangoQueryAPI {
 
     @Autowired

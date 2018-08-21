@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.*;
 
 
 @RestController
-@RequestMapping(value = "/echo")
+@RequestMapping(value = "/kg/echo")
 public class EchoAPI {
 
     Logger logger = LoggerFactory.getLogger(EchoAPI.class);

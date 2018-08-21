@@ -16,8 +16,8 @@ import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 
 @RestController
-@RequestMapping(value = "/kg-query")
-@Api(value="/arango", description = "The indexing api to upload JSON-LD to the arango database")
+@RequestMapping(value = "/kg")
+@Api(value="/kg", description = "The indexing api to upload JSON-LD to the arango database")
 public class ArangoIndexingAPI {
 
     @Autowired

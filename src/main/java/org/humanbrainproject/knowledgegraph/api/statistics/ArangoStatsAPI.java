@@ -8,7 +8,7 @@ import javax.ws.rs.core.MediaType;
 import java.util.Map;
 
 @RestController
-@RequestMapping(value = "/arango/statistics", produces = MediaType.APPLICATION_JSON)
+@RequestMapping(value = "/kg/statistics", produces = MediaType.APPLICATION_JSON)
 public class ArangoStatsAPI  {
 
     @Autowired
