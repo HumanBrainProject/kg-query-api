@@ -16,14 +16,14 @@ import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 
 @RestController
-@RequestMapping(value = "/kg")
-@Api(value="/kg", description = "The indexing api to upload JSON-LD to the arango database")
-public class ArangoIndexingAPI {
+@RequestMapping(value = "/indexing")
+@Api(value="/indexing", description = "The indexing api to upload JSON-LD to the arango database")
+public class IndexingAPI {
 
     @Autowired
     ArangoIndexing indexer;
 
-    Logger logger = LoggerFactory.getLogger(ArangoIndexingAPI.class);
+    Logger logger = LoggerFactory.getLogger(IndexingAPI.class);
 
 
     @GetMapping(value="/{organization}/{domain}/{schema}/{schemaversion}/{id}", produces = MediaType.APPLICATION_JSON)
