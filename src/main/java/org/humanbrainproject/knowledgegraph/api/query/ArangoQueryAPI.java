@@ -2,12 +2,15 @@ package org.humanbrainproject.knowledgegraph.api.query;
 
 import org.humanbrainproject.knowledgegraph.boundary.query.ArangoQuery;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.HttpClientErrorException;
 
 import javax.ws.rs.core.MediaType;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.logging.Handler;
 
 @RestController
@@ -52,6 +55,18 @@ public class ArangoQueryAPI {
         try {
             return ResponseEntity.ok(query.queryPropertyGraphByStoredSpecificationAndTemplate(id, template, authorization, size, start));
         } catch (HttpClientErrorException e) {
+            return ResponseEntity.status(e.getStatusCode()).build();
+        }
+    }
+
+    @GetMapping(value = "/graph/{org}/{domain}/{schema}/{version}/{id}", consumes = { MediaType.WILDCARD})
+    public ResponseEntity<List<Map>> getGraph(@PathVariable("org") String org, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("version") String version, @PathVariable("id") String id, @RequestParam(value= "step", required = false, defaultValue = "2") Integer step) throws Exception{
+        try{
+            String v = version.replaceAll("\\.", "_");
+            String vert =  String.format("%s-%s-%s-%s/%s", org,domain, schema, v, id);
+            //TODO Validate step value
+            return ResponseEntity.ok(query.getGraph(vert, step));
+        } catch (HttpClientErrorException e){
             return ResponseEntity.status(e.getStatusCode()).build();
         }
     }

@@ -83,4 +83,8 @@ public class ArangoQuery {
         return objects.stream().map(o -> GSON.fromJson(templating.applyTemplate(template, o), Map.class)).collect(Collectors.toList());
     }
 
+    public List<Map> getGraph(String rootVertex, Integer step) throws IOException {
+        return arangoUploader.inDepthGraph(rootVertex, step, arango);
+    }
+
 }
