@@ -1,11 +1,15 @@
 package org.humanbrainproject.knowledgegraph.control.arango.query;
 
+import org.humanbrainproject.knowledgegraph.entity.specification.SpecField;
 import org.springframework.boot.configurationprocessor.json.JSONArray;
 import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.boot.configurationprocessor.json.JSONObject;
 
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.Stack;
+import java.util.stream.Collectors;
 
 public class ArangoQueryBuilder {
     private static String DOC_POSTFIX = "doc";
@@ -29,10 +33,10 @@ public class ArangoQueryBuilder {
         return sb.toString();
     }
 
-    public void enterTraversal(String targetName, int numberOfTraversals, boolean reverse, String relationCollection){
+    public void enterTraversal(String targetName, int numberOfTraversals, boolean reverse, String relationCollection, boolean hasGroup){
         previousAlias.push(currentAlias);
         currentAlias = targetName;
-        sb.append(String.format("\n%sLET %s = ( FOR %s_%s IN %d..%d %s %s_%s `%s`", getIndentation(), currentAlias, currentAlias, DOC_POSTFIX, numberOfTraversals, numberOfTraversals, reverse? "INBOUND" : "OUTBOUND", previousAlias.peek(), DOC_POSTFIX, relationCollection));
+        sb.append(String.format("\n%sLET %s = %s ( FOR %s_%s IN %d..%d %s %s_%s `%s`", getIndentation(), currentAlias, hasGroup ? " (FOR grp IN " : "", currentAlias, DOC_POSTFIX, numberOfTraversals, numberOfTraversals, reverse? "INBOUND" : "OUTBOUND", previousAlias.peek(), DOC_POSTFIX, relationCollection));
     }
 
     private String getIndentation(){
@@ -47,8 +51,17 @@ public class ArangoQueryBuilder {
         sb.append(String.format(", %s `%s`", reverse ? "INBOUND" : "OUTBOUND", relationCollection));
     }
 
+    public void addComplexFieldRequiredFilter(String leaf_field){
+        sb.append(String.format("\n%s AND %s_%s.`%s` != null ", getIndentation(), currentAlias, DOC_POSTFIX, leaf_field));
+    }
+
+    public void addTraversalFieldRequiredFilter(String alias){
+        sb.append(String.format("\n%s AND %s != []", getIndentation(), alias));
+    }
+
+
+
     public void startReturnStructure(boolean simple){
-        addFilter();
         sb.append(String.format("\n%s  RETURN %s", getIndentation(), simple ? "": "{\n"));
         simpleReturn = simple;
     }
@@ -61,9 +74,28 @@ public class ArangoQueryBuilder {
         firstReturnEntry = true;
     }
 
+
     public void leaveTraversal(){
         sb.append(")\n");
         currentAlias = previousAlias.pop();
+    }
+
+    public void buildGrouping(String groupedInstancesLabel, List<String> groupingFields, List<String> nonGroupingFields){
+        sb.append("COLLECT ");
+        List<String> groupings = groupingFields.stream().map(f -> String.format("`%s` = grp.`%s`", f, f)).collect(Collectors.toList());
+        sb.append(String.join(", ", groupings));
+        sb.append(" INTO group\n");
+        sb.append( "LET instances = ( FOR el IN group RETURN {\n");
+
+        List<String> nonGrouping = nonGroupingFields.stream().map(s -> String.format("\"%s\": el.grp.`%s`", s, s)).collect(Collectors.toList());
+        sb.append(String.join(",\n", nonGrouping));
+        sb.append("\n} )\n");
+        sb.append("RETURN {\n");
+
+        List<String> returnGrouped = groupingFields.stream().map(f -> String.format("\"%s\": `%s`", f, f)).collect(Collectors.toList());
+        sb.append(String.join(",\n", returnGrouped));
+        sb.append(String.format(",\n \"%s\": instances\n", groupedInstancesLabel));
+        sb.append("} )");
     }
 
     public ArangoQueryBuilder addRoot(String rootCollection, Set<String> whiteListOrganizations) throws JSONException {
@@ -71,23 +103,25 @@ public class ArangoQueryBuilder {
         for (String whiteListOrganization : whiteListOrganizations) {
             array.put(whiteListOrganization);
         }
-
         sb.append(String.format("LET whitelist_organizations=%s\n", array.toString()));
         sb.append(String.format("FOR %s_%s IN `%s`\n", ROOT_ALIAS, DOC_POSTFIX, rootCollection));
-        if(size!=null){
-            if(start!=null){
-                sb.append(String.format("LIMIT %d, %d\n", start, size));
-            }
-            else{
-                sb.append(String.format("LIMIT %d\n", size));
-            }
-        }
         addFilter();
         return this;
     }
 
-    private void addFilter() {
+    public void addFilter() {
         sb.append(String.format(" FILTER %s_%s.`%s` IN whitelist_organizations ", currentAlias, DOC_POSTFIX, permissionGroupFieldName));
+    }
+
+    public void addLimit(){
+        if(size!=null){
+            if(start!=null){
+                sb.append(String.format("\nLIMIT %d, %d\n", start, size));
+            }
+            else{
+                sb.append(String.format("\nLIMIT %d\n", size));
+            }
+        }
     }
 
     public void addTraversalResultField(String targetName, String alias){
@@ -96,6 +130,12 @@ public class ArangoQueryBuilder {
         }
         sb.append(String.format("%s    \"%s\": %s", getIndentation(), targetName, alias));
         firstReturnEntry = false;
+    }
+
+    public void addSortByLeafField(Set<String> fields){
+        List<String> fullSortFields = fields.stream().map(s -> String.format("%s_%s.`%s`", currentAlias, DOC_POSTFIX, s)).collect(Collectors.toList());
+        String concat = String.join(", ", fullSortFields);
+        sb.append(String.format("%s   SORT %s ASC\n", getIndentation(), concat));
     }
 
     public void addComplexLeafResultField(String targetName, String leaf_field){
@@ -111,8 +151,12 @@ public class ArangoQueryBuilder {
             sb.append(",\n");
             addFilter();
         }
-        sb.append(String.format("\n%s  RETURN %s_%s.`%s`\n", getIndentation(), currentAlias, DOC_POSTFIX, leaf_field));
+        sb.append(String.format("\n%s  RETURN DISTINCT %s_%s.`%s`\n", getIndentation(), currentAlias, DOC_POSTFIX, leaf_field));
         firstReturnEntry = true;
+    }
+
+    public void addMerge(String leaf_field, Set<String> merged_fields, boolean sorted){
+        sb.append(String.format("\n%s LET %s = %s APPEND(%s, true) %s\n", getIndentation(), leaf_field, sorted ? "( FOR el IN": "", String.join(", ", merged_fields), sorted ? " SORT el ASC RETURN el)" : ""));
     }
 
 }

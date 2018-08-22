@@ -5,18 +5,42 @@ import java.util.List;
 
 public class SpecField {
 
-    public final String fieldName;
+    public String fieldName;
     public final List<SpecField> fields;
     public final List<SpecTraverse> traversePath;
+    public boolean required;
+    public boolean sortAlphabetically;
+    public boolean groupby;
+    public final String groupedInstances;
 
-    public SpecField(String fieldName, List<SpecField> fields, List<SpecTraverse> traversePath) {
+    public SpecField(String fieldName, List<SpecField> fields, List<SpecTraverse> traversePath, String groupedInstances, boolean required, boolean sortAlphabetically, boolean groupby) {
         this.fieldName = fieldName;
+        this.required = required;
         this.fields = fields == null ? Collections.emptyList() : Collections.unmodifiableList(fields);
         this.traversePath = Collections.unmodifiableList(traversePath);
+        this.sortAlphabetically = sortAlphabetically;
+        this.groupby = groupby;
+        this.groupedInstances = groupedInstances;
+    }
+
+    public String getGroupedInstances() {
+        return groupedInstances;
+    }
+
+    public boolean isRequired() {
+        return required;
+    }
+
+    public boolean isGroupby() {
+        return groupby;
     }
 
     public boolean isLeaf(){
         return fields.isEmpty();
+    }
+
+    public boolean isMerge(){
+        return this.traversePath.isEmpty() && !this.fields.isEmpty();
     }
 
     public boolean needsTraversal(){
@@ -56,4 +80,7 @@ public class SpecField {
         }
     }
 
+    public boolean isSortAlphabetically() {
+        return sortAlphabetically;
+    }
 }

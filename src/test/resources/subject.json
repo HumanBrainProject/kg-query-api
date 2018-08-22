@@ -1,0 +1,140 @@
+{
+  "@context": {
+    "@vocab": "http://schema.hbp.eu/graph_query/",
+    "schema": "http://schema.org/",
+    "minds": "http://hbp.eu/minds#",
+    "search": "http://schema.hbp.eu/search_ui/",
+    "nexus": "https://nexus-dev.humanbrainproject.org/vocabs/nexus/core/terms/v0.1.0/",
+    "nexus_instance": "https://nexus-dev.humanbrainproject.org/v0/schemas/",
+    "fieldname": {
+      "@id": "fieldname",
+      "@type": "@id"
+    },
+    "relative_path": {
+      "@id": "relative_path",
+      "@type": "@id"
+    },
+    "root_schema": {
+      "@id": "root_schema",
+      "@type": "@id"
+    },
+    "grouped_instances": {
+      "@id": "grouped_instances",
+      "@type": "@id"
+    }
+  },
+  "@type": "DataTransformation",
+  "schema:name": "Subject",
+  "root_schema": "nexus_instance:minds/experiment/subject/v0.0.4",
+  "fields": [
+    {
+      "relative_path": "schema:identifier",
+      "required": true
+    },
+    {
+      "fieldname": "search:title",
+      "relative_path": "schema:name",
+      "required": true
+    },
+    {
+      "fieldname": "search:species",
+      "relative_path": "minds:species",
+      "fields": [
+        {
+          "fieldname": "search:name",
+          "relative_path": "schema:name"
+        },
+        {
+          "fieldname": "search:uuid",
+          "relative_path": "nexus:uuid"
+        },
+        {
+          "fieldname": "search:identifier",
+          "relative_path": "schema:identifier"
+        }
+      ]
+    },
+    {
+      "fieldname": "search:sex",
+      "relative_path": [
+        "minds:sex",
+        "schema:name"
+      ]
+    },
+    {
+      "fieldname": "search:age",
+      "relative_path": "minds:age"
+    },
+    {
+      "fieldname": "search:agecategory",
+      "relative_path": [
+        "minds:age_category",
+        "schema:name"
+      ]
+    },
+    {
+      "fieldname": "search:weight",
+      "relative_path": "minds:weight"
+    },
+    {
+      "fieldname": "search:strain",
+      "relative_path": "minds:strains"
+    },
+    {
+      "fieldname": "search:genotype",
+      "relative_path": "minds:genotype"
+    },
+    {
+      "fieldname": "search:samples",
+      "relative_path": "minds:samples",
+      "fields": [
+        {
+          "fieldname": "search:name",
+          "relative_path": "schema:name"
+        },
+        {
+          "fieldname": "search:uuid",
+          "relative_path": "nexus:uuid"
+        },
+        {
+          "fieldname": "search:identifier",
+          "relative_path": "schema:identifier"
+        }
+      ]
+    },
+    {
+      "fieldname": "search:datasets",
+      "relative_path": [
+        {
+          "@id": "minds:subjects",
+          "reverse": true
+        },
+        {
+          "@id": "minds:specimen_group",
+          "reverse": true
+        }
+      ],
+      "grouped_instances": "search:instances",
+      "fields": [
+        {
+          "fieldname": "search:name",
+          "relative_path": "schema:name",
+          "sort": true
+        },
+        {
+          "fieldname": "search:uuid",
+          "relative_path": "nexus:uuid"
+        },
+        {
+          "fieldname": "search:identifier",
+          "relative_path": "schema:identifier"
+        },
+        {
+          "fieldname": "search:componentName",
+          "relative_path": ["minds:component", "schema:name"],
+          "group_by": true
+        }
+      ]
+    }
+  ]
+}

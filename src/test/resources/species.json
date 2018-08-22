@@ -1,0 +1,63 @@
+{
+  "@context": {
+    "@vocab": "http://schema.hbp.eu/graph_query/",
+    "schema": "http://schema.org/",
+    "minds": "http://hbp.eu/minds#",
+    "search": "http://schema.hbp.eu/search_ui/",
+    "nexus": "https://nexus-dev.humanbrainproject.org/vocabs/nexus/core/terms/v0.1.0/",
+    "nexus_instance": "https://nexus-dev.humanbrainproject.org/v0/schemas/",
+    "fieldname": {
+      "@id": "fieldname",
+      "@type": "@id"
+    },
+    "relative_path": {
+      "@id": "relative_path",
+      "@type": "@id"
+    },
+    "root_schema": {
+      "@id": "root_schema",
+      "@type": "@id"
+    }
+  },
+  "@type": "DataTransformation",
+  "schema:name": "Species",
+  "root_schema": "nexus_instance:minds/core/species/v0.0.4",
+  "fields": [
+    {
+      "relative_path": "schema:identifier",
+      "required": true
+    },
+    {
+      "fieldname": "search:title",
+      "relative_path": "schema:name",
+      "required": true
+    },
+    {
+      "fieldname": "search:datasets",
+      "required": true,
+      "relative_path": [
+        {"@id": "minds:species", "reverse": true},
+        {"@id": "minds:subjects", "reverse": true},
+        {"@id": "minds:specimen_group", "reverse": true}
+      ],
+      "fields": [
+        {
+          "fieldname": "search:name",
+          "relative_path": "schema:name"
+        },
+        {
+          "fieldname": "search:uuid",
+          "relative_path": "nexus:uuid"
+        },
+        {
+          "fieldname": "search:identifier",
+          "relative_path": "schema:identifier"
+        },
+        {
+          "fieldname": "search:datasetComponent",
+          "relative_path": ["minds:component", "schema:name"]
+        }
+      ]
+    }
+  ]
+}

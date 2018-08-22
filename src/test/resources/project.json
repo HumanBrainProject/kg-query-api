@@ -1,0 +1,131 @@
+{
+  "@context": {
+    "@vocab": "http://schema.hbp.eu/graph_query/",
+    "kg": "http://schema.hbp.eu/kg/",
+    "schema": "http://schema.org/",
+    "minds": "http://hbp.eu/minds#",
+    "search": "http://schema.hbp.eu/search_ui/",
+    "nexus": "https://nexus-dev.humanbrainproject.org/vocabs/nexus/core/terms/v0.1.0/",
+    "nexus_instance": "https://nexus-dev.humanbrainproject.org/v0/schemas/",
+    "fieldname": {
+      "@id": "fieldname",
+      "@type": "@id"
+    },
+    "relative_path": {
+      "@id": "relative_path",
+      "@type": "@id"
+    },
+    "root_schema": {
+      "@id": "root_schema",
+      "@type": "@id"
+    }
+  },
+  "@type": "DataTransformation",
+  "schema:name": "Project",
+  "root_schema": "nexus_instance:minds/core/placomponent/v0.0.4",
+  "fields": [
+    {
+      "relative_path": "schema:identifier",
+      "required": true
+    },
+    {
+      "fieldname": "search:title",
+      "relative_path": "schema:name",
+      "required": true
+    },
+    {
+      "fieldname": "search:description",
+      "relative_path": "schema:description"
+    },
+    {
+      "fieldname": "search:publications",
+      "relative_path": [
+        {
+          "@id": "minds:component",
+          "reverse": true
+        },
+        "minds:publications"
+      ],
+      "fields": [
+        {
+          "fieldname": "search:citation",
+          "relative_path": "minds:cite"
+        },
+        {
+          "fieldname": "search:doi",
+          "relative_path": "minds:doi"
+        }
+      ]
+    },
+    {
+      "fieldname": "search:licenses",
+      "relative_path": [
+        {
+          "@id": "minds:component",
+          "reverse": true
+        },
+        "minds:license_info"
+      ],
+      "fields": [
+        {
+          "fieldname": "search:url",
+          "relative_path": "schema:url"
+        },
+        {
+          "fieldname": "search:name",
+          "relative_path": "schema:name"
+        }
+      ]
+    },
+    {
+      "fieldname": "search:contributors",
+      "relative_path": [
+        {
+          "@id": "minds:component",
+          "reverse": true
+        },
+        "minds:contributors"
+      ],
+      "fields": [
+        {
+          "fieldname": "search:name",
+          "relative_path": "minds:shortName"
+        },
+        {
+          "fieldname": "search:uuid",
+          "relative_path": "nexus:uuid"
+        },
+        {
+          "fieldname": "search:identifier",
+          "relative_path": "schema:identifier"
+        }
+      ]
+    },
+    {
+      "fieldname": "search:datasets",
+      "required": true,
+      "relative_path": {
+        "@id": "minds:component",
+        "reverse": true
+      },
+      "fields": [
+        {
+          "fieldname": "search:containerUrl",
+          "relative_path": "minds:container_url"
+        },
+        {
+          "fieldname": "search:name",
+          "relative_path": "schema:name"
+        },
+        {
+          "fieldname": "search:uuid",
+          "relative_path": "nexus:uuid"
+        },
+        {
+          "fieldname": "search:identifier",
+          "relative_path": "schema:identifier"
+        }
+      ]
+    }
+  ]
+}

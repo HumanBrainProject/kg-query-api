@@ -28,6 +28,21 @@ public class ArangoQueryFactoryTest {
         assertEquals("FOR v, e IN 1..1 OUTBOUND \"helloWorld\" `bar-org-foo-v0_0_1`, `foo-org-bar-v0_0_1` \n" +
                 "        \n" +
                 "        return {\"vertexId\":v._id, \"edgeId\": e._id, \"isEmbedded\": v.`http://schema.hbp.eu/internal#embedded`==true}", query);
-        System.out.print(query);
+    }
+
+    @Test
+    public void createQueryEdgesToBeRemoved(){
+        Set<String> collectionNames = new HashSet<String>();
+        collectionNames.add("foo-org-bar-v0_0_1");
+        collectionNames.add("bar-org-foo-v0_0_1");
+        Set<String> excludeIds = new HashSet<>();
+        excludeIds.add("excludeA");
+        excludeIds.add("excludeB");
+
+        String query = repository.queryEdgesToBeRemoved("helloWorld", collectionNames, excludeIds, null);
+        assertEquals("LET doc = DOCUMENT(\"helloWorld\")\n" +
+                "    FOR v, e IN OUTBOUND doc `bar-org-foo-v0_0_1`, `foo-org-bar-v0_0_1`\n" +
+                "       FILTER e._id NOT IN [\"excludeB\", \"excludeA\"]\n" +
+                "       return e._id", query);
     }
 }

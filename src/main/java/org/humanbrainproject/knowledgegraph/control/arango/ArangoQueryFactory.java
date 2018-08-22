@@ -37,6 +37,11 @@ public class ArangoQueryFactory {
         return String.format("FOR doc IN `%s` RETURN {\"arango\": doc._key, \"original\": doc.originalName}", lookupCollection);
     }
 
+
+    public String getAll(String collection){
+        return String.format("FOR doc IN `%s` RETURN doc", collection);
+    }
+
     public String createEmbeddedInstancesQuery(Set<String> edgeCollectionNames, String id, ArangoDriver driver) {
         Set<String> collectionLabels= driver!=null ? driver.filterExistingCollectionLabels(edgeCollectionNames) : edgeCollectionNames;
         String names = String.join("`, `", collectionLabels);

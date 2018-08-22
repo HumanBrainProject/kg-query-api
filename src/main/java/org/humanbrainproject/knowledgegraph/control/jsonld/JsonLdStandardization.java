@@ -20,7 +20,14 @@ import java.util.stream.Collectors;
  */
 @Component
 public class JsonLdStandardization {
-    private static final JsonLdOptions EMPTY_OPTIONS = new JsonLdOptions();
+    private static final JsonLdOptions NO_ARRAY_COMPACTION_JSONLD_OPTIONS = createOptionsWithoutArrayCompaction();
+    private static final JsonLdOptions DEFAULT_JSON_LD_OPTIONS = new JsonLdOptions();
+
+    private static JsonLdOptions createOptionsWithoutArrayCompaction() {
+        JsonLdOptions jsonLdOptions = new JsonLdOptions();
+        jsonLdOptions.setCompactArrays(false);
+        return jsonLdOptions;
+    }
 
     /**
      * Takes the given json element and adds a @context with the default namespace as @vocab. This is e.g. required if the input is a JSON-only file.
@@ -74,17 +81,74 @@ public class JsonLdStandardization {
      */
     public Object fullyQualify(Object input) {
         try {
-            input = JsonLdProcessor.expand(input, EMPTY_OPTIONS);
-            return JsonLdProcessor.compact(input, Collections.emptyMap(), EMPTY_OPTIONS);
-        }
-        catch(Exception e){
+            input = JsonLdProcessor.expand(input, DEFAULT_JSON_LD_OPTIONS);
+            return JsonLdProcessor.compact(input, Collections.emptyMap(), DEFAULT_JSON_LD_OPTIONS);
+        } catch (Exception e) {
             throw new JsonLdError(JsonLdError.Error.UNKNOWN_ERROR, "Was not able to fully qualify the content", e);
         }
     }
 
-    public List<Object> applyContext(List<Object> objects, Object context) {
-        return objects.parallelStream().map(o -> JsonLdProcessor.compact(o, context, EMPTY_OPTIONS)).collect(Collectors.toList());
+    public List<Map> applyContext(List<Map> objects, Object context) {
+        return objects.parallelStream().map(o -> {
+            List<Map<String, String>> keys = getKeys(o, new ArrayList<>());
+            Map<String, Object> lookupMap = new LinkedHashMap<>();
+            lookupMap.put("http://jsonldstandardization/keymapping", keys);
+            Map<String, Object> lookup = JsonLdProcessor.compact(lookupMap, context, DEFAULT_JSON_LD_OPTIONS);
+            Map<String, String> keymapping = expandedToContextualizedKeys((List<Map<String, String>>) lookup.get("http://jsonldstandardization/keymapping"));
+            applyKeyMap(o, keymapping);
+            return o;
+        }).collect(Collectors.toList());
     }
+
+    private void applyKeyMap(Object object, Map keymapping){
+        if (object instanceof Map) {
+            Map map = (Map) object;
+            Set keys = new HashSet(map.keySet());
+            for (Object key : keys) {
+                Object originalValue = map.get(key);
+                applyKeyMap(originalValue, keymapping);
+                if(keymapping.containsKey(key)){
+                    map.put(keymapping.get(key), originalValue);
+                    map.remove(key);
+                }
+            }
+        }
+        if (object instanceof Collection) {
+            for (Object o : ((Collection) object)) {
+                applyKeyMap(o, keymapping);
+            }
+        }
+    }
+
+
+    private Map<String, String> expandedToContextualizedKeys(List<Map<String, String>> lookup){
+        Map<String, String> keymap = new HashMap<>();
+        for (Map<String, String> lookupMap : lookup) {
+            keymap.put(lookupMap.get("http://jsonldstandardization/original"), lookupMap.get(JsonLdConsts.ID));
+        }
+        return keymap;
+    }
+
+
+    private List<Map<String, String>> getKeys(Object element, List<Map<String, String>> allKeys) {
+        if (element instanceof Map) {
+            Map map = (Map) element;
+            for (Object k : map.keySet()) {
+                HashMap<String, String> m = new LinkedHashMap<>();
+                m.put(JsonLdConsts.ID, k.toString());
+                m.put("http://jsonldstandardization/original", k.toString());
+                allKeys.add(m);
+                getKeys(map.get(k), allKeys);
+            }
+        }
+        if (element instanceof Collection) {
+            for (Object o : ((Collection) element)) {
+                getKeys(o, allKeys);
+            }
+        }
+        return allKeys;
+    }
+
 
     public Object getContext(String specification) throws JSONException {
         Gson gson = new Gson();

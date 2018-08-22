@@ -128,13 +128,6 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
             if (collection.exists() && collection.documentExists(documentId)) {
                 logger.info("Delete document: {}", documentId);
                 collection.deleteDocument(documentId);
-//                if (collection.count().getCount() == 0) {
-//                    collection.drop();
-//                    ArangoCollection namelookup = db.collection(NAME_LOOKUP_MAP);
-//                    if (namelookup.exists() && namelookup.documentExists(collectionName)) {
-//                        namelookup.deleteDocument(collectionName);
-//                    }
-//                }
             } else {
                 logger.warn("Tried to delete {} although the collection doesn't exist. Skip.", vertexId);
             }
@@ -156,7 +149,7 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
         replaceDocument(namingConvention.getVertexLabel(vertex.getEntityName()), namingConvention.getKey(vertex), toJSONString(vertex), arango);
     }
 
-    private void replaceDocument(String collectionName, String documentKey, String jsonPayload, ArangoDriver arango) {
+    public void replaceDocument(String collectionName, String documentKey, String jsonPayload, ArangoDriver arango) {
         if(collectionName!=null && documentKey!=null && jsonPayload!=null) {
             logger.info("Update document: {}", jsonPayload);
             arango.getOrCreateDB().collection(collectionName).replaceDocument(documentKey, jsonPayload);
@@ -336,6 +329,10 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
                 db.collection(collectionEntity.getName()).drop();
             }
         }
+    }
+
+    public <T> List<T> getAll(String collectionName, Class<T> clazz, ArangoDriver driver){
+        return driver.getOrCreateDB().query(queryFactory.getAll(collectionName), null, new AqlQueryOptions(), clazz).asListRemaining();
     }
 
     public List<Map> inDepthGraph(String vertex, Integer step, ArangoDriver driver){
