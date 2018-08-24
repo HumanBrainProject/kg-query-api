@@ -26,61 +26,61 @@ public class FreemarkerTemplatingTest {
             "<#sep>,</#list>" +
             "]<#sep>,</#list>]";
 
+
     @Test
     @Ignore("Normalization is deprecated. We've simplified the logic on the freemarker side")
     public void normalizeLookupPathSingleString() {
-        String template = "<#include \"searchuinew\">\n<#assign path = normalizeLookupPath(\"hello:world\")/>"+EXTRACT_PATH;
+        String template = "<#assign path = normalizeLookupPath(\"hello:world\")/>"+EXTRACT_PATH;
         QueryResult<List<Map>> queryResult = new QueryResult<>();
         queryResult.setResults(Collections.singletonList(Collections.EMPTY_MAP));
-        String s = templating.applyTemplate(template, queryResult, Collections.emptyList());
+        String s = templating.applyTemplate(template, queryResult, "searchuinew", Collections.emptyList());
         assertEquals("[[hello_world]]", s);
     }
 
     @Test
     @Ignore("Normalization is deprecated. We've simplified the logic on the freemarker side")
     public void normalizeLookupPathArray() {
-        String template = "<#include \"searchuinew\">\n<#assign path = normalizeLookupPath([\"hello:world\", \"foo:bar\"])/>"+EXTRACT_PATH;
+        String template = "<#assign path = normalizeLookupPath([\"hello:world\", \"foo:bar\"])/>"+EXTRACT_PATH;
         QueryResult<List<Map>> queryResult = new QueryResult<>();
         queryResult.setResults(Collections.singletonList(Collections.EMPTY_MAP));
-        String s = templating.applyTemplate(template, queryResult, Collections.emptyList());
+        String s = templating.applyTemplate(template, queryResult,"searchuinew", Collections.emptyList());
         assertEquals("[[hello_world],[foo_bar]]", s);
     }
 
     @Test
     @Ignore("Normalization is deprecated. We've simplified the logic on the freemarker side")
     public void normalizeLookupPathArray2() {
-        String template = "<#include \"searchuinew\">\n<#assign path = normalizeLookupPath([[\"hello:world\", \"foo:bar\"]])/>"+EXTRACT_PATH;
+        String template = "<#assign path = normalizeLookupPath([[\"hello:world\", \"foo:bar\"]])/>"+EXTRACT_PATH;
         QueryResult<List<Map>> queryResult = new QueryResult<>();
         queryResult.setResults(Collections.singletonList(Collections.EMPTY_MAP));
-        String s = templating.applyTemplate(template, queryResult, Collections.emptyList());
+        String s = templating.applyTemplate(template, queryResult, "searchuinew",Collections.emptyList());
         assertEquals("[[hello_world,foo_bar]]", s);
     }
 
     @Test
     @Ignore("Normalization is deprecated. We've simplified the logic on the freemarker side")
     public void normalizeLookupPathFullDepth() {
-        String template = "<#include \"searchuinew\">\n<#assign path = normalizeLookupPath([[\"hello:world\", \"bar:foo\"], [\"foo:bar\"]])/>"+EXTRACT_PATH;
+        String template = "<#assign path = normalizeLookupPath([[\"hello:world\", \"bar:foo\"], [\"foo:bar\"]])/>"+EXTRACT_PATH;
         QueryResult<List<Map>> queryResult = new QueryResult<>();
         queryResult.setResults(Collections.singletonList(Collections.EMPTY_MAP));
-        String s = templating.applyTemplate(template, queryResult, Collections.emptyList());
+        String s = templating.applyTemplate(template, queryResult, "searchuinew",Collections.emptyList());
         assertEquals("[[hello_world,bar_foo],[foo_bar]]", s);
     }
 
     @Test
     @Ignore("Normalization is deprecated. We've simplified the logic on the freemarker side")
     public void normalizeLookupPathMixedDepth() {
-        String template = "<#include \"searchuinew\">\n<#assign path = normalizeLookupPath([[\"hello:world\", \"bar:foo\"], \"foo:bar\"])/>"+EXTRACT_PATH;
+        String template = "<#assign path = normalizeLookupPath([[\"hello:world\", \"bar:foo\"], \"foo:bar\"])/>"+EXTRACT_PATH;
         QueryResult<List<Map>> queryResult = new QueryResult<>();
         queryResult.setResults(Collections.singletonList(Collections.EMPTY_MAP));
-        String s = templating.applyTemplate(template, queryResult, Collections.emptyList());
+        String s = templating.applyTemplate(template, queryResult, "searchuinew", Collections.emptyList());
         assertEquals("[[hello_world,bar_foo],[foo_bar]]", s);
     }
 
     @Test
     @Ignore("Flatten is deprecated. This should be handled as part of the API specification")
     public void flattenDistinct() {
-        String template = "<#include \"searchuinew\">\n" +
-                "<#list results as el>" +
+        String template = "<#list results as el>" +
                 "<#assign path = [[\"hello:world\", \"bar:foo\"]]/>"+
                 "<#assign flat = flatten(el path \"foo:bar\")/>"+
                 "<#list flat as f>" +
@@ -113,7 +113,7 @@ public class FreemarkerTemplatingTest {
         results.add(mapC);
 
         queryResult.setResults(results);
-        String s = templating.applyTemplate(template, queryResult, Collections.emptyList());
+        String s = templating.applyTemplate(template, queryResult, "searchuinew", Collections.emptyList());
         assertEquals("foo bar", s);
     }
 

@@ -1,71 +1,54 @@
 package org.humanbrainproject.knowledgegraph.control.arango.query;
 
-import org.humanbrainproject.knowledgegraph.entity.specification.SpecField;
-import org.springframework.boot.configurationprocessor.json.JSONArray;
+import org.humanbrainproject.knowledgegraph.entity.specification.Specification;
 import org.springframework.boot.configurationprocessor.json.JSONException;
-import org.springframework.boot.configurationprocessor.json.JSONObject;
 
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.Stack;
 import java.util.stream.Collectors;
 
-public class ArangoQueryBuilder {
-    private static String DOC_POSTFIX = "doc";
-    private static String ROOT_ALIAS="root";
-    private Stack<String> previousAlias = new Stack<>();
-    private String currentAlias = ROOT_ALIAS;
-    StringBuilder sb = new StringBuilder();
-    private boolean simpleReturn = true;
-    private boolean firstReturnEntry = true;
-    private Integer size;
-    private Integer start;
-    private String permissionGroupFieldName;
+public class ArangoQueryBuilder extends AbstractQueryBuilder {
 
-    public ArangoQueryBuilder(Integer size, Integer start, String permissionGroupFieldName) {
-        this.size = size;
-        this.start = start;
-        this.permissionGroupFieldName = permissionGroupFieldName;
+
+    public ArangoQueryBuilder(Specification specification, Integer size, Integer start, String permissionGroupFieldName, Set<String> whitelistOrganizations) {
+        super(specification, size, start, permissionGroupFieldName, whitelistOrganizations);
     }
 
-    public String build(){
-        return sb.toString();
-    }
-
-    public void enterTraversal(String targetName, int numberOfTraversals, boolean reverse, String relationCollection, boolean hasGroup){
-        previousAlias.push(currentAlias);
-        currentAlias = targetName;
-        sb.append(String.format("\n%sLET %s = %s ( FOR %s_%s IN %d..%d %s %s_%s `%s`", getIndentation(), currentAlias, hasGroup ? " (FOR grp IN " : "", currentAlias, DOC_POSTFIX, numberOfTraversals, numberOfTraversals, reverse? "INBOUND" : "OUTBOUND", previousAlias.peek(), DOC_POSTFIX, relationCollection));
-    }
-
-    private String getIndentation(){
-        StringBuilder sb = new StringBuilder();
-        for(int i=0; i<previousAlias.size(); i++){
-            sb.append("  ");
-        }
-        return sb.toString();
-    }
-
+    @Override
     public void addTraversal(boolean reverse, String relationCollection){
         sb.append(String.format(", %s `%s`", reverse ? "INBOUND" : "OUTBOUND", relationCollection));
     }
 
+    @Override
     public void addComplexFieldRequiredFilter(String leaf_field){
         sb.append(String.format("\n%s AND %s_%s.`%s` != null ", getIndentation(), currentAlias, DOC_POSTFIX, leaf_field));
+        sb.append(String.format("\n%s AND %s_%s.`%s` != \"\" ", getIndentation(), currentAlias, DOC_POSTFIX, leaf_field));
+        sb.append(String.format("\n%s AND %s_%s.`%s` != [] ", getIndentation(), currentAlias, DOC_POSTFIX, leaf_field));
     }
 
+    @Override
     public void addTraversalFieldRequiredFilter(String alias){
+        sb.append(String.format("\n%s AND %s != null", getIndentation(), alias));
+        sb.append(String.format("\n%s AND %s != \"\"", getIndentation(), alias));
         sb.append(String.format("\n%s AND %s != []", getIndentation(), alias));
     }
 
-
-
-    public void startReturnStructure(boolean simple){
-        sb.append(String.format("\n%s  RETURN %s", getIndentation(), simple ? "": "{\n"));
-        simpleReturn = simple;
+    @Override
+    protected void doEnterTraversal(String targetName, int numberOfTraversals, boolean reverse, String relationCollection, boolean hasGroup, boolean ensureOrder){
+        sb.append(String.format("\n%sLET %s = %s ( FOR %s_%s %s IN %d..%d %s %s_%s `%s` ", getIndentation(), currentAlias, hasGroup ? " (FOR grp IN " : "", currentAlias, DOC_POSTFIX, ensureOrder ? ", e" : "", numberOfTraversals, numberOfTraversals, reverse? "INBOUND" : "OUTBOUND", previousAlias.peek(), DOC_POSTFIX, relationCollection));
     }
 
+    @Override
+    public void nullFilter() {
+        sb.append(String.format(" FILTER %s_%s != null ", currentAlias, DOC_POSTFIX));
+    }
+
+    @Override
+    protected void doStartReturnStructure(boolean simple){
+        sb.append(String.format("\n%s  RETURN DISTINCT %s", getIndentation(), simple ? "": "{\n"));
+    }
+
+    @Override
     public void endReturnStructure(){
         if(!simpleReturn){
             sb.append(String.format("\n%s  }", getIndentation()));
@@ -74,12 +57,12 @@ public class ArangoQueryBuilder {
         firstReturnEntry = true;
     }
 
-
-    public void leaveTraversal(){
+    @Override
+    protected void doLeaveTraversal(){
         sb.append(")\n");
-        currentAlias = previousAlias.pop();
     }
 
+    @Override
     public void buildGrouping(String groupedInstancesLabel, List<String> groupingFields, List<String> nonGroupingFields){
         sb.append("COLLECT ");
         List<String> groupings = groupingFields.stream().map(f -> String.format("`%s` = grp.`%s`", f, f)).collect(Collectors.toList());
@@ -98,21 +81,16 @@ public class ArangoQueryBuilder {
         sb.append("} )");
     }
 
-    public ArangoQueryBuilder addRoot(String rootCollection, Set<String> whiteListOrganizations) throws JSONException {
-        JSONArray array = new JSONArray();
-        for (String whiteListOrganization : whiteListOrganizations) {
-            array.put(whiteListOrganization);
-        }
-        sb.append(String.format("LET whitelist_organizations=%s\n", array.toString()));
+
+
+    @Override
+    public ArangoQueryBuilder addRoot(String rootCollection) throws JSONException {
         sb.append(String.format("FOR %s_%s IN `%s`\n", ROOT_ALIAS, DOC_POSTFIX, rootCollection));
-        addFilter();
+        addOrganizationFilter();
         return this;
     }
 
-    public void addFilter() {
-        sb.append(String.format(" FILTER %s_%s.`%s` IN whitelist_organizations ", currentAlias, DOC_POSTFIX, permissionGroupFieldName));
-    }
-
+    @Override
     public void addLimit(){
         if(size!=null){
             if(start!=null){
@@ -124,6 +102,7 @@ public class ArangoQueryBuilder {
         }
     }
 
+    @Override
     public void addTraversalResultField(String targetName, String alias){
         if(!firstReturnEntry){
             sb.append(",\n");
@@ -132,12 +111,19 @@ public class ArangoQueryBuilder {
         firstReturnEntry = false;
     }
 
+    @Override
     public void addSortByLeafField(Set<String> fields){
         List<String> fullSortFields = fields.stream().map(s -> String.format("%s_%s.`%s`", currentAlias, DOC_POSTFIX, s)).collect(Collectors.toList());
         String concat = String.join(", ", fullSortFields);
         sb.append(String.format("%s   SORT %s ASC\n", getIndentation(), concat));
     }
 
+    @Override
+    public void ensureOrder(){
+        sb.append(String.format("\n%s SORT e.orderNumber ASC\n", getIndentation()));
+    }
+
+    @Override
     public void addComplexLeafResultField(String targetName, String leaf_field){
         if(!firstReturnEntry){
             sb.append(",\n");
@@ -146,15 +132,17 @@ public class ArangoQueryBuilder {
         firstReturnEntry = false;
     }
 
+    @Override
     public void addSimpleLeafResultField(String leaf_field){
         if(!firstReturnEntry){
             sb.append(",\n");
-            addFilter();
+            addOrganizationFilter();
         }
         sb.append(String.format("\n%s  RETURN DISTINCT %s_%s.`%s`\n", getIndentation(), currentAlias, DOC_POSTFIX, leaf_field));
         firstReturnEntry = true;
     }
 
+    @Override
     public void addMerge(String leaf_field, Set<String> merged_fields, boolean sorted){
         sb.append(String.format("\n%s LET %s = %s APPEND(%s, true) %s\n", getIndentation(), leaf_field, sorted ? "( FOR el IN": "", String.join(", ", merged_fields), sorted ? " SORT el ASC RETURN el)" : ""));
     }

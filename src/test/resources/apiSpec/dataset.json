@@ -34,7 +34,14 @@
     {
       "fieldname": "search:title",
       "relative_path": "schema:name",
-      "required": true
+      "required": true,
+      "label": ".....",
+      "elasticsearch": {
+        "boost": 21
+      },
+      "lucene":{
+
+      }
     },
     {
       "fieldname": "search:doi",
@@ -78,6 +85,7 @@
     {
       "fieldname": "search:contributors",
       "relative_path": "minds:contributors",
+      "ensure_order": true,
       "fields": [
         {
           "fieldname": "search:name",
@@ -96,6 +104,7 @@
     {
       "fieldname": "search:owners",
       "relative_path": "minds:owners",
+      "ensure_order": true,
       "fields": [
         {
           "fieldname": "search:name",
@@ -231,11 +240,13 @@
       "fields": [
         {
           "fieldname": "search:name",
-          "relative_path": "schema:name"
+          "relative_path": "schema:name",
+          "required": true
         },
         {
           "fieldname": "search:absolute_path",
-          "relative_path": "minds:absolute_path"
+          "relative_path": "minds:absolute_path",
+          "required": true
         }
       ]
     },

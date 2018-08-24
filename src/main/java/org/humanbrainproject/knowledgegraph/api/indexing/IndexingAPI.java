@@ -1,10 +1,10 @@
-package org.humanbrainproject.knowledgegraph.api.indexation;
+package org.humanbrainproject.knowledgegraph.api.indexing;
 
 import com.github.jsonldjava.core.JsonLdError;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
-import org.humanbrainproject.knowledgegraph.boundary.indexation.ArangoIndexation;
-import org.humanbrainproject.knowledgegraph.boundary.indexation.GraphIndexation;
+import org.humanbrainproject.knowledgegraph.boundary.indexing.ArangoIndexing;
+import org.humanbrainproject.knowledgegraph.boundary.indexing.GraphIndexing;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,14 +16,14 @@ import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 
 @RestController
-@RequestMapping(value = "/arango")
-@Api(value="/arango", description = "The indexation api to upload JSON-LD to the arango database")
-public class ArangoIndexationAPI {
+@RequestMapping(value = "/indexing")
+@Api(value="/indexing", description = "The indexing api to upload JSON-LD to the arango database")
+public class IndexingAPI {
 
     @Autowired
-    ArangoIndexation indexer;
+    ArangoIndexing indexer;
 
-    Logger logger = LoggerFactory.getLogger(ArangoIndexationAPI.class);
+    Logger logger = LoggerFactory.getLogger(IndexingAPI.class);
 
 
     @GetMapping(value="/{organization}/{domain}/{schema}/{schemaversion}/{id}", produces = MediaType.APPLICATION_JSON)
@@ -45,7 +45,7 @@ public class ArangoIndexationAPI {
         logger.info("Received insert request for {}/{}", entityName, id);
         logger.debug("Payload for insert request {}/{}: {}", entityName, id, payload);
         try {
-            GraphIndexation.GraphIndexationSpec spec = new GraphIndexation.GraphIndexationSpec();
+            GraphIndexing.GraphIndexationSpec spec = new GraphIndexing.GraphIndexationSpec();
             spec.setJsonOrJsonLdPayload(payload).setPermissionGroup(organization).setEntityName(entityName).setId(id).setDefaultNamespace(buildDefaultNamespace(organization, domain, schema, schemaVersion));
             indexer.insertJsonOrJsonLd(spec);
             return ResponseEntity.ok(null);
@@ -61,7 +61,7 @@ public class ArangoIndexationAPI {
         logger.info("Received update request for {}/{} in rev {}", entityName, id, rev);
         logger.debug("Payload for update request {}/{} in rev {}: {}", entityName, id, rev, payload);
         try {
-            GraphIndexation.GraphIndexationSpec spec = new GraphIndexation.GraphIndexationSpec();
+            GraphIndexing.GraphIndexationSpec spec = new GraphIndexing.GraphIndexationSpec();
             spec.setJsonOrJsonLdPayload(payload).setPermissionGroup(organization).setEntityName(entityName).setId(id).setRevision(rev).setDefaultNamespace(buildDefaultNamespace(organization, domain, schema, schemaVersion));
             indexer.updateJsonOrJsonLd(spec);
             return ResponseEntity.ok(null);

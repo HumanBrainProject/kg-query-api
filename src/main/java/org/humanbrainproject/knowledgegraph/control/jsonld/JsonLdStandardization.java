@@ -89,6 +89,7 @@ public class JsonLdStandardization {
     }
 
     public List<Map> applyContext(List<Map> objects, Object context) {
+        handleVocab(context);
         return objects.parallelStream().map(o -> {
             List<Map<String, String>> keys = getKeys(o, new ArrayList<>());
             Map<String, Object> lookupMap = new LinkedHashMap<>();
@@ -100,6 +101,15 @@ public class JsonLdStandardization {
         }).collect(Collectors.toList());
     }
 
+
+    private void handleVocab(Object context){
+        if(context instanceof Map && ((Map)context).containsKey(JsonLdConsts.VOCAB)){
+            Map ctx = ((Map)context);
+            ctx.put("vocab", ctx.get(JsonLdConsts.VOCAB));
+        }
+    }
+
+
     private void applyKeyMap(Object object, Map keymapping){
         if (object instanceof Map) {
             Map map = (Map) object;
@@ -108,8 +118,11 @@ public class JsonLdStandardization {
                 Object originalValue = map.get(key);
                 applyKeyMap(originalValue, keymapping);
                 if(keymapping.containsKey(key)){
-                    map.put(keymapping.get(key), originalValue);
-                    map.remove(key);
+                    Object new_key = keymapping.get(key);
+                    if(!new_key.equals(key)) {
+                        map.put(new_key, originalValue);
+                        map.remove(key);
+                    }
                 }
             }
         }
@@ -124,7 +137,11 @@ public class JsonLdStandardization {
     private Map<String, String> expandedToContextualizedKeys(List<Map<String, String>> lookup){
         Map<String, String> keymap = new HashMap<>();
         for (Map<String, String> lookupMap : lookup) {
-            keymap.put(lookupMap.get("http://jsonldstandardization/original"), lookupMap.get(JsonLdConsts.ID));
+            String v = lookupMap.get(JsonLdConsts.ID);
+//            if(v.startsWith(":")){
+//                v = v.substring(1);
+//            }
+            keymap.put(lookupMap.get("http://jsonldstandardization/original"), v);
         }
         return keymap;
     }

@@ -1,9 +1,8 @@
-package org.humanbrainproject.knowledgegraph.boundary.indexation;
+package org.humanbrainproject.knowledgegraph.boundary.indexing;
 
 import com.github.jsonldjava.utils.JsonUtils;
 import org.humanbrainproject.knowledgegraph.control.jsonld.JsonLdStandardization;
 import org.humanbrainproject.knowledgegraph.control.jsonld.JsonLdToVerticesAndEdges;
-import org.humanbrainproject.knowledgegraph.control.releasing.ReleasingController;
 import org.humanbrainproject.knowledgegraph.entity.jsonld.JsonLdVertex;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.configurationprocessor.json.JSONException;
@@ -12,7 +11,7 @@ import java.io.IOException;
 import java.util.List;
 
 
-public abstract class GraphIndexation {
+public abstract class GraphIndexing {
 
 
     @Autowired

@@ -1,4 +1,4 @@
-package org.humanbrainproject.knowledgegraph.boundary.indexation;
+package org.humanbrainproject.knowledgegraph.boundary.indexing;
 
 import com.arangodb.ArangoCollection;
 import com.arangodb.ArangoDatabase;
@@ -28,7 +28,7 @@ import static org.junit.Assert.*;
 @Ignore("These tests require an arango execution environment. Make sure you have one properly configured first!")
 public class ArangoIndexationTest {
     @Autowired
-    ArangoIndexation indexation;
+    ArangoIndexing indexation;
 
     @Autowired
     @Qualifier("default-test")
@@ -73,7 +73,7 @@ public class ArangoIndexationTest {
     public void insertNestedJson() throws JSONException, IOException {
         //given
         String nestedJson = "{\"hello\": \"world\", \"nested\": {\"hi\": \"knowledgegraph\"}}";
-        GraphIndexation.GraphIndexationSpec spec = new GraphIndexation.GraphIndexationSpec();
+        GraphIndexing.GraphIndexationSpec spec = new GraphIndexing.GraphIndexationSpec();
         spec.setEntityName(DEFAULT_ENTITY_NAME).setId("foobar").setJsonOrJsonLdPayload(nestedJson).setDefaultNamespace("http://test/");
 
         //when
