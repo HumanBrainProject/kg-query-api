@@ -150,7 +150,7 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
     public void replaceDocument(String collectionName, String documentKey, String jsonPayload, ArangoDriver arango) {
         if(collectionName!=null && documentKey!=null && jsonPayload!=null) {
             logger.info("Update document: {}/{} in db {}", collectionName, documentKey, arango.getDatabaseName());
-            logger.info("Update document: {}/{} in db {} with payload {}", collectionName, documentKey, arango.getDatabaseName(), jsonPayload);
+            logger.debug("Update document: {}/{} in db {} with payload {}", collectionName, documentKey, arango.getDatabaseName(), jsonPayload);
             arango.getOrCreateDB().collection(collectionName).replaceDocument(documentKey, jsonPayload);
         }
         else{
