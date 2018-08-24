@@ -107,8 +107,6 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
     public void deleteVertex(String id, ArangoDriver arango) {
         ArangoCollection collection = arango.getOrCreateDB().collection(namingConvention.getCollectionNameFromId(id));
         if(collection.exists() && collection.documentExists(namingConvention.getKeyFromId(id))) {
-
-
             Set<String> edgesCollectionNames = arango.getEdgesCollectionNames();
             Set<String> embeddedInstances = getEmbeddedInstances(Collections.singletonList(id), arango, edgesCollectionNames, new LinkedHashSet<>());
             for (String embeddedInstance : embeddedInstances) {
@@ -126,7 +124,7 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
             String collectionName = namingConvention.getCollectionNameFromId(vertexId);
             ArangoCollection collection = db.collection(collectionName);
             if (collection.exists() && collection.documentExists(documentId)) {
-                logger.info("Delete document: {}", documentId);
+                logger.info("Delete document: {} from database {}", documentId, db.name());
                 collection.deleteDocument(documentId);
             } else {
                 logger.warn("Tried to delete {} although the collection doesn't exist. Skip.", vertexId);
@@ -151,7 +149,8 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
 
     public void replaceDocument(String collectionName, String documentKey, String jsonPayload, ArangoDriver arango) {
         if(collectionName!=null && documentKey!=null && jsonPayload!=null) {
-            logger.info("Update document: {}", jsonPayload);
+            logger.info("Update document: {}/{} in db {}", collectionName, documentKey, arango.getDatabaseName());
+            logger.info("Update document: {}/{} in db {} with payload {}", collectionName, documentKey, arango.getDatabaseName(), jsonPayload);
             arango.getOrCreateDB().collection(collectionName).replaceDocument(documentKey, jsonPayload);
         }
         else{
@@ -171,11 +170,12 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
     private void insertDocument(String collectionName, String originalName, String jsonLd, CollectionType collectionType, ArangoDriver arango) {
         if(collectionName!=null && jsonLd!=null) {
             ArangoCollection collection = createCollectionIfNotExists(collectionName, originalName, collectionType, arango);
-            logger.info("Insert document: {}", jsonLd);
+            logger.info("Insert document: {} in db {}", collectionName, arango.getDatabaseName());
+            logger.debug("Insert document: {} in db {} with payload {}", collectionName, arango.getDatabaseName(), jsonLd);
             collection.insertDocument(jsonLd);
         }
         else{
-            logger.error("Incomplete data. Was not able to insert the document in {} with payload {}", collectionName, jsonLd);
+            logger.error("Incomplete data. Was not able to insert the document in {} with payload {} into database {}", collectionName, jsonLd, arango.getDatabaseName());
         }
     }
 
@@ -183,7 +183,7 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
         ArangoDatabase db = arango.getOrCreateDB();
         ArangoCollection collection = db.collection(collectionName);
         if (!collection.exists()) {
-            logger.info("Create {} collection {}", collectionType, collectionName);
+            logger.info("Create {} collection {} in database {}", collectionType, collectionName, arango.getDatabaseName());
             CollectionCreateOptions collectionCreateOptions = new CollectionCreateOptions();
             collectionCreateOptions.type(collectionType);
             db.createCollection(collectionName, collectionCreateOptions);
@@ -326,6 +326,7 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
     public void clearDatabase(ArangoDatabase db) {
         for (CollectionEntity collectionEntity : db.getCollections()) {
             if (!collectionEntity.getName().startsWith("_")) {
+                logger.info("Drop collection {} in db {}", collectionEntity.getName(), db.name());
                 db.collection(collectionEntity.getName()).drop();
             }
         }

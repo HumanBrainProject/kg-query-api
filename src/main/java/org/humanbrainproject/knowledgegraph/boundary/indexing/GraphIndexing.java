@@ -43,7 +43,7 @@ public abstract class GraphIndexing {
 
     abstract void transactionalJsonLdInsertion(List<JsonLdVertex> jsonLdVertices) throws JSONException;
     abstract void transactionalJsonLdUpdate(List<JsonLdVertex> jsonLdVertices) throws JSONException;
-    abstract void transactionalJsonLdDeletion(String entityName, String rootId, Integer rootRev) throws JSONException;
+    abstract void transactionalJsonLdDeletion(String entityName, String rootId, Integer rootRev);
 
     public abstract void clearGraph();
 

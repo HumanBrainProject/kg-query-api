@@ -5,9 +5,6 @@ import com.arangodb.ArangoDatabase;
 import com.arangodb.entity.CollectionEntity;
 import com.arangodb.entity.CollectionType;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Scope;
-import org.springframework.stereotype.Component;
-import org.springframework.web.context.WebApplicationContext;
 
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -60,4 +57,7 @@ public class ArangoDriver {
         return collectionLabels.stream().filter(existingCollectionLabels::contains).collect(Collectors.toSet());
     }
 
+    public String getDatabaseName() {
+        return databaseName;
+    }
 }

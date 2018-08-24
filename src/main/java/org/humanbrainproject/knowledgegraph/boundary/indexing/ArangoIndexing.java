@@ -22,11 +22,11 @@ import java.util.stream.Collectors;
 public class ArangoIndexing extends GraphIndexing {
 
     @Autowired
-    @Qualifier("default")
+    @Qualifier("playground")
     ArangoDriver defaultDB;
 
     @Autowired
-    @Qualifier("released")
+    @Qualifier("playground-released")
     ArangoDriver releasedDB;
 
     @Autowired

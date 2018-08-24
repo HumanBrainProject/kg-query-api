@@ -40,6 +40,18 @@ public class KgQueryApplication {
 	}
 
 	@Bean
+	@Qualifier("playground")
+	public ArangoDriver createPlaygroundDb() {
+		return new ArangoDriver("kg_playground");
+	}
+
+	@Bean
+	@Qualifier("playground-released")
+	public ArangoDriver createPlaygroundReleasedDb() {
+		return new ArangoDriver("kg_playground_released");
+	}
+
+	@Bean
 	@Qualifier("internal")
 	public ArangoDriver createInternalDb() {
 		return new ArangoDriver("kg_internal");
