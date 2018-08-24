@@ -2,10 +2,10 @@ package org.humanbrainproject.knowledgegraph.control.arango.query;
 
 import com.arangodb.ArangoCursor;
 import com.arangodb.model.AqlQueryOptions;
-import com.google.gson.Gson;
 import org.humanbrainproject.knowledgegraph.control.Configuration;
 import org.humanbrainproject.knowledgegraph.control.arango.ArangoDriver;
 import org.humanbrainproject.knowledgegraph.control.arango.ArangoNamingConvention;
+import org.humanbrainproject.knowledgegraph.entity.query.QueryParameters;
 import org.humanbrainproject.knowledgegraph.entity.query.QueryResult;
 import org.humanbrainproject.knowledgegraph.entity.specification.SpecField;
 import org.humanbrainproject.knowledgegraph.entity.specification.SpecTraverse;
@@ -29,40 +29,41 @@ public class ArangoSpecificationQuery {
     ArangoDriver arangoDriver;
 
     @Autowired
+    @Qualifier("released")
+    ArangoDriver arangoReleasedDriver;
+
+    @Autowired
     Configuration configuration;
 
+    private ArangoDriver getArangoDriver(QueryParameters parameters){
+        if(parameters.released){
+            return arangoReleasedDriver;
+        }
+        return arangoDriver;
+    }
 
-    public QueryResult<List<Map>> reflectSpecification(Specification spec, Set<String> whiteListOrganizations, Integer size, Integer start) throws JSONException {
+    public QueryResult<List<Map>> metaSpecification(Specification spec, QueryParameters parameters) throws JSONException {
         QueryResult<List<Map>> result = new QueryResult<>();
-        String query = createQuery(new ArangoReflectQueryBuilder(spec, size, start, configuration.getPermissionGroup(), whiteListOrganizations));
-        ArangoCursor<Map> cursor = arangoDriver.getOrCreateDB().query(query, null, new AqlQueryOptions(), Map.class);
+        String query = createQuery(new ArangoMetaQueryBuilder(spec), parameters);
+        ArangoCursor<Map> cursor = getArangoDriver(parameters).getOrCreateDB().query(query, null, new AqlQueryOptions(), Map.class);
         result.setResults(cursor.asListRemaining());
         result.setApiName(spec.name);
         return result;
     }
 
-    public QueryResult<List<Map>> metaSpecification(Specification spec) throws JSONException {
+    public QueryResult<List<Map>> queryForSpecification(Specification spec, Set<String> whiteListOrganizations, QueryParameters parameters) throws JSONException {
         QueryResult<List<Map>> result = new QueryResult<>();
-        String query = createQuery(new ArangoMetaQueryBuilder(spec));
-        ArangoCursor<Map> cursor = arangoDriver.getOrCreateDB().query(query, null, new AqlQueryOptions(), Map.class);
-        result.setResults(cursor.asListRemaining());
-        result.setApiName(spec.name);
-        return result;
-    }
-
-    public QueryResult<List<Map>> queryForSpecification(Specification spec, Set<String> whiteListOrganizations, Integer size, Integer start) throws JSONException {
-        QueryResult<List<Map>> result = new QueryResult<>();
-        String query = createQuery(new ArangoQueryBuilder(spec, size, start, configuration.getPermissionGroup(), whiteListOrganizations));
+        String query = createQuery(new ArangoQueryBuilder(spec, parameters.size, parameters.start, configuration.getPermissionGroup(), whiteListOrganizations), parameters);
         AqlQueryOptions options = new AqlQueryOptions();
-        if(size!=null) {
+        if(parameters.size!=null) {
             options.fullCount(true);
         }
         else{
             options.count(true);
         }
-        ArangoCursor<Map> cursor = arangoDriver.getOrCreateDB().query(query, null, options, Map.class);
+        ArangoCursor<Map> cursor = getArangoDriver(parameters).getOrCreateDB().query(query, null, options, Map.class);
         Long count;
-        if(size!=null) {
+        if(parameters.size!=null) {
             count = cursor.getStats().getFullCount();
         }
         else{
@@ -71,13 +72,13 @@ public class ArangoSpecificationQuery {
         result.setResults(cursor.asListRemaining());
         result.setTotal(count);
         result.setApiName(spec.name);
-        result.setSize(size==null ? count : size);
-        result.setStart(start!=null ? start : 0L);
+        result.setSize(parameters.size==null ? count : parameters.size);
+        result.setStart(parameters.start!=null ? parameters.start : 0L);
         return result;
     }
 
-    String createQuery( AbstractQueryBuilder queryBuilder) throws JSONException {
-        Set<String> collectionLabels = arangoDriver.getCollectionLabels();
+    String createQuery( AbstractQueryBuilder queryBuilder, QueryParameters parameters) throws JSONException {
+        Set<String> collectionLabels = getArangoDriver(parameters).getCollectionLabels();
         String vertexLabel = namingConvention.getVertexLabel(queryBuilder.getSpecification().rootSchema);
         if (collectionLabels.contains(vertexLabel)) {
             queryBuilder.addRoot(vertexLabel);
@@ -122,6 +123,7 @@ public class ArangoSpecificationQuery {
                             skipFields.add(field.fieldName);
                         }
                     }
+                    queryBuilder.nullFilter();
                     if(field.ensureOrder){
                         queryBuilder.ensureOrder();
                     }

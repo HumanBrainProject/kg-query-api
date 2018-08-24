@@ -5,6 +5,7 @@ import org.apache.commons.io.IOUtils;
 import org.humanbrainproject.knowledgegraph.control.arango.ArangoNamingConvention;
 import org.humanbrainproject.knowledgegraph.control.jsonld.JsonLdStandardization;
 import org.humanbrainproject.knowledgegraph.control.specification.SpecificationInterpreter;
+import org.humanbrainproject.knowledgegraph.entity.query.QueryParameters;
 import org.humanbrainproject.knowledgegraph.entity.specification.Specification;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -44,6 +45,6 @@ public class SpecificationInterpreterTest {
     @Ignore("This test requires a backend and is for manual testing only")
     public void readSpecificationAndCreateQuery() throws JSONException {
         Specification specification = interpreter.readSpecification(testSpecification);
-        query.queryForSpecification(specification, Collections.EMPTY_SET, null, null);
+        query.queryForSpecification(specification, Collections.EMPTY_SET, new QueryParameters());
     }
 }

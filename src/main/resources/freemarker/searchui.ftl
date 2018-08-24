@@ -160,7 +160,7 @@
     </#if>
 </#macro>
 
-<#macro meta instance propertyName>
+<#macro meta instance propertyName wrap=false trailingComma=false>
 </#macro>
 
 <#macro direct_print value separator=" ">

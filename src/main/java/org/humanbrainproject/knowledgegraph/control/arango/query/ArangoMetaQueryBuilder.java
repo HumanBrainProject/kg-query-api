@@ -1,10 +1,13 @@
 package org.humanbrainproject.knowledgegraph.control.arango.query;
 
+import com.github.jsonldjava.core.JsonLdConsts;
 import org.humanbrainproject.knowledgegraph.boundary.query.ArangoQuery;
+import org.humanbrainproject.knowledgegraph.control.GraphQueryKeys;
 import org.humanbrainproject.knowledgegraph.control.arango.ArangoNamingConvention;
 import org.humanbrainproject.knowledgegraph.entity.specification.Specification;
 import org.springframework.boot.configurationprocessor.json.JSONException;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -21,13 +24,21 @@ public class ArangoMetaQueryBuilder extends AbstractQueryBuilder {
 
     @Override
     protected void doEnterTraversal(String targetName, int numberOfTraversals, boolean reverse, String relationCollection, boolean hasGroup, boolean ensureOrder) {
-        sb.append(String.format("      LET %s_col = ( FOR %s_%s IN %s_%s.`http://schema.hbp.eu/graph_query/fields`\n", currentAlias, currentAlias, DOC_POSTFIX, previousAlias.peek(), DOC_POSTFIX, currentField.fieldName));
-        sb.append(String.format("          FILTER %s_%s.`http://schema.hbp.eu/graph_query/fieldname`.`@id`== \"%s\"\n", currentAlias, DOC_POSTFIX, currentField.fieldName));
-        sb.append(String.format("          LET %s_att = MERGE(\n", currentAlias));
-        sb.append(String.format("               FOR attr IN ATTRIBUTES(%s_%s)\n", currentAlias, DOC_POSTFIX));
-        sb.append("               FILTER attr NOT IN [\"http://schema.hbp.eu/graph_query/relative_path\", \"http://schema.hbp.eu/graph_query/fieldname\", \"http://schema.hbp.eu/graph_query/fields\", \"http://schema.hbp.eu/graph_query/grouped_instances\"]\n");
-        sb.append(String.format("               RETURN {[attr]: %s_%s[attr]}\n", currentAlias, DOC_POSTFIX));
+        createCol(currentAlias, targetName, numberOfTraversals, reverse, relationCollection, hasGroup, ensureOrder);
+    }
+
+    protected void createCol(String fieldName, String targetName, int numberOfTraversals, boolean reverse, String relationCollection, boolean hasGroup, boolean ensureOrder) {
+        sb.append(String.format("      LET %s_col = ( FOR %s_%s IN %s_%s.`%s`\n", targetName, targetName, DOC_POSTFIX, previousAlias.size()>0 ? previousAlias.peek() : ROOT_ALIAS, DOC_POSTFIX, GraphQueryKeys.GRAPH_QUERY_FIELDS.getFieldName()));
+        sb.append(String.format("          FILTER %s_%s.`%s`.`@id`== \"%s\"\n", targetName, DOC_POSTFIX, GraphQueryKeys.GRAPH_QUERY_FIELDNAME.getFieldName(), currentField.fieldName));
+        sb.append(String.format("          LET %s_att = MERGE(\n", targetName));
+        sb.append(String.format("               FOR attr IN ATTRIBUTES(%s_%s)\n", targetName, DOC_POSTFIX));
+        sb.append("               FILTER attr NOT IN internal_fields\n");
+        sb.append(String.format("               RETURN {[attr]: %s_%s[attr]}\n", targetName, DOC_POSTFIX));
         sb.append("               )\n");
+    }
+
+    private String createInternalFieldFilter(){
+        return String.join(", ", Arrays.stream(GraphQueryKeys.values()).map(k -> String.format("\"%s\"", k.getFieldName())).collect(Collectors.toList()));
     }
 
     @Override
@@ -48,7 +59,7 @@ public class ArangoMetaQueryBuilder extends AbstractQueryBuilder {
         if (!isRoot()) {
             sb.append(String.format("LET %s_result = FLATTEN([%s_att\n", currentAlias, currentAlias));
         } else {
-            sb.append(String.format("LET %s_result = FLATTEN([[]\n", currentAlias));
+            sb.append(String.format("LET %s_result = FLATTEN([%s_col\n", ROOT_ALIAS, currentAlias));
         }
     }
 
@@ -103,9 +114,20 @@ public class ArangoMetaQueryBuilder extends AbstractQueryBuilder {
             sb.append(String.format("LET %s_%s = DOCUMENT(\"%s/%s\")\n", ROOT_ALIAS, DOC_POSTFIX, ArangoQuery.SPECIFICATION_QUERIES, specification.getSpecificationId()));
         }
         addOrganizationFilter();
+
+        sb.append(String.format("\n\nLET internal_fields = [%s]\n\n", createInternalFieldFilter()));
+
+
+        sb.append(String.format("\n\nLET %s_col = {\"%s\": MERGE(FOR attr IN ATTRIBUTES(%s_%s, true) ", ROOT_ALIAS, GraphQueryKeys.GRAPH_QUERY_SPECIFICATION.getFieldName(), ROOT_ALIAS, DOC_POSTFIX));
+        sb.append(String.format("  FILTER attr NOT IN [\"%s\"] && attr NOT IN internal_fields \n", JsonLdConsts.CONTEXT));
+        sb.append(String.format("RETURN {[attr]: %s_%s[attr]} )}\n\n", ROOT_ALIAS, DOC_POSTFIX));
         return this;
     }
 
+    @Override
+    public void nullFilter() {
+
+    }
 
     @Override
     public void addLimit() {
@@ -129,11 +151,11 @@ public class ArangoMetaQueryBuilder extends AbstractQueryBuilder {
 
     @Override
     public void addComplexLeafResultField(String targetName, String leaf_field) {
-        sb.append(String.format(",\n[{\"%s\": MERGE( FOR `%s_%s` IN %s_%s.`http://schema.hbp.eu/graph_query/fields`\n", currentField.fieldName, currentField.fieldName, DOC_POSTFIX, currentAlias, DOC_POSTFIX, currentField.fieldName));
-        sb.append(String.format("          FILTER `%s_%s`.`http://schema.hbp.eu/graph_query/fieldname`.`@id`== \"%s\"\n", currentField.fieldName, DOC_POSTFIX, currentField.fieldName));
+        sb.append(String.format(",\n[{\"%s\": MERGE( FOR `%s_%s` IN %s_%s.`%s`\n", currentField.fieldName, currentField.fieldName, DOC_POSTFIX, currentAlias, DOC_POSTFIX, GraphQueryKeys.GRAPH_QUERY_FIELDS.getFieldName()));
+        sb.append(String.format("          FILTER `%s_%s`.`%s`.`@id`== \"%s\"\n", currentField.fieldName, DOC_POSTFIX, GraphQueryKeys.GRAPH_QUERY_FIELDNAME.getFieldName(), currentField.fieldName));
         sb.append("          RETURN MERGE(\n");
         sb.append(String.format("               FOR attr IN ATTRIBUTES(`%s_%s`)\n", currentField.fieldName, DOC_POSTFIX));
-        sb.append("               FILTER attr NOT IN [\"http://schema.hbp.eu/graph_query/relative_path\", \"http://schema.hbp.eu/graph_query/fieldname\", \"http://schema.hbp.eu/graph_query/fields\", \"http://schema.hbp.eu/graph_query/grouped_instances\"]\n");
+        sb.append("               FILTER attr NOT IN internal_fields\n");
         sb.append(String.format("               RETURN {[attr]: `%s_%s`[attr]}\n", currentField.fieldName, DOC_POSTFIX));
         sb.append("               ))}]\n");
 
@@ -143,12 +165,18 @@ public class ArangoMetaQueryBuilder extends AbstractQueryBuilder {
 
     @Override
     public void addSimpleLeafResultField(String leaf_field) {
-        sb.append(String.format("RETURN {\"%s\": %s_att}\n", currentField.fieldName, currentAlias));
+        doAddSimpleLeafResultField(currentField.fieldName, currentAlias);
+    }
+
+    private void doAddSimpleLeafResultField(String leaf_field, String alias) {
+        sb.append(String.format("RETURN {\"%s\": %s_att}\n",leaf_field, alias));
     }
 
     @Override
     public void addMerge(String leaf_field, Set<String> merged_fields, boolean sorted) {
-
+        createCol(currentField.fieldName, leaf_field, 1, false, null, false, false);
+        doAddSimpleLeafResultField(currentField.fieldName, leaf_field);
+        doLeaveTraversal();
     }
 
     @Override

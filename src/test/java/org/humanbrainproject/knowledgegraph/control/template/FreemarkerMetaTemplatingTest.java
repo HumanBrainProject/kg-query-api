@@ -3,6 +3,7 @@ package org.humanbrainproject.knowledgegraph.control.template;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.gson.Gson;
 import org.apache.commons.io.IOUtils;
+import org.humanbrainproject.knowledgegraph.control.Constants;
 import org.humanbrainproject.knowledgegraph.control.jsonld.JsonLdStandardization;
 import org.humanbrainproject.knowledgegraph.entity.query.QueryResult;
 import org.junit.Before;
@@ -10,9 +11,10 @@ import org.junit.Test;
 import org.springframework.boot.configurationprocessor.json.JSONException;
 
 import java.io.IOException;
-import java.util.*;
-
-import static org.junit.Assert.assertEquals;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class FreemarkerMetaTemplatingTest {
 
@@ -31,7 +33,7 @@ public class FreemarkerMetaTemplatingTest {
         queryResult = new QueryResult<>();
         queryResult.setResults(Collections.singletonList(specification));
         Map<String, String> context = new HashMap<>();
-        context.put("spec", "http://schema.hbp.eu/graph_query/");
+        context.put("spec", Constants.GRAPH_QUERY_VOCAB);
         queryResult.setResults(standardization.applyContext(queryResult.getResults(), context));
     }
 

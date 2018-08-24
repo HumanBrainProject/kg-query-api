@@ -10,7 +10,7 @@
             <@direct_value url_string/>
         </@for>,
         "dataset":<@ref "Dataset" el "search:datasets" "search:identifier" "search:name" "search:uuid"/>,
-        "license_info": <@link instance=el path="search:licenses" url="search:url" label="search:name" distinctPropertyName="search:url"/>,
+        "license_info": <@link el "search:licenses" "search:url" "search:name"/>,
         "allfiles": <@fileDownload el "search:datasets" "search:containerUrl" {"text": "download all related data as ZIP"}/>,
         "contributors": <@ref "Person" el "search:contributors" "search:identifier" "search:name" "search:uuid" "search:identifier"/>
     }

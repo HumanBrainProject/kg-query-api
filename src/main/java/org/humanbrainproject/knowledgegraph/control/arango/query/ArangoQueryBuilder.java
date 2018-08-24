@@ -1,15 +1,10 @@
 package org.humanbrainproject.knowledgegraph.control.arango.query;
 
-import org.humanbrainproject.knowledgegraph.entity.specification.SpecField;
 import org.humanbrainproject.knowledgegraph.entity.specification.Specification;
-import org.springframework.boot.configurationprocessor.json.JSONArray;
 import org.springframework.boot.configurationprocessor.json.JSONException;
-import org.springframework.boot.configurationprocessor.json.JSONObject;
 
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.Stack;
 import java.util.stream.Collectors;
 
 public class ArangoQueryBuilder extends AbstractQueryBuilder {
@@ -40,7 +35,12 @@ public class ArangoQueryBuilder extends AbstractQueryBuilder {
 
     @Override
     protected void doEnterTraversal(String targetName, int numberOfTraversals, boolean reverse, String relationCollection, boolean hasGroup, boolean ensureOrder){
-        sb.append(String.format("\n%sLET %s = %s ( FOR %s_%s %s IN %d..%d %s %s_%s `%s`", getIndentation(), currentAlias, hasGroup ? " (FOR grp IN " : "", currentAlias, DOC_POSTFIX, ensureOrder ? ", e" : "", numberOfTraversals, numberOfTraversals, reverse? "INBOUND" : "OUTBOUND", previousAlias.peek(), DOC_POSTFIX, relationCollection));
+        sb.append(String.format("\n%sLET %s = %s ( FOR %s_%s %s IN %d..%d %s %s_%s `%s` ", getIndentation(), currentAlias, hasGroup ? " (FOR grp IN " : "", currentAlias, DOC_POSTFIX, ensureOrder ? ", e" : "", numberOfTraversals, numberOfTraversals, reverse? "INBOUND" : "OUTBOUND", previousAlias.peek(), DOC_POSTFIX, relationCollection));
+    }
+
+    @Override
+    public void nullFilter() {
+        sb.append(String.format(" FILTER %s_%s != null ", currentAlias, DOC_POSTFIX));
     }
 
     @Override

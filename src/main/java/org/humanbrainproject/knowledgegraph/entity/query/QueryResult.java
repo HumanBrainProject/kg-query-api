@@ -1,5 +1,11 @@
 package org.humanbrainproject.knowledgegraph.entity.query;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+import java.util.List;
+import java.util.Map;
+
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class QueryResult<T> {
 
     private String apiName;
@@ -7,6 +13,7 @@ public class QueryResult<T> {
     private Long total;
     private Long size;
     private Long start;
+    private List<Map> originalJson;
 
     public String getApiName() {
         return apiName;
@@ -28,6 +35,14 @@ public class QueryResult<T> {
         return results;
     }
 
+    public List<Map> getOriginalJson() {
+        return originalJson;
+    }
+
+    public void setOriginalJson(List<Map> originalJson) {
+        this.originalJson = originalJson;
+    }
+
     public void setResults(T results) {
         this.results = results;
     }
@@ -47,4 +62,6 @@ public class QueryResult<T> {
     public void setStart(Long start) {
         this.start = start;
     }
+
+
 }

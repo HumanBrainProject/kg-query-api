@@ -115,6 +115,8 @@ public abstract class AbstractQueryBuilder {
 
     public abstract void ensureOrder();
 
+    public abstract void nullFilter();
+
     public abstract void addComplexLeafResultField(String targetName, String leaf_field);
 
     public abstract void addSimpleLeafResultField(String leaf_field);

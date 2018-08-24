@@ -7,6 +7,7 @@ import org.humanbrainproject.knowledgegraph.control.arango.ArangoDriver;
 import org.humanbrainproject.knowledgegraph.control.arango.ArangoNamingConvention;
 import org.humanbrainproject.knowledgegraph.control.jsonld.JsonLdStandardization;
 import org.humanbrainproject.knowledgegraph.control.specification.SpecificationInterpreter;
+import org.humanbrainproject.knowledgegraph.entity.query.QueryParameters;
 import org.humanbrainproject.knowledgegraph.entity.specification.Specification;
 import org.junit.Before;
 import org.junit.Test;
@@ -41,22 +42,12 @@ public class ArangoSpecificationQueryTest {
     }
 
 
-    @Test
-    public void createReflectionQuery() throws JSONException {
-        ArangoReflectQueryBuilder queryBuilder = new ArangoReflectQueryBuilder(testSpecification, null, null, "http://schema.hbp.eu/internal#permissionGroup", whitelistedOrganizations);
-
-        String query = this.query.createQuery(queryBuilder);
-
-        System.out.println(query);
-    }
-
-
 
     @Test
     public void createMetaQuery() throws JSONException {
         //testSpecification.setSpecificationId("sample");
         ArangoMetaQueryBuilder queryBuilder = new ArangoMetaQueryBuilder(testSpecification);
-        String query = this.query.createQuery(queryBuilder);
+        String query = this.query.createQuery(queryBuilder, new QueryParameters());
 
         System.out.println(query);
     }

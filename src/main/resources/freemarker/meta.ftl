@@ -44,18 +44,25 @@
 </#macro>
 
 <#macro value instance propertyName>
-    <@direct_value _value(instance propertyName)/>
+    <@_direct_value _value(instance propertyName)/>
 </#macro>
 
+
 <#macro direct_value instance>
+    <#if !instance?is_string>
+        <@_direct_value instance/>
+    </#if>
+</#macro>
+
+<#macro _direct_value instance>
     <#if instance??>
         <#if instance?is_sequence>
             <#if instance?size==1>
-                <@direct_value instance[0]/>
+                <@_direct_value instance[0]/>
             <#else>
             [
                 <#list instance as el>
-                    <@direct_value el/>
+                    <@_direct_value el/>
                     <#sep>,
                 </#list>
             ]
@@ -69,7 +76,7 @@
                 </#if>
             </#list>
             <#list keysOfDirectValues as key>
-                "${key}": <@direct_value instance[key]/>
+                "${key}": <@_direct_value instance[key]/>
                 <#sep>,
             </#list>        }
         <#elseif instance?is_string>
@@ -80,22 +87,36 @@
     <#else>null</#if>
 </#macro>
 
-<#macro meta instance propertyName>
+<#macro meta instance propertyName wrap=false trailingComma=false>
     <#local instances = _value(instance propertyName)>
     <#if instances?is_hash>
+        <#if wrap>{</#if>
+        <#local keys = []/>
         <#list instances?keys as key>
             <#if !instance[key]?is_enumerable && !instance[key]?is_hash>
-                "${key}": <@direct_value instances[key]/>,
+                <#local keys=keys+[key]/>
             </#if>
         </#list>
+        <#list keys as key>
+            "${key}": <@_direct_value instances[key]/>
+        <#sep>,
+        </#list>
+        <#if wrap>}<#elseif trailingComma>,</#if>
     <#else>
         <#list instances as instance>
             <#if instance?is_hash>
+                <#if wrap>{</#if>
+                <#local keys = []/>
                 <#list instance?keys as key>
                     <#if !instance[key]?is_enumerable && !instance[key]?is_hash>
-                        "${key}": <@direct_value instance[key]/>,
+                        <#local keys=keys+[key]/>
                     </#if>
                 </#list>
+                <#list keys as key>
+                        "${key}": <@_direct_value instance[key]/>
+                    <#sep>,
+                </#list>
+                <#if wrap>}<#else>,</#if>
             </#if>
         </#list>
     </#if>
@@ -103,7 +124,7 @@
 
 <#macro ref target instance propertyName identifierPropertyName labelPropertyName uuidPropertyName>
     <#local instances = _value(instance propertyName)>
-    <@value instances labelPropertyName/>
+    <@value instance propertyName/>
 </#macro>
 
 <#macro direct_ref target instance identifierPropertyName labelPropertyName uuidPropertyName>

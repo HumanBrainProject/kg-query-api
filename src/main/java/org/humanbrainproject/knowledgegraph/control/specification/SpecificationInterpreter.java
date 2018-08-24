@@ -1,7 +1,8 @@
 package org.humanbrainproject.knowledgegraph.control.specification;
 
 import com.github.jsonldjava.core.JsonLdConsts;
-import org.humanbrainproject.knowledgegraph.control.VertexRepository;
+import org.humanbrainproject.knowledgegraph.control.Constants;
+import org.humanbrainproject.knowledgegraph.control.GraphQueryKeys;
 import org.humanbrainproject.knowledgegraph.entity.specification.SpecField;
 import org.humanbrainproject.knowledgegraph.entity.specification.SpecTraverse;
 import org.humanbrainproject.knowledgegraph.entity.specification.Specification;
@@ -19,21 +20,6 @@ import java.util.List;
 @Component
 public class SpecificationInterpreter {
 
-    private static final String GRAPH_QUERY_VOCAB = "http://schema.hbp.eu/graph_query";
-    private static final String GRAPH_QUERY_ROOT_SCHEMA = GRAPH_QUERY_VOCAB + "/root_schema";
-    private static final String GRAPH_QUERY_FIELDNAME = GRAPH_QUERY_VOCAB + "/fieldname";
-    private static final String GRAPH_QUERY_RELATIVE_PATH = GRAPH_QUERY_VOCAB + "/relative_path";
-    private static final String GRAPH_QUERY_FIELDS = GRAPH_QUERY_VOCAB + "/fields";
-    private static final String GRAPH_QUERY_REQUIRED = GRAPH_QUERY_VOCAB + "/required";
-    private static final String GRAPH_QUERY_REVERSE = GRAPH_QUERY_VOCAB + "/reverse";
-    private static final String GRAPH_QUERY_MERGE = GRAPH_QUERY_VOCAB + "/merge";
-    private static final String GRAPH_QUERY_SORT = GRAPH_QUERY_VOCAB + "/sort";
-    private static final String GRAPH_QUERY_GROUP_BY = GRAPH_QUERY_VOCAB + "/group_by";
-    private static final String GRAPH_QUERY_ENSURE_ORDER = GRAPH_QUERY_VOCAB + "/ensure_order";
-    private static final String GRAPH_QUERY_GROUPED_INSTANCES = GRAPH_QUERY_VOCAB + "/grouped_instances";
-    private static final String GRAPH_QUERY_GROUPED_INSTANCES_DEFAULT = GRAPH_QUERY_VOCAB + "/instances";
-
-    private static final String SCHEMA_ORG_NAME = "http://schema.org/name";
 
 
     protected Logger logger = LoggerFactory.getLogger(SpecificationInterpreter.class);
@@ -45,16 +31,16 @@ public class SpecificationInterpreter {
             originalContext = jsonObject.getString(JsonLdConsts.CONTEXT);
         }
         String name = null;
-        if (jsonObject.has(SCHEMA_ORG_NAME)) {
-            name = jsonObject.getString(SCHEMA_ORG_NAME);
+        if (jsonObject.has(Constants.SCHEMA_ORG_NAME)) {
+            name = jsonObject.getString(Constants.SCHEMA_ORG_NAME);
         }
         String rootSchema = null;
-        if (jsonObject.has(GRAPH_QUERY_ROOT_SCHEMA)) {
-            rootSchema = jsonObject.getJSONObject(GRAPH_QUERY_ROOT_SCHEMA).getString(JsonLdConsts.ID);
+        if (jsonObject.has(GraphQueryKeys.GRAPH_QUERY_ROOT_SCHEMA.getFieldName())) {
+            rootSchema = jsonObject.getJSONObject(GraphQueryKeys.GRAPH_QUERY_ROOT_SCHEMA.getFieldName()).getString(JsonLdConsts.ID);
         }
         List<SpecField> specFields = null;
-        if (jsonObject.has(GRAPH_QUERY_FIELDS)) {
-            specFields = createSpecFields(jsonObject.get(GRAPH_QUERY_FIELDS));
+        if (jsonObject.has(GraphQueryKeys.GRAPH_QUERY_FIELDS.getFieldName())) {
+            specFields = createSpecFields(jsonObject.get(GraphQueryKeys.GRAPH_QUERY_FIELDS.getFieldName()));
         }
         return new Specification(originalContext, name, rootSchema, json, specFields);
     }
@@ -69,11 +55,11 @@ public class SpecificationInterpreter {
         } else if (origin instanceof JSONObject) {
             JSONObject originObj = (JSONObject) origin;
             List<Object> allRelativePaths = null;
-            if (originObj.has(GRAPH_QUERY_MERGE)){
-                allRelativePaths = getAllRelativePaths(originObj.get(GRAPH_QUERY_MERGE));
+            if (originObj.has(GraphQueryKeys.GRAPH_QUERY_MERGE.getFieldName())){
+                allRelativePaths = getAllRelativePaths(originObj.get(GraphQueryKeys.GRAPH_QUERY_MERGE.getFieldName()));
             }
-            else if(originObj.has(GRAPH_QUERY_RELATIVE_PATH)){
-                allRelativePaths = Collections.singletonList(originObj.get(GRAPH_QUERY_RELATIVE_PATH));
+            else if(originObj.has(GraphQueryKeys.GRAPH_QUERY_RELATIVE_PATH.getFieldName())){
+                allRelativePaths = Collections.singletonList(originObj.get(GraphQueryKeys.GRAPH_QUERY_RELATIVE_PATH.getFieldName()));
             }
             if (allRelativePaths!=null && !allRelativePaths.isEmpty()) {
                 List<SpecField> fieldsPerRelativePath = new ArrayList<>();
@@ -87,31 +73,31 @@ public class SpecificationInterpreter {
                             boolean sortAlphabetically = false;
                             boolean groupBy = false;
                             boolean ensureOrder=false;
-                            String groupedInstances = GRAPH_QUERY_GROUPED_INSTANCES_DEFAULT;
-                            if (originObj.has(GRAPH_QUERY_FIELDNAME)) {
-                                fieldName = originObj.getJSONObject(GRAPH_QUERY_FIELDNAME).getString(JsonLdConsts.ID);
+                            String groupedInstances = GraphQueryKeys.GRAPH_QUERY_GROUPED_INSTANCES_DEFAULT.getFieldName();
+                            if (originObj.has(GraphQueryKeys.GRAPH_QUERY_FIELDNAME.getFieldName())) {
+                                fieldName = originObj.getJSONObject(GraphQueryKeys.GRAPH_QUERY_FIELDNAME.getFieldName()).getString(JsonLdConsts.ID);
                             }
                             if (fieldName == null) {
                                 //Fall back to the name of the last traversal item if the fieldname is not defined.
                                 fieldName = traversalPath.get(traversalPath.size() - 1).pathName;
                             }
-                            if (originObj.has(GRAPH_QUERY_FIELDS)) {
-                                specFields = createSpecFields(originObj.get(GRAPH_QUERY_FIELDS));
+                            if (originObj.has(GraphQueryKeys.GRAPH_QUERY_FIELDS.getFieldName())) {
+                                specFields = createSpecFields(originObj.get(GraphQueryKeys.GRAPH_QUERY_FIELDS.getFieldName()));
                             }
-                            if (originObj.has(GRAPH_QUERY_REQUIRED)) {
-                                required = originObj.getBoolean(GRAPH_QUERY_REQUIRED);
+                            if (originObj.has(GraphQueryKeys.GRAPH_QUERY_REQUIRED.getFieldName())) {
+                                required = originObj.getBoolean(GraphQueryKeys.GRAPH_QUERY_REQUIRED.getFieldName());
                             }
-                            if (originObj.has(GRAPH_QUERY_SORT)) {
-                                sortAlphabetically = originObj.getBoolean(GRAPH_QUERY_SORT);
+                            if (originObj.has(GraphQueryKeys.GRAPH_QUERY_SORT.getFieldName())) {
+                                sortAlphabetically = originObj.getBoolean(GraphQueryKeys.GRAPH_QUERY_SORT.getFieldName());
                             }
-                            if (originObj.has(GRAPH_QUERY_ENSURE_ORDER)){
-                                ensureOrder = originObj.getBoolean(GRAPH_QUERY_ENSURE_ORDER);
+                            if (originObj.has(GraphQueryKeys.GRAPH_QUERY_ENSURE_ORDER.getFieldName())){
+                                ensureOrder = originObj.getBoolean(GraphQueryKeys.GRAPH_QUERY_ENSURE_ORDER.getFieldName());
                             }
-                            if (originObj.has(GRAPH_QUERY_GROUPED_INSTANCES)) {
-                                groupedInstances = originObj.getJSONObject(GRAPH_QUERY_GROUPED_INSTANCES).getString(JsonLdConsts.ID);
+                            if (originObj.has(GraphQueryKeys.GRAPH_QUERY_GROUPED_INSTANCES.getFieldName())) {
+                                groupedInstances = originObj.getJSONObject(GraphQueryKeys.GRAPH_QUERY_GROUPED_INSTANCES.getFieldName()).getString(JsonLdConsts.ID);
                             }
-                            if (originObj.has(GRAPH_QUERY_GROUP_BY)) {
-                                groupBy = originObj.getBoolean(GRAPH_QUERY_GROUP_BY);
+                            if (originObj.has(GraphQueryKeys.GRAPH_QUERY_GROUP_BY.getFieldName())) {
+                                groupBy = originObj.getBoolean(GraphQueryKeys.GRAPH_QUERY_GROUP_BY.getFieldName());
                             }
                             fieldsPerRelativePath.add(new SpecField(fieldName, specFields, traversalPath, groupedInstances, required, sortAlphabetically, groupBy, ensureOrder));
                         }
@@ -165,8 +151,8 @@ public class SpecificationInterpreter {
             for (int i = 0; i < mergeArray.length(); i++) {
                 if(mergeArray.get(i) instanceof JSONObject){
                     JSONObject jsonObject = (JSONObject) mergeArray.get(i);
-                    if(jsonObject.has(GRAPH_QUERY_RELATIVE_PATH)){
-                        result.add(jsonObject.get(GRAPH_QUERY_RELATIVE_PATH));
+                    if(jsonObject.has(GraphQueryKeys.GRAPH_QUERY_RELATIVE_PATH.getFieldName())){
+                        result.add(jsonObject.get(GraphQueryKeys.GRAPH_QUERY_RELATIVE_PATH.getFieldName()));
                     }
                 }
             }
@@ -199,8 +185,8 @@ public class SpecificationInterpreter {
 
         if (relativePathElement instanceof JSONObject && ((JSONObject) relativePathElement).has(JsonLdConsts.ID)) {
             path = ((JSONObject) relativePathElement).getString(JsonLdConsts.ID);
-            if (((JSONObject) relativePathElement).has(GRAPH_QUERY_REVERSE)) {
-                reverse = ((JSONObject) relativePathElement).getBoolean(GRAPH_QUERY_REVERSE);
+            if (((JSONObject) relativePathElement).has(GraphQueryKeys.GRAPH_QUERY_REVERSE.getFieldName())) {
+                reverse = ((JSONObject) relativePathElement).getBoolean(GraphQueryKeys.GRAPH_QUERY_REVERSE.getFieldName());
             }
         } else {
             path = relativePathElement.toString();
