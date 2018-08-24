@@ -5,6 +5,7 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.humanbrainproject.knowledgegraph.boundary.indexing.ArangoIndexing;
 import org.humanbrainproject.knowledgegraph.boundary.indexing.GraphIndexing;
+import org.humanbrainproject.knowledgegraph.exceptions.InvalidPayloadException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,7 +33,7 @@ public class IndexingAPI {
         logger.info(String.format("Received get request for {}/{}", entityName, id));
         try {
             return ResponseEntity.ok(indexer.getById(entityName, id));
-        } catch (JsonLdError e) {
+        } catch (JsonLdError | InvalidPayloadException e) {
             logger.warn("Was not able to process the payload", e);
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch(Exception e){
@@ -52,7 +53,7 @@ public class IndexingAPI {
             spec.setJsonOrJsonLdPayload(payload).setPermissionGroup(organization).setEntityName(entityName).setId(id).setDefaultNamespace(buildDefaultNamespace(organization, domain, schema, schemaVersion));
             indexer.insertJsonOrJsonLd(spec);
             return ResponseEntity.ok(null);
-        } catch (JSONException | JsonLdError e) {
+        } catch (JSONException | JsonLdError | InvalidPayloadException e) {
             logger.warn(String.format("INS: Was not able to process the payload %s", payload), e);
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch(Exception e){
@@ -71,7 +72,7 @@ public class IndexingAPI {
             spec.setJsonOrJsonLdPayload(payload).setPermissionGroup(organization).setEntityName(entityName).setId(id).setRevision(rev).setDefaultNamespace(buildDefaultNamespace(organization, domain, schema, schemaVersion));
             indexer.updateJsonOrJsonLd(spec);
             return ResponseEntity.ok(null);
-        } catch (JSONException | JsonLdError e) {
+        } catch (JSONException | JsonLdError | InvalidPayloadException  e) {
             logger.warn(String.format("UPD: Was not able to process the payload %s", payload), e);
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch(Exception e){
@@ -87,7 +88,11 @@ public class IndexingAPI {
         try {
             indexer.delete(entityName, id, rev);
             return ResponseEntity.ok(null);
-        } catch(Exception e){
+        } catch(InvalidPayloadException e ){
+            logger.error(String.format("DEL: Was not able to delete the instance %s", entityName ), e);
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+        catch(Exception e){
             logger.error(String.format("DEL: Was not able to delete the instance %s", entityName ), e);
             throw new RuntimeException(e);
         }

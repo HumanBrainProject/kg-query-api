@@ -6,6 +6,7 @@ import org.humanbrainproject.knowledgegraph.control.arango.ArangoNamingConventio
 import org.humanbrainproject.knowledgegraph.control.arango.ArangoRepository;
 import org.humanbrainproject.knowledgegraph.entity.jsonld.JsonLdProperty;
 import org.humanbrainproject.knowledgegraph.entity.jsonld.JsonLdVertex;
+import org.humanbrainproject.knowledgegraph.exceptions.InvalidPayloadException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.boot.configurationprocessor.json.JSONObject;
@@ -84,7 +85,7 @@ public class ReleasingController {
             Set<String> embeddedInstances = repository.getEmbeddedInstances(Collections.singletonList(object.getString(JsonLdConsts.ID)), defaultDb, edgesCollectionNames, new LinkedHashSet<>());
             repository.stageElementsToReleased(embeddedInstances, defaultDb, releaseDb);
         } else {
-            throw new RuntimeException("Release object did not contain a valid reference");
+            throw new InvalidPayloadException("Release object did not contain a valid reference");
         }
     }
 
