@@ -50,4 +50,21 @@ public class ArangoQueryFactory {
                 "        return {\"vertexId\":v._id, \"edgeId\": e._id, \"isEmbedded\": v.`%s`==true}", id, names, configuration.getEmbedded());
     }
 
+    public String queryInDepthGraph(Set<String> edgeCollectionNames, String startinVertexId, Integer step, ArangoDriver driver) {
+        Set<String> collectionLabels= driver!=null ? driver.filterExistingCollectionLabels(edgeCollectionNames) : edgeCollectionNames;
+        String names = String.join("`, `", collectionLabels);
+        String outbound = String.format("" +
+                "FOR v, e, p IN 1..%s OUTBOUND \"%s\" `%s` \n" +
+                "        \n" +
+                "        return p",step, startinVertexId, names);
+        String inbound = String.format("" +
+                "FOR v, e, p IN 1..1 INBOUND \"%s\" `%s` \n" +
+                "        \n" +
+                "        return p", startinVertexId, names);
+        return String.format("FOR path IN UNION_DISTINCT(" +
+                "(%s),(%s)" +
+                ")" +
+                "return path", outbound, inbound);
+    }
+
 }

@@ -335,4 +335,12 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
         return driver.getOrCreateDB().query(queryFactory.getAll(collectionName), null, new AqlQueryOptions(), clazz).asListRemaining();
     }
 
+    public List<Map> inDepthGraph(String vertex, Integer step, ArangoDriver driver){
+        ArangoDatabase db = driver.getOrCreateDB();
+        Set<String> edgesCollections = driver.getEdgesCollectionNames();
+        String query = queryFactory.queryInDepthGraph(edgesCollections, vertex, step, driver);
+        ArangoCursor<Map> q = db.query(query, null, new AqlQueryOptions(), Map.class );
+        return q.asListRemaining();
+    }
+
 }
