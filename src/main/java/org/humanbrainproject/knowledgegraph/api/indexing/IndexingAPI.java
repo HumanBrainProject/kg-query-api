@@ -88,7 +88,7 @@ public class IndexingAPI {
             indexer.delete(entityName, id, rev);
             return ResponseEntity.ok(null);
         } catch(Exception e){
-            logger.error(String.format("DEL: Was not able to delete the instance %s", entityName), e);
+            logger.error(String.format("DEL: Was not able to delete the instance %s", entityName ), e);
             throw new RuntimeException(e);
         }
     }

@@ -79,7 +79,6 @@ public class ArangoIndexing extends GraphIndexing {
     void transactionalJsonLdDeletion(String entityName, String key, Integer rootRev) {
         Map instance = repository.getByKey(entityName, key, Map.class, defaultDB);
         if(instance!=null) {
-            repository.deleteVertex(entityName, key, defaultDB);
             if (releasingController.isRelevantForReleasing(instance)) {
                 releasingController.unreleaseVertices(instance, releasedDB);
             }

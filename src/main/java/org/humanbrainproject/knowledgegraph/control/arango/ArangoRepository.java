@@ -9,11 +9,11 @@ import com.arangodb.entity.CollectionType;
 import com.arangodb.model.AqlQueryOptions;
 import com.arangodb.model.CollectionCreateOptions;
 import org.humanbrainproject.knowledgegraph.control.Configuration;
+import org.humanbrainproject.knowledgegraph.control.VertexRepository;
 import org.humanbrainproject.knowledgegraph.entity.Tuple;
 import org.humanbrainproject.knowledgegraph.entity.jsonld.JsonLdEdge;
 import org.humanbrainproject.knowledgegraph.entity.jsonld.JsonLdProperty;
 import org.humanbrainproject.knowledgegraph.entity.jsonld.JsonLdVertex;
-import org.humanbrainproject.knowledgegraph.control.VertexRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.boot.configurationprocessor.json.JSONObject;
@@ -70,16 +70,22 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
             String keyFromReference = namingConvention.getIdFromReference(id, false);
             if (!result.contains(keyFromReference)) {
                 result.add(keyFromReference);
-                if(!edgeCollectionNames.isEmpty()) {
-                    ArangoCursor<Map> q = arango.getOrCreateDB().query(queryFactory.createEmbeddedInstancesQuery(edgeCollectionNames, keyFromReference, arango), null, new AqlQueryOptions(), Map.class);
-                    List<Map> queryResult = q.asListRemaining();
-                    if (queryResult != null) {
-                        List<String> embeddedIds = queryResult.stream().filter(e -> (Boolean) e.get("isEmbedded")).map(e -> e.get("vertexId").toString()).collect(Collectors.toList());
-                        if (!embeddedIds.isEmpty()) {
-                            getEmbeddedInstances(embeddedIds, arango, edgeCollectionNames, result);
-                            result.addAll(embeddedIds);
+                if (!edgeCollectionNames.isEmpty()) {
+                    String arangoQuery = queryFactory.createEmbeddedInstancesQuery(edgeCollectionNames, keyFromReference, arango);
+                    try {
+                        ArangoCursor<Map> q = arango.getOrCreateDB().query(arangoQuery, null, new AqlQueryOptions(), Map.class);
+                        List<Map> queryResult = q.asListRemaining();
+                        if (queryResult != null) {
+                            List<String> embeddedIds = queryResult.stream().filter(e -> (Boolean) e.get("isEmbedded")).map(e -> e.get("vertexId").toString()).collect(Collectors.toList());
+                            if (!embeddedIds.isEmpty()) {
+                                getEmbeddedInstances(embeddedIds, arango, edgeCollectionNames, result);
+                                result.addAll(embeddedIds);
+                            }
+                            result.addAll(queryResult.stream().map(e -> e.get("edgeId").toString()).collect(Collectors.toSet()));
                         }
-                        result.addAll(queryResult.stream().map(e -> e.get("edgeId").toString()).collect(Collectors.toSet()));
+                    } catch (ArangoDBException e) {
+                        logger.error("Arango query exception - {}", arangoQuery);
+                        throw e;
                     }
                 }
             }
@@ -95,31 +101,36 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
     }
 
     public Map<String, String> getArangoNameMapping(ArangoDatabase db) {
-        ArangoCursor<Map> q = db.query(queryFactory.queryArangoNameMappings(NAME_LOOKUP_MAP), null, new AqlQueryOptions(), Map.class);
-        List<Map> instances = q.asListRemaining();
-        return instances.stream().collect(HashMap::new, (map, item) -> map.put((String) item.get("arango"), (String) item.get("original")), Map::putAll);
+        String query = queryFactory.queryArangoNameMappings(NAME_LOOKUP_MAP);
+        try {
+            ArangoCursor<Map> q = db.query(query, null, new AqlQueryOptions(), Map.class);
+            List<Map> instances = q.asListRemaining();
+            return instances.stream().collect(HashMap::new, (map, item) -> map.put((String) item.get("arango"), (String) item.get("original")), Map::putAll);
+        } catch (ArangoDBException e) {
+            logger.error("Arango query exception - {}", query);
+            throw e;
+        }
     }
 
     public void deleteVertex(String entityName, String key, ArangoDriver arango) {
-       deleteVertex(namingConvention.createId(entityName, key), arango);
+        deleteVertex(namingConvention.createId(entityName, key), arango);
     }
 
     public void deleteVertex(String id, ArangoDriver arango) {
         ArangoCollection collection = arango.getOrCreateDB().collection(namingConvention.getCollectionNameFromId(id));
-        if(collection.exists() && collection.documentExists(namingConvention.getKeyFromId(id))) {
+        if (collection.exists() && collection.documentExists(namingConvention.getKeyFromId(id))) {
             Set<String> edgesCollectionNames = arango.getEdgesCollectionNames();
             Set<String> embeddedInstances = getEmbeddedInstances(Collections.singletonList(id), arango, edgesCollectionNames, new LinkedHashSet<>());
             for (String embeddedInstance : embeddedInstances) {
                 deleteDocument(embeddedInstance, arango.getOrCreateDB());
             }
-        }
-        else{
+        } else {
             logger.warn("No deletion of {} because it does not exist in the database", id);
         }
     }
 
     void deleteDocument(String vertexId, ArangoDatabase db) {
-        if(vertexId!=null) {
+        if (vertexId != null) {
             String documentId = namingConvention.getKeyFromId(vertexId);
             String collectionName = namingConvention.getCollectionNameFromId(vertexId);
             ArangoCollection collection = db.collection(collectionName);
@@ -129,16 +140,21 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
             } else {
                 logger.warn("Tried to delete {} although the collection doesn't exist. Skip.", vertexId);
             }
-        }
-        else{
+        } else {
             logger.error("Was not able to delete document due to missing id");
         }
     }
 
 
     public Map<String, Object> getPropertyCount(String collectionName, ArangoDatabase db) {
-        ArangoCursor<Map> result = db.query(queryFactory.queryPropertyCount(collectionName), null, new AqlQueryOptions(), Map.class);
-        return result.asListRemaining().stream().sorted(Comparator.comparing(a -> ((String) a.get("attr")))).collect(LinkedHashMap::new, (map, item) -> map.put((String) item.get("attr"), (Long) item.get("count")), Map::putAll);
+        String query = queryFactory.queryPropertyCount(collectionName);
+        try {
+            ArangoCursor<Map> result = db.query(query, null, new AqlQueryOptions(), Map.class);
+            return result.asListRemaining().stream().sorted(Comparator.comparing(a -> ((String) a.get("attr")))).collect(LinkedHashMap::new, (map, item) -> map.put((String) item.get("attr"), (Long) item.get("count")), Map::putAll);
+        } catch (ArangoDBException e) {
+            logger.error("Arango query exception - {}", query);
+            throw e;
+        }
     }
 
 
@@ -148,12 +164,11 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
     }
 
     public void replaceDocument(String collectionName, String documentKey, String jsonPayload, ArangoDriver arango) {
-        if(collectionName!=null && documentKey!=null && jsonPayload!=null) {
+        if (collectionName != null && documentKey != null && jsonPayload != null) {
             logger.info("Update document: {}/{} in db {}", collectionName, documentKey, arango.getDatabaseName());
             logger.debug("Update document: {}/{} in db {} with payload {}", collectionName, documentKey, arango.getDatabaseName(), jsonPayload);
             arango.getOrCreateDB().collection(collectionName).replaceDocument(documentKey, jsonPayload);
-        }
-        else{
+        } else {
             logger.error("Incomplete data. Was not able to update the document in {}/{} with payload {}", collectionName, documentKey, jsonPayload);
         }
     }
@@ -168,13 +183,12 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
     }
 
     private void insertDocument(String collectionName, String originalName, String jsonLd, CollectionType collectionType, ArangoDriver arango) {
-        if(collectionName!=null && jsonLd!=null) {
+        if (collectionName != null && jsonLd != null) {
             ArangoCollection collection = createCollectionIfNotExists(collectionName, originalName, collectionType, arango);
             logger.info("Insert document: {} in db {}", collectionName, arango.getDatabaseName());
             logger.debug("Insert document: {} in db {} with payload {}", collectionName, arango.getDatabaseName(), jsonLd);
             collection.insertDocument(jsonLd);
-        }
-        else{
+        } else {
             logger.error("Incomplete data. Was not able to insert the document in {} with payload {} into database {}", collectionName, jsonLd, arango.getDatabaseName());
         }
     }
@@ -191,7 +205,7 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
         }
         if (!collectionName.equals(NAME_LOOKUP_MAP) && originalName != null) {
             ArangoCollection namelookup = createCollectionIfNotExists(NAME_LOOKUP_MAP, null, CollectionType.DOCUMENT, arango);
-            if(!namelookup.documentExists(collectionName)) {
+            if (!namelookup.documentExists(collectionName)) {
                 insertDocument(NAME_LOOKUP_MAP, null, String.format("{\"originalName\": \"%s\", \"_key\": \"%s\"}", originalName, collectionName), CollectionType.DOCUMENT, arango);
             }
         }
@@ -300,7 +314,7 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
         }
     }
 
-    public String getTargetVertexId(JsonLdEdge edge, ArangoDriver arango){
+    public String getTargetVertexId(JsonLdEdge edge, ArangoDriver arango) {
         return arango.getOrCreateDB().getDocument(namingConvention.getEdgeTarget(edge), Map.class).get("_to").toString();
     }
 
@@ -312,12 +326,17 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
         Set<String> edgesCollectionNames = arango.getEdgesCollectionNames();
         if (!edgesCollectionNames.isEmpty()) {
             String query = queryFactory.queryEdgesToBeRemoved(namingConvention.getId(vertex), edgesCollectionNames, idsOfNewEdges, arango);
-            List<String> ids = arango.getOrCreateDB().query(query, null, new AqlQueryOptions(), String.class).asListRemaining();
-            return ids.parallelStream().map(i -> {
-                JsonLdEdge e = new JsonLdEdge();
-                e.setReference(i);
-                return e;
-            }).collect(Collectors.toList());
+            try {
+                List<String> ids = arango.getOrCreateDB().query(query, null, new AqlQueryOptions(), String.class).asListRemaining();
+                return ids.parallelStream().map(i -> {
+                    JsonLdEdge e = new JsonLdEdge();
+                    e.setReference(i);
+                    return e;
+                }).collect(Collectors.toList());
+            } catch (ArangoDBException e) {
+                logger.error("Arango query exception - {}", query);
+                throw e;
+            }
         }
         return Collections.emptyList();
     }
@@ -332,16 +351,28 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
         }
     }
 
-    public <T> List<T> getAll(String collectionName, Class<T> clazz, ArangoDriver driver){
-        return driver.getOrCreateDB().query(queryFactory.getAll(collectionName), null, new AqlQueryOptions(), clazz).asListRemaining();
+    public <T> List<T> getAll(String collectionName, Class<T> clazz, ArangoDriver driver) {
+        String query = queryFactory.getAll(collectionName);
+        try {
+            return driver.getOrCreateDB().query(query, null, new AqlQueryOptions(), clazz).asListRemaining();
+        } catch (ArangoDBException e) {
+            logger.error("Arango query exception - {}", query);
+            throw e;
+        }
     }
 
-    public List<Map> inDepthGraph(String vertex, Integer step, ArangoDriver driver){
+    public List<Map> inDepthGraph(String vertex, Integer step, ArangoDriver driver) {
         ArangoDatabase db = driver.getOrCreateDB();
         Set<String> edgesCollections = driver.getEdgesCollectionNames();
         String query = queryFactory.queryInDepthGraph(edgesCollections, vertex, step, driver);
-        ArangoCursor<Map> q = db.query(query, null, new AqlQueryOptions(), Map.class );
-        return q.asListRemaining();
+        try {
+            ArangoCursor<Map> q = db.query(query, null, new AqlQueryOptions(), Map.class);
+            return q.asListRemaining();
+        }
+        catch(ArangoDBException e){
+            logger.error("Arango query exception - {}", query);
+            throw e;
+        }
     }
 
 }

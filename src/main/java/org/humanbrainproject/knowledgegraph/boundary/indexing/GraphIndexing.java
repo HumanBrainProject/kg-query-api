@@ -37,7 +37,7 @@ public abstract class GraphIndexing {
         transactionalJsonLdUpdate(jsonLdVertices);
     }
 
-    public void delete(String entityName, String key, Integer rev) throws JSONException {
+    public void delete(String entityName, String key, Integer rev) {
        transactionalJsonLdDeletion(entityName, key, rev);
     }
 
