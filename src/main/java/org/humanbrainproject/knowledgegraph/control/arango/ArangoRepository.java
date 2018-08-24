@@ -61,6 +61,12 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
                 } else {
                     insertDocument(collectionName, arangoNameMapping.get(collectionName), document, collection.getInfo().getType(), releasedDb);
                 }
+                if(collection.getInfo().getType()==CollectionType.EDGES){
+                    Map released_doc = releaseCollection.getDocument(documentKey, Map.class);
+                    if(released_doc.containsKey("_to")){
+                        createCollectionIfNotExists(namingConvention.getCollectionNameFromId(released_doc.get("_to").toString()), null, CollectionType.DOCUMENT, releasedDb);
+                    }
+                }
             }
         }
     }
