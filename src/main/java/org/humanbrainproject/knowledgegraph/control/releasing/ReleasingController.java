@@ -1,8 +1,9 @@
 package org.humanbrainproject.knowledgegraph.control.releasing;
 
 import com.github.jsonldjava.core.JsonLdConsts;
-import org.humanbrainproject.knowledgegraph.control.arango.*;
-import org.humanbrainproject.knowledgegraph.entity.jsonld.JsonLdEdge;
+import org.humanbrainproject.knowledgegraph.control.arango.ArangoDriver;
+import org.humanbrainproject.knowledgegraph.control.arango.ArangoNamingConvention;
+import org.humanbrainproject.knowledgegraph.control.arango.ArangoRepository;
 import org.humanbrainproject.knowledgegraph.entity.jsonld.JsonLdProperty;
 import org.humanbrainproject.knowledgegraph.entity.jsonld.JsonLdVertex;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -78,7 +79,7 @@ public class ReleasingController {
     }
 
     private void releaseInstance(JSONObject object, ArangoDriver defaultDb, ArangoDriver releaseDb) throws JSONException {
-        if (object.has(JsonLdConsts.ID)) {
+        if (object.has(JsonLdConsts.ID) && object.getString(JsonLdConsts.ID).startsWith("http")) {
             Set<String> edgesCollectionNames = defaultDb.getEdgesCollectionNames();
             Set<String> embeddedInstances = repository.getEmbeddedInstances(Collections.singletonList(object.getString(JsonLdConsts.ID)), defaultDb, edgesCollectionNames, new LinkedHashSet<>());
             repository.stageElementsToReleased(embeddedInstances, defaultDb, releaseDb);

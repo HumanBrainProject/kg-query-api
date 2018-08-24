@@ -73,25 +73,27 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
 
     public Set<String> getEmbeddedInstances(List<String> ids, ArangoDriver arango, Set<String> edgeCollectionNames, Set<String> result) {
         for (String id : ids) {
-            String keyFromReference = namingConvention.getIdFromReference(id, false);
-            if (!result.contains(keyFromReference)) {
-                result.add(keyFromReference);
-                if (!edgeCollectionNames.isEmpty()) {
-                    String arangoQuery = queryFactory.createEmbeddedInstancesQuery(edgeCollectionNames, keyFromReference, arango);
-                    try {
-                        ArangoCursor<Map> q = arango.getOrCreateDB().query(arangoQuery, null, new AqlQueryOptions(), Map.class);
-                        List<Map> queryResult = q.asListRemaining();
-                        if (queryResult != null) {
-                            List<String> embeddedIds = queryResult.stream().filter(e -> (Boolean) e.get("isEmbedded")).map(e -> e.get("vertexId").toString()).collect(Collectors.toList());
-                            if (!embeddedIds.isEmpty()) {
-                                getEmbeddedInstances(embeddedIds, arango, edgeCollectionNames, result);
-                                result.addAll(embeddedIds);
+            if(id.startsWith("http")) {
+                String keyFromReference = namingConvention.getIdFromReference(id, false);
+                if (!result.contains(keyFromReference)) {
+                    result.add(keyFromReference);
+                    if (!edgeCollectionNames.isEmpty()) {
+                        String arangoQuery = queryFactory.createEmbeddedInstancesQuery(edgeCollectionNames, keyFromReference, arango);
+                        try {
+                            ArangoCursor<Map> q = arango.getOrCreateDB().query(arangoQuery, null, new AqlQueryOptions(), Map.class);
+                            List<Map> queryResult = q.asListRemaining();
+                            if (queryResult != null) {
+                                List<String> embeddedIds = queryResult.stream().filter(e -> (Boolean) e.get("isEmbedded")).map(e -> e.get("vertexId").toString()).collect(Collectors.toList());
+                                if (!embeddedIds.isEmpty()) {
+                                    getEmbeddedInstances(embeddedIds, arango, edgeCollectionNames, result);
+                                    result.addAll(embeddedIds);
+                                }
+                                result.addAll(queryResult.stream().map(e -> e.get("edgeId").toString()).collect(Collectors.toSet()));
                             }
-                            result.addAll(queryResult.stream().map(e -> e.get("edgeId").toString()).collect(Collectors.toSet()));
+                        } catch (ArangoDBException e) {
+                            logger.error("Arango query exception - {}", arangoQuery);
+                            throw e;
                         }
-                    } catch (ArangoDBException e) {
-                        logger.error("Arango query exception - {}", arangoQuery);
-                        throw e;
                     }
                 }
             }
