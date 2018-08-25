@@ -124,7 +124,8 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
 
     public void deleteVertex(String id, ArangoDriver arango) {
         ArangoCollection collection = arango.getOrCreateDB().collection(namingConvention.getCollectionNameFromId(id));
-        if (collection.exists() && collection.documentExists(namingConvention.getKeyFromId(id))) {
+        String keyFromId = namingConvention.getKeyFromId(id);
+        if (keyFromId!=null && collection.exists() && collection.documentExists(keyFromId)) {
             Set<String> edgesCollectionNames = arango.getEdgesCollectionNames();
             Set<String> embeddedInstances = getEmbeddedInstances(Collections.singletonList(id), arango, edgesCollectionNames, new LinkedHashSet<>());
             for (String embeddedInstance : embeddedInstances) {
