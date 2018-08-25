@@ -84,6 +84,9 @@ public class ArangoIndexing extends GraphIndexing {
             }
             repository.deleteVertex(entityName, key, defaultDB);
         }
+        else{
+            logger.error("DEL: Was not able to find entity {}/{} in repository", entityName, key);
+        }
     }
 
     @Override

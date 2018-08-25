@@ -4,6 +4,8 @@ import com.github.jsonldjava.utils.JsonUtils;
 import org.humanbrainproject.knowledgegraph.control.jsonld.JsonLdStandardization;
 import org.humanbrainproject.knowledgegraph.control.jsonld.JsonLdToVerticesAndEdges;
 import org.humanbrainproject.knowledgegraph.entity.jsonld.JsonLdVertex;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.configurationprocessor.json.JSONException;
 
@@ -19,6 +21,8 @@ public abstract class GraphIndexing {
 
     @Autowired
     JsonLdToVerticesAndEdges jsonLdToVerticesAndEdges;
+
+    protected Logger logger = LoggerFactory.getLogger(GraphIndexing.class);
 
     private List<JsonLdVertex> prepareAndParsePayload(GraphIndexationSpec spec) throws IOException, JSONException {
         Object jsonLd = jsonLdStandardization.ensureContext(JsonUtils.fromString(spec.getJsonOrJsonLdPayload()), spec.getDefaultNamespace());
