@@ -152,7 +152,8 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
 
     public void replaceDocument(String collectionName, String documentKey, String jsonPayload, ArangoDriver arango) {
         if(collectionName!=null && documentKey!=null && jsonPayload!=null) {
-            logger.info("Update document: {}", jsonPayload);
+            logger.info("Update document: {}", documentKey);
+            logger.debug("Update document: {}", jsonPayload);
             arango.getOrCreateDB().collection(collectionName).replaceDocument(documentKey, jsonPayload);
         }
         else{
@@ -172,7 +173,8 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
     private void insertDocument(String collectionName, String originalName, String jsonLd, CollectionType collectionType, ArangoDriver arango) {
         if(collectionName!=null && jsonLd!=null) {
             ArangoCollection collection = createCollectionIfNotExists(collectionName, originalName, collectionType, arango);
-            logger.info("Insert document: {}", jsonLd);
+            logger.info("Insert document: {}", originalName);
+            logger.debug("Insert document: {}", jsonLd);
             collection.insertDocument(jsonLd);
         }
         else{
