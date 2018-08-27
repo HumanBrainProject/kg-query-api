@@ -6,9 +6,11 @@ import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.gson.Gson;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.boot.configurationprocessor.json.JSONObject;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
 import java.util.*;
@@ -20,6 +22,10 @@ import java.util.stream.Collectors;
  */
 @Component
 public class JsonLdStandardization {
+
+    @Value("${org.humanbrainproject.knowledgegraph.jsonld.endpoint}")
+    String endpoint;
+
     private static final JsonLdOptions NO_ARRAY_COMPACTION_JSONLD_OPTIONS = createOptionsWithoutArrayCompaction();
     private static final JsonLdOptions DEFAULT_JSON_LD_OPTIONS = new JsonLdOptions();
 
@@ -69,7 +75,9 @@ public class JsonLdStandardization {
      * @throws IOException
      */
     public Object fullyQualify(String jsonPayload) throws IOException {
-        return fullyQualify(JsonUtils.fromString(jsonPayload));
+        RestTemplate template = new RestTemplate();
+        String fullyQualified = template.postForObject(endpoint, JsonUtils.fromString(jsonPayload), String.class);
+        return JsonUtils.fromString(fullyQualified);
     }
 
     /**
