@@ -8,6 +8,7 @@ import com.arangodb.entity.CollectionEntity;
 import com.arangodb.entity.CollectionType;
 import com.arangodb.model.AqlQueryOptions;
 import com.arangodb.model.CollectionCreateOptions;
+import com.github.jsonldjava.core.JsonLdConsts;
 import org.humanbrainproject.knowledgegraph.control.Configuration;
 import org.humanbrainproject.knowledgegraph.control.VertexRepository;
 import org.humanbrainproject.knowledgegraph.entity.Tuple;
@@ -249,6 +250,7 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
         for (JsonLdProperty jsonLdProperty : edge.getProperties()) {
             o.put(jsonLdProperty.getName(), jsonLdProperty.getValue());
         }
+        o.put(JsonLdConsts.ID, null);
         return o;
     }
 
@@ -286,9 +288,12 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
     }
 
     private String toJSONString(JsonLdVertex vertex) throws JSONException {
-        rebuildEmbeddedDocumentFromEdges(vertex);
+        //rebuildEmbeddedDocumentFromEdges(vertex);
         JSONObject o = recreateObjectFromProperties(vertex.getProperties());
         o.put("_key", namingConvention.getKey(vertex));
+        if(!vertex.isEmbedded()) {
+            o.put(JsonLdConsts.ID, String.format("%s/%s", vertex.getEntityName(), namingConvention.getKey(vertex)));
+        }
         return o.toString(4);
     }
 

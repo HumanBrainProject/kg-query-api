@@ -1,19 +1,29 @@
 package org.humanbrainproject.knowledgegraph.entity.query;
 
+import java.util.Map;
+
 public class QueryParameters {
 
     public Integer start;
     public Integer size;
     public boolean released;
     public String authorizationToken;
-    public boolean useContext;
+    public String vocab;
     public String organizations;
     public String library;
     public boolean withOriginalJson;
     public boolean originalData;
+    public Map<String, String> allParameters;
+
+
 
     public QueryParameters setOriginalData(boolean originalData) {
         this.originalData = originalData;
+        return this;
+    }
+
+    public QueryParameters setAllParameters(Map<String, String> allParameters) {
+        this.allParameters = allParameters;
         return this;
     }
 
@@ -37,8 +47,8 @@ public class QueryParameters {
         return this;
     }
 
-    public QueryParameters setUseContext(boolean useContext) {
-        this.useContext = useContext;
+    public QueryParameters setVocab(String vocab) {
+        this.vocab = vocab;
         return this;
     }
 

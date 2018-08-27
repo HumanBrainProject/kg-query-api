@@ -1,9 +1,7 @@
 package org.humanbrainproject.knowledgegraph.control.arango.query;
 
-import com.github.jsonldjava.utils.JsonUtils;
 import org.apache.commons.io.IOUtils;
 import org.humanbrainproject.knowledgegraph.control.arango.ArangoNamingConvention;
-import org.humanbrainproject.knowledgegraph.control.jsonld.JsonLdStandardization;
 import org.humanbrainproject.knowledgegraph.control.specification.SpecificationInterpreter;
 import org.humanbrainproject.knowledgegraph.entity.query.QueryParameters;
 import org.humanbrainproject.knowledgegraph.entity.specification.Specification;
@@ -15,7 +13,7 @@ import org.springframework.boot.configurationprocessor.json.JSONException;
 import java.io.IOException;
 import java.util.Collections;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 public class SpecificationInterpreterTest {
 
@@ -28,8 +26,7 @@ public class SpecificationInterpreterTest {
     @Before
     public void setup() throws IOException, JSONException {
         interpreter = new SpecificationInterpreter();
-        String json = IOUtils.toString(this.getClass().getResourceAsStream("/specification.json"), "UTF-8");
-        testSpecification = JsonUtils.toString(new JsonLdStandardization().fullyQualify(json));
+        testSpecification = IOUtils.toString(this.getClass().getResourceAsStream("/specification.json"), "UTF-8");
         query = new ArangoSpecificationQuery();
         query.namingConvention = new ArangoNamingConvention();
     }
