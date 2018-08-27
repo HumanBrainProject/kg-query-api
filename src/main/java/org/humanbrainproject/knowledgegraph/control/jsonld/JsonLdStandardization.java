@@ -146,6 +146,9 @@ public class JsonLdStandardization {
         Map<String, String> keymap = new HashMap<>();
         for (Map<String, String> lookupMap : lookup) {
             String v = lookupMap.get(JsonLdConsts.ID);
+            if(v.startsWith("vocab:")){
+                v = v.substring("vocab:".length());
+            }
 //            if(v.startsWith(":")){
 //                v = v.substring(1);
 //            }
