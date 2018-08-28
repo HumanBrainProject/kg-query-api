@@ -105,12 +105,25 @@ public class JsonLdToVerticesAndEdges {
             v.setEmbedded(edge.isEmbedded());
             parent.getEdges().add(edge);
             if(!edge.isEmbedded() && edge.getReference()!=null){
-                JsonLdProperty property = new JsonLdProperty();
-                property.setName(key);
+                JsonLdProperty property = parent.getPropertyByName(key);
+                if(property==null){
+                    property = new JsonLdProperty();
+                    property.setName(key);
+                    parent.addProperty(property);
+                }
                 Map<String, Object> reference = new HashMap<>();
                 reference.put(JsonLdConsts.ID, edge.getReference());
-                property.setValue(reference);
-                parent.addProperty(property);
+                if(property.getValue()==null){
+                    property.setValue(reference);
+                }
+                else{
+                    if(!(property instanceof Collection)){
+                        List<Object> values = new ArrayList<>();
+                        values.add(property.getValue());
+                        property.setValue(values);
+                    }
+                    ((Collection<Object>)property.getValue()).add(reference);
+                }
             }
             if (orderNumber >= 0) {
                 edge.setOrderNumber(orderNumber);
