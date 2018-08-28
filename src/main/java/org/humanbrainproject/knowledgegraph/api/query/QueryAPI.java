@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.HttpClientErrorException;
+import springfox.documentation.annotations.ApiIgnore;
 
 import javax.ws.rs.core.MediaType;
 import java.util.Map;
@@ -26,7 +27,7 @@ public class QueryAPI {
     Templating templating;
 
     @PostMapping(consumes = {MediaType.APPLICATION_JSON, "application/ld+json"})
-    public ResponseEntity<QueryResult> queryPropertyGraphBySpecification(@RequestBody String payload, @RequestParam(value = "@vocab", required = false) String vocab, @RequestParam(value = "size", required = false) Integer size, @RequestParam(value = "start", required = false) Integer start, @RequestParam(value="orgs", required = false) String organizations, @RequestParam(value="released", required = false) boolean released, @RequestHeader(value = "Authorization", required = false) String authorization, @RequestParam Map<String,String> allRequestParams) throws Exception {
+    public ResponseEntity<QueryResult> queryPropertyGraphBySpecification(@RequestBody String payload, @RequestParam(value = "@vocab", required = false) String vocab, @RequestParam(value = "size", required = false) Integer size, @RequestParam(value = "start", required = false) Integer start, @RequestParam(value="orgs", required = false) String organizations, @RequestParam(value="released", required = false) boolean released, @RequestHeader(value = "Authorization", required = false) String authorization, @ApiIgnore @RequestParam Map<String,String> allRequestParams) throws Exception {
         try {
             QueryParameters parameters = new QueryParameters().setAllParameters(allRequestParams).setReleased(released).setStart(start).setSize(size).setVocab(vocab).setOrganizations(organizations).setAuthorizationToken(authorization);
             return ResponseEntity.ok(query.queryPropertyGraphBySpecification(payload, parameters));
@@ -36,7 +37,7 @@ public class QueryAPI {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<QueryResult> executeStoredQuery(@PathVariable("id") String id, @RequestParam(value = "@vocab", required = false) String vocab,  @RequestParam(value = "size", required = false) Integer size, @RequestParam(value = "start", required = false) Integer start, @RequestParam(value="orgs", required = false) String organizations, @RequestParam(value="released", required = false) boolean released, @RequestHeader(value = "Authorization", required = false) String authorization, @RequestParam Map<String,String> allRequestParams) throws Exception {
+    public ResponseEntity<QueryResult> executeStoredQuery(@PathVariable("id") String id, @RequestParam(value = "@vocab", required = false) String vocab,  @RequestParam(value = "size", required = false) Integer size, @RequestParam(value = "start", required = false) Integer start, @RequestParam(value="orgs", required = false) String organizations, @RequestParam(value="released", required = false) boolean released, @RequestHeader(value = "Authorization", required = false) String authorization,  @ApiIgnore @RequestParam Map<String,String> allRequestParams) throws Exception {
         try {
             QueryParameters parameters = new QueryParameters().setAllParameters(allRequestParams).setReleased(released).setStart(start).setSize(size).setVocab(vocab).setOrganizations(organizations).setAuthorizationToken(authorization);
             return ResponseEntity.ok(query.queryPropertyGraphByStoredSpecification(id, parameters));
@@ -56,7 +57,7 @@ public class QueryAPI {
     }
 
     @PostMapping(value = "/{id}/template", consumes = {MediaType.TEXT_PLAIN})
-    public ResponseEntity<QueryResult> applyFreemarkerTemplateToApi(@RequestBody String template, @PathVariable("id") String id,  @RequestParam(value = "size", required = false) Integer size, @RequestParam(value = "start", required = false) Integer start, @RequestParam(value= "lib", required = false) String library, @RequestParam(value="orgs", required = false) String organizations, @RequestParam(value="released", required = false) boolean released, @RequestHeader(value = "Authorization", required = false) String authorization, @RequestParam Map<String,String> allRequestParams) throws Exception {
+    public ResponseEntity<QueryResult> applyFreemarkerTemplateToApi(@RequestBody String template, @PathVariable("id") String id,  @RequestParam(value = "size", required = false) Integer size, @RequestParam(value = "start", required = false) Integer start, @RequestParam(value= "lib", required = false) String library, @RequestParam(value="orgs", required = false) String organizations, @RequestParam(value="released", required = false) boolean released, @RequestHeader(value = "Authorization", required = false) String authorization,  @ApiIgnore @RequestParam Map<String,String> allRequestParams) throws Exception {
         try {
             QueryParameters parameters = new QueryParameters().setAllParameters(allRequestParams).setReleased(released).setStart(start).setSize(size).setLibrary(library).setOrganizations(organizations).setAuthorizationToken(authorization);
             QueryResult<String> result = query.queryPropertyGraphByStoredSpecificationAndFreemarkerTemplate(id, template, parameters);
@@ -78,7 +79,7 @@ public class QueryAPI {
 
 
     @GetMapping(value = "/{queryId}/template/{templateId}")
-    public ResponseEntity<QueryResult> executeQueryBasedOnTemplate(@PathVariable("queryId") String queryId, @PathVariable("templateId") String templateId, @RequestParam(value = "size", required = false) Integer size, @RequestParam(value = "start", required = false) Integer start, @RequestParam(value="orgs", required = false) String organizations, @RequestParam(value="released", required = false) boolean released, @RequestHeader(value = "Authorization", required = false) String authorization, @RequestParam Map<String,String> allRequestParams) throws Exception {
+    public ResponseEntity<QueryResult> executeQueryBasedOnTemplate(@PathVariable("queryId") String queryId, @PathVariable("templateId") String templateId, @RequestParam(value = "size", required = false) Integer size, @RequestParam(value = "start", required = false) Integer start, @RequestParam(value="orgs", required = false) String organizations, @RequestParam(value="released", required = false) boolean released, @RequestHeader(value = "Authorization", required = false) String authorization,  @ApiIgnore @RequestParam Map<String,String> allRequestParams) throws Exception {
         Template template = templating.getTemplateById(String.format("%s_%s", queryId, templateId));
         return applyFreemarkerTemplateToApi(template.getTemplateContent(), queryId, size, start, template.getLibrary(), organizations, released, authorization, allRequestParams);
     }

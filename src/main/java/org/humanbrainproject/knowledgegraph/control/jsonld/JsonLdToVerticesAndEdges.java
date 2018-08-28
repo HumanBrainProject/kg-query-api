@@ -104,6 +104,14 @@ public class JsonLdToVerticesAndEdges {
             JsonLdEdge edge = createEdge(jsonObject, v, key);
             v.setEmbedded(edge.isEmbedded());
             parent.getEdges().add(edge);
+            if(!edge.isEmbedded() && edge.getReference()!=null){
+                JsonLdProperty property = new JsonLdProperty();
+                property.setName(key);
+                Map<String, Object> reference = new HashMap<>();
+                reference.put(JsonLdConsts.ID, edge.getReference());
+                property.setValue(reference);
+                parent.addProperty(property);
+            }
             if (orderNumber >= 0) {
                 edge.setOrderNumber(orderNumber);
             }
