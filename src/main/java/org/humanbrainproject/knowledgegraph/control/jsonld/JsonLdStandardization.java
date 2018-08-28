@@ -75,9 +75,7 @@ public class JsonLdStandardization {
      * @throws IOException
      */
     public Object fullyQualify(String jsonPayload) throws IOException {
-        RestTemplate template = new RestTemplate();
-        String fullyQualified = template.postForObject(endpoint, JsonUtils.fromString(jsonPayload), String.class);
-        return JsonUtils.fromString(fullyQualified);
+        return fullyQualify(JsonUtils.fromString(jsonPayload));
     }
 
     /**
@@ -89,8 +87,9 @@ public class JsonLdStandardization {
      */
     public Object fullyQualify(Object input) {
         try {
-            input = JsonLdProcessor.expand(input, DEFAULT_JSON_LD_OPTIONS);
-            return JsonLdProcessor.compact(input, Collections.emptyMap(), DEFAULT_JSON_LD_OPTIONS);
+            RestTemplate template = new RestTemplate();
+            String fullyQualified = template.postForObject(endpoint, input, String.class);
+            return JsonUtils.fromString(fullyQualified);
         } catch (Exception e) {
             throw new JsonLdError(JsonLdError.Error.UNKNOWN_ERROR, "Was not able to fully qualify the content", e);
         }
