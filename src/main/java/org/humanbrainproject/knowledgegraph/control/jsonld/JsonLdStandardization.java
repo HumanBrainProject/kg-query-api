@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.boot.configurationprocessor.json.JSONObject;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
@@ -90,8 +91,10 @@ public class JsonLdStandardization {
             RestTemplate template = new RestTemplate();
             String fullyQualified = template.postForObject(endpoint, input, String.class);
             return JsonUtils.fromString(fullyQualified);
+        } catch (HttpClientErrorException e){
+            throw new JsonLdError(JsonLdError.Error.UNKNOWN_ERROR, "Was not able to fully qualify the content - there is something wrong with the payload", e);
         } catch (Exception e) {
-            throw new JsonLdError(JsonLdError.Error.UNKNOWN_ERROR, "Was not able to fully qualify the content", e);
+            throw new RuntimeException("Was not able to fully qualify the content", e);
         }
     }
 
