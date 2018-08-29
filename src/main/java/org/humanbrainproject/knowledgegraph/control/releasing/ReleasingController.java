@@ -9,7 +9,6 @@ import org.humanbrainproject.knowledgegraph.entity.jsonld.JsonLdVertex;
 import org.humanbrainproject.knowledgegraph.exceptions.InvalidPayloadException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.configurationprocessor.json.JSONException;
-import org.springframework.boot.configurationprocessor.json.JSONObject;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -46,14 +45,14 @@ public class ReleasingController {
             if (releaseInstances != null) {
                 if (releaseInstances.getValue() instanceof List) {
                     for (Object o : ((List) releaseInstances.getValue())) {
-                        if (o instanceof JSONObject) {
-                            releaseInstance((JSONObject) o, defaultDb, releaseDb);
+                        if (o instanceof JsonLdProperty) {
+                            releaseInstance((JsonLdProperty)o, defaultDb, releaseDb);
                         } else {
                             throw new RuntimeException(String.format("Was not able to release instance! Release structure passed non-interpretable type %s", o.getClass()));
                         }
                     }
-                } else if (releaseInstances.getValue() instanceof JSONObject) {
-                    releaseInstance((JSONObject) releaseInstances.getValue(), defaultDb, releaseDb);
+                } else if (releaseInstances.getValue() instanceof JsonLdProperty) {
+                    releaseInstance((JsonLdProperty) releaseInstances.getValue(), defaultDb, releaseDb);
                 } else {
                     throw new RuntimeException(String.format("Was not able to release instance! Release structure passed non-interpretable type %s", releaseInstances.getValue().getClass()));
                 }
@@ -67,11 +66,11 @@ public class ReleasingController {
         if (releaseInstanceUrls != null) {
             if (releaseInstanceUrls instanceof List) {
                 for (Object o : ((List) releaseInstanceUrls)) {
-                    if(o instanceof Map && ((Map)o).containsKey(JsonLdConsts.ID)){
+                    if (o instanceof Map && ((Map) o).containsKey(JsonLdConsts.ID)) {
                         unreleaseInstance(((Map) o).get(JsonLdConsts.ID).toString(), releaseDb);
                     }
                 }
-            } else if (releaseInstanceUrls instanceof Map && ((Map)releaseInstanceUrls).containsKey(JsonLdConsts.ID)) {
+            } else if (releaseInstanceUrls instanceof Map && ((Map) releaseInstanceUrls).containsKey(JsonLdConsts.ID)) {
                 unreleaseInstance(((Map) releaseInstanceUrls).get(JsonLdConsts.ID).toString(), releaseDb);
             } else {
                 throw new RuntimeException(String.format("Was not able to unrelease instance! %s", releaseInstanceUrls));
@@ -79,14 +78,18 @@ public class ReleasingController {
         }
     }
 
-    private void releaseInstance(JSONObject object, ArangoDriver defaultDb, ArangoDriver releaseDb) throws JSONException {
-        if (object.has(JsonLdConsts.ID) && object.getString(JsonLdConsts.ID).startsWith("http")) {
-            Set<String> edgesCollectionNames = defaultDb.getEdgesCollectionNames();
-            Set<String> embeddedInstances = repository.getEmbeddedInstances(Collections.singletonList(object.getString(JsonLdConsts.ID)), defaultDb, edgesCollectionNames, new LinkedHashSet<>());
-            repository.stageElementsToReleased(embeddedInstances, defaultDb, releaseDb);
-        } else {
-            throw new InvalidPayloadException("Release object did not contain a valid reference");
+    private void releaseInstance(JsonLdProperty jsonLdProperty, ArangoDriver defaultDb, ArangoDriver releaseDb) throws JSONException {
+        if (jsonLdProperty.getValue() instanceof JsonLdProperty) {
+            JsonLdProperty innerProperty = (JsonLdProperty) jsonLdProperty.getValue();
+            if (innerProperty.getName().equals(JsonLdConsts.ID) && innerProperty.getValue() != null && innerProperty.getValue().toString().startsWith("http")) {
+                Set<String> edgesCollectionNames = defaultDb.getEdgesCollectionNames();
+                Set<String> embeddedInstances = repository.getEmbeddedInstances(Collections.singletonList(innerProperty.getValue().toString()), defaultDb, edgesCollectionNames, new LinkedHashSet<>());
+                repository.stageElementsToReleased(embeddedInstances, defaultDb, releaseDb);
+                return;
+            }
         }
+        throw new InvalidPayloadException("Release object did not contain a valid reference");
+
     }
 
     public void unreleaseInstance(String url, ArangoDriver releaseDb) {
