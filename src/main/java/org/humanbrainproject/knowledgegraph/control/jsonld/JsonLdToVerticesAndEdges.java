@@ -111,8 +111,9 @@ public class JsonLdToVerticesAndEdges {
                     property.setName(key);
                     parent.addProperty(property);
                 }
-                Map<String, Object> reference = new HashMap<>();
-                reference.put(JsonLdConsts.ID, edge.getReference());
+                JsonLdProperty reference = new JsonLdProperty();
+                reference.setName(JsonLdConsts.ID);
+                reference.setValue(edge.getReference());
                 if(property.getValue()==null){
                     property.setValue(reference);
                 }

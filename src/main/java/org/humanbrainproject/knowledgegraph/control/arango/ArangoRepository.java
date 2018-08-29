@@ -281,7 +281,15 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
         JSONObject o = new JSONObject();
         for (JsonLdProperty jsonLdProperty : properties) {
             if (jsonLdProperty.getName() != null) {
-                o.put(jsonLdProperty.getName(), jsonLdProperty.getValue());
+                if(jsonLdProperty.getValue() instanceof  JsonLdProperty){
+                    JsonLdProperty nestedProperty = (JsonLdProperty)jsonLdProperty.getValue();
+                    JSONObject o2 = new JSONObject();
+                    o2.put(nestedProperty.getName(), nestedProperty.getValue());
+                    o.put(jsonLdProperty.getName(), o2);
+                }
+                else {
+                    o.put(jsonLdProperty.getName(), jsonLdProperty.getValue());
+                }
             }
         }
         return o;
