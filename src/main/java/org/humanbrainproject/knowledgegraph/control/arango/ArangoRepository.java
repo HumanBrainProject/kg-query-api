@@ -76,7 +76,12 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
     public Set<String> getEmbeddedInstances(List<String> ids, ArangoDriver arango, Set<String> edgeCollectionNames, Set<String> result) {
         for (String id : ids) {
             String keyFromReference = namingConvention.getIdFromReference(id, false);
-            if (!result.contains(keyFromReference)) {
+            if(keyFromReference==null){
+                if(!result.contains(id)) {
+                    result.add(id);
+                }
+            }
+            else if (!result.contains(keyFromReference)) {
                 result.add(keyFromReference);
                 if (!edgeCollectionNames.isEmpty()) {
                     String arangoQuery = queryFactory.createEmbeddedInstancesQuery(edgeCollectionNames, keyFromReference, arango);
@@ -178,7 +183,7 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
             logger.debug("Update document: {}/{} in db {} with payload {}", collectionName, documentKey, arango.getDatabaseName(), jsonPayload);
             arango.getOrCreateDB().collection(collectionName).replaceDocument(documentKey, jsonPayload);
         } else {
-            logger.error("Incomplete data. Was not able to update the document in {}/{} with payload {}", collectionName, documentKey, jsonPayload);
+            logger.warn("Incomplete data. Was not able to update the document in {}/{} with payload {}", collectionName, documentKey, jsonPayload);
         }
     }
 
@@ -198,7 +203,7 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
             logger.debug("Insert document: {} in db {} with payload {}", collectionName, arango.getDatabaseName(), jsonLd);
             collection.insertDocument(jsonLd);
         } else {
-            logger.error("Incomplete data. Was not able to insert the document in {} with payload {} into database {}", collectionName, jsonLd, arango.getDatabaseName());
+            logger.warn("Incomplete data. Was not able to insert the document in {} with payload {} into database {}", collectionName, jsonLd, arango.getDatabaseName());
         }
     }
 
@@ -223,12 +228,18 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
 
     @Override
     protected void createEdge(JsonLdVertex vertex, JsonLdEdge edge, ArangoDriver arango) throws JSONException {
-        insertDocument(namingConvention.getEdgeLabel(edge), null, createEdgeDocument(vertex, edge, arango).toString(), CollectionType.EDGES, arango);
+        JSONObject edgeDocument = createEdgeDocument(vertex, edge, arango);
+        if(edgeDocument!=null) {
+            insertDocument(namingConvention.getEdgeLabel(edge), null, edgeDocument.toString(), CollectionType.EDGES, arango);
+        }
     }
 
     @Override
     protected void replaceEdge(JsonLdVertex vertex, JsonLdEdge edge, ArangoDriver arango) throws JSONException {
-        replaceDocument(namingConvention.getEdgeLabel(edge), namingConvention.getReferenceKey(vertex, edge), createEdgeDocument(vertex, edge, arango).toString(), arango);
+        JSONObject edgeDocument = createEdgeDocument(vertex, edge, arango);
+        if(edgeDocument!=null) {
+            replaceDocument(namingConvention.getEdgeLabel(edge), namingConvention.getReferenceKey(vertex, edge), edgeDocument.toString(), arango);
+        }
     }
 
     @Override
@@ -241,18 +252,23 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
         String from = namingConvention.getId(vertex);
         o.put("_from", from);
         String to = namingConvention.getEdgeTarget(edge);
-        o.put("_to", to);
-        createCollectionIfNotExists(namingConvention.getCollectionNameFromId(to), null, CollectionType.DOCUMENT, arango);
-        String key = namingConvention.getReferenceKey(vertex, edge);
-        o.put("_key", key);
-        if (edge.getOrderNumber() != null && edge.getOrderNumber() >= 0) {
-            o.put("orderNumber", edge.getOrderNumber());
+        if(to!=null) {
+            o.put("_to", to);
+            createCollectionIfNotExists(namingConvention.getCollectionNameFromId(to), null, CollectionType.DOCUMENT, arango);
+            String key = namingConvention.getReferenceKey(vertex, edge);
+            o.put("_key", key);
+            if (edge.getOrderNumber() != null && edge.getOrderNumber() >= 0) {
+                o.put("orderNumber", edge.getOrderNumber());
+            }
+            for (JsonLdProperty jsonLdProperty : edge.getProperties()) {
+                o.put(jsonLdProperty.getName(), jsonLdProperty.getValue());
+            }
+            o.put(JsonLdConsts.ID, null);
+            return o;
         }
-        for (JsonLdProperty jsonLdProperty : edge.getProperties()) {
-            o.put(jsonLdProperty.getName(), jsonLdProperty.getValue());
+        else{
+            return null;
         }
-        o.put(JsonLdConsts.ID, null);
-        return o;
     }
 
 

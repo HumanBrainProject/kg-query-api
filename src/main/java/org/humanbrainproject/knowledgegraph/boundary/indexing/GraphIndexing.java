@@ -27,6 +27,7 @@ public abstract class GraphIndexing {
     private List<JsonLdVertex> prepareAndParsePayload(GraphIndexationSpec spec) throws IOException, JSONException {
         Object jsonLd = jsonLdStandardization.ensureContext(JsonUtils.fromString(spec.getJsonOrJsonLdPayload()), spec.getDefaultNamespace());
         jsonLd = jsonLdStandardization.fullyQualify(jsonLd);
+        jsonLd = jsonLdStandardization.filterKeysByVocabBlacklists(jsonLd);
         return jsonLdToVerticesAndEdges.transformFullyQualifiedJsonLdToVerticesAndEdges(JsonUtils.toString(jsonLd), spec);
     }
 

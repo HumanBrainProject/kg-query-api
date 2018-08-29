@@ -4,6 +4,7 @@ import com.github.jsonldjava.core.JsonLdConsts;
 import org.humanbrainproject.knowledgegraph.control.arango.ArangoDriver;
 import org.humanbrainproject.knowledgegraph.control.arango.ArangoNamingConvention;
 import org.humanbrainproject.knowledgegraph.control.arango.ArangoRepository;
+import org.humanbrainproject.knowledgegraph.entity.jsonld.JsonLdEdge;
 import org.humanbrainproject.knowledgegraph.entity.jsonld.JsonLdProperty;
 import org.humanbrainproject.knowledgegraph.entity.jsonld.JsonLdVertex;
 import org.humanbrainproject.knowledgegraph.exceptions.InvalidPayloadException;
@@ -12,6 +13,7 @@ import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Component
 public class ReleasingController {
@@ -24,6 +26,19 @@ public class ReleasingController {
 
     @Autowired
     ArangoNamingConvention namingConvention;
+
+    public List<List<String>> findDocumentsToBeUnreleased(List<JsonLdVertex> jsonLdVertices, ArangoDriver defaultDB) {
+        return jsonLdVertices.stream().map(v -> {
+            List<JsonLdEdge> edgesToBeRemoved = repository.getEdgesToBeRemoved(v, defaultDB);
+            return edgesToBeRemoved.stream().map(e -> repository.getTargetVertexId(e, defaultDB)).collect(Collectors.toList());
+        }).collect(Collectors.toList());
+    }
+
+    public void unreleaseDocuments(List<List<String>> verticesToBeUnreleased, ArangoDriver releasedDB) {
+        if (verticesToBeUnreleased != null) {
+            verticesToBeUnreleased.forEach(vertices -> vertices.forEach(v -> unreleaseInstance(v, releasedDB)));
+        }
+    }
 
     public boolean isRelevantForReleasing(List<JsonLdVertex> vertices) {
         for (JsonLdVertex vertex : vertices) {
@@ -78,7 +93,7 @@ public class ReleasingController {
         }
     }
 
-    private void releaseInstance(JsonLdProperty jsonLdProperty, ArangoDriver defaultDb, ArangoDriver releaseDb) throws JSONException {
+    void releaseInstance(JsonLdProperty jsonLdProperty, ArangoDriver defaultDb, ArangoDriver releaseDb) throws JSONException {
         if (jsonLdProperty.getValue() instanceof JsonLdProperty) {
             JsonLdProperty innerProperty = (JsonLdProperty) jsonLdProperty.getValue();
             if (innerProperty.getName().equals(JsonLdConsts.ID) && innerProperty.getValue() != null && innerProperty.getValue().toString().startsWith("http")) {
@@ -92,11 +107,14 @@ public class ReleasingController {
 
     }
 
-    public void unreleaseInstance(String url, ArangoDriver releaseDb) {
-        Set<String> edgesCollectionNames = releaseDb.getEdgesCollectionNames();
-        Set<String> embeddedInstances = repository.getEmbeddedInstances(Collections.singletonList(url), releaseDb, edgesCollectionNames, new LinkedHashSet<>());
-        for (String embeddedInstance : embeddedInstances) {
-            repository.deleteVertex(embeddedInstance, releaseDb);
+    void unreleaseInstance(String url, ArangoDriver releaseDb) {
+        //The url needs to be absolute - everything else is not resolvable.
+        if(url.startsWith("http")) {
+            Set<String> edgesCollectionNames = releaseDb.getEdgesCollectionNames();
+            Set<String> embeddedInstances = repository.getEmbeddedInstances(Collections.singletonList(url), releaseDb, edgesCollectionNames, new LinkedHashSet<>());
+            for (String embeddedInstance : embeddedInstances) {
+                repository.deleteVertex(embeddedInstance, releaseDb);
+            }
         }
     }
 

@@ -44,7 +44,7 @@ public class ArangoNamingConvention {
             if(collectionName!=null && id!=null)    {
                 return createId(collectionName, id);
             } else {
-                return reference;
+                return null;
             }
         }
         return null;

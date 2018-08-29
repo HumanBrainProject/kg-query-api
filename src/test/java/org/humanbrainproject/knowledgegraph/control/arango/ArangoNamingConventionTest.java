@@ -27,7 +27,7 @@ public class ArangoNamingConventionTest {
 
     @Test
     public void getIdFromReference(){
-        String outcome = namingConvention.getIdFromReference("http://nexus.humanbrainproject.org/v0/schema/org/domain/schema/v0.0.4/id/dfs", false);
+        String outcome = namingConvention.getIdFromReference("http://nexus.humanbrainproject.org/v0/data/org/domain/schema/v0.0.4/id/dfs", false);
         assertEquals("org-domain-schema-v0_0_4/id-dfs", outcome);
     }
 
@@ -35,8 +35,15 @@ public class ArangoNamingConventionTest {
     @Test
     public void getIdFromExternalReference(){
         String outcome = namingConvention.getIdFromReference("http://foo.com/somereference", false);
-        assertEquals("http://foo.com/somereference", outcome);
+        assertNull(outcome);
     }
+
+    @Test
+    public void getIdFromReferenceWithoutId(){
+        String outcome = namingConvention.getIdFromReference("https://nexus-dev.humanbrainproject.org/v0/schemas/neuralactivity/experiment/patchedcell/v0.1.0", false);
+        assertNull(outcome);
+    }
+
 
     @Test
     public void getIdFromEmbeddedInstance(){

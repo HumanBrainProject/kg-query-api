@@ -6,6 +6,7 @@ import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.gson.Gson;
+import org.humanbrainproject.knowledgegraph.control.Constants;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.boot.configurationprocessor.json.JSONObject;
@@ -26,6 +27,7 @@ public class JsonLdStandardization {
 
     @Value("${org.humanbrainproject.knowledgegraph.jsonld.endpoint}")
     String endpoint;
+
 
     private static final JsonLdOptions NO_ARRAY_COMPACTION_JSONLD_OPTIONS = createOptionsWithoutArrayCompaction();
     private static final JsonLdOptions DEFAULT_JSON_LD_OPTIONS = new JsonLdOptions();
@@ -62,6 +64,31 @@ public class JsonLdStandardization {
                 context.add(vocab);
             }
             ((Map) input).put(JsonLdConsts.CONTEXT, context);
+        }
+        return input;
+    }
+
+
+    public Object filterKeysByVocabBlacklists(Object input){
+        List<String> blacklist = Arrays.asList(Constants.NEXUS_TERMS_VOCAB);
+        if(input instanceof List){
+            ((List)input).forEach(this::filterKeysByVocabBlacklists);
+        }
+        else if (input instanceof Map){
+            Set keySet = new HashSet(((Map) input).keySet());
+            for (Object key : keySet) {
+                boolean removed = false;
+                for (String filterSchema : blacklist) {
+                    if(key.toString().startsWith(filterSchema)){
+                        removed = true;
+                        ((Map)input).remove(key);
+                        break;
+                    }
+                }
+                if(!removed){
+                    filterKeysByVocabBlacklists(((Map)input).get(input));
+                }
+            }
         }
         return input;
     }
