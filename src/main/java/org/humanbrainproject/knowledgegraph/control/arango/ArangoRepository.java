@@ -16,6 +16,7 @@ import org.humanbrainproject.knowledgegraph.entity.jsonld.JsonLdEdge;
 import org.humanbrainproject.knowledgegraph.entity.jsonld.JsonLdProperty;
 import org.humanbrainproject.knowledgegraph.entity.jsonld.JsonLdVertex;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.configurationprocessor.json.JSONArray;
 import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.boot.configurationprocessor.json.JSONObject;
 import org.springframework.stereotype.Component;
@@ -286,6 +287,18 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
                     JSONObject o2 = new JSONObject();
                     o2.put(nestedProperty.getName(), nestedProperty.getValue());
                     o.put(jsonLdProperty.getName(), o2);
+                }
+                else if(jsonLdProperty.getValue() instanceof Collection){
+                    JSONArray array = new JSONArray();
+                    for (Object child : ((Collection) jsonLdProperty.getValue())) {
+                        if(child instanceof  JsonLdProperty){
+                            array.put(((JsonLdProperty)child).getValue());
+                        }
+                        else{
+                            array.put(child);
+                        }
+                    }
+                    o.put(jsonLdProperty.getName(), array);
                 }
                 else {
                     o.put(jsonLdProperty.getName(), jsonLdProperty.getValue());
