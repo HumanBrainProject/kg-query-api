@@ -295,7 +295,7 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
                             JsonLdProperty nestedProperty = (JsonLdProperty)child;
                             JSONObject o2 = new JSONObject();
                             o2.put(nestedProperty.getName(), nestedProperty.getValue());
-                            array.put(nestedProperty);
+                            array.put(o2);
                         }
                         else{
                             array.put(child);
