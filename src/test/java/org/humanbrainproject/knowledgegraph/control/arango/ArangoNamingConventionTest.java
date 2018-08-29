@@ -31,6 +31,12 @@ public class ArangoNamingConventionTest {
         assertEquals("org-domain-schema-v0_0_4/id-dfs", outcome);
     }
 
+    @Test
+    public void getIdFromEmbeddedReference(){
+        String outcome = namingConvention.getIdFromReference("www_w3_org-ns-prov-qualifiedAssociation/hashed_8b37ce04a01732c7669adaaa0589a480", false);
+        assertEquals("www_w3_org-ns-prov-qualifiedAssociation/hashed_8b37ce04a01732c7669adaaa0589a480", outcome);
+    }
+
 
     @Test
     public void getIdFromExternalReference(){

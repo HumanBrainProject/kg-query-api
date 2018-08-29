@@ -43,6 +43,8 @@ public class ArangoNamingConvention {
             }
             if(collectionName!=null && id!=null)    {
                 return createId(collectionName, id);
+            } else if(!reference.startsWith("http")){
+                return reference;
             } else {
                 return null;
             }

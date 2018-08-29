@@ -95,10 +95,12 @@ public class ReleasingController {
 
     void releaseInstance(JsonLdProperty jsonLdProperty, ArangoDriver defaultDb, ArangoDriver releaseDb) throws JSONException {
         if (jsonLdProperty.getValue() instanceof JsonLdProperty) {
-            JsonLdProperty innerProperty = (JsonLdProperty) jsonLdProperty.getValue();
-            if (innerProperty.getName().equals(JsonLdConsts.ID) && innerProperty.getValue() != null && innerProperty.getValue().toString().startsWith("http")) {
+            releaseInstance((JsonLdProperty) jsonLdProperty.getValue(), defaultDb, releaseDb);
+        }
+        else {
+            if (jsonLdProperty.getName().equals(JsonLdConsts.ID) && jsonLdProperty.getValue() != null && jsonLdProperty.getValue().toString().startsWith("http")) {
                 Set<String> edgesCollectionNames = defaultDb.getEdgesCollectionNames();
-                Set<String> embeddedInstances = repository.getEmbeddedInstances(Collections.singletonList(innerProperty.getValue().toString()), defaultDb, edgesCollectionNames, new LinkedHashSet<>());
+                Set<String> embeddedInstances = repository.getEmbeddedInstances(Collections.singletonList(jsonLdProperty.getValue().toString()), defaultDb, edgesCollectionNames, new LinkedHashSet<>());
                 repository.stageElementsToReleased(embeddedInstances, defaultDb, releaseDb);
                 return;
             }
