@@ -71,7 +71,7 @@ public class ArangoNamingConvention {
     }
 
     private String reduceStringToMaxSizeByHashing(String string) {
-        return string == null || string.length() <= MAX_CHARACTERS ? string : DigestUtils.md5DigestAsHex(string.getBytes());
+        return string == null || string.length() <= MAX_CHARACTERS ? string : String.format("hashed_%s", DigestUtils.md5DigestAsHex(string.getBytes()));
     }
 
     public String getEdgeLabel(String edgeLabel) {
