@@ -4,8 +4,11 @@ import com.arangodb.ArangoCollection;
 import com.arangodb.ArangoCursor;
 import com.arangodb.ArangoDBException;
 import com.arangodb.ArangoDatabase;
+import com.arangodb.entity.AqlFunctionEntity;
 import com.arangodb.entity.CollectionEntity;
 import com.arangodb.entity.CollectionType;
+import com.arangodb.model.AqlFunctionCreateOptions;
+import com.arangodb.model.AqlFunctionGetOptions;
 import com.arangodb.model.AqlQueryOptions;
 import com.arangodb.model.CollectionCreateOptions;
 import org.humanbrainproject.knowledgegraph.control.Configuration;
@@ -21,6 +24,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Component
 public class ArangoRepository extends VertexRepository<ArangoDriver> {
@@ -341,6 +345,26 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
         String query = queryFactory.queryInDepthGraph(edgesCollections, vertex, step, driver);
         ArangoCursor<Map> q = db.query(query, null, new AqlQueryOptions(), Map.class );
         return q.asListRemaining();
+    }
+
+
+    public List<Map> releaseGraph(String vertex, ArangoDriver driver){
+        ArangoDatabase db = driver.getOrCreateDB();
+        Set<String> edgesCollections = driver.getEdgesCollectionNames();
+        String query = queryFactory.queryReleaseGraph(edgesCollections, vertex, driver);
+        ArangoCursor<Map> q = db.query(query, null, new AqlQueryOptions(), Map.class );
+        return q.asListRemaining();
+    }
+
+    public void uploadFunction(String name, String function, ArangoDriver driver){
+        ArangoDatabase db = driver.getOrCreateDB();
+        db.createAqlFunction(name, function, new AqlFunctionCreateOptions());
+    }
+
+    public Collection<AqlFunctionEntity> getAqlFunctions(String namespace, ArangoDriver driver){
+        ArangoDatabase db = driver.getOrCreateDB();
+        Collection<AqlFunctionEntity> q = db.getAqlFunctions(new AqlFunctionGetOptions().namespace(namespace));
+        return q;
     }
 
 }

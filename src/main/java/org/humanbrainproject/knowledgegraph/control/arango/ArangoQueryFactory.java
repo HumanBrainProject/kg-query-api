@@ -67,4 +67,19 @@ public class ArangoQueryFactory {
                 "return path", outbound, inbound);
     }
 
+
+
+    public String queryReleaseGraph(Set<String> edgeCollectionNames, String startinVertexId, ArangoDriver driver) {
+        Set<String> collectionLabels= driver!=null ? driver.filterExistingCollectionLabels(edgeCollectionNames) : edgeCollectionNames;
+        String names = String.join("`, `", collectionLabels).replace("`rel-hbp_eu-minds-releaseinstance`", "INBOUND `rel-hbp_eu-minds-releaseinstance`");
+        return String.format("LET flatStructure = (FOR v,e,p IN 1..%s  OUTBOUND \"%s\" `%s`" +
+        "LET childPath = (FOR pv IN p.vertices RETURN pv._id)" +
+        "LET t = CONTAINS(e._from, \"prov-release-v0_0_1\")? \"RELEASED\": \"NOT_RELEASED\" "+
+        "RETURN MERGE({\"id\":v._id, \"status\": t, \"children\":childPath}, v ))" +
+        "LET root =  FIRST((FOR v, e IN 0..1 INBOUND \"%s\" `rel-hbp_eu-minds-releaseinstance`\n" +
+                "    LET t = CONTAINS(e._from, \"prov-release-v0_0_1\")? \"RELEASED\": \"NOT_RELEASED\" \n" +
+                "    RETURN MERGE({\"id\":v._id, \"status\": t},v)))"+
+        "RETURN GO::LOCATED_IN::APPEND_CHILD_STRUCTURE(root, flatStructure)",6, startinVertexId, names,  startinVertexId, startinVertexId);
+    }
+
 }
