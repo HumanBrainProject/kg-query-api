@@ -73,9 +73,10 @@ public class ArangoQueryFactory {
         Set<String> collectionLabels= driver!=null ? driver.filterExistingCollectionLabels(edgeCollectionNames) : edgeCollectionNames;
         String names = String.join("`, `", collectionLabels).replace("`rel-hbp_eu-minds-releaseinstance`", "INBOUND `rel-hbp_eu-minds-releaseinstance`");
         return String.format("LET flatStructure = (FOR v,e,p IN 1..%s  OUTBOUND \"%s\" `%s`" +
+        "FILTER !CONTAINS(v._id,  \"prov-release-v0_0_1\") && !CONTAINS(v._id, \"www_w3_org-ns-prov-qualifiedAssociation\")" +
         "LET childPath = (FOR pv IN p.vertices RETURN pv._id)" +
         "LET t = CONTAINS(e._from, \"prov-release-v0_0_1\")? \"RELEASED\": \"NOT_RELEASED\" "+
-        "RETURN MERGE({\"id\":v._id, \"status\": t, \"children\":childPath}, v ))" +
+        "RETURN MERGE({\"id\":v._id, \"status\": t, \"children\":childPath, \"edgeType\": e._id}, v ))" +
         "LET root =  FIRST((FOR v, e IN 0..1 INBOUND \"%s\" `rel-hbp_eu-minds-releaseinstance`\n" +
                 "    LET t = CONTAINS(e._from, \"prov-release-v0_0_1\")? \"RELEASED\": \"NOT_RELEASED\" \n" +
                 "    RETURN MERGE({\"id\":v._id, \"status\": t},v)))"+
