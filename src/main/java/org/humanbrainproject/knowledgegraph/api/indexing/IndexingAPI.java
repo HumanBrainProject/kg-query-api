@@ -3,13 +3,12 @@ package org.humanbrainproject.knowledgegraph.api.indexing;
 import com.github.jsonldjava.core.JsonLdError;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
-import org.humanbrainproject.knowledgegraph.boundary.indexing.ArangoIndexing;
 import org.humanbrainproject.knowledgegraph.boundary.indexing.GraphIndexing;
+import org.humanbrainproject.knowledgegraph.entity.indexing.GraphIndexingSpec;
 import org.humanbrainproject.knowledgegraph.exceptions.InvalidPayloadException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,15 +21,15 @@ import java.io.IOException;
 public class IndexingAPI {
 
     @Autowired
-    ArangoIndexing indexer;
+    GraphIndexing indexer;
 
-    Logger logger = LoggerFactory.getLogger(IndexingAPI.class);
+    private Logger logger = LoggerFactory.getLogger(IndexingAPI.class);
 
 
     @GetMapping(value="/{organization}/{domain}/{schema}/{schemaversion}/{id}", produces = MediaType.APPLICATION_JSON)
     public ResponseEntity<String> fetchInstance(@PathVariable("organization") String organization, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("schemaversion") String schemaVersion, @PathVariable("id") String id) {
         String entityName = buildEntityName(organization, domain, schema, schemaVersion);
-        logger.info(String.format("Received get request for {}/{}", entityName, id));
+        logger.info(String.format("Received get request for %s/%s", entityName, id));
         try {
             return ResponseEntity.ok(indexer.getById(entityName, id));
         } catch (JsonLdError | InvalidPayloadException e) {
@@ -49,11 +48,10 @@ public class IndexingAPI {
         logger.info("Received insert request for {}/{}", entityName, id);
         logger.debug("Payload for insert request {}/{}: {}", entityName, id, payload);
         try {
-            GraphIndexing.GraphIndexationSpec spec = new GraphIndexing.GraphIndexationSpec();
-            spec.setJsonOrJsonLdPayload(payload).setPermissionGroup(organization).setEntityName(entityName).setId(id).setDefaultNamespace(buildDefaultNamespace(organization, domain, schema, schemaVersion));
+            GraphIndexingSpec spec = new GraphIndexingSpec().setJsonOrJsonLdPayload(payload).setPermissionGroup(organization).setEntityName(entityName).setId(id).setDefaultNamespace(buildDefaultNamespace(organization, domain, schema, schemaVersion));
             indexer.insertJsonOrJsonLd(spec);
             return ResponseEntity.ok(null);
-        } catch (JSONException | JsonLdError | InvalidPayloadException e) {
+        } catch (JsonLdError | InvalidPayloadException e) {
             logger.warn(String.format("INS: Was not able to process the payload %s", payload), e);
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch(Exception e){
@@ -68,11 +66,10 @@ public class IndexingAPI {
         logger.info("Received update request for {}/{} in rev {}", entityName, id, rev);
         logger.debug("Payload for update request {}/{} in rev {}: {}", entityName, id, rev, payload);
         try {
-            GraphIndexing.GraphIndexationSpec spec = new GraphIndexing.GraphIndexationSpec();
-            spec.setJsonOrJsonLdPayload(payload).setPermissionGroup(organization).setEntityName(entityName).setId(id).setRevision(rev).setDefaultNamespace(buildDefaultNamespace(organization, domain, schema, schemaVersion));
+            GraphIndexingSpec spec = new GraphIndexingSpec().setJsonOrJsonLdPayload(payload).setPermissionGroup(organization).setEntityName(entityName).setId(id).setRevision(rev).setDefaultNamespace(buildDefaultNamespace(organization, domain, schema, schemaVersion));
             indexer.updateJsonOrJsonLd(spec);
             return ResponseEntity.ok(null);
-        } catch (JSONException | JsonLdError | InvalidPayloadException  e) {
+        } catch (JsonLdError | InvalidPayloadException  e) {
             logger.warn(String.format("UPD: Was not able to process the payload %s", payload), e);
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch(Exception e){
@@ -86,8 +83,9 @@ public class IndexingAPI {
         String entityName = buildEntityName(organization, domain, schema, schemaVersion);
         logger.info("Received delete request for {}/{} in rev {}", entityName, id, rev);
         try {
-            indexer.delete(entityName, id, rev);
-            return ResponseEntity.ok(null);
+            GraphIndexingSpec spec = new GraphIndexingSpec().setPermissionGroup(organization).setEntityName(entityName).setId(id).setDefaultNamespace(buildDefaultNamespace(organization, domain, schema, schemaVersion)).setRevision(rev);
+            indexer.delete(spec);
+            return ResponseEntity.ok(String.format("Successfully deleted the instance %s", entityName));
         } catch(InvalidPayloadException e ){
             logger.error(String.format("DEL: Was not able to delete the instance %s", entityName ), e);
             return ResponseEntity.badRequest().body(e.getMessage());

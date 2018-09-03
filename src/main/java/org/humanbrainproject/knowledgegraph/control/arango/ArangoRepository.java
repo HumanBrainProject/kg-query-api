@@ -8,17 +8,15 @@ import com.arangodb.entity.CollectionEntity;
 import com.arangodb.entity.CollectionType;
 import com.arangodb.model.AqlQueryOptions;
 import com.arangodb.model.CollectionCreateOptions;
-import com.github.jsonldjava.core.JsonLdConsts;
 import org.humanbrainproject.knowledgegraph.control.Configuration;
 import org.humanbrainproject.knowledgegraph.control.VertexRepository;
+import org.humanbrainproject.knowledgegraph.control.json.JsonTransformer;
+import org.humanbrainproject.knowledgegraph.control.jsonld.JsonLdToVerticesAndEdges;
 import org.humanbrainproject.knowledgegraph.entity.Tuple;
+import org.humanbrainproject.knowledgegraph.entity.indexing.GraphIndexingSpec;
 import org.humanbrainproject.knowledgegraph.entity.jsonld.JsonLdEdge;
-import org.humanbrainproject.knowledgegraph.entity.jsonld.JsonLdProperty;
 import org.humanbrainproject.knowledgegraph.entity.jsonld.JsonLdVertex;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.configurationprocessor.json.JSONArray;
-import org.springframework.boot.configurationprocessor.json.JSONException;
-import org.springframework.boot.configurationprocessor.json.JSONObject;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -35,6 +33,12 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
 
     @Autowired
     ArangoQueryFactory queryFactory;
+
+    @Autowired
+    JsonTransformer transformer;
+
+    @Autowired
+    JsonLdToVerticesAndEdges jsonLdToVerticesAndEdges;
 
 
     private static final String NAME_LOOKUP_MAP = "name_lookup";
@@ -173,8 +177,8 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
 
 
     @Override
-    protected void updateVertex(JsonLdVertex vertex, ArangoDriver arango) throws JSONException {
-        replaceDocument(namingConvention.getVertexLabel(vertex.getEntityName()), namingConvention.getKey(vertex), toJSONString(vertex), arango);
+    protected void updateVertex(JsonLdVertex vertex, ArangoDriver arango) {
+        replaceDocument(namingConvention.getVertexLabel(vertex.getEntityName()), namingConvention.getKey(vertex), transformer.vertexToJSONString(vertex), arango);
     }
 
     public void replaceDocument(String collectionName, String documentKey, String jsonPayload, ArangoDriver arango) {
@@ -188,8 +192,8 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
     }
 
     @Override
-    protected void insertVertex(JsonLdVertex vertex, ArangoDriver arango) throws JSONException {
-        insertVertexDocument(toJSONString(vertex), vertex.getEntityName(), arango);
+    protected void insertVertex(JsonLdVertex vertex, ArangoDriver arango) {
+        insertVertexDocument(transformer.vertexToJSONString(vertex), vertex.getEntityName(), arango);
     }
 
     public void insertVertexDocument(String jsonLd, String vertexName, ArangoDriver arango) {
@@ -226,54 +230,63 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
         return collection;
     }
 
-    @Override
-    protected void createEdge(JsonLdVertex vertex, JsonLdEdge edge, ArangoDriver arango) throws JSONException {
-        JSONObject edgeDocument = createEdgeDocument(vertex, edge, arango);
-        if(edgeDocument!=null) {
-            insertDocument(namingConvention.getEdgeLabel(edge), null, edgeDocument.toString(), CollectionType.EDGES, arango);
+
+    private void ensureTargetCollectionForEdge(JsonLdEdge edge, ArangoDriver arango){
+        String target = namingConvention.getEdgeTarget(edge);
+        if(target!=null){
+            createCollectionIfNotExists(namingConvention.getCollectionNameFromId(target), null, CollectionType.DOCUMENT, arango);
         }
     }
 
     @Override
-    protected void replaceEdge(JsonLdVertex vertex, JsonLdEdge edge, ArangoDriver arango) throws JSONException {
-        JSONObject edgeDocument = createEdgeDocument(vertex, edge, arango);
+    protected void createEdge(JsonLdVertex vertex, JsonLdEdge edge, ArangoDriver arango) {
+        ensureTargetCollectionForEdge(edge, arango);
+        String edgeDocument = transformer.edgeToJSONString(vertex, edge);
         if(edgeDocument!=null) {
-            replaceDocument(namingConvention.getEdgeLabel(edge), namingConvention.getReferenceKey(vertex, edge), edgeDocument.toString(), arango);
+            insertDocument(namingConvention.getEdgeLabel(edge), null, edgeDocument, CollectionType.EDGES, arango);
         }
     }
 
     @Override
-    protected void removeEdge(JsonLdVertex vertex, JsonLdEdge edge, ArangoDriver transactionOrConnection) throws JSONException {
+    protected void replaceEdge(JsonLdVertex vertex, JsonLdEdge edge, ArangoDriver arango) {
+        ensureTargetCollectionForEdge(edge, arango);
+        String edgeDocument = transformer.edgeToJSONString(vertex, edge);
+        if(edgeDocument!=null) {
+            replaceDocument(namingConvention.getEdgeLabel(edge), namingConvention.getReferenceKey(vertex, edge), edgeDocument, arango);
+        }
+    }
+
+
+
+    @Override
+    protected void removeEdge(JsonLdVertex vertex, JsonLdEdge edge, ArangoDriver transactionOrConnection) {
+        List<JsonLdVertex> targetVertices = Collections.emptyList();
+        if(edge.getTarget()!=null){
+            targetVertices = Collections.singletonList(edge.getTarget());
+        }
+        else if(edge.getReference()!=null){
+            String edgeName = namingConvention.getCollectionNameFromId(edge.getReference());
+            String edgeKey = namingConvention.getKeyFromId(edge.getReference());
+            Map edgeContent = getByKey(edgeName, edgeKey, Map.class, transactionOrConnection);
+            if(edgeContent.containsKey("_to") && edgeContent.get("_to")!=null){
+                String reference = edgeContent.get("_to").toString();
+                String targetName = namingConvention.getCollectionNameFromId(reference);
+                String targetKey = namingConvention.getKeyFromId(reference);
+                Map target = getByKey(targetName, targetKey, Map.class, transactionOrConnection);
+                GraphIndexingSpec spec = new GraphIndexingSpec().setEntityName(targetName).setId(targetKey);
+                targetVertices = jsonLdToVerticesAndEdges.transformFullyQualifiedJsonLdToVerticesAndEdges(spec, target);
+            }
+        }
+        for (JsonLdVertex targetVertex : targetVertices) {
+            if(targetVertex.isEmbedded()){
+                deleteVertex(targetVertex.getEntityName(), targetVertex.getKey(), transactionOrConnection);
+            }
+        }
         deleteDocument(namingConvention.getEdgeTarget(edge), transactionOrConnection.getOrCreateDB());
     }
 
-    private JSONObject createEdgeDocument(JsonLdVertex vertex, JsonLdEdge edge, ArangoDriver arango) throws JSONException {
-        JSONObject o = new JSONObject();
-        String from = namingConvention.getId(vertex);
-        o.put("_from", from);
-        String to = namingConvention.getEdgeTarget(edge);
-        if(to!=null) {
-            o.put("_to", to);
-            createCollectionIfNotExists(namingConvention.getCollectionNameFromId(to), null, CollectionType.DOCUMENT, arango);
-            String key = namingConvention.getReferenceKey(vertex, edge);
-            o.put("_key", key);
-            if (edge.getOrderNumber() != null && edge.getOrderNumber() >= 0) {
-                o.put("orderNumber", edge.getOrderNumber());
-            }
-            for (JsonLdProperty jsonLdProperty : edge.getProperties()) {
-                o.put(jsonLdProperty.getName(), jsonLdProperty.getValue());
-            }
-            o.put(JsonLdConsts.ID, null);
-            return o;
-        }
-        else{
-            return null;
-        }
-    }
-
-
     @Override
-    protected boolean hasEdge(JsonLdVertex vertex, JsonLdEdge edge, ArangoDriver arango) throws JSONException {
+    protected boolean hasEdge(JsonLdVertex vertex, JsonLdEdge edge, ArangoDriver arango) {
         ArangoDatabase db = arango.getOrCreateDB();
         String edgeLabel = namingConvention.getEdgeLabel(edge);
         String from = namingConvention.getId(vertex);
@@ -291,79 +304,6 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
     @Override
     public void updateUnresolved(JsonLdVertex vertex, ArangoDriver arango) {
 
-    }
-
-
-    private JSONObject recreateObjectFromProperties(Set<JsonLdProperty> properties) throws JSONException {
-        JSONObject o = new JSONObject();
-        for (JsonLdProperty jsonLdProperty : properties) {
-            if (jsonLdProperty.getName() != null) {
-                if(jsonLdProperty.getValue() instanceof  JsonLdProperty){
-                    JsonLdProperty nestedProperty = (JsonLdProperty)jsonLdProperty.getValue();
-                    JSONObject o2 = new JSONObject();
-                    o2.put(nestedProperty.getName(), nestedProperty.getValue());
-                    o.put(jsonLdProperty.getName(), o2);
-                }
-                else if(jsonLdProperty.getValue() instanceof Collection){
-                    JSONArray array = new JSONArray();
-                    for (Object child : ((Collection) jsonLdProperty.getValue())) {
-                        if(child instanceof JsonLdProperty){
-                            JsonLdProperty nestedProperty = (JsonLdProperty)child;
-                            JSONObject o2 = new JSONObject();
-                            o2.put(nestedProperty.getName(), nestedProperty.getValue());
-                            array.put(o2);
-                        }
-                        else{
-                            array.put(child);
-                        }
-                    }
-                    o.put(jsonLdProperty.getName(), array);
-                }
-                else {
-                    o.put(jsonLdProperty.getName(), jsonLdProperty.getValue());
-                }
-            }
-        }
-        return o;
-    }
-
-    private String toJSONString(JsonLdVertex vertex) throws JSONException {
-        //rebuildEmbeddedDocumentFromEdges(vertex);
-        JSONObject o = recreateObjectFromProperties(vertex.getProperties());
-        o.put("_key", namingConvention.getKey(vertex));
-        if(!vertex.isEmbedded()) {
-            o.put(JsonLdConsts.ID, String.format("%s/%s", vertex.getEntityName(), namingConvention.getKey(vertex)));
-        }
-        return o.toString(4);
-    }
-
-    private void rebuildEmbeddedDocumentFromEdges(JsonLdVertex vertex) throws JSONException {
-        Map<String, List<JsonLdEdge>> groupedEdges = new HashMap<>();
-        for (JsonLdEdge jsonLdEdge : vertex.getEdges()) {
-            if (!groupedEdges.containsKey(jsonLdEdge.getName())) {
-                groupedEdges.put(jsonLdEdge.getName(), new ArrayList<>());
-            }
-            groupedEdges.get(jsonLdEdge.getName()).add(jsonLdEdge);
-        }
-        Comparator<JsonLdEdge> c = (o1, o2) -> {
-            if (o1 == null || o1.getOrderNumber() == null) {
-                return o2 == null || o2.getOrderNumber() == null ? 0 : -1;
-            } else {
-                return o2 == null || o2.getOrderNumber() == null ? 1 : o1.getOrderNumber().compareTo(o2.getOrderNumber());
-            }
-        };
-        groupedEdges.values().forEach(l -> l.sort(c));
-        for (String name : groupedEdges.keySet()) {
-            JsonLdProperty p = new JsonLdProperty();
-            p.setName(name);
-            List<JsonLdEdge> jsonLdEdges = groupedEdges.get(name);
-            List<JSONObject> nested = new ArrayList<>();
-            for (JsonLdEdge jsonLdEdge : jsonLdEdges) {
-                nested.add(recreateObjectFromProperties(jsonLdEdge.getProperties()));
-            }
-            p.setValue(nested.size() == 1 ? nested.get(0) : nested);
-            vertex.getProperties().add(p);
-        }
     }
 
     public String getTargetVertexId(JsonLdEdge edge, ArangoDriver arango) {

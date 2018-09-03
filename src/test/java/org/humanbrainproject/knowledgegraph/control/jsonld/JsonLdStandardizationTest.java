@@ -2,6 +2,7 @@ package org.humanbrainproject.knowledgegraph.control.jsonld;
 
 import com.github.jsonldjava.utils.JsonUtils;
 import org.apache.commons.io.IOUtils;
+import org.humanbrainproject.knowledgegraph.control.json.JsonTransformer;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -10,11 +11,12 @@ import java.io.IOException;
 public class JsonLdStandardizationTest {
 
     @Test
-    @Ignore("Integration test - needs an available jsonld service")
+    @Ignore("This test requires the running service to be executable.")
     public void fullyQualify() throws IOException {
         String json = IOUtils.toString(this.getClass().getResourceAsStream("/recursive_context.json"), "UTF-8");
         System.out.println(json);
         JsonLdStandardization standardization = new JsonLdStandardization();
+        standardization.jsonTransformer = new JsonTransformer();
         standardization.endpoint = "http://localhost:3000";
         Object qualified = standardization.fullyQualify(json);
         System.out.println(qualified);
