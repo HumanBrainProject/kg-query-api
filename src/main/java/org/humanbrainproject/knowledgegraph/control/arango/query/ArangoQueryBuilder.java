@@ -1,7 +1,6 @@
 package org.humanbrainproject.knowledgegraph.control.arango.query;
 
 import org.humanbrainproject.knowledgegraph.entity.specification.Specification;
-import org.springframework.boot.configurationprocessor.json.JSONException;
 
 import java.util.List;
 import java.util.Set;
@@ -84,7 +83,7 @@ public class ArangoQueryBuilder extends AbstractQueryBuilder {
 
 
     @Override
-    public ArangoQueryBuilder addRoot(String rootCollection) throws JSONException {
+    public ArangoQueryBuilder addRoot(String rootCollection) {
         sb.append(String.format("FOR %s_%s IN `%s`\n", ROOT_ALIAS, DOC_POSTFIX, rootCollection));
         addOrganizationFilter();
         return this;

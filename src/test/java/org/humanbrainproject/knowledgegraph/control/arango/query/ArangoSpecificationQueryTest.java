@@ -1,11 +1,9 @@
 package org.humanbrainproject.knowledgegraph.control.arango.query;
 
-import com.github.jsonldjava.utils.JsonUtils;
 import com.google.gson.Gson;
 import org.apache.commons.io.IOUtils;
 import org.humanbrainproject.knowledgegraph.control.arango.ArangoDriver;
 import org.humanbrainproject.knowledgegraph.control.arango.ArangoNamingConvention;
-import org.humanbrainproject.knowledgegraph.control.jsonld.JsonLdStandardization;
 import org.humanbrainproject.knowledgegraph.control.specification.SpecificationInterpreter;
 import org.humanbrainproject.knowledgegraph.entity.query.QueryParameters;
 import org.humanbrainproject.knowledgegraph.entity.specification.Specification;
@@ -15,7 +13,8 @@ import org.mockito.Mockito;
 import org.springframework.boot.configurationprocessor.json.JSONException;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 public class ArangoSpecificationQueryTest {
 
@@ -25,10 +24,9 @@ public class ArangoSpecificationQueryTest {
 
     @Before
     public void setup() throws IOException, JSONException {
-        String json = IOUtils.toString(this.getClass().getResourceAsStream("/apiSpec/sample.json"), "UTF-8");
+        String specification = IOUtils.toString(this.getClass().getResourceAsStream("/apiSpec/sample.json"), "UTF-8");
         String collectionLabels = IOUtils.toString(this.getClass().getResourceAsStream("/collectionLabels.json"), "UTF-8");
         Gson gson = new Gson();
-        String specification = JsonUtils.toString(new JsonLdStandardization().fullyQualify(json));
         this.testSpecification = new SpecificationInterpreter().readSpecification(specification);
         query = new ArangoSpecificationQuery();
         query.arangoDriver = Mockito.mock(ArangoDriver.class);

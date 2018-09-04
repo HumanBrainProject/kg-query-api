@@ -2,6 +2,7 @@ package org.humanbrainproject.knowledgegraph.control.arango.query;
 
 import com.arangodb.ArangoCursor;
 import com.arangodb.model.AqlQueryOptions;
+import org.apache.commons.text.StrSubstitutor;
 import org.humanbrainproject.knowledgegraph.control.Configuration;
 import org.humanbrainproject.knowledgegraph.control.arango.ArangoDriver;
 import org.humanbrainproject.knowledgegraph.control.arango.ArangoNamingConvention;
@@ -79,14 +80,18 @@ public class ArangoSpecificationQuery {
 
     String createQuery( AbstractQueryBuilder queryBuilder, QueryParameters parameters) throws JSONException {
         Set<String> collectionLabels = getArangoDriver(parameters).getCollectionLabels();
-        String vertexLabel = namingConvention.getVertexLabel(queryBuilder.getSpecification().rootSchema);
+        String vertexLabel = namingConvention.getVertexLabel(StrSubstitutor.replace(queryBuilder.getSpecification().rootSchema, parameters.allParameters));
         if (collectionLabels.contains(vertexLabel)) {
             queryBuilder.addRoot(vertexLabel);
             handleFields(queryBuilder.getSpecification().fields, queryBuilder, collectionLabels, true, false);
         } else {
             throw new RuntimeException(String.format("Was not able to find the vertex collection with the name %s", vertexLabel));
         }
-        return queryBuilder.build();
+        String query = queryBuilder.build();
+        if(parameters.allParameters!=null) {
+            query = StrSubstitutor.replace(query, parameters.allParameters);
+        }
+        return query;
     }
 
     private List<String> getGroupingFields(SpecField field){

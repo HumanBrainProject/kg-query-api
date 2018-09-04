@@ -1,5 +1,6 @@
 package org.humanbrainproject.knowledgegraph.boundary.query;
 
+import com.github.jsonldjava.core.JsonLdConsts;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.gson.Gson;
 import org.humanbrainproject.knowledgegraph.control.arango.ArangoDriver;
@@ -84,14 +85,15 @@ public class ArangoQuery {
 
     public QueryResult<List<Map>> queryPropertyGraphBySpecification(String specification, QueryParameters parameters) throws JSONException, IOException {
         Set<String> readableOrganizations = getReadableOrganizations(parameters.authorizationToken, parameters.organizations);
-        Object originalContext = null;
-        if (parameters.useContext) {
-            originalContext = standardization.getContext(specification);
+        Map<String, Object> context = null;
+        if (parameters.vocab!=null) {
+            context = new LinkedHashMap<>();
+            context.put(JsonLdConsts.VOCAB, parameters.vocab);
         }
         Specification spec = specInterpreter.readSpecification(JsonUtils.toString(standardization.fullyQualify(specification)));
         QueryResult<List<Map>> result = specificationQuery.queryForSpecification(spec, readableOrganizations, parameters);
-        if (originalContext != null) {
-            result.setResults(standardization.applyContext(result.getResults(), originalContext));
+        if (context != null) {
+            result.setResults(standardization.applyContext(result.getResults(), context));
         }
         return result;
     }

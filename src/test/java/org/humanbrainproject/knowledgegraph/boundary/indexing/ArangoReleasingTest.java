@@ -2,22 +2,17 @@ package org.humanbrainproject.knowledgegraph.boundary.indexing;
 
 import com.arangodb.ArangoCollection;
 import com.arangodb.ArangoDatabase;
-import org.humanbrainproject.knowledgegraph.control.arango.ArangoDriver;
+import org.humanbrainproject.knowledgegraph.TestDatabaseController;
 import org.humanbrainproject.knowledgegraph.control.arango.ArangoNamingConvention;
-import org.humanbrainproject.knowledgegraph.entity.jsonld.JsonLdVertex;
+import org.humanbrainproject.knowledgegraph.control.releasing.ReleasingController;
+import org.humanbrainproject.knowledgegraph.entity.indexing.GraphIndexingSpec;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
 
 import static org.junit.Assert.*;
 
@@ -26,15 +21,13 @@ import static org.junit.Assert.*;
 @Ignore("These tests require an arango execution environment. Make sure you have one properly configured first!")
 public class ArangoReleasingTest {
     @Autowired
-    ArangoIndexing indexation;
+    GraphIndexing indexing;
 
     @Autowired
-    @Qualifier("default-test")
-    ArangoDriver defaultDb;
+    TestDatabaseController testDatabaseController;
 
     @Autowired
-    @Qualifier("released-test")
-    ArangoDriver releasedDb;
+    ReleasingController releasingController;
 
     @Autowired
     ArangoNamingConvention namingConvention;
@@ -43,70 +36,68 @@ public class ArangoReleasingTest {
 
     ArangoDatabase releasedDatabase;
 
-    JsonLdVertex v;
-    JsonLdVertex v2;
+    GraphIndexingSpec spec;
+    GraphIndexingSpec spec2;
+    GraphIndexingSpec nestedSpec;
+    GraphIndexingSpec nestedReleaseSpec;
 
     @Before
-    public void initDB(){
-        defaultDatabase = defaultDb.getOrCreateDB();
-        releasedDatabase = releasedDb.getOrCreateDB();
-        indexation.defaultDB = defaultDb;
-        indexation.releasedDB = releasedDb;
-        indexation.clearGraph();
-        v = new JsonLdVertex().setEntityName("foo/bar/barfoo/v0.0.1").setKey("foo");
-        v2 = new JsonLdVertex().setEntityName(v.getEntityName()).setKey("foo2");
+    public void initDB() {
+        indexing.databaseController = testDatabaseController;
+        releasingController.controller = testDatabaseController;
+        indexing.clearGraph();
+        spec = new GraphIndexingSpec().setJsonOrJsonLdPayload("{\"foo\": \"bar\"}").setEntityName("foo/bar/barfoo/v0.0.1").setId("foo").setDefaultNamespace("http://test/");
+        spec2 = new GraphIndexingSpec().setJsonOrJsonLdPayload("{\"bar\": \"foo\"}").setEntityName("foo/bar/barfoo/v0.0.1").setId("bar").setDefaultNamespace("http://test/");
+        nestedSpec = new GraphIndexingSpec().setEntityName("foo/bar/barfoo/v0.0.1").setId("foobar").setJsonOrJsonLdPayload("{\"hello\": \"world\", \"nested\": {\"hi\": \"knowledgegraph\"}}").setDefaultNamespace("http://test/");
+        defaultDatabase = testDatabaseController.getDefaultDB().getOrCreateDB();
+        releasedDatabase = testDatabaseController.getReleasedDB().getOrCreateDB();
+        nestedReleaseSpec = new GraphIndexingSpec().setJsonOrJsonLdPayload("{\"@type\": \"http://hbp.eu/minds#Release\", " +
+                "\"http://hbp.eu/minds#releaseinstance\": {\"@id\": \"http://test/foo/bar/barfoo/v0.0.1/foobar\"}}").setEntityName("foo/prov/release/v0.0.1").setId("foo");
     }
 
     @Test
-    public void releaseSingleInstance() throws JSONException, IOException {
+    public void releaseSingleInstance() {
         //given
-        indexation.transactionalJsonLdInsertion(Arrays.asList(v, v2));
+        indexing.insertJsonOrJsonLd(spec);
+        indexing.insertJsonOrJsonLd(spec2);
 
         //when
         String releaseJson = "{\"@type\": \"http://hbp.eu/minds#Release\", " +
                 "\"http://hbp.eu/minds#releaseinstance\": {\"@id\": \"http://test/foo/bar/barfoo/v0.0.1/foo\"}}";
 
-        GraphIndexing.GraphIndexationSpec spec = new GraphIndexing.GraphIndexationSpec();
-        spec.setJsonOrJsonLdPayload(releaseJson).setEntityName("foo/prov/release/v0.0.1").setId("foo");
+        GraphIndexingSpec releaseSpec = new GraphIndexingSpec().setJsonOrJsonLdPayload(releaseJson).setEntityName("foo/prov/release/v0.0.1").setId("foo");
+        indexing.insertJsonOrJsonLd(releaseSpec);
 
-        indexation.updateJsonOrJsonLd(spec);
 
         //then
-        ArangoCollection collection = defaultDatabase.collection(namingConvention.getVertexLabel(v.getEntityName()));
+        ArangoCollection collection = defaultDatabase.collection(namingConvention.getVertexLabel(spec.getEntityName()));
         assertTrue(collection.exists());
-        assertTrue(collection.documentExists("foo"));
-        assertTrue(collection.documentExists("foo2"));
+        assertTrue(collection.documentExists(spec.getId()));
+        assertTrue(collection.documentExists(spec2.getId()));
         assertEquals(Long.valueOf(2), collection.count().getCount());
 
-        ArangoCollection releasedCollection = releasedDatabase.collection(namingConvention.getVertexLabel(v.getEntityName()));
-        assertTrue(releasedCollection.documentExists("foo"));
+        ArangoCollection releasedCollection = releasedDatabase.collection(namingConvention.getVertexLabel(spec.getEntityName()));
+        assertTrue(releasedCollection.documentExists(spec.getId()));
         assertEquals(Long.valueOf(1), releasedCollection.count().getCount());
     }
 
 
     @Test
-    public void releaseNestedInstance() throws JSONException, IOException {
+    public void releaseNestedInstance() {
         //given
-        String nestedJson = "{\"hello\": \"world\", \"nested\": {\"hi\": \"knowledgegraph\"}}";
-        GraphIndexing.GraphIndexationSpec spec = new GraphIndexing.GraphIndexationSpec();
-        spec.setEntityName("foo/bar/barfoo/v0.0.1").setId("foobar").setJsonOrJsonLdPayload(nestedJson).setDefaultNamespace("http://test/");
-        indexation.insertJsonOrJsonLd(spec);
+        indexing.insertJsonOrJsonLd(nestedSpec);
 
         //when
-        String releaseJson = "{\"@type\": \"http://hbp.eu/minds#Release\", " +
-                "\"http://hbp.eu/minds#releaseinstance\": {\"@id\": \"http://test/foo/bar/barfoo/v0.0.1/foobar\"}}";
-        spec.setJsonOrJsonLdPayload(releaseJson).setEntityName("foo/prov/release/v0.0.1").setId("foo");
-
-        indexation.updateJsonOrJsonLd(spec);
+        indexing.insertJsonOrJsonLd(nestedReleaseSpec);
 
         //then
-        ArangoCollection collection = defaultDatabase.collection(namingConvention.getVertexLabel(v.getEntityName()));
+        ArangoCollection collection = defaultDatabase.collection(namingConvention.getVertexLabel(nestedSpec.getEntityName()));
         assertTrue(collection.exists());
-        assertTrue(collection.documentExists("foobar"));
+        assertTrue(collection.documentExists(nestedSpec.getId()));
         assertEquals(Long.valueOf(1), collection.count().getCount());
 
-        ArangoCollection releasedCollection = releasedDatabase.collection(namingConvention.getVertexLabel(v.getEntityName()));
-        assertTrue(releasedCollection.documentExists("foobar"));
+        ArangoCollection releasedCollection = releasedDatabase.collection(namingConvention.getVertexLabel(nestedSpec.getEntityName()));
+        assertTrue(releasedCollection.documentExists(nestedSpec.getId()));
         assertEquals(Long.valueOf(1), releasedDatabase.collection("rel-test-nested").count().getCount());
         assertTrue(releasedDatabase.collection("test-nested").documentExists("test-nested-foobar--1"));
         assertEquals(Long.valueOf(1), releasedCollection.count().getCount());
@@ -114,76 +105,73 @@ public class ArangoReleasingTest {
 
 
     @Test
-    public void releaseByLinkChange() throws JSONException, IOException {
+    public void releaseByLinkChange() {
         //given
         releaseNestedInstance();
-        indexation.transactionalJsonLdInsertion(Collections.singletonList(v));
+        indexing.insertJsonOrJsonLd(spec);
 
         //when
-        String releaseJson = "{\"@type\": \"http://hbp.eu/minds#Release\", " +
-                "\"http://hbp.eu/minds#releaseinstance\": [{\"@id\": \"http://test/foo/bar/barfoo/v0.0.1/foobar\"}, {\"@id\": \"http://test/foo/bar/barfoo/v0.0.1/foo\"}]}";
-        GraphIndexing.GraphIndexationSpec spec = new GraphIndexing.GraphIndexationSpec();
-        spec.setJsonOrJsonLdPayload(releaseJson).setEntityName("foo/prov/release/v0.0.1").setId("foo");
-        indexation.updateJsonOrJsonLd(spec);
+        nestedReleaseSpec.setJsonOrJsonLdPayload("{\"@type\": \"http://hbp.eu/minds#Release\", " +
+                "\"http://hbp.eu/minds#releaseinstance\": [{\"@id\": \"http://test/foo/bar/barfoo/v0.0.1/foobar\"}, {\"@id\": \"http://test/foo/bar/barfoo/v0.0.1/foo\"}]}");
+
+        indexing.updateJsonOrJsonLd(nestedReleaseSpec);
 
         //then
-        ArangoCollection collection = defaultDatabase.collection(namingConvention.getVertexLabel(v.getEntityName()));
+        ArangoCollection collection = defaultDatabase.collection(namingConvention.getVertexLabel(spec.getEntityName()));
         assertTrue(collection.exists());
-        assertTrue(collection.documentExists("foobar"));
-        assertTrue(collection.documentExists("foo"));
+        assertTrue(collection.documentExists(spec.getId()));
+        assertTrue(collection.documentExists(nestedSpec.getId()));
         assertEquals(Long.valueOf(2), collection.count().getCount());
 
-        ArangoCollection releasedCollection = releasedDatabase.collection(namingConvention.getVertexLabel(v.getEntityName()));
-        assertTrue(releasedCollection.documentExists("foobar"));
-        assertTrue(releasedCollection.documentExists("foo"));
+        ArangoCollection releasedCollection = releasedDatabase.collection(namingConvention.getVertexLabel(spec.getEntityName()));
+        assertTrue(releasedCollection.documentExists(spec.getId()));
+        assertTrue(releasedCollection.documentExists(nestedSpec.getId()));
         assertEquals(Long.valueOf(1), releasedDatabase.collection("rel-test-nested").count().getCount());
         assertTrue(releasedDatabase.collection("test-nested").documentExists("test-nested-foobar--1"));
         assertEquals(Long.valueOf(2), releasedCollection.count().getCount());
     }
 
     @Test
-    public void unreleaseInstanceByLinkChange() throws JSONException, IOException {
+    public void unreleaseInstanceByLinkChange() {
         //given
         releaseByLinkChange();
 
         //when
         String releaseJson = "{\"@type\": \"http://hbp.eu/minds#Release\", " +
                 "\"http://hbp.eu/minds#releaseinstance\": [{\"@id\": \"http://test/foo/bar/barfoo/v0.0.1/foo\"}]}";
-        GraphIndexing.GraphIndexationSpec spec = new GraphIndexing.GraphIndexationSpec();
-        spec.setJsonOrJsonLdPayload(releaseJson).setEntityName("foo/prov/release/v0.0.1").setId("foo");
-        indexation.updateJsonOrJsonLd(spec);
+        GraphIndexingSpec releaseSpec = new GraphIndexingSpec().setJsonOrJsonLdPayload(releaseJson).setEntityName("foo/prov/release/v0.0.1").setId("foo");
+        indexing.updateJsonOrJsonLd(releaseSpec);
 
         //then
-        ArangoCollection collection = defaultDatabase.collection(namingConvention.getVertexLabel(v.getEntityName()));
+        ArangoCollection collection = defaultDatabase.collection(namingConvention.getVertexLabel(nestedSpec.getEntityName()));
         assertTrue(collection.exists());
-        assertTrue(collection.documentExists("foobar"));
-        assertTrue(collection.documentExists("foo"));
+        assertTrue(collection.documentExists(spec.getId()));
+        assertTrue(collection.documentExists(nestedSpec.getId()));
         assertEquals(Long.valueOf(2), collection.count().getCount());
 
-        ArangoCollection releasedCollection = releasedDatabase.collection(namingConvention.getVertexLabel(v.getEntityName()));
-        assertFalse(releasedCollection.documentExists("foobar"));
-        assertTrue(releasedCollection.documentExists("foo"));
+        ArangoCollection releasedCollection = releasedDatabase.collection(namingConvention.getVertexLabel(nestedSpec.getEntityName()));
+        assertTrue(releasedCollection.documentExists(spec.getId()));
+        assertFalse(releasedCollection.documentExists(nestedSpec.getId()));
         assertEquals(Long.valueOf(0), (releasedDatabase.collection("rel-test-nested").count().getCount()));
         assertEquals(Long.valueOf(0), (releasedDatabase.collection("test-nested").count().getCount()));
         assertEquals(Long.valueOf(1), releasedCollection.count().getCount());
     }
 
-
     @Test
-    public void unreleaseNestedInstanceByDeletion() throws JSONException, IOException {
+    public void unreleaseNestedInstanceByReleaseDeletion() {
         //given
         releaseNestedInstance();
 
         //when
-        indexation.delete("foo/prov/release/v0.0.1", "foo", null);
+        indexing.delete(nestedReleaseSpec);
 
         //then
-        ArangoCollection collection = defaultDatabase.collection(namingConvention.getVertexLabel(v.getEntityName()));
+        ArangoCollection collection = defaultDatabase.collection(namingConvention.getVertexLabel(nestedSpec.getEntityName()));
         assertTrue(collection.exists());
-        assertTrue(collection.documentExists("foobar"));
+        assertTrue(collection.documentExists(nestedSpec.getId()));
         assertEquals(Long.valueOf(1), collection.count().getCount());
 
-        ArangoCollection releasedCollection = releasedDatabase.collection(namingConvention.getVertexLabel(v.getEntityName()));
+        ArangoCollection releasedCollection = releasedDatabase.collection(namingConvention.getVertexLabel(nestedSpec.getEntityName()));
         assertEquals(Long.valueOf(0), releasedCollection.count().getCount());
         assertEquals(Long.valueOf(0), releasedDatabase.collection("rel-test-nested").count().getCount());
         assertEquals(Long.valueOf(0), releasedDatabase.collection("test-nested").count().getCount());

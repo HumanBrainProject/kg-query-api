@@ -27,21 +27,34 @@ public class ArangoNamingConventionTest {
 
     @Test
     public void getIdFromReference(){
-        String outcome = namingConvention.getIdFromReference("http://nexus.humanbrainproject.org/v0/schema/org/domain/schema/v0.0.4/id/dfs", false);
+        String outcome = namingConvention.getIdFromReference("http://nexus.humanbrainproject.org/v0/data/org/domain/schema/v0.0.4/id/dfs", false);
         assertEquals("org-domain-schema-v0_0_4/id-dfs", outcome);
+    }
+
+    @Test
+    public void getIdFromEmbeddedReference(){
+        String outcome = namingConvention.getIdFromReference("www_w3_org-ns-prov-qualifiedAssociation/hashed_8b37ce04a01732c7669adaaa0589a480", false);
+        assertEquals("www_w3_org-ns-prov-qualifiedAssociation/hashed_8b37ce04a01732c7669adaaa0589a480", outcome);
     }
 
 
     @Test
     public void getIdFromExternalReference(){
         String outcome = namingConvention.getIdFromReference("http://foo.com/somereference", false);
-        assertEquals("http://foo.com/somereference", outcome);
+        assertNull(outcome);
     }
+
+    @Test
+    public void getIdFromReferenceWithoutId(){
+        String outcome = namingConvention.getIdFromReference("https://nexus-dev.humanbrainproject.org/v0/schemas/neuralactivity/experiment/patchedcell/v0.1.0", false);
+        assertNull(outcome);
+    }
+
 
     @Test
     public void getIdFromEmbeddedInstance(){
         String outcome = namingConvention.getIdFromReference("http://www.w3.org/ns/prov#qualifiedAssociation@minds/ethics/approval/v0.0.4/8542d679-9e15-471d-97e2-cbe915163a18", true);
-        assertEquals("www_w3_org-ns-prov-qualifiedAssociation/8b37ce04a01732c7669adaaa0589a480", outcome);
+        assertEquals("www_w3_org-ns-prov-qualifiedAssociation/hashed_8b37ce04a01732c7669adaaa0589a480", outcome);
     }
 
 

@@ -43,8 +43,10 @@ public class ArangoNamingConvention {
             }
             if(collectionName!=null && id!=null)    {
                 return createId(collectionName, id);
-            } else {
+            } else if(!reference.startsWith("http")){
                 return reference;
+            } else {
+                return null;
             }
         }
         return null;
@@ -71,7 +73,7 @@ public class ArangoNamingConvention {
     }
 
     private String reduceStringToMaxSizeByHashing(String string) {
-        return string == null || string.length() <= MAX_CHARACTERS ? string : DigestUtils.md5DigestAsHex(string.getBytes());
+        return string == null || string.length() <= MAX_CHARACTERS ? string : String.format("hashed_%s", DigestUtils.md5DigestAsHex(string.getBytes()));
     }
 
     public String getEdgeLabel(String edgeLabel) {

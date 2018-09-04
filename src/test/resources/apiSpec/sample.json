@@ -1,243 +1,345 @@
 {
-  "@context": {
-    "@vocab": "http://schema.hbp.eu/graph_query/",
-    "schema": "http://schema.org/",
-    "minds": "http://hbp.eu/minds#",
-    "this": "http://schema.hbp.eu/dataset/search/",
-    "searchui": "http://schema.hbp.eu/search_ui/",
-    "nexus": "https://nexus-dev.humanbrainproject.org/vocabs/nexus/core/terms/v0.1.0/",
-    "nexus_instance": "https://nexus-dev.humanbrainproject.org/v0/schemas/",
-    "fieldname": {
-      "@id": "fieldname",
-      "@type": "@id"
-    },
-    "relative_path": {
-      "@id": "relative_path",
-      "@type": "@id"
-    },
-    "root_schema": {
-      "@id": "root_schema",
-      "@type": "@id"
-    },
-    "grouped_instances": {
-      "@id": "grouped_instances",
-      "@type": "@id"
-    }
-  },
-  "@type": "DataTransformation",
-  "schema:name": "Sample",
-  "icon": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 512 512\" ><path fill=\"grey\" d=\"M177.38 206.64L39.03 344.97A24.01 24.01 0 0 0 32 361.94V424L0 480l32 32 56-32h62.06c6.36 0 12.47-2.53 16.97-7.03l138.35-138.33-128-128zm225.552 30.47l16.952 16.95c9.37 9.37 9.37 24.57 0 33.94l-40.973 40.97c-9.292 9.312-24.506 9.434-33.94 0L183.028 167.03c-9.37-9.37-9.37-24.57 0-33.94L224 92.12c9.289-9.309 24.502-9.438 33.94 0l16.992 16.99 82.606-82.601c35.19-35.19 92.5-35.5 128 0 40.49 48.08 29.66 98.34 0 128l-82.606 82.601z\"></path></svg>",
-  "root_schema": "nexus_instance:minds/experiment/sample/v0.0.4",
-  "fields": [
+  "@type": "http://schema.hbp.eu/graph_query/DataTransformation",
+  "http://schema.hbp.eu/graph_query/fields": [
     {
-      "relative_path": "schema:identifier",
-      "required": true,
-      "searchui:visible": false
+      "http://schema.hbp.eu/graph_query/relative_path": {
+        "@id": "http://schema.org/identifier"
+      },
+      "http://schema.hbp.eu/graph_query/required": true,
+      "http://schema.hbp.eu/search_ui/visible": false
     },
     {
-      "fieldname": "this:title",
-      "relative_path": "schema:name",
-      "label": "Name",
-      "required": true,
-      "searchui:boost": 20,
-      "searchui:sort": true
+      "http://schema.hbp.eu/graph_query/fieldname": {
+        "@id": "http://schema.hbp.eu/dataset/search/title"
+      },
+      "http://schema.hbp.eu/graph_query/label": "Name",
+      "http://schema.hbp.eu/graph_query/relative_path": {
+        "@id": "http://schema.org/name"
+      },
+      "http://schema.hbp.eu/graph_query/required": true,
+      "http://schema.hbp.eu/search_ui/boost": 20,
+      "http://schema.hbp.eu/search_ui/sort": true
     },
     {
-      "fieldname": "this:weightPreFixation",
-      "relative_path": "minds:weightPreFixation",
-      "label": "Weight pre fixation"
+      "http://schema.hbp.eu/graph_query/fieldname": {
+        "@id": "http://schema.hbp.eu/dataset/search/weightPreFixation"
+      },
+      "http://schema.hbp.eu/graph_query/label": "Weight pre fixation",
+      "http://schema.hbp.eu/graph_query/relative_path": {
+        "@id": "http://hbp.eu/minds#weightPreFixation"
+      }
     },
     {
-      "fieldname": "this:parcellationAtlas",
-      "relative_path": [
-        "minds:parcellationAtlas",
-        "schema:name"
-      ],
-      "label": "Brain atlas"
-    },
-    {
-      "fieldname": "this:parcellationRegion",
-      "relative_path": [
-        "minds:parcellationRegion",
-        "schema:name"
-      ],
-      "label": "Region"
-    },
-    {
-      "fieldname": "this:brainViewer",
-      "relative_path": [{
-        "@id": "minds:reference",
-        "reverse": true
-        },
-        "minds:link"
-      ],
-      "label": "Viewer"
-    },
-    {
-      "fieldname": "this:methods",
-      "relative_path": [
-        "minds:methods",
-        "schema:name"
-      ],
-      "label": "Methods"
-    },
-    {
-      "fieldname": "this:files",
-      "label": "Files",
-      "relative_path": [
+      "http://schema.hbp.eu/graph_query/fieldname": {
+        "@id": "http://schema.hbp.eu/dataset/search/parcellationAtlas"
+      },
+      "http://schema.hbp.eu/graph_query/label": "Brain atlas",
+      "http://schema.hbp.eu/graph_query/relative_path": [
         {
-          "@id": "minds:associated_entity",
-          "reverse": true
-        },
-        "minds:file"
-      ],
-      "searchui:aggregate": "count",
-      "searchui:detail_label": "Terms of use",
-      "fields": [
-        {
-          "fieldname": "this:name",
-          "relative_path": "schema:name",
-          "required": true,
-          "searchui:visible": false
+          "@id": "http://hbp.eu/minds#parcellationAtlas"
         },
         {
-          "fieldname": "this:absolutePath",
-          "relative_path": "minds:absolute_path",
-          "required": true,
-          "searchui:visible": false
+          "@id": "http://schema.org/name"
         }
       ]
     },
     {
-      "fieldname": "this:subjects",
-      "relative_path": {
-        "@id": "minds:samples",
-        "reverse": true
+      "http://schema.hbp.eu/graph_query/fieldname": {
+        "@id": "http://schema.hbp.eu/dataset/search/parcellationRegion"
       },
-      "label": "Subject",
-      "searchui:overview": true,
-      "searchui:hint": "Experimental subject that this sample was obtained from.",
-      "fields": [
+      "http://schema.hbp.eu/graph_query/label": "Region",
+      "http://schema.hbp.eu/graph_query/relative_path": [
         {
-          "fieldname": "this:name",
-          "relative_path": "schema:name",
-          "label": "Name"
+          "@id": "http://hbp.eu/minds#parcellationRegion"
         },
         {
-          "fieldname": "this:uuid",
-          "relative_path": "nexus:uuid",
-          "label": "Species",
-          "searchui:type": "text",
-          "searchui:facet": "list",
-          "searchui:overview": true
+          "@id": "http://schema.org/name"
+        }
+      ]
+    },
+    {
+      "http://schema.hbp.eu/graph_query/fieldname": {
+        "@id": "http://schema.hbp.eu/dataset/search/brainViewer"
+      },
+      "http://schema.hbp.eu/graph_query/label": "Viewer",
+      "http://schema.hbp.eu/graph_query/relative_path": [
+        {
+          "@id": "http://hbp.eu/minds#reference",
+          "http://schema.hbp.eu/graph_query/reverse": true
         },
         {
-          "fieldname": "this:identifier",
-          "relative_path": "schema:identifier",
-          "searchui:visible": false
+          "@id": "http://hbp.eu/minds#link"
+        }
+      ]
+    },
+    {
+      "http://schema.hbp.eu/graph_query/fieldname": {
+        "@id": "http://schema.hbp.eu/dataset/search/methods"
+      },
+      "http://schema.hbp.eu/graph_query/label": "Methods",
+      "http://schema.hbp.eu/graph_query/relative_path": [
+        {
+          "@id": "http://hbp.eu/minds#methods"
         },
         {
-          "fieldname": "this:age",
-          "relative_path": "minds:age",
-          "label": "Age",
+          "@id": "http://schema.org/name"
+        }
+      ]
+    },
+    {
+      "http://schema.hbp.eu/graph_query/fieldname": {
+        "@id": "http://schema.hbp.eu/dataset/search/files"
+      },
+      "http://schema.hbp.eu/graph_query/fields": [
+        {
+          "http://schema.hbp.eu/graph_query/fieldname": {
+            "@id": "http://schema.hbp.eu/dataset/search/name"
+          },
+          "http://schema.hbp.eu/graph_query/relative_path": {
+            "@id": "http://schema.org/name"
+          },
+          "http://schema.hbp.eu/graph_query/required": true,
+          "http://schema.hbp.eu/search_ui/visible": false
+        },
+        {
+          "http://schema.hbp.eu/graph_query/fieldname": {
+            "@id": "http://schema.hbp.eu/dataset/search/absolutePath"
+          },
+          "http://schema.hbp.eu/graph_query/relative_path": {
+            "@id": "http://hbp.eu/minds#absolute_path"
+          },
+          "http://schema.hbp.eu/graph_query/required": true,
+          "http://schema.hbp.eu/search_ui/visible": false
+        }
+      ],
+      "http://schema.hbp.eu/graph_query/label": "Files",
+      "http://schema.hbp.eu/graph_query/relative_path": [
+        {
+          "@id": "http://hbp.eu/minds#associated_entity",
+          "http://schema.hbp.eu/graph_query/reverse": true
+        },
+        {
+          "@id": "http://hbp.eu/minds#file"
+        }
+      ],
+      "http://schema.hbp.eu/search_ui/aggregate": "count",
+      "http://schema.hbp.eu/search_ui/detail_label": "Terms of use"
+    },
+    {
+      "http://schema.hbp.eu/graph_query/fieldname": {
+        "@id": "http://schema.hbp.eu/dataset/search/subjects"
+      },
+      "http://schema.hbp.eu/graph_query/fields": [
+        {
+          "http://schema.hbp.eu/graph_query/fieldname": {
+            "@id": "http://schema.hbp.eu/dataset/search/name"
+          },
+          "http://schema.hbp.eu/graph_query/label": "Name",
+          "http://schema.hbp.eu/graph_query/relative_path": {
+            "@id": "http://schema.org/name"
+          }
+        },
+        {
+          "http://schema.hbp.eu/graph_query/fieldname": {
+            "@id": "http://schema.hbp.eu/dataset/search/uuid"
+          },
+          "http://schema.hbp.eu/graph_query/label": "Species",
+          "http://schema.hbp.eu/graph_query/relative_path": {
+            "@id": "https://nexus-dev.humanbrainproject.org/vocabs/nexus/core/terms/v0.1.0/uuid"
+          },
+          "http://schema.hbp.eu/search_ui/facet": "list",
+          "http://schema.hbp.eu/search_ui/overview": true,
+          "http://schema.hbp.eu/search_ui/type": "text"
+        },
+        {
+          "http://schema.hbp.eu/graph_query/fieldname": {
+            "@id": "http://schema.hbp.eu/dataset/search/identifier"
+          },
+          "http://schema.hbp.eu/graph_query/relative_path": {
+            "@id": "http://schema.org/identifier"
+          },
+          "http://schema.hbp.eu/search_ui/visible": false
+        },
+        {
+          "http://schema.hbp.eu/graph_query/fieldname": {
+            "@id": "http://schema.hbp.eu/dataset/search/age"
+          },
+          "http://schema.hbp.eu/graph_query/label": "Age",
+          "http://schema.hbp.eu/graph_query/relative_path": {
+            "@id": "http://hbp.eu/minds#age"
+          },
           "search:overview": true
         },
         {
-          "fieldname": "this:sex",
-          "relative_path": ["minds:sex", "schema:name"],
-          "label": "Sex",
+          "http://schema.hbp.eu/graph_query/fieldname": {
+            "@id": "http://schema.hbp.eu/dataset/search/sex"
+          },
+          "http://schema.hbp.eu/graph_query/label": "Sex",
+          "http://schema.hbp.eu/graph_query/relative_path": [
+            {
+              "@id": "http://hbp.eu/minds#sex"
+            },
+            {
+              "@id": "http://schema.org/name"
+            }
+          ],
           "search:overview": true
         },
         {
-          "fieldname": "this:weight",
-          "relative_path": "minds:weight",
-          "label": "Weight"
+          "http://schema.hbp.eu/graph_query/fieldname": {
+            "@id": "http://schema.hbp.eu/dataset/search/weight"
+          },
+          "http://schema.hbp.eu/graph_query/label": "Weight",
+          "http://schema.hbp.eu/graph_query/relative_path": {
+            "@id": "http://hbp.eu/minds#weight"
+          }
         },
         {
-          "fieldname": "this:strain",
-          "relative_path": "minds:strains",
-          "label": "Strain"
+          "http://schema.hbp.eu/graph_query/fieldname": {
+            "@id": "http://schema.hbp.eu/dataset/search/strain"
+          },
+          "http://schema.hbp.eu/graph_query/label": "Strain",
+          "http://schema.hbp.eu/graph_query/relative_path": {
+            "@id": "http://hbp.eu/minds#strains"
+          }
         },
         {
-          "fieldname": "this:genotype",
-          "relative_path": "minds:genotype",
-          "label": "Genotype"
+          "http://schema.hbp.eu/graph_query/fieldname": {
+            "@id": "http://schema.hbp.eu/dataset/search/genotype"
+          },
+          "http://schema.hbp.eu/graph_query/label": "Genotype",
+          "http://schema.hbp.eu/graph_query/relative_path": {
+            "@id": "http://hbp.eu/minds#genotype"
+          }
         },
         {
-          "fieldname": "this:species",
-          "relative_path": "minds:species",
-          "label": "Species",
-          "searchui:type": "text",
-          "searchui:facet": "list",
-          "searchui:facet_order": "bycount",
-          "searchui:overview": true,
-          "fields": [
+          "http://schema.hbp.eu/graph_query/fieldname": {
+            "@id": "http://schema.hbp.eu/dataset/search/species"
+          },
+          "http://schema.hbp.eu/graph_query/fields": [
             {
-              "fieldname": "this:name",
-              "relative_path": "schema:name",
-              "searchui:visible": false
+              "http://schema.hbp.eu/graph_query/fieldname": {
+                "@id": "http://schema.hbp.eu/dataset/search/name"
+              },
+              "http://schema.hbp.eu/graph_query/relative_path": {
+                "@id": "http://schema.org/name"
+              },
+              "http://schema.hbp.eu/search_ui/visible": false
             },
             {
-              "fieldname": "this:uuid",
-              "relative_path": "nexus:uuid",
-              "searchui:visible": false
+              "http://schema.hbp.eu/graph_query/fieldname": {
+                "@id": "http://schema.hbp.eu/dataset/search/uuid"
+              },
+              "http://schema.hbp.eu/graph_query/relative_path": {
+                "@id": "https://nexus-dev.humanbrainproject.org/vocabs/nexus/core/terms/v0.1.0/uuid"
+              },
+              "http://schema.hbp.eu/search_ui/visible": false
             },
             {
-              "fieldname": "this:identifier",
-              "relative_path": "schema:identifier",
-              "searchui:visible": false
+              "http://schema.hbp.eu/graph_query/fieldname": {
+                "@id": "http://schema.hbp.eu/dataset/search/identifier"
+              },
+              "http://schema.hbp.eu/graph_query/relative_path": {
+                "@id": "http://schema.org/identifier"
+              },
+              "http://schema.hbp.eu/search_ui/visible": false
+            }
+          ],
+          "http://schema.hbp.eu/graph_query/label": "Species",
+          "http://schema.hbp.eu/graph_query/relative_path": {
+            "@id": "http://hbp.eu/minds#species"
+          },
+          "http://schema.hbp.eu/search_ui/facet": "list",
+          "http://schema.hbp.eu/search_ui/facet_order": "bycount",
+          "http://schema.hbp.eu/search_ui/overview": true,
+          "http://schema.hbp.eu/search_ui/type": "text"
+        }
+      ],
+      "http://schema.hbp.eu/graph_query/label": "Subject",
+      "http://schema.hbp.eu/graph_query/relative_path": {
+        "@id": "http://hbp.eu/minds#samples",
+        "http://schema.hbp.eu/graph_query/reverse": true
+      },
+      "http://schema.hbp.eu/search_ui/hint": "Experimental subject that this sample was obtained from.",
+      "http://schema.hbp.eu/search_ui/overview": true
+    },
+    {
+      "http://schema.hbp.eu/graph_query/fieldname": {
+        "@id": "http://schema.hbp.eu/dataset/search/datasets"
+      },
+      "http://schema.hbp.eu/graph_query/fields": [
+        {
+          "http://schema.hbp.eu/graph_query/fieldname": {
+            "@id": "http://schema.hbp.eu/dataset/search/name"
+          },
+          "http://schema.hbp.eu/graph_query/label": "",
+          "http://schema.hbp.eu/graph_query/relative_path": {
+            "@id": "http://schema.org/name"
+          },
+          "http://schema.hbp.eu/search_ui/type": "text"
+        },
+        {
+          "http://schema.hbp.eu/graph_query/fieldname": {
+            "@id": "http://schema.hbp.eu/dataset/search/uuid"
+          },
+          "http://schema.hbp.eu/graph_query/relative_path": {
+            "@id": "https://nexus-dev.humanbrainproject.org/vocabs/nexus/core/terms/v0.1.0/uuid"
+          },
+          "http://schema.hbp.eu/search_ui/visible": false
+        },
+        {
+          "http://schema.hbp.eu/graph_query/fieldname": {
+            "@id": "http://schema.hbp.eu/dataset/search/identifier"
+          },
+          "http://schema.hbp.eu/graph_query/relative_path": {
+            "@id": "http://schema.org/identifier"
+          },
+          "http://schema.hbp.eu/search_ui/visible": false
+        },
+        {
+          "http://schema.hbp.eu/graph_query/fieldname": {
+            "@id": "http://schema.hbp.eu/dataset/search/componentName"
+          },
+          "http://schema.hbp.eu/graph_query/group_by": true,
+          "http://schema.hbp.eu/graph_query/label": "",
+          "http://schema.hbp.eu/graph_query/relative_path": [
+            {
+              "@id": "http://hbp.eu/minds#component"
+            },
+            {
+              "@id": "http://schema.org/name"
             }
           ]
         }
-      ]
-    },
-    {
-      "fieldname": "this:datasets",
-      "required": true,
-      "label": "Datasets",
-      "relative_path": [
+      ],
+      "http://schema.hbp.eu/graph_query/grouped_instances": {
+        "@id": "http://schema.hbp.eu/dataset/search/instances"
+      },
+      "http://schema.hbp.eu/graph_query/label": "Datasets",
+      "http://schema.hbp.eu/graph_query/relative_path": [
         {
-          "@id": "minds:samples",
-          "reverse": true
+          "@id": "http://hbp.eu/minds#samples",
+          "http://schema.hbp.eu/graph_query/reverse": true
         },
         {
-          "@id": "minds:subjects",
-          "reverse": true
+          "@id": "http://hbp.eu/minds#subjects",
+          "http://schema.hbp.eu/graph_query/reverse": true
         },
         {
-          "@id": "minds:specimen_group",
-          "reverse": true
+          "@id": "http://hbp.eu/minds#specimen_group",
+          "http://schema.hbp.eu/graph_query/reverse": true
         }
       ],
-      "grouped_instances": "this:instances",
-      "fields":[
-        {
-          "fieldname": "this:name",
-          "relative_path": "schema:name",
-          "label": "",
-          "searchui:type": "text"
-        },
-        {
-          "fieldname": "this:uuid",
-          "relative_path": "nexus:uuid",
-          "searchui:visible": false
-        },
-        {
-          "fieldname": "this:identifier",
-          "relative_path": "schema:identifier",
-          "searchui:visible": false
-        },
-        {
-          "fieldname": "this:componentName",
-          "relative_path": ["minds:component", "schema:name"],
-          "group_by": true,
-          "label": ""
-        }
-      ],
-      "searchui:hint": "List of datasets in which the sample was used to produce data.",
-      "searchui:type": "text",
-      "searchui:facet": "exists",
-      "searchui:facet_order": "bycount"
+      "http://schema.hbp.eu/graph_query/required": true,
+      "http://schema.hbp.eu/search_ui/facet": "exists",
+      "http://schema.hbp.eu/search_ui/facet_order": "bycount",
+      "http://schema.hbp.eu/search_ui/hint": "List of datasets in which the sample was used to produce data.",
+      "http://schema.hbp.eu/search_ui/type": "text"
     }
-  ]
+  ],
+  "http://schema.hbp.eu/graph_query/icon": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 512 512\" ><path fill=\"grey\" d=\"M177.38 206.64L39.03 344.97A24.01 24.01 0 0 0 32 361.94V424L0 480l32 32 56-32h62.06c6.36 0 12.47-2.53 16.97-7.03l138.35-138.33-128-128zm225.552 30.47l16.952 16.95c9.37 9.37 9.37 24.57 0 33.94l-40.973 40.97c-9.292 9.312-24.506 9.434-33.94 0L183.028 167.03c-9.37-9.37-9.37-24.57 0-33.94L224 92.12c9.289-9.309 24.502-9.438 33.94 0l16.992 16.99 82.606-82.601c35.19-35.19 92.5-35.5 128 0 40.49 48.08 29.66 98.34 0 128l-82.606 82.601z\"></path></svg>",
+  "http://schema.hbp.eu/graph_query/root_schema": {
+    "@id": "https://nexus-dev.humanbrainproject.org/v0/schemas/minds/experiment/sample/v0.0.4"
+  },
+  "http://schema.org/name": "Sample"
 }
