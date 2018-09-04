@@ -51,13 +51,30 @@ public class JsonTransformerTest {
         property.setName("foo");
         Set<JsonLdProperty> properties = new LinkedHashSet<>();
         JsonLdProperty property2  = new JsonLdProperty();
-        property2.setName("bar");
+        property2.setName("bar2");
         property2.setValue("foobar");
         properties.add(property2);
+        JsonLdProperty property3  = new JsonLdProperty();
+        property3.setName("bar3");
+        property3.setValue("foobar");
+        properties.add(property3);
+        JsonLdProperty property4  = new JsonLdProperty();
+        property4.setName("bar4");
+        property4.setValue("foobar");
+        properties.add(property4);
+        JsonLdProperty property5  = new JsonLdProperty();
+        property5.setName("bar5");
+        property5.setValue("foobar");
+        properties.add(property5);
+        JsonLdProperty property6  = new JsonLdProperty();
+        property6.setName("bar6");
+        property6.setValue("foobar");
+        properties.add(property6);
+
         property.setValue(properties);
         JsonTransformer jsonTransformer = new JsonTransformer();
         Object result = jsonTransformer.resolveProperty(property);
-        Assert.assertEquals("{\"foo\":[{\"bar\":\"foobar\"}]}", result.toString());
+        Assert.assertEquals("{\"foo\":[{\"bar2\":\"foobar\"},{\"bar3\":\"foobar\"},{\"bar4\":\"foobar\"},{\"bar5\":\"foobar\"},{\"bar6\":\"foobar\"}]}", result.toString());
     }
 
 
