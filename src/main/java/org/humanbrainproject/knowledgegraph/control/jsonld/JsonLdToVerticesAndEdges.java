@@ -89,7 +89,7 @@ public class JsonLdToVerticesAndEdges {
             for (Object i : list) {
                 createVertex(key, i, parent, vertexCollection, -1, key, id, permissionGroup, revision);
             }
-        } else {
+        } else if (data!=null){
             //It's a leaf node - add it as a property
             parent.getProperties().add(createJsonLdProperty(key, data));
         }
