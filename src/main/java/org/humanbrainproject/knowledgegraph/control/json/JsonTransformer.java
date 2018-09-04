@@ -30,31 +30,36 @@ public class JsonTransformer {
         return gson.fromJson(json, Map.class);
     }
 
-    private JSONObject recreateObjectFromProperties(Set<JsonLdProperty> properties) throws JSONException {
+    Object resolveProperty(Object property) throws JSONException {
+        if(property instanceof JsonLdProperty){
+            JsonLdProperty jsonld = (JsonLdProperty)property;
+            JSONObject result = new JSONObject();
+            if(jsonld.getName()!=null && jsonld.getValue()!=null) {
+                result.put(jsonld.getName(), resolveProperty(jsonld.getValue()));
+            }
+            return result;
+        }
+        else if(property instanceof Collection){
+            JSONArray array = new JSONArray();
+            for (Object o : ((Collection) property)) {
+                Object result = resolveProperty(o);
+                if(result!=null){
+                    array.put(result);
+                }
+            }
+            return array;
+        }
+        else {
+            return property;
+        }
+    }
+
+
+    JSONObject recreateObjectFromProperties(Set<JsonLdProperty> properties) throws JSONException {
         JSONObject o = new JSONObject();
         for (JsonLdProperty jsonLdProperty : properties) {
             if (jsonLdProperty.getName() != null) {
-                if (jsonLdProperty.getValue() instanceof JsonLdProperty) {
-                    JsonLdProperty nestedProperty = (JsonLdProperty) jsonLdProperty.getValue();
-                    JSONObject o2 = new JSONObject();
-                    o2.put(nestedProperty.getName(), nestedProperty.getValue());
-                    o.put(jsonLdProperty.getName(), o2);
-                } else if (jsonLdProperty.getValue() instanceof Collection) {
-                    JSONArray array = new JSONArray();
-                    for (Object child : ((Collection) jsonLdProperty.getValue())) {
-                        if (child instanceof JsonLdProperty) {
-                            JsonLdProperty nestedProperty = (JsonLdProperty) child;
-                            JSONObject o2 = new JSONObject();
-                            o2.put(nestedProperty.getName(), nestedProperty.getValue());
-                            array.put(o2);
-                        } else {
-                            array.put(child);
-                        }
-                    }
-                    o.put(jsonLdProperty.getName(), array);
-                } else {
-                    o.put(jsonLdProperty.getName(), jsonLdProperty.getValue());
-                }
+                o.put(jsonLdProperty.getName(), resolveProperty(jsonLdProperty.getValue()));
             }
         }
         return o;

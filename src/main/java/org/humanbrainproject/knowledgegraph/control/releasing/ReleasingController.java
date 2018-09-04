@@ -67,11 +67,13 @@ public class ReleasingController {
 
     public void unreleaseInstance(String url, boolean requireHttp) {
         //The url needs to be absolute - everything else is not resolvable.
-        if (!requireHttp || url.startsWith("http")) {
-            Set<String> edgesCollectionNames = controller.getReleasedDB().getEdgesCollectionNames();
-            Set<String> embeddedInstances = repository.getEmbeddedInstances(Collections.singletonList(url), controller.getReleasedDB(), edgesCollectionNames, new LinkedHashSet<>());
-            for (String embeddedInstance : embeddedInstances) {
-                repository.deleteVertex(embeddedInstance, controller.getReleasedDB());
+        if(url!=null && !url.isEmpty()) {
+            if (!requireHttp || url.startsWith("http")) {
+                Set<String> edgesCollectionNames = controller.getReleasedDB().getEdgesCollectionNames();
+                Set<String> embeddedInstances = repository.getEmbeddedInstances(Collections.singletonList(url), controller.getReleasedDB(), edgesCollectionNames, new LinkedHashSet<>());
+                for (String embeddedInstance : embeddedInstances) {
+                    repository.deleteVertex(embeddedInstance, controller.getReleasedDB());
+                }
             }
         }
     }
