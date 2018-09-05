@@ -54,7 +54,7 @@ public class ArangoSpecificationQuery {
 
     public QueryResult<List<Map>> queryForSpecification(Specification spec, Set<String> whiteListOrganizations, QueryParameters parameters) throws JSONException {
         QueryResult<List<Map>> result = new QueryResult<>();
-        String query = createQuery(new ArangoQueryBuilder(spec, parameters.size, parameters.start, configuration.getPermissionGroup(), whiteListOrganizations), parameters);
+        String query = createQuery(new ArangoQueryBuilder(spec, parameters.size, parameters.start, parameters.searchTerm, configuration.getPermissionGroup(), whiteListOrganizations), parameters);
         AqlQueryOptions options = new AqlQueryOptions();
         if(parameters.size!=null) {
             options.fullCount(true);
@@ -168,6 +168,7 @@ public class ArangoSpecificationQuery {
             queryBuilder.setCurrentField(originalField);
             if (isRoot) {
                 queryBuilder.addLimit();
+                queryBuilder.addSearchQuery();
             }
 
             Set<String> sortFields = new LinkedHashSet<>();

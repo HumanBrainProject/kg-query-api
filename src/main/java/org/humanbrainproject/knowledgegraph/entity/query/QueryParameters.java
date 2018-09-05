@@ -6,6 +6,7 @@ public class QueryParameters {
 
     public Integer start;
     public Integer size;
+    public String searchTerm;
     public boolean released;
     public String authorizationToken;
     public String vocab;
@@ -64,6 +65,11 @@ public class QueryParameters {
 
     public QueryParameters setWithOriginalJson(boolean withOriginalJson) {
         this.withOriginalJson = withOriginalJson;
+        return this;
+    }
+
+    public QueryParameters setSearchTerm(String searchTerm){
+        this.searchTerm = searchTerm;
         return this;
     }
 }

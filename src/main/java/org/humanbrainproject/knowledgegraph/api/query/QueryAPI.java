@@ -27,9 +27,9 @@ public class QueryAPI {
     Templating templating;
 
     @PostMapping(consumes = {MediaType.APPLICATION_JSON, "application/ld+json"})
-    public ResponseEntity<QueryResult> queryPropertyGraphBySpecification(@RequestBody String payload, @RequestParam(value = "@vocab", required = false) String vocab, @RequestParam(value = "size", required = false) Integer size, @RequestParam(value = "start", required = false) Integer start, @RequestParam(value="orgs", required = false) String organizations, @RequestParam(value="released", required = false) boolean released, @RequestHeader(value = "Authorization", required = false) String authorization, @ApiIgnore @RequestParam Map<String,String> allRequestParams) throws Exception {
+    public ResponseEntity<QueryResult> queryPropertyGraphBySpecification(@RequestBody String payload, @RequestParam(value = "@vocab", required = false) String vocab, @RequestParam(value = "size", required = false) Integer size, @RequestParam(value = "start", required = false) Integer start, @RequestParam(value="orgs", required = false) String organizations, @RequestParam(value="released", required = false) boolean released, @RequestParam(value="search", required = false) String searchTerm, @RequestHeader(value = "Authorization", required = false) String authorization, @ApiIgnore @RequestParam Map<String,String> allRequestParams) throws Exception {
         try {
-            QueryParameters parameters = new QueryParameters().setAllParameters(allRequestParams).setReleased(released).setStart(start).setSize(size).setVocab(vocab).setOrganizations(organizations).setAuthorizationToken(authorization);
+            QueryParameters parameters = new QueryParameters().setAllParameters(allRequestParams).setReleased(released).setStart(start).setSize(size).setVocab(vocab).setOrganizations(organizations).setAuthorizationToken(authorization).setSearchTerm(searchTerm);
             return ResponseEntity.ok(query.queryPropertyGraphBySpecification(payload, parameters));
         } catch (HttpClientErrorException e) {
             return ResponseEntity.status(e.getStatusCode()).build();
@@ -37,9 +37,9 @@ public class QueryAPI {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<QueryResult> executeStoredQuery(@PathVariable("id") String id, @RequestParam(value = "@vocab", required = false) String vocab,  @RequestParam(value = "size", required = false) Integer size, @RequestParam(value = "start", required = false) Integer start, @RequestParam(value="orgs", required = false) String organizations, @RequestParam(value="released", required = false) boolean released, @RequestHeader(value = "Authorization", required = false) String authorization,  @ApiIgnore @RequestParam Map<String,String> allRequestParams) throws Exception {
+    public ResponseEntity<QueryResult> executeStoredQuery(@PathVariable("id") String id, @RequestParam(value = "@vocab", required = false) String vocab,  @RequestParam(value = "size", required = false) Integer size, @RequestParam(value = "start", required = false) Integer start, @RequestParam(value="orgs", required = false) String organizations, @RequestParam(value="released", required = false) boolean released, @RequestParam(value="search", required = false) String searchTerm, @RequestHeader(value = "Authorization", required = false) String authorization,  @ApiIgnore @RequestParam Map<String,String> allRequestParams) throws Exception {
         try {
-            QueryParameters parameters = new QueryParameters().setAllParameters(allRequestParams).setReleased(released).setStart(start).setSize(size).setVocab(vocab).setOrganizations(organizations).setAuthorizationToken(authorization);
+            QueryParameters parameters = new QueryParameters().setAllParameters(allRequestParams).setReleased(released).setStart(start).setSize(size).setVocab(vocab).setOrganizations(organizations).setAuthorizationToken(authorization).setSearchTerm(searchTerm);
             return ResponseEntity.ok(query.queryPropertyGraphByStoredSpecification(id, parameters));
         } catch (HttpClientErrorException e) {
             return ResponseEntity.status(e.getStatusCode()).build();

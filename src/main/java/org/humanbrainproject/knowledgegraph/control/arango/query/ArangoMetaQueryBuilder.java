@@ -19,7 +19,7 @@ public class ArangoMetaQueryBuilder extends AbstractQueryBuilder {
     ArangoNamingConvention namingConvention = new ArangoNamingConvention();
 
     public ArangoMetaQueryBuilder(Specification specification) {
-        super(specification, null, null, null, null);
+        super(specification, null, null, null,null, null);
     }
 
     @Override
@@ -181,6 +181,11 @@ public class ArangoMetaQueryBuilder extends AbstractQueryBuilder {
 
     @Override
     public void addOrganizationFilter() {
+
+    }
+
+    @Override
+    public void addSearchQuery(){
 
     }
 }
