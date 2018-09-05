@@ -63,15 +63,15 @@ public class ArangoQuery {
         if(organizations!=null){
             whitelisted = organizations.split(",");
         }
-//        Set<String> readableOrganizations = authorization.getOrganizations(authorizationToken);
-        Set<String> readableOrganizations = new LinkedHashSet<>();
-        readableOrganizations.add("minds");
-        readableOrganizations.add("brainviewer");
-        readableOrganizations.add("cscs");
-        readableOrganizations.add("datacite");
-        readableOrganizations.add("licenses");
-        readableOrganizations.add("minds2");
-        readableOrganizations.add("neuroglancer");
+        Set<String> readableOrganizations = authorization.getOrganizations(authorizationToken);
+//        Set<String> readableOrganizations = new LinkedHashSet<>();
+//        readableOrganizations.add("minds");
+//        readableOrganizations.add("brainviewer");
+//        readableOrganizations.add("cscs");
+//        readableOrganizations.add("datacite");
+//        readableOrganizations.add("licenses");
+//        readableOrganizations.add("minds2");
+//        readableOrganizations.add("neuroglancer");
         if(whitelisted!=null){
             readableOrganizations.retainAll(Arrays.asList(whitelisted));
         }
