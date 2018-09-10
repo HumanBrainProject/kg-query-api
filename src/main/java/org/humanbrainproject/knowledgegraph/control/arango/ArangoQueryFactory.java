@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Component
 public class ArangoQueryFactory {
@@ -67,20 +68,33 @@ public class ArangoQueryFactory {
                 "return path", outbound, inbound);
     }
 
+    public String getDocument(String documentID){
+        return String.format("LET doc = DOCUMENT(\"%s\")\n" +
+                "RETURN doc", documentID);
+    }
 
-
-    public String queryReleaseGraph(Set<String> edgeCollectionNames, String startinVertexId, ArangoDriver driver) {
+    public String queryReleaseGraph(Set<String> edgeCollectionNames, String startinVertexId,Integer maxDepth, ArangoDriver driver) {
         Set<String> collectionLabels= driver!=null ? driver.filterExistingCollectionLabels(edgeCollectionNames) : edgeCollectionNames;
-        String names = String.join("`, `", collectionLabels).replace("`rel-hbp_eu-minds-releaseinstance`", "INBOUND `rel-hbp_eu-minds-releaseinstance`");
-        return String.format("LET flatStructure = (FOR v,e,p IN 1..%s  OUTBOUND \"%s\" `%s`" +
-        "FILTER !CONTAINS(v._id,  \"prov-release-v0_0_1\") && !CONTAINS(v._id, \"www_w3_org-ns-prov-qualifiedAssociation\")" +
-        "LET childPath = (FOR pv IN p.vertices RETURN pv._id)" +
-        "LET t = CONTAINS(e._from, \"prov-release-v0_0_1\")? \"RELEASED\": \"NOT_RELEASED\" "+
-        "RETURN MERGE({\"id\":v._id, \"status\": t, \"children\":childPath, \"edgeType\": e._id}, v ))" +
-        "LET root =  FIRST((FOR v, e IN 0..1 INBOUND \"%s\" `rel-hbp_eu-minds-releaseinstance`\n" +
-                "    LET t = CONTAINS(e._from, \"prov-release-v0_0_1\")? \"RELEASED\": \"NOT_RELEASED\" \n" +
-                "    RETURN MERGE({\"id\":v._id, \"status\": t},v)))"+
-        "RETURN GO::LOCATED_IN::APPEND_CHILD_STRUCTURE(root, flatStructure)",6, startinVertexId, names,  startinVertexId, startinVertexId);
+        Set<String> collectionLabelsFiltered = collectionLabels.stream().filter( col -> !col.startsWith("rel-www_w3_org")).collect(Collectors.toSet());
+        String names = String.join("`, `", collectionLabelsFiltered);
+        String start = String.format("DOCUMENT(\"%s\")", startinVertexId);
+        return  childrenStatus(start, 1, maxDepth, names);
+    }
+
+    private String childrenStatus(String startingVertex, Integer level, Integer maxDepth, String collectionLabels){
+        String name = "level"+level;
+        String childrenQuery = "[]";
+        if(level < maxDepth){
+            childrenQuery = String.format("(%s)", childrenStatus(name+"_doc", level+ 1, maxDepth, collectionLabels));
+        }
+        return String.format("FOR %s_doc, %s_edge IN 1..1 OUTBOUND %s `%s`\n" +
+                "SORT %s_doc.`@type`, %s_doc.`http://schema.org/name`\n" +
+                "LET %s_status = (FOR %s_status_doc IN 1..1 INBOUND %s_doc `rel-hbp_eu-minds-releaseinstance`\n" +
+                "RETURN DISTINCT %s_status_doc.`status`)\n" +
+                "LET %s_children = %s\n" +
+                "RETURN MERGE({\"releaseStatus\": %s_status, \"children\": %s_children, \"linkType\": %s_edge._id}, %s_doc)\n",
+                name, name, startingVertex, collectionLabels,name, name, name, name, name, name, name, childrenQuery, name, name,name, name
+        );
     }
 
 }

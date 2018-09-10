@@ -1,18 +1,24 @@
 package org.humanbrainproject.knowledgegraph.api.query;
 
 import com.arangodb.entity.AqlFunctionEntity;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.annotations.Api;
 import org.humanbrainproject.knowledgegraph.boundary.graph.ArangoGraph;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.configurationprocessor.json.JSONArray;
+import org.springframework.boot.configurationprocessor.json.JSONException;
+import org.springframework.boot.configurationprocessor.json.JSONObject;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.HttpClientErrorException;
 
 import javax.ws.rs.core.MediaType;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.io.IOException;
+import java.util.*;
 import java.util.function.Predicate;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping(value = "/arango", produces = MediaType.APPLICATION_JSON)
@@ -35,36 +41,21 @@ public class GraphAPI {
     }
 
     @GetMapping(value = "/release/{org}/{domain}/{schema}/{version}/{id}", consumes = { MediaType.WILDCARD})
-    public ResponseEntity<List<Map>> getReleaseGraph(@PathVariable("org") String org, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("version") String version, @PathVariable("id") String id) throws Exception{
+    public ResponseEntity<Map<String,Object>> getReleaseGraph(@PathVariable("org") String org, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("version") String version, @PathVariable("id") String id) throws Exception{
         try{
             String v = version.replaceAll("\\.", "_");
             String vert =  String.format("%s-%s-%s-%s/%s", org,domain, schema, v, id);
-            String functionNamespace = "GO::LOCATED_IN";
-            String functionName = "APPEND_CHILD_STRUCTURE";
-            String function = "function (root, flatStructure) {\n" +
-                    "                if (root && root.id) {\n" +
-                    "                    var elsById = {};\n" +
-                    "                    elsById[root.id] = root;\n" +
-                    "                    flatStructure.forEach(function (element) {\n" +
-                    "                        elsById[element.id] = element;\n" +
-                    "                        var parentElId = element.children[element.children.length - 2];\n" +
-                    "                        var parentEl = elsById[parentElId];\n" +
-                    "                        if(parentEl){\n" +
-                    "                           if (!parentEl.children)\n" +
-                    "                               parentEl.children = new Array();\n" +
-                    "                           parentEl.children.push(element);\n" +
-                    "                         }\n" +
-                    "                        delete element.children;\n" +
-                    "                    });\n" +
-                    "                }\n" +
-                    "                return root;\n" +
-                    "            }";
-            graph.uploadFunction(String.format("%s::%s", functionNamespace, functionName), function);
-            return ResponseEntity.ok(graph.getReleaseGraph(vert));
+            List<Map> rootList = graph.getDocument(vert);
+            if(rootList.isEmpty()){
+                throw new Exception("Document not found");
+            }
+            Map root = rootList.get(0);
+            List<Map> res = graph.getReleaseGraph(vert, Optional.empty());
+            root.put("children", res);
+            return ResponseEntity.ok(root);
+
         } catch (HttpClientErrorException e){
             return ResponseEntity.status(e.getStatusCode()).build();
         }
     }
-
-
 }

@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Component
 public class ArangoGraph {
@@ -26,15 +27,11 @@ public class ArangoGraph {
         return arangoRepository.inDepthGraph(rootVertex, step, arango);
     }
 
-    public List<Map> getReleaseGraph(String rootVertex) throws IOException {
-        return arangoRepository.releaseGraph(rootVertex, arango);
+    public List<Map> getReleaseGraph(String rootVertex, Optional<Integer> maxDepthOpt) throws IOException {
+        Integer maxDepth = maxDepthOpt.orElse(6);
+        return arangoRepository.releaseGraph(rootVertex, maxDepth, arango);
     }
-
-    public void uploadFunction(String name, String function) throws  IOException{
-        arangoRepository.uploadFunction(name, function, arango);
-    }
-
-    public Collection<AqlFunctionEntity> getAqlFunctions(String namespace) throws IOException{
-        return arangoRepository.getAqlFunctions(namespace, arango);
+    public List<Map> getDocument(String documentID) throws IOException{
+        return  arangoRepository.getDocument(documentID, arango);
     }
 }

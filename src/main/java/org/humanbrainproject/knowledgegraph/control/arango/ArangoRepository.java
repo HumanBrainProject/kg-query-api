@@ -371,23 +371,18 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
     }
 
 
-    public List<Map> releaseGraph(String vertex, ArangoDriver driver){
+    public List<Map> releaseGraph(String vertex, Integer maxDepth, ArangoDriver driver){
         ArangoDatabase db = driver.getOrCreateDB();
         Set<String> edgesCollections = driver.getEdgesCollectionNames();
-        String query = queryFactory.queryReleaseGraph(edgesCollections, vertex, driver);
+        String query = queryFactory.queryReleaseGraph(edgesCollections, vertex, maxDepth, driver);
         ArangoCursor<Map> q = db.query(query, null, new AqlQueryOptions(), Map.class );
         return q.asListRemaining();
     }
 
-    public void uploadFunction(String name, String function, ArangoDriver driver){
+    public List<Map> getDocument(String documentID,  ArangoDriver driver){
         ArangoDatabase db = driver.getOrCreateDB();
-        db.createAqlFunction(name, function, new AqlFunctionCreateOptions());
+        String query = queryFactory.getDocument(documentID);
+        ArangoCursor<Map> q = db.query(query, null, new AqlQueryOptions(), Map.class );
+        return q.asListRemaining();
     }
-
-    public Collection<AqlFunctionEntity> getAqlFunctions(String namespace, ArangoDriver driver){
-        ArangoDatabase db = driver.getOrCreateDB();
-        Collection<AqlFunctionEntity> q = db.getAqlFunctions(new AqlFunctionGetOptions().namespace(namespace));
-        return q;
-    }
-
 }
