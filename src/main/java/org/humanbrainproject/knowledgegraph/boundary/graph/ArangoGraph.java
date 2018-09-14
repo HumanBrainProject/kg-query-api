@@ -34,4 +34,8 @@ public class ArangoGraph {
     public List<Map> getDocument(String documentID) throws IOException{
         return  arangoRepository.getDocument(documentID, arango);
     }
+
+    public List<Map> getInstanceList(String collection) throws IOException{
+        return arangoRepository.getInstanceList(collection, arango);
+    }
 }

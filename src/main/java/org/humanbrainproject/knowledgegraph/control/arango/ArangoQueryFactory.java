@@ -87,14 +87,32 @@ public class ArangoQueryFactory {
         if(level < maxDepth){
             childrenQuery = String.format("(%s)", childrenStatus(name+"_doc", level+ 1, maxDepth, collectionLabels));
         }
+
         return String.format("FOR %s_doc, %s_edge IN 1..1 OUTBOUND %s `%s`\n" +
                 "SORT %s_doc.`@type`, %s_doc.`http://schema.org/name`\n" +
                 "LET %s_status = (FOR %s_status_doc IN 1..1 INBOUND %s_doc `rel-hbp_eu-minds-releaseinstance`\n" +
                 "RETURN DISTINCT %s_status_doc.`status`)\n" +
                 "LET %s_children = %s\n" +
-                "RETURN MERGE({\"releaseStatus\": %s_status, \"children\": %s_children, \"linkType\": %s_edge._id}, %s_doc)\n",
-                name, name, startingVertex, collectionLabels,name, name, name, name, name, name, name, childrenQuery, name, name,name, name
+                "RETURN MERGE({\"releaseStatus\": %s_status, \"children\": %s_children, \"linkType\": %s_edge._id, \"rev\": %s_doc.`http://schema.hbp.eu/internal#rev`}, %s_doc)\n",
+                name, name, startingVertex, collectionLabels,name, name, name, name, name, name, name, childrenQuery, name, name,name, name, name
         );
+    }
+
+    public String getInstanceList(String collection, String recCollection){
+
+        return String.format("LET rec = (FOR rec_doc IN %s\n" +
+                "    RETURN rec_doc)\n" +
+                "LET f = (FOR e IN rec\n" +
+                "    RETURN SPLIT( e.`http://hbp.eu/reconciled#origin`, \"v0/data/\")[1]\n" +
+                ")\n" +
+                "LET minds = ( FOR doc IN `%s`\n" +
+                "    FILTER (doc.`@id` NOT IN f)\n" +
+                "    RETURN doc\n" +
+                ")\n" +
+                "\n" +
+                "FOR el IN UNION(minds, rec)\n" +
+                "SORT el.`http://schema.org/name`, el.`http://hbp.eu/minds#title`, el.`http://hbp.eu/minds#alias`\n" +
+                "    RETURN el", recCollection, collection);
     }
 
 }
