@@ -115,7 +115,7 @@ public class JsonLdToVerticesAndEdges {
                     property.setValue(reference);
                 }
                 else{
-                    if(!(property instanceof Collection)){
+                    if(!(property.getValue() instanceof Collection)){
                         List<Object> values = new ArrayList<>();
                         values.add(property.getValue());
                         property.setValue(values);

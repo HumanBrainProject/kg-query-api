@@ -121,8 +121,9 @@ public class JsonLdStandardization {
     public Map fullyQualify(Map input) {
         try {
             return fullyQualifyLocally(input);
-        } catch (JsonLdError localException) {
-            logger.info("Was not able to fully qualify the given payload - try by service", localException);
+        } catch (Exception localException) {
+            logger.info("Was not able to fully qualify the given payload - try by service");
+            logger.debug("Was not able to fully qualify the given payload - try by service", localException);
             try {
                 return fullyQualifyByService(input);
             } catch (HttpClientErrorException e) {
