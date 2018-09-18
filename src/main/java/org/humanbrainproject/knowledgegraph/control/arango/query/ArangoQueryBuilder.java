@@ -10,8 +10,8 @@ import java.util.stream.Collectors;
 public class ArangoQueryBuilder extends AbstractQueryBuilder {
 
 
-    public ArangoQueryBuilder(Specification specification, Integer size, Integer start, String permissionGroupFieldName, Set<String> whitelistOrganizations) {
-        super(specification, size, start, permissionGroupFieldName, whitelistOrganizations);
+    public ArangoQueryBuilder(Specification specification, Integer size, Integer start, String permissionGroupFieldName, Set<String> whitelistOrganizations, String instanceId) {
+        super(specification, size, start, permissionGroupFieldName, whitelistOrganizations, instanceId);
     }
 
     @Override
@@ -147,4 +147,8 @@ public class ArangoQueryBuilder extends AbstractQueryBuilder {
         sb.append(String.format("\n%s LET %s = %s APPEND(%s, true) %s\n", getIndentation(), leaf_field, sorted ? "( FOR el IN": "", String.join(", ", merged_fields), sorted ? " SORT el ASC RETURN el)" : ""));
     }
 
+    @Override
+    public void addInstanceIdFilter() {
+        sb.append(String.format("\nFILTER %s_%s._id == \"%s\"\n", currentAlias, DOC_POSTFIX, this.instanceId));
+    }
 }

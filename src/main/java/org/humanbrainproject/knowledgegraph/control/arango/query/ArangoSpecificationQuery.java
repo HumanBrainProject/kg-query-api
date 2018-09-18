@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.stereotype.Component;
 
+import javax.swing.text.html.Option;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -51,9 +52,10 @@ public class ArangoSpecificationQuery {
         return result;
     }
 
-    public QueryResult<List<Map>> queryForSpecification(Specification spec, Set<String> whiteListOrganizations, QueryParameters parameters) throws JSONException {
+    public QueryResult<List<Map>> queryForSpecification(Specification spec, Set<String> whiteListOrganizations, QueryParameters parameters, String instanceId) throws JSONException {
         QueryResult<List<Map>> result = new QueryResult<>();
-        String query = createQuery(new ArangoQueryBuilder(spec, parameters.size, parameters.start, configuration.getPermissionGroup(), whiteListOrganizations), parameters);
+        instanceId = namingConvention.fromNexusIdToArangoId(instanceId);
+        String query = createQuery(new ArangoQueryBuilder(spec, parameters.size, parameters.start, configuration.getPermissionGroup(), whiteListOrganizations, instanceId), parameters);
         AqlQueryOptions options = new AqlQueryOptions();
         if(parameters.size!=null) {
             options.fullCount(true);
@@ -163,6 +165,9 @@ public class ArangoSpecificationQuery {
             queryBuilder.setCurrentField(originalField);
             if (isRoot) {
                 queryBuilder.addLimit();
+                if(queryBuilder.instanceId != null){
+                    queryBuilder.addInstanceIdFilter();
+                }
             }
 
             Set<String> sortFields = new LinkedHashSet<>();

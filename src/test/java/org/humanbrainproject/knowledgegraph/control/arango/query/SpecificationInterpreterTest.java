@@ -45,6 +45,6 @@ public class SpecificationInterpreterTest {
     @Ignore("This test requires a backend and is for manual testing only")
     public void readSpecificationAndCreateQuery() throws JSONException {
         Specification specification = interpreter.readSpecification(testSpecification);
-        query.queryForSpecification(specification, Collections.EMPTY_SET, new QueryParameters());
+        query.queryForSpecification(specification, Collections.EMPTY_SET, new QueryParameters(), null);
     }
 }

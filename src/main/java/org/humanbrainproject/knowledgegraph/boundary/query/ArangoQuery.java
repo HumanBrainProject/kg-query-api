@@ -82,14 +82,14 @@ public class ArangoQuery {
         return specificationQuery.metaSpecification(spec, parameters);
     }
 
-    public QueryResult<List<Map>> queryPropertyGraphBySpecification(String specification, QueryParameters parameters) throws JSONException, IOException {
+    public QueryResult<List<Map>> queryPropertyGraphBySpecification(String specification, QueryParameters parameters, String instanceId) throws JSONException, IOException {
         Set<String> readableOrganizations = getReadableOrganizations(parameters.authorizationToken, parameters.organizations);
         Object originalContext = null;
         if (parameters.useContext) {
             originalContext = standardization.getContext(specification);
         }
         Specification spec = specInterpreter.readSpecification(JsonUtils.toString(standardization.fullyQualify(specification)));
-        QueryResult<List<Map>> result = specificationQuery.queryForSpecification(spec, readableOrganizations, parameters);
+        QueryResult<List<Map>> result = specificationQuery.queryForSpecification(spec, readableOrganizations, parameters, instanceId);
         if (originalContext != null) {
             result.setResults(standardization.applyContext(result.getResults(), originalContext));
         }
@@ -101,9 +101,9 @@ public class ArangoQuery {
         return metaQueryBySpecification(payload, parameters);
     }
 
-    public QueryResult<List<Map>> queryPropertyGraphByStoredSpecification(String id, QueryParameters parameters) throws IOException, JSONException {
+    public QueryResult<List<Map>> queryPropertyGraphByStoredSpecification(String id, QueryParameters parameters, String instanceId) throws IOException, JSONException {
         String payload = arangoUploader.getByKey(SPECIFICATION_QUERIES, id, String.class, arangoInternal);
-        return queryPropertyGraphBySpecification(payload, parameters);
+        return queryPropertyGraphBySpecification(payload, parameters, instanceId);
     }
 
     public void storeSpecificationInDb(String specification, String id) throws JSONException {
@@ -118,8 +118,8 @@ public class ArangoQuery {
         }
     }
 
-    public QueryResult<String> queryPropertyGraphByStoredSpecificationAndFreemarkerTemplate(String id, String template, QueryParameters parameters) throws IOException, JSONException {
-        QueryResult<List<Map>> queryResult = queryPropertyGraphByStoredSpecification(id, parameters);
+    public QueryResult<String> queryPropertyGraphByStoredSpecificationAndFreemarkerTemplate(String id, String template, QueryParameters parameters, String instanceId) throws IOException, JSONException {
+        QueryResult<List<Map>> queryResult = queryPropertyGraphByStoredSpecification(id, parameters, instanceId);
         return createResult(queryResult, freemarkerTemplating.applyTemplate(template, queryResult, parameters.library, arangoInternal), parameters.withOriginalJson);
     }
 

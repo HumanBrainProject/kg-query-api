@@ -10,8 +10,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.HttpClientErrorException;
+import sun.plugin2.message.helper.URLHelper;
 
+import javax.print.DocFlavor;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.core.MediaType;
+import java.net.URLDecoder;
+import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping(value = "/query", produces = MediaType.APPLICATION_JSON)
@@ -28,24 +34,58 @@ public class QueryAPI {
     public ResponseEntity<QueryResult> queryPropertyGraphBySpecification(@RequestBody String payload, @RequestParam(value = "usecontext", required = false, defaultValue = "false") boolean useContext, @RequestParam(value = "size", required = false) Integer size, @RequestParam(value = "start", required = false) Integer start, @RequestParam(value="orgs", required = false) String organizations, @RequestParam(value="released", required = false) boolean released,  @RequestHeader(value = "Authorization", required = false) String authorization) throws Exception {
         try {
             QueryParameters parameters = new QueryParameters().setReleased(released).setStart(start).setSize(size).setUseContext(useContext).setOrganizations(organizations).setAuthorizationToken(authorization);
-            return ResponseEntity.ok(query.queryPropertyGraphBySpecification(payload, parameters));
+            return ResponseEntity.ok(query.queryPropertyGraphBySpecification(payload, parameters, null));
         } catch (HttpClientErrorException e) {
             return ResponseEntity.status(e.getStatusCode()).build();
         }
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<QueryResult> executeStoredQuery(@PathVariable("id") String id, @RequestParam(value = "usecontext", required = false, defaultValue = "false") boolean useContext,  @RequestParam(value = "size", required = false) Integer size, @RequestParam(value = "start", required = false) Integer start, @RequestParam(value="orgs", required = false) String organizations, @RequestParam(value="released", required = false) boolean released, @RequestHeader(value = "Authorization", required = false) String authorization) throws Exception {
+    @PostMapping(value="/{instanceId}", consumes = {MediaType.APPLICATION_JSON, "application/ld+json"})
+    public ResponseEntity<Map> queryPropertyGraphBySpecificationWithId(@PathVariable("instanceId") String instanceId , @RequestBody String payload, @RequestParam(value = "usecontext", required = false, defaultValue = "false") boolean useContext, @RequestParam(value = "size", required = false) Integer size, @RequestParam(value = "start", required = false) Integer start, @RequestParam(value="orgs", required = false) String organizations, @RequestParam(value="released", required = false) boolean released, @RequestHeader(value = "Authorization", required = false) String authorization) throws Exception {
+        try {
+            instanceId = URLDecoder.decode(instanceId, "UTF-8");
+            QueryParameters parameters = new QueryParameters().setReleased(released).setStart(start).setSize(size).setUseContext(useContext).setOrganizations(organizations).setAuthorizationToken(authorization);
+            QueryResult<List<Map>> result = query.queryPropertyGraphBySpecification(payload, parameters, instanceId);
+            if(result.getResults().size() >= 1){
+                return ResponseEntity.ok(result.getResults().get(0));
+            }else{
+                return ResponseEntity.noContent().build();
+            }
+        } catch (HttpClientErrorException e) {
+            return ResponseEntity.status(e.getStatusCode()).build();
+        }
+    }
+
+
+    @GetMapping("/{queryId}")
+    public ResponseEntity<QueryResult> executeStoredQuery(@PathVariable("queryId") String id, @RequestParam(value = "usecontext", required = false, defaultValue = "false") boolean useContext,  @RequestParam(value = "size", required = false) Integer size, @RequestParam(value = "start", required = false) Integer start, @RequestParam(value="orgs", required = false) String organizations, @RequestParam(value="released", required = false) boolean released, @RequestHeader(value = "Authorization", required = false) String authorization) throws Exception {
         try {
             QueryParameters parameters = new QueryParameters().setReleased(released).setStart(start).setSize(size).setUseContext(useContext).setOrganizations(organizations).setAuthorizationToken(authorization);
-            return ResponseEntity.ok(query.queryPropertyGraphByStoredSpecification(id, parameters));
+            return ResponseEntity.ok(query.queryPropertyGraphByStoredSpecification(id, parameters, null));
         } catch (HttpClientErrorException e) {
             return ResponseEntity.status(e.getStatusCode()).build();
         }
     }
 
-    @PutMapping(value="/{id}", consumes = {MediaType.APPLICATION_JSON, "application/ld+json"})
-    public ResponseEntity<Void> saveSpecificationToDB(@RequestBody String payload, @PathVariable("id") String id, @RequestHeader(value = "Authorization", required = false) String authorization) throws Exception {
+    @GetMapping("/{queryId}/{instanceId}")
+    public ResponseEntity<Map> executeStoredQuery(@PathVariable("queryId") String id, @PathVariable("instanceId") String instanceId, @RequestParam(value = "usecontext", required = false, defaultValue = "false") boolean useContext,  @RequestParam(value = "size", required = false) Integer size, @RequestParam(value = "start", required = false) Integer start, @RequestParam(value="orgs", required = false) String organizations, @RequestParam(value="released", required = false) boolean released, @RequestHeader(value = "Authorization", required = false) String authorization) throws Exception {
+        try {
+            instanceId = URLDecoder.decode(instanceId, "UTF-8");
+            QueryParameters parameters = new QueryParameters().setReleased(released).setStart(start).setSize(size).setUseContext(useContext).setOrganizations(organizations).setAuthorizationToken(authorization);
+            QueryResult<List<Map>> result = query.queryPropertyGraphByStoredSpecification(id, parameters, instanceId);
+            if(result.getResults().size() >= 1){
+                return ResponseEntity.ok(result.getResults().get(0));
+            }else{
+                return ResponseEntity.noContent().build();
+            }
+
+        } catch (HttpClientErrorException e) {
+            return ResponseEntity.status(e.getStatusCode()).build();
+        }
+    }
+
+    @PutMapping(value="/{queryId}", consumes = {MediaType.APPLICATION_JSON, "application/ld+json"})
+    public ResponseEntity<Void> saveSpecificationToDB(@RequestBody String payload, @PathVariable("queryId") String id, @RequestHeader(value = "Authorization", required = false) String authorization) throws Exception {
         try {
             query.storeSpecificationInDb(payload, id);
             return null;
@@ -54,11 +94,23 @@ public class QueryAPI {
         }
     }
 
-    @PostMapping(value = "/{id}/template", consumes = {MediaType.TEXT_PLAIN})
-    public ResponseEntity<QueryResult> applyFreemarkerTemplateToApi(@RequestBody String template, @PathVariable("id") String id,  @RequestParam(value = "size", required = false) Integer size, @RequestParam(value = "start", required = false) Integer start, @RequestParam(value= "lib", required = false) String library, @RequestParam(value="orgs", required = false) String organizations, @RequestParam(value="released", required = false) boolean released, @RequestHeader(value = "Authorization", required = false) String authorization) throws Exception {
+    @PostMapping(value = "/{queryId}/template", consumes = {MediaType.TEXT_PLAIN})
+    public ResponseEntity<QueryResult> applyFreemarkerTemplateToApi(@RequestBody String template, @PathVariable("queryId") String id,  @RequestParam(value = "size", required = false) Integer size, @RequestParam(value = "start", required = false) Integer start, @RequestParam(value= "lib", required = false) String library, @RequestParam(value="orgs", required = false) String organizations, @RequestParam(value="released", required = false) boolean released, @RequestHeader(value = "Authorization", required = false) String authorization) throws Exception {
         try {
             QueryParameters parameters = new QueryParameters().setReleased(released).setStart(start).setSize(size).setLibrary(library).setOrganizations(organizations).setAuthorizationToken(authorization);
-            QueryResult<String> result = query.queryPropertyGraphByStoredSpecificationAndFreemarkerTemplate(id, template, parameters);
+            QueryResult<String> result = query.queryPropertyGraphByStoredSpecificationAndFreemarkerTemplate(id, template, parameters, null);
+            return ResponseEntity.ok(RestUtils.toJsonResultIfPossible(result));
+        } catch (HttpClientErrorException e) {
+            return ResponseEntity.status(e.getStatusCode()).build();
+        }
+    }
+
+    @PostMapping(value = "/{queryId}/{instanceId}/template", consumes = {MediaType.TEXT_PLAIN})
+    public ResponseEntity<QueryResult> applyFreemarkerTemplateToApi(@RequestBody String template, @PathVariable("queryId") String id, @PathVariable("instanceId") String instanceId,  @RequestParam(value = "size", required = false) Integer size, @RequestParam(value = "start", required = false) Integer start, @RequestParam(value= "lib", required = false) String library, @RequestParam(value="orgs", required = false) String organizations, @RequestParam(value="released", required = false) boolean released, @RequestHeader(value = "Authorization", required = false) String authorization) throws Exception {
+        try {
+            instanceId = URLDecoder.decode(URLDecoder.decode(instanceId, "UTF-8"), "UTF-8");
+            QueryParameters parameters = new QueryParameters().setReleased(released).setStart(start).setSize(size).setLibrary(library).setOrganizations(organizations).setAuthorizationToken(authorization);
+            QueryResult<String> result = query.queryPropertyGraphByStoredSpecificationAndFreemarkerTemplate(id, template, parameters, instanceId);
             return ResponseEntity.ok(RestUtils.toJsonResultIfPossible(result));
         } catch (HttpClientErrorException e) {
             return ResponseEntity.status(e.getStatusCode()).build();

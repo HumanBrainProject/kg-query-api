@@ -112,5 +112,15 @@ public class ArangoNamingConvention {
         return null;
     }
 
+    public String fromNexusIdToArangoId(String nexusId){
+        if(nexusId != null){
+            String[] decomposed = nexusId.split("/");
+            if(decomposed.length == 5){
+                return String.format("%s-%s-%s-%s/%s", decomposed[0], decomposed[1], decomposed[2], decomposed[3].replaceAll("\\.", "_"), decomposed[4]);
+            }
+        }
+        return null;
+    }
+
 
 }

@@ -23,6 +23,7 @@ public abstract class AbstractQueryBuilder {
     protected boolean firstReturnEntry = true;
     protected Set<String> whitelistOrganizations;
     protected SpecField currentField;
+    protected String instanceId;
 
     public void setCurrentField(SpecField currentField) {
         this.currentField = currentField;
@@ -38,12 +39,13 @@ public abstract class AbstractQueryBuilder {
         }
     }
 
-    public AbstractQueryBuilder(Specification specification, Integer size, Integer start, String permissionGroupFieldName, Set<String> whitelistOrganizations) {
+    public AbstractQueryBuilder(Specification specification, Integer size, Integer start, String permissionGroupFieldName, Set<String> whitelistOrganizations, String instanceId) {
         this.size = size;
         this.start = start;
         this.specification = specification;
         this.permissionGroupFieldName = permissionGroupFieldName;
         this.whitelistOrganizations = whitelistOrganizations;
+        this.instanceId = instanceId;
         addWhitelistOrganizations();
     }
 
@@ -126,4 +128,6 @@ public abstract class AbstractQueryBuilder {
     public Specification getSpecification() {
         return specification;
     }
+
+    public abstract void addInstanceIdFilter();
 }
