@@ -72,6 +72,7 @@ public class ArangoQuery {
         readableOrganizations.add("licenses");
         readableOrganizations.add("minds2");
         readableOrganizations.add("neuroglancer");
+        readableOrganizations.add("kgeditor");
         if(whitelisted!=null){
             readableOrganizations.retainAll(Arrays.asList(whitelisted));
         }
