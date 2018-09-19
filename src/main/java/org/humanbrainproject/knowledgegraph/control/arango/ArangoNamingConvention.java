@@ -113,6 +113,4 @@ public class ArangoNamingConvention {
         }
         return null;
     }
-
-
 }

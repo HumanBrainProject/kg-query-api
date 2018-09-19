@@ -10,6 +10,7 @@ public class QueryParameters {
     public boolean released;
     public String authorizationToken;
     public String vocab;
+    public boolean useContext;
     public String organizations;
     public String library;
     public boolean withOriginalJson;
@@ -50,6 +51,10 @@ public class QueryParameters {
 
     public QueryParameters setVocab(String vocab) {
         this.vocab = vocab;
+        return this;
+    }
+    public QueryParameters setUseContext(boolean useContext) {
+        this.useContext = useContext;
         return this;
     }
 

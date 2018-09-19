@@ -1,6 +1,7 @@
 package org.humanbrainproject.knowledgegraph.control.arango.query;
 
 import org.humanbrainproject.knowledgegraph.entity.specification.Specification;
+import org.springframework.boot.configurationprocessor.json.JSONException;
 
 import java.util.List;
 import java.util.Set;
@@ -9,8 +10,8 @@ import java.util.stream.Collectors;
 public class ArangoQueryBuilder extends AbstractQueryBuilder {
 
 
-    public ArangoQueryBuilder(Specification specification, Integer size, Integer start, String searchTerm, String permissionGroupFieldName, Set<String> whitelistOrganizations) {
-        super(specification, size, start, searchTerm, permissionGroupFieldName, whitelistOrganizations);
+    public ArangoQueryBuilder(Specification specification, Integer size, Integer start, String searchTerm, String permissionGroupFieldName, Set<String> whitelistOrganizations, String instanceId) {
+        super(specification, size, start, searchTerm, permissionGroupFieldName, whitelistOrganizations, instanceId);
     }
 
     @Override
@@ -81,6 +82,7 @@ public class ArangoQueryBuilder extends AbstractQueryBuilder {
     }
 
 
+
     @Override
     public ArangoQueryBuilder addRoot(String rootCollection) {
         sb.append(String.format("FOR %s_%s IN `%s`\n", ROOT_ALIAS, DOC_POSTFIX, rootCollection));
@@ -142,6 +144,11 @@ public class ArangoQueryBuilder extends AbstractQueryBuilder {
     @Override
     public void addMerge(String leaf_field, Set<String> merged_fields, boolean sorted) {
         sb.append(String.format("\n%s LET %s = %s APPEND(%s, true) %s\n", getIndentation(), leaf_field, sorted ? "( FOR el IN" : "", String.join(", ", merged_fields), sorted ? " SORT el ASC RETURN el)" : ""));
+    }
+
+    @Override
+    public void addInstanceIdFilter() {
+        sb.append(String.format("\nFILTER %s_%s._id == \"%s\"\n", currentAlias, DOC_POSTFIX, this.instanceId));
     }
 
     @Override
