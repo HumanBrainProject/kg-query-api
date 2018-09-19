@@ -118,10 +118,21 @@ public class ArangoQuery {
         }
     }
 
-    public QueryResult<String> queryPropertyGraphByStoredSpecificationAndFreemarkerTemplate(String id, String template, QueryParameters parameters, String instanceId) throws IOException, JSONException {
-        QueryResult<List<Map>> queryResult = queryPropertyGraphByStoredSpecification(id, parameters, instanceId);
+    public QueryResult<String> queryPropertyGraphByStoredSpecificationAndFreemarkerTemplate(String id, String template, QueryParameters parameters) throws IOException, JSONException {
+        QueryResult<List<Map>> queryResult = queryPropertyGraphByStoredSpecification(id, parameters, null);
         return createResult(queryResult, freemarkerTemplating.applyTemplate(template, queryResult, parameters.library, arangoInternal), parameters.withOriginalJson);
     }
+
+    public Map queryPropertyGraphByStoredSpecificationAndFreemarkerTemplateWithId(String id, String template, QueryParameters parameters, String instanceId) throws IOException, JSONException {
+        QueryResult<List<Map>> queryResult = queryPropertyGraphByStoredSpecification(id, parameters, instanceId);
+        if(instanceId != null){
+            if(queryResult.getResults().size() >= 1){
+              return queryResult.getResults().get(0);
+            }
+        }
+        return null;
+    }
+
 
 
     public QueryResult<String> metaQueryPropertyGraphByStoredSpecificationAndFreemarkerTemplate(String id, String template, QueryParameters parameters) throws IOException, JSONException {

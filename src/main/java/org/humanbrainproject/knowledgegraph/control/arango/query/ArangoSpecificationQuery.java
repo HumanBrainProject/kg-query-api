@@ -54,8 +54,8 @@ public class ArangoSpecificationQuery {
 
     public QueryResult<List<Map>> queryForSpecification(Specification spec, Set<String> whiteListOrganizations, QueryParameters parameters, String instanceId) throws JSONException {
         QueryResult<List<Map>> result = new QueryResult<>();
-        instanceId = namingConvention.fromNexusIdToArangoId(instanceId);
-        String query = createQuery(new ArangoQueryBuilder(spec, parameters.size, parameters.start, configuration.getPermissionGroup(), whiteListOrganizations, instanceId), parameters);
+        ArangoQueryBuilder queryBuilder = new ArangoQueryBuilder(spec, parameters.size, parameters.start, configuration.getPermissionGroup(), whiteListOrganizations, instanceId);
+        String query = createQuery(queryBuilder, parameters);
         AqlQueryOptions options = new AqlQueryOptions();
         if(parameters.size!=null) {
             options.fullCount(true);

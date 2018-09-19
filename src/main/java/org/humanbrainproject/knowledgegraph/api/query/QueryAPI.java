@@ -40,12 +40,12 @@ public class QueryAPI {
         }
     }
 
-    @PostMapping(value="/{instanceId}", consumes = {MediaType.APPLICATION_JSON, "application/ld+json"})
-    public ResponseEntity<Map> queryPropertyGraphBySpecificationWithId(@PathVariable("instanceId") String instanceId , @RequestBody String payload, @RequestParam(value = "usecontext", required = false, defaultValue = "false") boolean useContext, @RequestParam(value = "size", required = false) Integer size, @RequestParam(value = "start", required = false) Integer start, @RequestParam(value="orgs", required = false) String organizations, @RequestParam(value="released", required = false) boolean released, @RequestHeader(value = "Authorization", required = false) String authorization) throws Exception {
+    @PostMapping(value="/{org}/{domain}/{schema}/{version}/{instanceId}", consumes = {MediaType.APPLICATION_JSON, "application/ld+json"})
+    public ResponseEntity<Map> queryPropertyGraphBySpecificationWithId(@PathVariable("org") String org, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("version") String version, @PathVariable("instanceId") String instanceId , @RequestBody String payload, @RequestParam(value = "usecontext", required = false, defaultValue = "false") boolean useContext, @RequestParam(value = "size", required = false) Integer size, @RequestParam(value = "start", required = false) Integer start, @RequestParam(value="orgs", required = false) String organizations, @RequestParam(value="released", required = false) boolean released, @RequestHeader(value = "Authorization", required = false) String authorization) throws Exception {
         try {
-            instanceId = URLDecoder.decode(instanceId, "UTF-8");
+            String fullId = String.format("%s-%s-%s-%s/%s", org, domain, schema, version.replaceAll("\\.", "_"), instanceId);
             QueryParameters parameters = new QueryParameters().setReleased(released).setStart(start).setSize(size).setUseContext(useContext).setOrganizations(organizations).setAuthorizationToken(authorization);
-            QueryResult<List<Map>> result = query.queryPropertyGraphBySpecification(payload, parameters, instanceId);
+            QueryResult<List<Map>> result = query.queryPropertyGraphBySpecification(payload, parameters, fullId);
             if(result.getResults().size() >= 1){
                 return ResponseEntity.ok(result.getResults().get(0));
             }else{
@@ -67,12 +67,12 @@ public class QueryAPI {
         }
     }
 
-    @GetMapping("/{queryId}/{instanceId}")
-    public ResponseEntity<Map> executeStoredQuery(@PathVariable("queryId") String id, @PathVariable("instanceId") String instanceId, @RequestParam(value = "usecontext", required = false, defaultValue = "false") boolean useContext,  @RequestParam(value = "size", required = false) Integer size, @RequestParam(value = "start", required = false) Integer start, @RequestParam(value="orgs", required = false) String organizations, @RequestParam(value="released", required = false) boolean released, @RequestHeader(value = "Authorization", required = false) String authorization) throws Exception {
+    @GetMapping("/{queryId}/{org}/{domain}/{schema}/{version}/{instanceId}")
+    public ResponseEntity<Map> executeStoredQuery(@PathVariable("queryId") String id,@PathVariable("org") String org, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("version") String version, @PathVariable("instanceId") String instanceId, @RequestParam(value = "usecontext", required = false, defaultValue = "false") boolean useContext,  @RequestParam(value = "size", required = false) Integer size, @RequestParam(value = "start", required = false) Integer start, @RequestParam(value="orgs", required = false) String organizations, @RequestParam(value="released", required = false) boolean released, @RequestHeader(value = "Authorization", required = false) String authorization) throws Exception {
         try {
-            instanceId = URLDecoder.decode(instanceId, "UTF-8");
+            String fullId = String.format("%s-%s-%s-%s/%s", org, domain, schema, version.replaceAll("\\.", "_"), instanceId);
             QueryParameters parameters = new QueryParameters().setReleased(released).setStart(start).setSize(size).setUseContext(useContext).setOrganizations(organizations).setAuthorizationToken(authorization);
-            QueryResult<List<Map>> result = query.queryPropertyGraphByStoredSpecification(id, parameters, instanceId);
+            QueryResult<List<Map>> result = query.queryPropertyGraphByStoredSpecification(id, parameters, fullId);
             if(result.getResults().size() >= 1){
                 return ResponseEntity.ok(result.getResults().get(0));
             }else{
@@ -98,20 +98,20 @@ public class QueryAPI {
     public ResponseEntity<QueryResult> applyFreemarkerTemplateToApi(@RequestBody String template, @PathVariable("queryId") String id,  @RequestParam(value = "size", required = false) Integer size, @RequestParam(value = "start", required = false) Integer start, @RequestParam(value= "lib", required = false) String library, @RequestParam(value="orgs", required = false) String organizations, @RequestParam(value="released", required = false) boolean released, @RequestHeader(value = "Authorization", required = false) String authorization) throws Exception {
         try {
             QueryParameters parameters = new QueryParameters().setReleased(released).setStart(start).setSize(size).setLibrary(library).setOrganizations(organizations).setAuthorizationToken(authorization);
-            QueryResult<String> result = query.queryPropertyGraphByStoredSpecificationAndFreemarkerTemplate(id, template, parameters, null);
+            QueryResult<String> result = query.queryPropertyGraphByStoredSpecificationAndFreemarkerTemplate(id, template, parameters);
             return ResponseEntity.ok(RestUtils.toJsonResultIfPossible(result));
         } catch (HttpClientErrorException e) {
             return ResponseEntity.status(e.getStatusCode()).build();
         }
     }
 
-    @PostMapping(value = "/{queryId}/{instanceId}/template", consumes = {MediaType.TEXT_PLAIN})
-    public ResponseEntity<QueryResult> applyFreemarkerTemplateToApi(@RequestBody String template, @PathVariable("queryId") String id, @PathVariable("instanceId") String instanceId,  @RequestParam(value = "size", required = false) Integer size, @RequestParam(value = "start", required = false) Integer start, @RequestParam(value= "lib", required = false) String library, @RequestParam(value="orgs", required = false) String organizations, @RequestParam(value="released", required = false) boolean released, @RequestHeader(value = "Authorization", required = false) String authorization) throws Exception {
+    @PostMapping(value = "/{queryId}/{org}/{domain}/{schema}/{version}/{instanceId}/template", consumes = {MediaType.TEXT_PLAIN})
+    public ResponseEntity<Map> applyFreemarkerTemplateToApiWithId(@RequestBody String template, @PathVariable("queryId") String id,@PathVariable("org") String org, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("version") String version, @PathVariable("instanceId") String instanceId,  @RequestParam(value = "size", required = false) Integer size, @RequestParam(value = "start", required = false) Integer start, @RequestParam(value= "lib", required = false) String library, @RequestParam(value="orgs", required = false) String organizations, @RequestParam(value="released", required = false) boolean released, @RequestHeader(value = "Authorization", required = false) String authorization) throws Exception {
         try {
-            instanceId = URLDecoder.decode(URLDecoder.decode(instanceId, "UTF-8"), "UTF-8");
+            String fullId = String.format("%s-%s-%s-%s/%s", org, domain, schema, version.replaceAll("\\.", "_"), instanceId);
             QueryParameters parameters = new QueryParameters().setReleased(released).setStart(start).setSize(size).setLibrary(library).setOrganizations(organizations).setAuthorizationToken(authorization);
-            QueryResult<String> result = query.queryPropertyGraphByStoredSpecificationAndFreemarkerTemplate(id, template, parameters, instanceId);
-            return ResponseEntity.ok(RestUtils.toJsonResultIfPossible(result));
+            Map result = query.queryPropertyGraphByStoredSpecificationAndFreemarkerTemplateWithId(id, template, parameters, fullId);
+            return ResponseEntity.ok(result);
         } catch (HttpClientErrorException e) {
             return ResponseEntity.status(e.getStatusCode()).build();
         }
@@ -133,6 +133,13 @@ public class QueryAPI {
         Template template = templating.getTemplateById(String.format("%s_%s", queryId, templateId));
         return applyFreemarkerTemplateToApi(template.getTemplateContent(), queryId, size, start, template.getLibrary(), organizations, released, authorization);
     }
+
+    @GetMapping(value = "/{queryId}/{org}/{domain}/{schema}/{version}/{instanceId}/template/{templateId}")
+    public ResponseEntity<Map> executeQueryBasedOnTemplateWithId(@PathVariable("queryId") String queryId,@PathVariable("org") String org, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("version") String version, @PathVariable("instanceId") String instanceId, @PathVariable("templateId") String templateId, @RequestParam(value = "size", required = false) Integer size, @RequestParam(value = "start", required = false) Integer start, @RequestParam(value="orgs", required = false) String organizations, @RequestParam(value="released", required = false) boolean released, @RequestHeader(value = "Authorization", required = false) String authorization) throws Exception {
+        Template template = templating.getTemplateById(String.format("%s_%s", queryId, templateId));
+        return applyFreemarkerTemplateToApiWithId(template.getTemplateContent(), queryId, org, domain, schema, version, instanceId, size, start, template.getLibrary(), organizations, released, authorization);
+    }
+
 
 
 }
