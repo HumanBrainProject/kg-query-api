@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.annotations.Api;
 import org.humanbrainproject.knowledgegraph.boundary.graph.ArangoGraph;
+import org.humanbrainproject.knowledgegraph.boundary.query.ArangoQuery;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.configurationprocessor.json.JSONArray;
 import org.springframework.boot.configurationprocessor.json.JSONException;
@@ -34,6 +35,7 @@ public class GraphAPI {
             String v = version.replaceAll("\\.", "_");
             String vert =  String.format("%s-%s-%s-%s/%s", org,domain, schema, v, id);
             //TODO Validate step value
+
             return ResponseEntity.ok(graph.getGraph(vert, step));
         } catch (HttpClientErrorException e){
             return ResponseEntity.status(e.getStatusCode()).build();
