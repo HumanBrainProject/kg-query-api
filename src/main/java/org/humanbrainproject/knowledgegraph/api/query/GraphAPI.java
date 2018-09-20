@@ -69,4 +69,22 @@ public class GraphAPI {
             return ResponseEntity.status(e.getStatusCode()).build();
         }
     }
+
+    @GetMapping(value = "/releasestatus/{org}/{domain}/{schema}/{version}/{id}", consumes = { MediaType.WILDCARD})
+    public ResponseEntity<Map<String,Object>> getReleaseStatus(@PathVariable("org") String org, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("version") String version, @PathVariable("id") String id) throws Exception{
+        try{
+            String v = version.replaceAll("\\.", "_");
+            String vert =  String.format("%s-%s-%s-%s/%s", org,domain, schema, v, id);
+            String reconciledId =  String.format("%sreconciled-%s-%s-%s/%s", org,domain, schema, v, id);
+            List<Map> rootList = graph.getReleaseStatus(vert, reconciledId);
+            if(rootList.isEmpty()){
+                throw new Exception("Document not found");
+            }
+            Map root = rootList.get(0);
+            return ResponseEntity.ok(root);
+
+        } catch (HttpClientErrorException e){
+            return ResponseEntity.status(e.getStatusCode()).build();
+        }
+    }
 }
