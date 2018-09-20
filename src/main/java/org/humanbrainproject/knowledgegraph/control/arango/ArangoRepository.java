@@ -385,11 +385,19 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
         ArangoCursor<Map> q = db.query(query, null, new AqlQueryOptions(), Map.class );
         return q.asListRemaining();
     }
-    public List<Map> getInstanceList(String collection,  ArangoDriver driver){
+    public List<Map> getInstanceList(String collection, Integer from, Integer size, ArangoDriver driver){
         ArangoDatabase db = driver.getOrCreateDB();
         String c = String.join("reconciled-",collection.split("-", 2));
         String recCollection = driver.getCollectionLabels().stream().noneMatch( el ->  el.equals(c)) ? "[]" : "`"+c+"`";
-        String query = queryFactory.getInstanceList(collection, recCollection);
+        String query = queryFactory.getInstanceList(collection, from , size, recCollection);
+        ArangoCursor<Map> q = db.query(query, null, new AqlQueryOptions(), Map.class );
+        return q.asListRemaining();
+    }
+
+    public List<Map> getReleaseStatus(String documentID, String reconciledId, ArangoDriver driver){
+        ArangoDatabase db = driver.getOrCreateDB();
+        Set<String> edgesCollections = driver.getEdgesCollectionNames();
+        String query = queryFactory.releaseStatus(edgesCollections, documentID, reconciledId);
         ArangoCursor<Map> q = db.query(query, null, new AqlQueryOptions(), Map.class );
         return q.asListRemaining();
     }

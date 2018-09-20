@@ -91,14 +91,14 @@ public class ArangoQueryFactory {
         return String.format("FOR %s_doc, %s_edge IN 1..1 OUTBOUND %s `%s`\n" +
                 "SORT %s_doc.`@type`, %s_doc.`http://schema.org/name`\n" +
                 "LET %s_status = (FOR %s_status_doc IN 1..1 INBOUND %s_doc `rel-hbp_eu-minds-releaseinstance`\n" +
-                "RETURN DISTINCT %s_status_doc.`status`)\n" +
+                "RETURN DISTINCT %s_status_doc.`http://hbp.eu/minds#releasestate`)\n" +
                 "LET %s_children = %s\n" +
                 "RETURN MERGE({\"releaseStatus\": %s_status, \"children\": %s_children, \"linkType\": %s_edge._id, \"rev\": %s_doc.`http://schema.hbp.eu/internal#rev`}, %s_doc)\n",
                 name, name, startingVertex, collectionLabels,name, name, name, name, name, name, name, childrenQuery, name, name,name, name, name
         );
     }
 
-    public String getInstanceList(String collection, String recCollection){
+    public String getInstanceList(String collection,Integer from, Integer size, String recCollection){
 
         return String.format("LET rec = (FOR rec_doc IN %s\n" +
                 "    RETURN rec_doc)\n" +
@@ -112,7 +112,29 @@ public class ArangoQueryFactory {
                 "\n" +
                 "FOR el IN UNION(minds, rec)\n" +
                 "SORT el.`http://schema.org/name`, el.`http://hbp.eu/minds#title`, el.`http://hbp.eu/minds#alias`\n" +
-                "    RETURN el", recCollection, collection);
+                "LIMIT %s, %s \n" +
+                "    RETURN el", recCollection, collection, from.toString(), size.toString());
+    }
+
+    public String releaseStatus(Set<String> edgeCollectionNames, String startingVertexId, String reconcdiledId){
+        String names = String.join("`, `", edgeCollectionNames);
+        return String.format("" +
+                "LET doc = DOCUMENT(\"%s\")\n" +
+                "LET root_doc = doc._id != null? doc:DOCUMENT(\"%s\")\n" +
+                "LET status = (FOR status_doc IN 1..1 INBOUND root_doc `rel-hbp_eu-minds-releaseinstance`\n" +
+                "        RETURN DISTINCT status_doc.`http://hbp.eu/minds#releasestate`\n" +
+                "    )\n" +
+                "    LET child_status  =  ( \n" +
+                "        FOR level1_doc  IN 1..6 OUTBOUND root_doc `%s`\n" +
+                "            LET level1_status = ( \n" +
+                "                FOR level1_status_doc IN 1..1 INBOUND level1_doc `rel-hbp_eu-minds-releaseinstance`\n" +
+                "                    RETURN DISTINCT level1_status_doc.`http://hbp.eu/minds#releasestate`\n" +
+                "                )\n" +
+                "            LET child_s = \"released\" IN status? \"RELEASED\": \"NOT_RELEASED\"\n" +
+                "            RETURN child_s\n" +
+                "        )\n" +
+                "    LET s = \"released\" IN status? \"RELEASED\": \"NOT_RELEASED\"\n" +
+                "    return {\"status\":s, \"child_status\":child_status, \"id\":\"%s\"}",reconcdiledId, startingVertexId, names, startingVertexId);
     }
 
 }
