@@ -60,11 +60,11 @@ public class GraphAPI {
     }
 
     @GetMapping(value = "/instances/{org}/{domain}/{schema}/{version}", consumes = { MediaType.WILDCARD})
-    public ResponseEntity<List<Map>> getInstanceList(@PathVariable("org") String org, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("version") String version) throws Exception{
+    public ResponseEntity<List<Map>> getInstanceList(@PathVariable("org") String org, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("version") String version, @RequestParam(value = "size", required = false) Integer size, @RequestParam(value = "from", required = false) Integer from) throws Exception{
         try{
             String v = version.replaceAll("\\.", "_");
             String collection =  String.format("%s-%s-%s-%s", org,domain, schema, v);
-            return ResponseEntity.ok(graph.getInstanceList(collection));
+            return ResponseEntity.ok(graph.getInstanceList(collection,from, size));
         } catch (HttpClientErrorException e){
             return ResponseEntity.status(e.getStatusCode()).build();
         }

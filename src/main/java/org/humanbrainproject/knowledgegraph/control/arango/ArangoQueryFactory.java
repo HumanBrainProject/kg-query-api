@@ -98,7 +98,7 @@ public class ArangoQueryFactory {
         );
     }
 
-    public String getInstanceList(String collection, String recCollection){
+    public String getInstanceList(String collection,Integer from, Integer size, String recCollection){
 
         return String.format("LET rec = (FOR rec_doc IN %s\n" +
                 "    RETURN rec_doc)\n" +
@@ -112,7 +112,8 @@ public class ArangoQueryFactory {
                 "\n" +
                 "FOR el IN UNION(minds, rec)\n" +
                 "SORT el.`http://schema.org/name`, el.`http://hbp.eu/minds#title`, el.`http://hbp.eu/minds#alias`\n" +
-                "    RETURN el", recCollection, collection);
+                "LIMIT %s, %s \n" +
+                "    RETURN el", recCollection, collection, from.toString(), size.toString());
     }
 
 }
