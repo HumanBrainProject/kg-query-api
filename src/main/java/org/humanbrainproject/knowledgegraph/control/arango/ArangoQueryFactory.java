@@ -56,13 +56,15 @@ public class ArangoQueryFactory {
         String names = String.join("`, `", collectionLabels);
         String outbound = String.format("" +
                 "FOR v, e, p IN 1..%s OUTBOUND \"%s\" `%s` \n" +
-                "        \n" +
+                "FILTER v.`http://schema.hbp.eu/internal#permissionGroup` IN whitelist_organizations \n " +
                 "        return p",step, startinVertexId, names);
         String inbound = String.format("" +
                 "FOR v, e, p IN 1..1 INBOUND \"%s\" `%s` \n" +
-                "        \n" +
+                "FILTER v.`http://schema.hbp.eu/internal#permissionGroup` IN whitelist_organizations \n " +
                 "        return p", startinVertexId, names);
-        return String.format("FOR path IN UNION_DISTINCT(" +
+        return String.format("" +
+                "LET whitelist_organizations=[\"minds\",\"brainviewer\",\"cscs\",\"datacite\",\"licenses\",\"minds2\",\"neuroglancer\"]" +
+                "FOR path IN UNION_DISTINCT(" +
                 "(%s),(%s)" +
                 ")" +
                 "return path", outbound, inbound);
