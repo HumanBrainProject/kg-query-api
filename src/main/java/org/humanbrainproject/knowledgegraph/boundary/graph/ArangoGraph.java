@@ -35,8 +35,8 @@ public class ArangoGraph {
         return  arangoRepository.getDocument(documentID, arango);
     }
 
-    public List<Map> getInstanceList(String collection, Integer from, Integer size) throws IOException{
-        return arangoRepository.getInstanceList(collection, from, size ,arango);
+    public List<Map> getInstanceList(String collection, Integer from, Integer size, String searchTerm) throws IOException{
+        return arangoRepository.getInstanceList(collection, from, size, searchTerm ,arango);
     }
 
     public List<Map> getReleaseStatus(String vertexId, String reconciledId) throws IOException{

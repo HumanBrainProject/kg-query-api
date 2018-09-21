@@ -100,8 +100,11 @@ public class ArangoQueryFactory {
         );
     }
 
-    public String getInstanceList(String collection,Integer from, Integer size, String recCollection){
-
+    public String getInstanceList(String collection,Integer from, Integer size,String searchTerm, String recCollection){
+        String search = "";
+        if(searchTerm != null && !searchTerm.isEmpty()){
+            search = String.format("FILTER LIKE (el.`http://schema.org/name`, \"%%%s%%\")", searchTerm);
+        }
         return String.format("LET rec = (FOR rec_doc IN %s\n" +
                 "    RETURN rec_doc)\n" +
                 "LET f = (FOR e IN rec\n" +
@@ -111,11 +114,11 @@ public class ArangoQueryFactory {
                 "    FILTER (doc.`@id` NOT IN f)\n" +
                 "    RETURN doc\n" +
                 ")\n" +
-                "\n" +
                 "FOR el IN UNION(minds, rec)\n" +
+                "%s \n" +
                 "SORT el.`http://schema.org/name`, el.`http://hbp.eu/minds#title`, el.`http://hbp.eu/minds#alias`\n" +
                 "LIMIT %s, %s \n" +
-                "    RETURN el", recCollection, collection, from.toString(), size.toString());
+                "    RETURN el", recCollection, collection, search, from.toString(), size.toString());
     }
 
     public String releaseStatus(Set<String> edgeCollectionNames, String startingVertexId, String reconcdiledId){
