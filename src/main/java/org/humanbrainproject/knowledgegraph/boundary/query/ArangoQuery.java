@@ -1,5 +1,6 @@
 package org.humanbrainproject.knowledgegraph.boundary.query;
 
+import com.github.jsonldjava.core.JsonLdConsts;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.gson.Gson;
 import org.humanbrainproject.knowledgegraph.control.arango.ArangoDriver;
@@ -71,6 +72,7 @@ public class ArangoQuery {
         readableOrganizations.add("licenses");
         readableOrganizations.add("minds2");
         readableOrganizations.add("neuroglancer");
+        readableOrganizations.add("kgeditor");
         if(whitelisted!=null){
             readableOrganizations.retainAll(Arrays.asList(whitelisted));
         }
@@ -82,16 +84,17 @@ public class ArangoQuery {
         return specificationQuery.metaSpecification(spec, parameters);
     }
 
-    public QueryResult<List<Map>> queryPropertyGraphBySpecification(String specification, QueryParameters parameters) throws JSONException, IOException {
+    public QueryResult<List<Map>> queryPropertyGraphBySpecification(String specification, QueryParameters parameters, String instanceId) throws JSONException, IOException {
         Set<String> readableOrganizations = getReadableOrganizations(parameters.authorizationToken, parameters.organizations);
-        Object originalContext = null;
-        if (parameters.useContext) {
-            originalContext = standardization.getContext(specification);
+        Map<String, Object> context = null;
+        if (parameters.vocab!=null) {
+            context = new LinkedHashMap<>();
+            context.put(JsonLdConsts.VOCAB, parameters.vocab);
         }
         Specification spec = specInterpreter.readSpecification(JsonUtils.toString(standardization.fullyQualify(specification)));
-        QueryResult<List<Map>> result = specificationQuery.queryForSpecification(spec, readableOrganizations, parameters);
-        if (originalContext != null) {
-            result.setResults(standardization.applyContext(result.getResults(), originalContext));
+        QueryResult<List<Map>> result = specificationQuery.queryForSpecification(spec, readableOrganizations, parameters,instanceId);
+        if (context != null) {
+            result.setResults(standardization.applyContext(result.getResults(), context));
         }
         return result;
     }
@@ -101,9 +104,9 @@ public class ArangoQuery {
         return metaQueryBySpecification(payload, parameters);
     }
 
-    public QueryResult<List<Map>> queryPropertyGraphByStoredSpecification(String id, QueryParameters parameters) throws IOException, JSONException {
+    public QueryResult<List<Map>> queryPropertyGraphByStoredSpecification(String id, QueryParameters parameters, String instanceId) throws IOException, JSONException {
         String payload = arangoUploader.getByKey(SPECIFICATION_QUERIES, id, String.class, arangoInternal);
-        return queryPropertyGraphBySpecification(payload, parameters);
+        return queryPropertyGraphBySpecification(payload, parameters, instanceId);
     }
 
     public void storeSpecificationInDb(String specification, String id) throws JSONException {
@@ -119,9 +122,20 @@ public class ArangoQuery {
     }
 
     public QueryResult<String> queryPropertyGraphByStoredSpecificationAndFreemarkerTemplate(String id, String template, QueryParameters parameters) throws IOException, JSONException {
-        QueryResult<List<Map>> queryResult = queryPropertyGraphByStoredSpecification(id, parameters);
+        QueryResult<List<Map>> queryResult = queryPropertyGraphByStoredSpecification(id, parameters, null);
         return createResult(queryResult, freemarkerTemplating.applyTemplate(template, queryResult, parameters.library, arangoInternal), parameters.withOriginalJson);
     }
+
+    public Map queryPropertyGraphByStoredSpecificationAndFreemarkerTemplateWithId(String id, String template, QueryParameters parameters, String instanceId) throws IOException, JSONException {
+        QueryResult<List<Map>> queryResult = queryPropertyGraphByStoredSpecification(id, parameters, instanceId);
+        if(instanceId != null){
+            if(queryResult.getResults().size() >= 1){
+              return queryResult.getResults().get(0);
+            }
+        }
+        return null;
+    }
+
 
 
     public QueryResult<String> metaQueryPropertyGraphByStoredSpecificationAndFreemarkerTemplate(String id, String template, QueryParameters parameters) throws IOException, JSONException {

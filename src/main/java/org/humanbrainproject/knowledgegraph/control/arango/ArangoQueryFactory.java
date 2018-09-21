@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Component
 public class ArangoQueryFactory {
@@ -55,16 +56,94 @@ public class ArangoQueryFactory {
         String names = String.join("`, `", collectionLabels);
         String outbound = String.format("" +
                 "FOR v, e, p IN 1..%s OUTBOUND \"%s\" `%s` \n" +
-                "        \n" +
+                "FILTER v.`http://schema.hbp.eu/internal#permissionGroup` IN whitelist_organizations \n " +
                 "        return p",step, startinVertexId, names);
         String inbound = String.format("" +
                 "FOR v, e, p IN 1..1 INBOUND \"%s\" `%s` \n" +
-                "        \n" +
+                "FILTER v.`http://schema.hbp.eu/internal#permissionGroup` IN whitelist_organizations \n " +
                 "        return p", startinVertexId, names);
-        return String.format("FOR path IN UNION_DISTINCT(" +
+        return String.format("" +
+                "LET whitelist_organizations=[\"minds\",\"brainviewer\",\"cscs\",\"datacite\",\"licenses\",\"minds2\",\"neuroglancer\"]" +
+                "FOR path IN UNION_DISTINCT(" +
                 "(%s),(%s)" +
                 ")" +
                 "return path", outbound, inbound);
+    }
+
+    public String getDocument(String documentID){
+        return String.format("LET doc = DOCUMENT(\"%s\")\n" +
+                "RETURN doc", documentID);
+    }
+
+    public String queryReleaseGraph(Set<String> edgeCollectionNames, String startinVertexId,Integer maxDepth, ArangoDriver driver) {
+        Set<String> collectionLabels= driver!=null ? driver.filterExistingCollectionLabels(edgeCollectionNames) : edgeCollectionNames;
+        Set<String> collectionLabelsFiltered = collectionLabels.stream().filter( col -> !col.startsWith("rel-www_w3_org")).collect(Collectors.toSet());
+        String names = String.join("`, `", collectionLabelsFiltered);
+        String start = String.format("DOCUMENT(\"%s\")", startinVertexId);
+        return  childrenStatus(start, 1, maxDepth, names);
+    }
+
+    private String childrenStatus(String startingVertex, Integer level, Integer maxDepth, String collectionLabels){
+        String name = "level"+level;
+        String childrenQuery = "[]";
+        if(level < maxDepth){
+            childrenQuery = String.format("(%s)", childrenStatus(name+"_doc", level+ 1, maxDepth, collectionLabels));
+        }
+
+        return String.format("FOR %s_doc, %s_edge IN 1..1 OUTBOUND %s `%s`\n" +
+                "SORT %s_doc.`@type`, %s_doc.`http://schema.org/name`\n" +
+                "LET %s_status = (FOR %s_status_doc IN 1..1 INBOUND %s_doc `rel-hbp_eu-minds-releaseinstance`\n" +
+                "RETURN DISTINCT %s_status_doc.`http://hbp.eu/minds#releasestate`)\n" +
+                "LET %s_children = %s\n" +
+                "RETURN MERGE({\"releaseStatus\": %s_status, \"children\": %s_children, \"linkType\": %s_edge._id, \"rev\": %s_doc.`http://schema.hbp.eu/internal#rev`}, %s_doc)\n",
+                name, name, startingVertex, collectionLabels,name, name, name, name, name, name, name, childrenQuery, name, name,name, name, name
+        );
+    }
+
+    public String getInstanceList(String collection,Integer from, Integer size,String searchTerm, String recCollection){
+        String search = "";
+        if(searchTerm != null && !searchTerm.isEmpty()){
+            search = String.format("FILTER LIKE (el.`http://schema.org/name`, \"%%%s%%\")\n", searchTerm);
+        }
+        String limit = "";
+        if(from != null && size != null){
+            limit =  String.format("LIMIT %s, %s \n", from.toString(), size.toString());
+        }
+        return String.format("LET rec = (FOR rec_doc IN %s\n" +
+                "    RETURN rec_doc)\n" +
+                "LET f = (FOR e IN rec\n" +
+                "    RETURN SPLIT( e.`http://hbp.eu/reconciled#origin`, \"v0/data/\")[1]\n" +
+                ")\n" +
+                "LET minds = ( FOR doc IN `%s`\n" +
+                "    FILTER (doc.`@id` NOT IN f)\n" +
+                "    RETURN doc\n" +
+                ")\n" +
+                "FOR el IN UNION(minds, rec)\n" +
+                "%s" +
+                "%s" +
+                "SORT el.`http://schema.org/name`, el.`http://hbp.eu/minds#title`, el.`http://hbp.eu/minds#alias`\n" +
+                "    RETURN el", recCollection, collection, search, limit);
+    }
+
+    public String releaseStatus(Set<String> edgeCollectionNames, String startingVertexId, String reconcdiledId){
+        String names = String.join("`, `", edgeCollectionNames);
+        return String.format("" +
+                "LET doc = DOCUMENT(\"%s\")\n" +
+                "LET root_doc = doc._id != null? doc:DOCUMENT(\"%s\")\n" +
+                "LET status = (FOR status_doc IN 1..1 INBOUND root_doc `rel-hbp_eu-minds-releaseinstance`\n" +
+                "        RETURN DISTINCT status_doc.`http://hbp.eu/minds#releasestate`\n" +
+                "    )\n" +
+                "    LET child_status  =  ( \n" +
+                "        FOR level1_doc  IN 1..6 OUTBOUND root_doc `%s`\n" +
+                "            LET level1_status = ( \n" +
+                "                FOR level1_status_doc IN 1..1 INBOUND level1_doc `rel-hbp_eu-minds-releaseinstance`\n" +
+                "                    RETURN DISTINCT level1_status_doc.`http://hbp.eu/minds#releasestate`\n" +
+                "                )\n" +
+                "            LET child_s = \"released\" IN status? \"RELEASED\": \"NOT_RELEASED\"\n" +
+                "            RETURN child_s\n" +
+                "        )\n" +
+                "    LET s = \"released\" IN status? \"RELEASED\": \"NOT_RELEASED\"\n" +
+                "    return {\"status\":s, \"child_status\":child_status, \"id\":\"%s\"}",reconcdiledId, startingVertexId, names, startingVertexId);
     }
 
 }

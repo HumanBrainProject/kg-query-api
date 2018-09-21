@@ -1,22 +1,24 @@
 package org.humanbrainproject.knowledgegraph.control.releasing;
 
-import com.github.jsonldjava.core.JsonLdConsts;
-import org.humanbrainproject.knowledgegraph.control.arango.*;
+import org.humanbrainproject.knowledgegraph.control.arango.ArangoNamingConvention;
+import org.humanbrainproject.knowledgegraph.control.arango.ArangoRepository;
+import org.humanbrainproject.knowledgegraph.control.arango.DatabaseController;
+import org.humanbrainproject.knowledgegraph.entity.indexing.Release;
 import org.humanbrainproject.knowledgegraph.entity.jsonld.JsonLdEdge;
-import org.humanbrainproject.knowledgegraph.entity.jsonld.JsonLdProperty;
-import org.humanbrainproject.knowledgegraph.entity.jsonld.JsonLdVertex;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.configurationprocessor.json.JSONException;
-import org.springframework.boot.configurationprocessor.json.JSONObject;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Component
 public class ReleasingController {
 
-    private static final String RELEASE_TYPE = "http://hbp.eu/minds#Release";
-    private static final String RELEASE_INSTANCE_PROPERTYNAME = "http://hbp.eu/minds#releaseinstance";
+    @Autowired
+    public DatabaseController controller;
 
     @Autowired
     ArangoRepository repository;
@@ -24,74 +26,55 @@ public class ReleasingController {
     @Autowired
     ArangoNamingConvention namingConvention;
 
-    public boolean isRelevantForReleasing(List<JsonLdVertex> vertices) {
-        for (JsonLdVertex vertex : vertices) {
-            JsonLdProperty typeProperty = vertex.getPropertyByName(JsonLdConsts.TYPE);
-            if (typeProperty != null && RELEASE_TYPE.equals(typeProperty.getValue())) {
-                return true;
+    public Set<String> findDocumentIdsToBeUnreleased(Release release) {
+        return release.getVertices().stream().map(v -> {
+            List<JsonLdEdge> edgesToBeRemoved = repository.getEdgesToBeRemoved(v, controller.getDefaultDB());
+            return edgesToBeRemoved.stream().map(e -> repository.getTargetVertexId(e, controller.getDefaultDB())).collect(Collectors.toList());
+        }).flatMap(List::stream).collect(Collectors.toSet());
+    }
+
+    public void unreleaseDocumentsById(Set<String> documentIdsToBeUnreleased) {
+        if (documentIdsToBeUnreleased != null) {
+            documentIdsToBeUnreleased.forEach(d -> unreleaseInstance(d, false));
+        }
+    }
+
+    public void releaseVertices(Release release) {
+        if(release!=null) {
+            List<String> releaseInstances = release.getReleaseInstances();
+            for (String releaseInstance : releaseInstances) {
+                releaseInstance(releaseInstance);
             }
         }
-        return false;
     }
 
-    public boolean isRelevantForReleasing(Map object) {
-        return object.containsKey(JsonLdConsts.TYPE) && RELEASE_TYPE.equals(object.get(JsonLdConsts.TYPE));
+    public void unreleaseVertices(Release release) {
+        if(release!=null) {
+            List<String> releaseInstances = release.getReleaseInstances();
+            for (String releaseInstance : releaseInstances) {
+                unreleaseInstance(releaseInstance, true);
+            }
+        }
     }
 
-    public void releaseVertices(List<JsonLdVertex> originalVertices, ArangoDriver defaultDb, ArangoDriver releaseDb) throws JSONException {
-        for (JsonLdVertex originalVertex : originalVertices) {
-            JsonLdProperty releaseInstances = originalVertex.getPropertyByName(RELEASE_INSTANCE_PROPERTYNAME);
-            if (releaseInstances != null) {
-                if (releaseInstances.getValue() instanceof List) {
-                    for (Object o : ((List) releaseInstances.getValue())) {
-                        if (o instanceof JSONObject) {
-                            releaseInstance((JSONObject) o, defaultDb, releaseDb);
-                        } else {
-                            throw new RuntimeException(String.format("Was not able to release instance! Release structure passed non-interpretable type %s", o.getClass()));
-                        }
-                    }
-                } else if (releaseInstances.getValue() instanceof JSONObject) {
-                    releaseInstance((JSONObject) releaseInstances.getValue(), defaultDb, releaseDb);
-                } else {
-                    throw new RuntimeException(String.format("Was not able to release instance! Release structure passed non-interpretable type %s", releaseInstances.getValue().getClass()));
+    private void releaseInstance(String identifier) {
+        if(identifier!=null){
+            Set<String> edgesCollectionNames = controller.getDefaultDB().getEdgesCollectionNames();
+            Set<String> embeddedInstances = repository.getEmbeddedInstances(Collections.singletonList(identifier), controller.getDefaultDB(), edgesCollectionNames, new LinkedHashSet<>());
+            repository.stageElementsToReleased(embeddedInstances, controller.getDefaultDB(), controller.getReleasedDB());
+        }
+    }
+
+    public void unreleaseInstance(String url, boolean requireHttp) {
+        //The url needs to be absolute - everything else is not resolvable.
+        if(url!=null && !url.isEmpty()) {
+            if (!requireHttp || url.startsWith("http")) {
+                Set<String> edgesCollectionNames = controller.getReleasedDB().getEdgesCollectionNames();
+                Set<String> embeddedInstances = repository.getEmbeddedInstances(Collections.singletonList(url), controller.getReleasedDB(), edgesCollectionNames, new LinkedHashSet<>());
+                for (String embeddedInstance : embeddedInstances) {
+                    repository.deleteVertex(embeddedInstance, controller.getReleasedDB());
                 }
             }
-        }
-    }
-
-
-    public void unreleaseVertices(Map instance, ArangoDriver releaseDb) {
-        Object releaseInstanceUrls = instance.get(RELEASE_INSTANCE_PROPERTYNAME);
-        if (releaseInstanceUrls != null) {
-            if (releaseInstanceUrls instanceof List) {
-                for (Object o : ((List) releaseInstanceUrls)) {
-                    if(o instanceof Map && ((Map)o).containsKey(JsonLdConsts.ID)){
-                        unreleaseInstance(((Map) o).get(JsonLdConsts.ID).toString(), releaseDb);
-                    }
-                }
-            } else if (releaseInstanceUrls instanceof Map && ((Map)releaseInstanceUrls).containsKey(JsonLdConsts.ID)) {
-                unreleaseInstance(((Map) releaseInstanceUrls).get(JsonLdConsts.ID).toString(), releaseDb);
-            } else {
-                throw new RuntimeException(String.format("Was not able to unrelease instance! %s", releaseInstanceUrls));
-            }
-        }
-    }
-
-    private void releaseInstance(JSONObject object, ArangoDriver defaultDb, ArangoDriver releaseDb) throws JSONException {
-        if (object.has(JsonLdConsts.ID)) {
-            Set<String> edgesCollectionNames = defaultDb.getEdgesCollectionNames();
-            Set<String> embeddedInstances = repository.getEmbeddedInstances(Collections.singletonList(object.getString(JsonLdConsts.ID)), defaultDb, edgesCollectionNames, new LinkedHashSet<>());
-            repository.stageElementsToReleased(embeddedInstances, defaultDb, releaseDb);
-        } else {
-            throw new RuntimeException("Release object did not contain a valid reference");
-        }
-    }
-
-    public void unreleaseInstance(String url, ArangoDriver releaseDb) {
-        Set<String> edgesCollectionNames = releaseDb.getEdgesCollectionNames();
-        Set<String> embeddedInstances = repository.getEmbeddedInstances(Collections.singletonList(url), releaseDb, edgesCollectionNames, new LinkedHashSet<>());
-        for (String embeddedInstance : embeddedInstances) {
-            repository.deleteVertex(embeddedInstance, releaseDb);
         }
     }
 

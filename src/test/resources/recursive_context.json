@@ -1,0 +1,19 @@
+{
+  "@context": [
+    "https://nexus-dev.humanbrainproject.org/v0/contexts/neurosciencegraph/core/data/v0.3.1",
+    "https://nexus-dev.humanbrainproject.org/v0/contexts/nexus/core/resource/v0.3.0"
+  ],
+  "@type": [
+    "nsg:SingleCellSimulationTrace",
+    "prov:Entity"
+  ],
+  "name": "trace",
+  "image": {
+    "@id": "https://nexus-dev.humanbrainproject.org/v0/data/brainsimulation/core/entity/v0.1.0/a7a68216-1ca6-4070-aac3-614c14757c27",
+    "@type": [
+      "nsg:Entity",
+      "prov:Entity"
+    ]
+  }
+}
+

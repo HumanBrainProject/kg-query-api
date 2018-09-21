@@ -1,114 +1,76 @@
 package org.humanbrainproject.knowledgegraph.boundary.indexing;
 
-import com.github.jsonldjava.utils.JsonUtils;
-import org.humanbrainproject.knowledgegraph.control.jsonld.JsonLdStandardization;
-import org.humanbrainproject.knowledgegraph.control.jsonld.JsonLdToVerticesAndEdges;
-import org.humanbrainproject.knowledgegraph.entity.jsonld.JsonLdVertex;
+import org.humanbrainproject.knowledgegraph.control.arango.ArangoRepository;
+import org.humanbrainproject.knowledgegraph.control.arango.DatabaseController;
+import org.humanbrainproject.knowledgegraph.control.indexing.GraphSpecificationController;
+import org.humanbrainproject.knowledgegraph.control.releasing.ReleasingController;
+import org.humanbrainproject.knowledgegraph.control.spatialSearch.SpatialSearchController;
+import org.humanbrainproject.knowledgegraph.entity.indexing.GraphIndexingSpec;
+import org.humanbrainproject.knowledgegraph.entity.indexing.QualifiedGraphIndexingSpec;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.configurationprocessor.json.JSONException;
+import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
-
-public abstract class GraphIndexing {
-
-
-    @Autowired
-    JsonLdStandardization jsonLdStandardization;
+@Component
+public class GraphIndexing {
 
     @Autowired
-    JsonLdToVerticesAndEdges jsonLdToVerticesAndEdges;
+    ArangoRepository repository;
 
-    private List<JsonLdVertex> prepareAndParsePayload(GraphIndexationSpec spec) throws IOException, JSONException {
-        Object jsonLd = jsonLdStandardization.ensureContext(JsonUtils.fromString(spec.getJsonOrJsonLdPayload()), spec.getDefaultNamespace());
-        jsonLd = jsonLdStandardization.fullyQualify(jsonLd);
-        return jsonLdToVerticesAndEdges.transformFullyQualifiedJsonLdToVerticesAndEdges(JsonUtils.toString(jsonLd), spec);
+    @Autowired
+    ReleasingController releasingController;
+
+    @Autowired
+    SpatialSearchController spatialSearchController;
+
+    @Autowired
+    GraphSpecificationController graphSpecificationController;
+
+    @Autowired
+    DatabaseController databaseController;
+
+
+    private Logger logger = LoggerFactory.getLogger(GraphIndexing.class);
+
+    public void insertJsonOrJsonLd(GraphIndexingSpec spec) {
+        QualifiedGraphIndexingSpec qualifiedSpec = graphSpecificationController.qualify(spec);
+        repository.uploadToPropertyGraph(qualifiedSpec, databaseController.getDefaultDB());
+        spatialSearchController.index(qualifiedSpec.asSpatialAnchoring());
+        releasingController.releaseVertices(qualifiedSpec.asRelease());
     }
 
-    public void insertJsonOrJsonLd(GraphIndexationSpec spec) throws IOException, JSONException {
-         spec.setRevision(1);
-        List<JsonLdVertex> jsonLdVertices = prepareAndParsePayload(spec);
-        transactionalJsonLdInsertion(jsonLdVertices);
+    public void updateJsonOrJsonLd(GraphIndexingSpec spec) {
+        QualifiedGraphIndexingSpec qualifiedSpec = graphSpecificationController.qualify(spec);
+        Set<String> verticesToBeUnreleased = qualifiedSpec.asRelease() != null ? releasingController.findDocumentIdsToBeUnreleased(qualifiedSpec.asRelease()) : null;
+        repository.uploadToPropertyGraph(qualifiedSpec, databaseController.getDefaultDB());
+        spatialSearchController.index(qualifiedSpec.asSpatialAnchoring());
+        releasingController.releaseVertices(qualifiedSpec.asRelease());
+        releasingController.unreleaseDocumentsById(verticesToBeUnreleased);
     }
 
-    public void updateJsonOrJsonLd(GraphIndexationSpec spec) throws IOException, JSONException {
-        List<JsonLdVertex> jsonLdVertices = prepareAndParsePayload(spec);
-        transactionalJsonLdUpdate(jsonLdVertices);
+    public void delete(GraphIndexingSpec spec) {
+        Map instance = repository.getByKey(spec.getEntityName(), spec.getId(), Map.class, databaseController.getDefaultDB());
+        if (instance != null) {
+            QualifiedGraphIndexingSpec qualifiedSpec = graphSpecificationController.qualify(spec, instance);
+            releasingController.unreleaseVertices(qualifiedSpec.asRelease());
+            releasingController.unreleaseInstance(qualifiedSpec.getUrl(), false);
+            spatialSearchController.remove(qualifiedSpec.asSpatialAnchoring());
+            repository.deleteVertex(spec.getEntityName(), spec.getId(), databaseController.getDefaultDB());
+        } else {
+            logger.error("DEL: Was not able to find entity {}/{} in repository", spec.getEntityName(), spec.getId());
+        }
     }
 
-    public void delete(String entityName, String key, Integer rev) throws JSONException {
-       transactionalJsonLdDeletion(entityName, key, rev);
+    public String getById(String entityName, String id) {
+        return repository.getByKey(entityName, id, String.class, databaseController.getDefaultDB());
     }
 
-    abstract void transactionalJsonLdInsertion(List<JsonLdVertex> jsonLdVertices) throws JSONException;
-    abstract void transactionalJsonLdUpdate(List<JsonLdVertex> jsonLdVertices) throws JSONException;
-    abstract void transactionalJsonLdDeletion(String entityName, String rootId, Integer rootRev) throws JSONException;
-
-    public abstract void clearGraph();
-
-
-    public static class GraphIndexationSpec{
-        private String entityName;
-        private String permissionGroup;
-        private String id;
-        private String jsonOrJsonLdPayload;
-        private String defaultNamespace;
-        private Integer revision;
-
-        public Integer getRevision() {
-            return revision;
-        }
-
-        public GraphIndexationSpec setRevision(Integer revision) {
-            this.revision = revision;
-            return this;
-        }
-
-        public String getEntityName() {
-            return entityName;
-        }
-
-        public GraphIndexationSpec setEntityName(String entityName) {
-            this.entityName = entityName;
-            return this;
-        }
-
-        public String getPermissionGroup() {
-            return permissionGroup;
-        }
-
-        public GraphIndexationSpec setPermissionGroup(String permissionGroup) {
-            this.permissionGroup = permissionGroup;
-            return this;
-        }
-
-        public String getId() {
-            return id;
-        }
-
-        public GraphIndexationSpec setId(String id) {
-            this.id = id;
-            return this;
-        }
-
-        public String getJsonOrJsonLdPayload() {
-            return jsonOrJsonLdPayload;
-        }
-
-        public GraphIndexationSpec setJsonOrJsonLdPayload(String jsonOrJsonLdPayload) {
-            this.jsonOrJsonLdPayload = jsonOrJsonLdPayload;
-            return this;
-        }
-
-        public String getDefaultNamespace() {
-            return defaultNamespace;
-        }
-
-        public GraphIndexationSpec setDefaultNamespace(String defaultNamespace) {
-            this.defaultNamespace = defaultNamespace;
-            return this;
-        }
+    public void clearGraph() {
+       databaseController.clearGraph();
     }
 
 }

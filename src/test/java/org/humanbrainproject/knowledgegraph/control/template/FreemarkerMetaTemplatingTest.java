@@ -1,6 +1,5 @@
 package org.humanbrainproject.knowledgegraph.control.template;
 
-import com.github.jsonldjava.utils.JsonUtils;
 import com.google.gson.Gson;
 import org.apache.commons.io.IOUtils;
 import org.humanbrainproject.knowledgegraph.control.Constants;
@@ -28,8 +27,7 @@ public class FreemarkerMetaTemplatingTest {
         freemarker = IOUtils.toString(this.getClass().getResourceAsStream("/freemarker/meta.ftl"), "UTF-8");
         String json = IOUtils.toString(this.getClass().getResourceAsStream("/apiSpec/sample.json"), "UTF-8");
         Gson gson = new Gson();
-        String spec = JsonUtils.toString(new JsonLdStandardization().fullyQualify(json));
-        this.specification = gson.fromJson(spec, Map.class);
+        this.specification = gson.fromJson(json, Map.class);
         queryResult = new QueryResult<>();
         queryResult.setResults(Collections.singletonList(specification));
         Map<String, String> context = new HashMap<>();
