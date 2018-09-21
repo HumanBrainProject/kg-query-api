@@ -103,7 +103,11 @@ public class ArangoQueryFactory {
     public String getInstanceList(String collection,Integer from, Integer size,String searchTerm, String recCollection){
         String search = "";
         if(searchTerm != null && !searchTerm.isEmpty()){
-            search = String.format("FILTER LIKE (el.`http://schema.org/name`, \"%%%s%%\")", searchTerm);
+            search = String.format("FILTER LIKE (el.`http://schema.org/name`, \"%%%s%%\")\n", searchTerm);
+        }
+        String limit = "";
+        if(from != null && size != null){
+            limit =  String.format("LIMIT %s, %s \n", from.toString(), size.toString());
         }
         return String.format("LET rec = (FOR rec_doc IN %s\n" +
                 "    RETURN rec_doc)\n" +
@@ -115,10 +119,10 @@ public class ArangoQueryFactory {
                 "    RETURN doc\n" +
                 ")\n" +
                 "FOR el IN UNION(minds, rec)\n" +
-                "%s \n" +
+                "%s" +
+                "%s" +
                 "SORT el.`http://schema.org/name`, el.`http://hbp.eu/minds#title`, el.`http://hbp.eu/minds#alias`\n" +
-                "LIMIT %s, %s \n" +
-                "    RETURN el", recCollection, collection, search, from.toString(), size.toString());
+                "    RETURN el", recCollection, collection, search, limit);
     }
 
     public String releaseStatus(Set<String> edgeCollectionNames, String startingVertexId, String reconcdiledId){
