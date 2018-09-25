@@ -120,8 +120,8 @@ public class ArangoQueryFactory {
                 ")\n" +
                 "FOR el IN UNION(minds, rec)\n" +
                 "%s" +
-                "%s" +
                 "SORT el.`http://schema.org/name`, el.`http://hbp.eu/minds#title`, el.`http://hbp.eu/minds#alias`\n" +
+                "%s" +
                 "    RETURN el", recCollection, collection, search, limit);
     }
 

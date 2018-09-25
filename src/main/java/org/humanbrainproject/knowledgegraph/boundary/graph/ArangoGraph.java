@@ -35,7 +35,7 @@ public class ArangoGraph {
         return  arangoRepository.getDocument(documentID, arango);
     }
 
-    public List<Map> getInstanceList(String collection, Integer from, Integer size, String searchTerm) throws IOException{
+    public Map getInstanceList(String collection, Integer from, Integer size, String searchTerm) throws IOException{
         return arangoRepository.getInstanceList(collection, from, size, searchTerm ,arango);
     }
 
