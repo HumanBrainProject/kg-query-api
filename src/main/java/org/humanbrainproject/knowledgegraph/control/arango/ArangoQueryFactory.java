@@ -103,7 +103,8 @@ public class ArangoQueryFactory {
     public String getInstanceList(String collection,Integer from, Integer size,String searchTerm, String recCollection){
         String search = "";
         if(searchTerm != null && !searchTerm.isEmpty()){
-            search = String.format("FILTER LIKE (el.`http://schema.org/name`, \"%%%s%%\")\n", searchTerm);
+            searchTerm = searchTerm.toLowerCase();
+            search = String.format("FILTER LIKE (LOWER(el.`http://schema.org/name`), \"%%%s%%\")\n", searchTerm);
         }
         String limit = "";
         if(from != null && size != null){
