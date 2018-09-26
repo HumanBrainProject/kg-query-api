@@ -71,8 +71,15 @@ public class ArangoQueryFactory {
     }
 
     public String getDocument(String documentID){
-        return String.format("LET doc = DOCUMENT(\"%s\")\n" +
-                "RETURN doc", documentID);
+//        return String.format("LET doc = DOCUMENT(\"%s\")\n" +
+//                "RETURN doc", documentID);
+        return String.format(
+                "LET doc = DOCUMENT(\"%s\")" +
+                        "LET status = (FOR status_doc IN 1..1 INBOUND doc `rel-hbp_eu-minds-releaseinstance`\n" +
+                        "FILTER  status_doc.`http://hbp.eu/minds#releasestate` != null \n" +
+                        "RETURN DISTINCT status_doc.`http://hbp.eu/minds#releasestate`)\n" +
+                        "RETURN MERGE({\"status\": status, \"rev\": doc.`http://schema.hbp.eu/internal#rev` }, doc)"
+        , documentID);
     }
 
     public String queryReleaseGraph(Set<String> edgeCollectionNames, String startinVertexId,Integer maxDepth, ArangoDriver driver) {
@@ -93,10 +100,11 @@ public class ArangoQueryFactory {
         return String.format("FOR %s_doc, %s_edge IN 1..1 OUTBOUND %s `%s`\n" +
                 "SORT %s_doc.`@type`, %s_doc.`http://schema.org/name`\n" +
                 "LET %s_status = (FOR %s_status_doc IN 1..1 INBOUND %s_doc `rel-hbp_eu-minds-releaseinstance`\n" +
+                "FILTER  %s_status_doc.`http://hbp.eu/minds#releasestate` != null \n" +
                 "RETURN DISTINCT %s_status_doc.`http://hbp.eu/minds#releasestate`)\n" +
                 "LET %s_children = %s\n" +
-                "RETURN MERGE({\"releaseStatus\": %s_status, \"children\": %s_children, \"linkType\": %s_edge._id, \"rev\": %s_doc.`http://schema.hbp.eu/internal#rev`}, %s_doc)\n",
-                name, name, startingVertex, collectionLabels,name, name, name, name, name, name, name, childrenQuery, name, name,name, name, name
+                "RETURN MERGE({\"status\": %s_status, \"children\": %s_children, \"linkType\": %s_edge._id, \"rev\": %s_doc.`http://schema.hbp.eu/internal#rev`}, %s_doc)\n",
+                name, name, startingVertex, collectionLabels,name, name, name, name, name, name, name, name, childrenQuery, name, name,name, name, name
         );
     }
 
