@@ -134,8 +134,10 @@ public class ArangoQueryFactory {
                 "    RETURN el", recCollection, collection, search, limit);
     }
 
-    public String releaseStatus(Set<String> edgeCollectionNames, String startingVertexId, String reconciledId){
-        String names = String.join("`, `", edgeCollectionNames);
+    public String releaseStatus(Set<String> edgeCollectionNames, String startingVertexId, String reconciledId, ArangoDriver driver){
+        Set<String> collectionLabels= driver!=null ? driver.filterExistingCollectionLabels(edgeCollectionNames) : edgeCollectionNames;
+        Set<String> collectionLabelsFiltered = collectionLabels.stream().filter( col -> !col.startsWith("rel-www_w3_org")).collect(Collectors.toSet());
+        String names = String.join("`, `", collectionLabelsFiltered);
         return String.format("" +
                 "LET doc = DOCUMENT(\"%s\")\n" +
                 "LET root_doc = doc._id != null? doc:DOCUMENT(\"%s\")\n" +
