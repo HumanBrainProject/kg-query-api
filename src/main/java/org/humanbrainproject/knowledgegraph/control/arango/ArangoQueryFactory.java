@@ -134,7 +134,7 @@ public class ArangoQueryFactory {
                 "    RETURN el", recCollection, collection, search, limit);
     }
 
-    public String releaseStatus(Set<String> edgeCollectionNames, String startingVertexId, String reconcdiledId){
+    public String releaseStatus(Set<String> edgeCollectionNames, String startingVertexId, String reconciledId){
         String names = String.join("`, `", edgeCollectionNames);
         return String.format("" +
                 "LET doc = DOCUMENT(\"%s\")\n" +
@@ -152,7 +152,7 @@ public class ArangoQueryFactory {
                 "            RETURN child_s\n" +
                 "        )\n" +
                 "    LET s = \"released\" IN status? \"RELEASED\": \"NOT_RELEASED\"\n" +
-                "    return {\"status\":s, \"child_status\":child_status, \"id\":\"%s\"}",reconcdiledId, startingVertexId, names, startingVertexId);
+                "    return {\"status\":s, \"child_status\":child_status }",reconciledId, startingVertexId, names);
     }
 
 }
