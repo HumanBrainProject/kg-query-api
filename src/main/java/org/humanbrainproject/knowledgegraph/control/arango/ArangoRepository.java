@@ -391,11 +391,21 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
         String recCollection = driver.getCollectionLabels().stream().noneMatch( el ->  el.equals(c)) ? "[]" : "`"+c+"`";
         String query = queryFactory.getInstanceList(collection, from , size, searchTerm, recCollection);
         AqlQueryOptions options = new AqlQueryOptions().count(true).fullCount(true);
-        ArangoCursor<Map> q = db.query(query, null, options, Map.class );
         Map m = new HashMap();
-        m.put("count", q.getCount());
-        m.put("fullCount", q.getStats().getFullCount());
-        m.put("data", q.asListRemaining());
+        try{
+            ArangoCursor<Map> q = db.query(query, null, options, Map.class );
+            m.put("count", q.getCount());
+            m.put("fullCount", q.getStats().getFullCount());
+            m.put("data", q.asListRemaining());
+        }catch (ArangoDBException e){
+            if(e.getResponseCode() == 404){
+                m.put("count", 0);
+                m.put("fullCount", 0);
+                m.put("data", new ArrayList<Map>());
+            }else{
+                throw e;
+            }
+        }
         return m;
     }
 
