@@ -84,7 +84,13 @@ public class ArangoQueryFactory {
 
     public String queryReleaseGraph(Set<String> edgeCollectionNames, String startinVertexId,Integer maxDepth, ArangoDriver driver) {
         Set<String> collectionLabels= driver!=null ? driver.filterExistingCollectionLabels(edgeCollectionNames) : edgeCollectionNames;
-        Set<String> collectionLabelsFiltered = collectionLabels.stream().filter( col -> !col.startsWith("rel-www_w3_org")).collect(Collectors.toSet());
+        Set<String> collectionLabelsFiltered = collectionLabels.stream().filter( col ->
+                !col.startsWith("rel-www_w3_org") &&
+                !col.startsWith("rel-hbp_eu-reconciled-original_parent") &&
+                !col.startsWith("rel-hbp_eu-reconciled-alternatives") &&
+                !col.startsWith("rel-hbp_eu-reconciled-origin") &&
+                !col.startsWith("rel-hbp_eu-reconciled-parents")
+        ).collect(Collectors.toSet());
         String names = String.join("`, `", collectionLabelsFiltered);
         String start = String.format("DOCUMENT(\"%s\")", startinVertexId);
         return  childrenStatus(start, 1, maxDepth, names);
