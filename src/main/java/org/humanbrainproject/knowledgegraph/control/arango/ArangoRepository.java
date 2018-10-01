@@ -385,6 +385,13 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
         ArangoCursor<Map> q = db.query(query, null, new AqlQueryOptions(), Map.class );
         return q.asListRemaining();
     }
+    public List<Map> getUniqueDocument(String documentID,  ArangoDriver driver){
+        ArangoDatabase db = driver.getOrCreateDB();
+        String query = queryFactory.getUniqueDocument(documentID);
+        ArangoCursor<Map> q = db.query(query, null, new AqlQueryOptions(), Map.class );
+        return q.asListRemaining();
+    }
+
     public Map getInstanceList(String collection, Integer from, Integer size, String searchTerm, ArangoDriver driver){
         ArangoDatabase db = driver.getOrCreateDB();
         String c = String.join("reconciled-",collection.split("-", 2));

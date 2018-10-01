@@ -89,4 +89,19 @@ public class GraphAPI {
             return ResponseEntity.status(e.getStatusCode()).build();
         }
     }
+
+    @GetMapping(value = "/document/{collection}/{id}", consumes = { MediaType.WILDCARD})
+    public ResponseEntity<Map<String,Object>> getUniqueDocument(@PathVariable("collection") String col, @PathVariable("id") String id) throws Exception{
+        try{
+            List<Map> rootList = graph.getUniqueDocument(String.format("%s/%s", col, id));
+            if(rootList.isEmpty()){
+                throw new Exception("Document not found");
+            }
+            Map root = rootList.get(0);
+            return ResponseEntity.ok(root);
+
+        } catch (HttpClientErrorException e){
+            return ResponseEntity.status(e.getStatusCode()).build();
+        }
+    }
 }

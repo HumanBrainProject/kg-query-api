@@ -82,6 +82,12 @@ public class ArangoQueryFactory {
         , documentID);
     }
 
+    public String getUniqueDocument(String documentID){
+        return String.format(
+                "RETURN DOCUMENT(\"%s\")", documentID
+        );
+    }
+
     public String queryReleaseGraph(Set<String> edgeCollectionNames, String startinVertexId,Integer maxDepth, ArangoDriver driver) {
         Set<String> collectionLabels= driver!=null ? driver.filterExistingCollectionLabels(edgeCollectionNames) : edgeCollectionNames;
         Set<String> collectionLabelsFiltered = collectionLabels.stream().filter( col ->
