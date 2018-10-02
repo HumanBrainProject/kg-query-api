@@ -38,8 +38,8 @@ public class ArangoGraph {
     public List<Map> getDocument(String documentID) throws IOException{
         return  arangoRepository.getDocument(documentID, arango);
     }
-    public List<Map> getUniqueDocument(String documentID) throws IOException{
-        return  arangoRepository.getUniqueDocument(documentID, arangoInternal);
+    public List<Map> getGetEditorSpecDocument(String documentID) throws IOException{
+        return  arangoRepository.getGetEditorSpecDocument(documentID, arangoInternal);
     }
 
     public Map getInstanceList(String collection, Integer from, Integer size, String searchTerm) throws IOException{

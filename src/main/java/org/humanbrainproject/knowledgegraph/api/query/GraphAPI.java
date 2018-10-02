@@ -90,16 +90,14 @@ public class GraphAPI {
         }
     }
 
-    @GetMapping(value = "/document/{collection}/{id}", consumes = { MediaType.WILDCARD})
-    public ResponseEntity<Map<String,Object>> getUniqueDocument(@PathVariable("collection") String col, @PathVariable("id") String id) throws Exception{
+    @GetMapping(value = "/document/{collection}", consumes = { MediaType.WILDCARD})
+    public ResponseEntity<List<Map>> getGetEditorSpecDocument(@PathVariable("collection") String col) throws Exception{
         try{
-            List<Map> rootList = graph.getUniqueDocument(String.format("%s/%s", col, id));
+            List<Map> rootList = graph.getGetEditorSpecDocument(col);
             if(rootList.isEmpty()){
                 throw new Exception("Document not found");
             }
-            Map root = rootList.get(0);
-            return ResponseEntity.ok(root);
-
+            return ResponseEntity.ok(rootList);
         } catch (HttpClientErrorException e){
             return ResponseEntity.status(e.getStatusCode()).build();
         }

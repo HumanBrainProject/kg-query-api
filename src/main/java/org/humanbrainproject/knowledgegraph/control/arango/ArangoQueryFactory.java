@@ -82,9 +82,10 @@ public class ArangoQueryFactory {
         , documentID);
     }
 
-    public String getUniqueDocument(String documentID){
+    public String getGetEditorSpecDocument(String col){
         return String.format(
-                "RETURN DOCUMENT(\"%s\")", documentID
+                "FOR spec IN `%s`" +
+                "RETURN spec", col
         );
     }
 

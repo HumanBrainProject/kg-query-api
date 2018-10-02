@@ -385,9 +385,9 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
         ArangoCursor<Map> q = db.query(query, null, new AqlQueryOptions(), Map.class );
         return q.asListRemaining();
     }
-    public List<Map> getUniqueDocument(String documentID,  ArangoDriver driver){
+    public List<Map> getGetEditorSpecDocument(String documentID,  ArangoDriver driver){
         ArangoDatabase db = driver.getOrCreateDB();
-        String query = queryFactory.getUniqueDocument(documentID);
+        String query = queryFactory.getGetEditorSpecDocument(documentID);
         ArangoCursor<Map> q = db.query(query, null, new AqlQueryOptions(), Map.class );
         return q.asListRemaining();
     }
