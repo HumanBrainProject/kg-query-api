@@ -385,19 +385,41 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
         ArangoCursor<Map> q = db.query(query, null, new AqlQueryOptions(), Map.class );
         return q.asListRemaining();
     }
-    public List<Map> getInstanceList(String collection, Integer from, Integer size, String searchTerm, ArangoDriver driver){
+    public List<Map> getGetEditorSpecDocument(String documentID,  ArangoDriver driver){
+        ArangoDatabase db = driver.getOrCreateDB();
+        String query = queryFactory.getGetEditorSpecDocument(documentID);
+        ArangoCursor<Map> q = db.query(query, null, new AqlQueryOptions(), Map.class );
+        return q.asListRemaining();
+    }
+
+    public Map getInstanceList(String collection, Integer from, Integer size, String searchTerm, ArangoDriver driver){
         ArangoDatabase db = driver.getOrCreateDB();
         String c = String.join("reconciled-",collection.split("-", 2));
         String recCollection = driver.getCollectionLabels().stream().noneMatch( el ->  el.equals(c)) ? "[]" : "`"+c+"`";
         String query = queryFactory.getInstanceList(collection, from , size, searchTerm, recCollection);
-        ArangoCursor<Map> q = db.query(query, null, new AqlQueryOptions(), Map.class );
-        return q.asListRemaining();
+        AqlQueryOptions options = new AqlQueryOptions().count(true).fullCount(true);
+        Map m = new HashMap();
+        try{
+            ArangoCursor<Map> q = db.query(query, null, options, Map.class );
+            m.put("count", q.getCount());
+            m.put("fullCount", q.getStats().getFullCount());
+            m.put("data", q.asListRemaining());
+        }catch (ArangoDBException e){
+            if(e.getResponseCode() == 404){
+                m.put("count", 0);
+                m.put("fullCount", 0);
+                m.put("data", new ArrayList<Map>());
+            }else{
+                throw e;
+            }
+        }
+        return m;
     }
 
     public List<Map> getReleaseStatus(String documentID, String reconciledId, ArangoDriver driver){
         ArangoDatabase db = driver.getOrCreateDB();
         Set<String> edgesCollections = driver.getEdgesCollectionNames();
-        String query = queryFactory.releaseStatus(edgesCollections, documentID, reconciledId);
+        String query = queryFactory.releaseStatus(edgesCollections, documentID, reconciledId, driver);
         ArangoCursor<Map> q = db.query(query, null, new AqlQueryOptions(), Map.class );
         return q.asListRemaining();
     }

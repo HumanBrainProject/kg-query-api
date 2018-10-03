@@ -21,6 +21,10 @@ public class ArangoGraph {
     ArangoDriver arango;
 
     @Autowired
+    @Qualifier("internal")
+    ArangoDriver arangoInternal;
+
+    @Autowired
     ArangoRepository arangoRepository;
 
     public List<Map> getGraph(String rootVertex, Integer step) throws IOException {
@@ -34,8 +38,11 @@ public class ArangoGraph {
     public List<Map> getDocument(String documentID) throws IOException{
         return  arangoRepository.getDocument(documentID, arango);
     }
+    public List<Map> getGetEditorSpecDocument(String documentID) throws IOException{
+        return  arangoRepository.getGetEditorSpecDocument(documentID, arangoInternal);
+    }
 
-    public List<Map> getInstanceList(String collection, Integer from, Integer size, String searchTerm) throws IOException{
+    public Map getInstanceList(String collection, Integer from, Integer size, String searchTerm) throws IOException{
         return arangoRepository.getInstanceList(collection, from, size, searchTerm ,arango);
     }
 

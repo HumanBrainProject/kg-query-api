@@ -62,7 +62,7 @@ public class GraphAPI {
     }
 
     @GetMapping(value = "/instances/{org}/{domain}/{schema}/{version}", consumes = { MediaType.WILDCARD})
-    public ResponseEntity<List<Map>> getInstanceList(@PathVariable("org") String org, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("version") String version, @RequestParam(value = "size", required = false) Integer size, @RequestParam(value = "from", required = false) Integer from, @RequestParam(value = "search", required = false) String searchTerm) throws Exception{
+    public ResponseEntity<Map> getInstanceList(@PathVariable("org") String org, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("version") String version, @RequestParam(value = "size", required = false) Integer size, @RequestParam(value = "from", required = false) Integer from, @RequestParam(value = "search", required = false) String searchTerm) throws Exception{
         try{
             String v = version.replaceAll("\\.", "_");
             String collection =  String.format("%s-%s-%s-%s", org,domain, schema, v);
@@ -85,6 +85,19 @@ public class GraphAPI {
             Map root = rootList.get(0);
             return ResponseEntity.ok(root);
 
+        } catch (HttpClientErrorException e){
+            return ResponseEntity.status(e.getStatusCode()).build();
+        }
+    }
+
+    @GetMapping(value = "/document/{collection}", consumes = { MediaType.WILDCARD})
+    public ResponseEntity<List<Map>> getGetEditorSpecDocument(@PathVariable("collection") String col) throws Exception{
+        try{
+            List<Map> rootList = graph.getGetEditorSpecDocument(col);
+            if(rootList.isEmpty()){
+                throw new Exception("Document not found");
+            }
+            return ResponseEntity.ok(rootList);
         } catch (HttpClientErrorException e){
             return ResponseEntity.status(e.getStatusCode()).build();
         }
