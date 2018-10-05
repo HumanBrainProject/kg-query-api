@@ -3,6 +3,7 @@ package org.humanbrainproject.knowledgegraph.boundary.indexing;
 import org.humanbrainproject.knowledgegraph.control.arango.ArangoRepository;
 import org.humanbrainproject.knowledgegraph.control.arango.DatabaseController;
 import org.humanbrainproject.knowledgegraph.control.indexing.GraphSpecificationController;
+import org.humanbrainproject.knowledgegraph.control.inference.InferenceController;
 import org.humanbrainproject.knowledgegraph.control.releasing.ReleasingController;
 import org.humanbrainproject.knowledgegraph.control.spatialSearch.SpatialSearchController;
 import org.humanbrainproject.knowledgegraph.entity.indexing.GraphIndexingSpec;
@@ -33,18 +34,22 @@ public class GraphIndexing {
     @Autowired
     DatabaseController databaseController;
 
+    @Autowired
+    InferenceController inferenceController;
+
 
     private Logger logger = LoggerFactory.getLogger(GraphIndexing.class);
 
     public void insertJsonOrJsonLd(GraphIndexingSpec spec) {
-        QualifiedGraphIndexingSpec qualifiedSpec = graphSpecificationController.qualify(spec);
+        QualifiedGraphIndexingSpec qualifiedSpec = graphSpecificationController.qualify(spec, false);
         repository.uploadToPropertyGraph(qualifiedSpec, databaseController.getDefaultDB());
+        inferenceController.infer(qualifiedSpec);
         spatialSearchController.index(qualifiedSpec.asSpatialAnchoring());
         releasingController.releaseVertices(qualifiedSpec.asRelease());
     }
 
     public void updateJsonOrJsonLd(GraphIndexingSpec spec) {
-        QualifiedGraphIndexingSpec qualifiedSpec = graphSpecificationController.qualify(spec);
+        QualifiedGraphIndexingSpec qualifiedSpec = graphSpecificationController.qualify(spec, false);
         Set<String> verticesToBeUnreleased = qualifiedSpec.asRelease() != null ? releasingController.findDocumentIdsToBeUnreleased(qualifiedSpec.asRelease()) : null;
         repository.uploadToPropertyGraph(qualifiedSpec, databaseController.getDefaultDB());
         spatialSearchController.index(qualifiedSpec.asSpatialAnchoring());
@@ -55,7 +60,7 @@ public class GraphIndexing {
     public void delete(GraphIndexingSpec spec) {
         Map instance = repository.getByKey(spec.getEntityName(), spec.getId(), Map.class, databaseController.getDefaultDB());
         if (instance != null) {
-            QualifiedGraphIndexingSpec qualifiedSpec = graphSpecificationController.qualify(spec, instance);
+            QualifiedGraphIndexingSpec qualifiedSpec = graphSpecificationController.qualify(spec, instance, false);
             releasingController.unreleaseVertices(qualifiedSpec.asRelease());
             releasingController.unreleaseInstance(qualifiedSpec.getUrl(), false);
             spatialSearchController.remove(qualifiedSpec.asSpatialAnchoring());

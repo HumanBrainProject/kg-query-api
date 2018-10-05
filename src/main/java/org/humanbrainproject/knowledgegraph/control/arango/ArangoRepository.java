@@ -4,11 +4,8 @@ import com.arangodb.ArangoCollection;
 import com.arangodb.ArangoCursor;
 import com.arangodb.ArangoDBException;
 import com.arangodb.ArangoDatabase;
-import com.arangodb.entity.AqlFunctionEntity;
 import com.arangodb.entity.CollectionEntity;
 import com.arangodb.entity.CollectionType;
-import com.arangodb.model.AqlFunctionCreateOptions;
-import com.arangodb.model.AqlFunctionGetOptions;
 import com.arangodb.model.AqlQueryOptions;
 import com.arangodb.model.CollectionCreateOptions;
 import org.humanbrainproject.knowledgegraph.control.Configuration;
@@ -24,7 +21,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Component
 public class ArangoRepository extends VertexRepository<ArangoDriver> {
@@ -181,7 +177,7 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
 
 
     @Override
-    protected void updateVertex(JsonLdVertex vertex, ArangoDriver arango) {
+    public void updateVertex(JsonLdVertex vertex, ArangoDriver arango) {
         replaceDocument(namingConvention.getVertexLabel(vertex.getEntityName()), namingConvention.getKey(vertex), transformer.vertexToJSONString(vertex), arango);
     }
 
@@ -196,7 +192,7 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
     }
 
     @Override
-    protected void insertVertex(JsonLdVertex vertex, ArangoDriver arango) {
+    public void insertVertex(JsonLdVertex vertex, ArangoDriver arango) {
         insertVertexDocument(transformer.vertexToJSONString(vertex), vertex.getEntityName(), arango);
     }
 
@@ -243,7 +239,7 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
     }
 
     @Override
-    protected void createEdge(JsonLdVertex vertex, JsonLdEdge edge, ArangoDriver arango) {
+    public void createEdge(JsonLdVertex vertex, JsonLdEdge edge, ArangoDriver arango) {
         ensureTargetCollectionForEdge(edge, arango);
         String edgeDocument = transformer.edgeToJSONString(vertex, edge);
         if(edgeDocument!=null) {
@@ -252,7 +248,7 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
     }
 
     @Override
-    protected void replaceEdge(JsonLdVertex vertex, JsonLdEdge edge, ArangoDriver arango) {
+    public void replaceEdge(JsonLdVertex vertex, JsonLdEdge edge, ArangoDriver arango) {
         ensureTargetCollectionForEdge(edge, arango);
         String edgeDocument = transformer.edgeToJSONString(vertex, edge);
         if(edgeDocument!=null) {
@@ -278,7 +274,7 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
                 String targetKey = namingConvention.getKeyFromId(reference);
                 Map target = getByKey(targetName, targetKey, Map.class, transactionOrConnection);
                 GraphIndexingSpec spec = new GraphIndexingSpec().setEntityName(targetName).setId(targetKey);
-                targetVertices = jsonLdToVerticesAndEdges.transformFullyQualifiedJsonLdToVerticesAndEdges(spec, target);
+                targetVertices = jsonLdToVerticesAndEdges.transformFullyQualifiedJsonLdToVerticesAndEdges(spec, target, transactionOrConnection.isTranslateToMainSpace());
             }
         }
         for (JsonLdVertex targetVertex : targetVertices) {
@@ -304,11 +300,6 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
         }
     }
 
-
-    @Override
-    public void updateUnresolved(JsonLdVertex vertex, ArangoDriver arango) {
-
-    }
 
     public String getTargetVertexId(JsonLdEdge edge, ArangoDriver arango) {
         return arango.getOrCreateDB().getDocument(namingConvention.getEdgeTarget(edge), Map.class).get("_to").toString();

@@ -1,5 +1,6 @@
 package org.humanbrainproject.knowledgegraph.entity.indexing;
 
+import org.humanbrainproject.knowledgegraph.control.SubSpaceName;
 import org.humanbrainproject.knowledgegraph.entity.jsonld.JsonLdVertex;
 
 import java.util.Collections;
@@ -14,6 +15,11 @@ public class QualifiedGraphIndexingSpec{
     public String getUrl(){
         return String.format("%s/%s", spec.getEntityName(), spec.getId());
     }
+
+    public String getOrganization(){
+        return spec.getEntityName().split("/")[0];
+    }
+
 
     public QualifiedGraphIndexingSpec(GraphIndexingSpec spec, Map map, List<JsonLdVertex> vertices){
         this.map = Collections.unmodifiableMap(map);
@@ -50,5 +56,29 @@ public class QualifiedGraphIndexingSpec{
         }
         return release.isInstance() ? release : null;
     }
+
+    private EditorInstance editorInstance;
+
+    public EditorInstance asEditorInstance(){
+        if(editorInstance == null){
+            editorInstance = new EditorInstance(this, null);
+        }
+        return editorInstance.isInstance() ? editorInstance : null;
+    }
+
+    public boolean isEditorInstance(){
+        String organization = getOrganization();
+        return organization != null && organization.endsWith(SubSpaceName.EDITOR.getName());
+    }
+
+    public boolean isReconciledInstance(){
+        String organization = getOrganization();
+        return organization != null && organization.endsWith(SubSpaceName.RECONCILED.getName());
+    }
+
+    public boolean isOriginalInstance(){
+        return !isEditorInstance() && !isReconciledInstance();
+    }
+
 
 }

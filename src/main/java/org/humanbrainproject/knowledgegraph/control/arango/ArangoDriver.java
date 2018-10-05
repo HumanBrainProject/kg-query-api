@@ -21,11 +21,13 @@ public class ArangoDriver {
     String pwd;
 
     private final String databaseName;
+    private final boolean translateToMainSpace;
 
     ArangoDB arangoDB;
 
-    public ArangoDriver(String databaseName) {
+    public ArangoDriver(String databaseName, boolean translateToMainSpace) {
         this.databaseName = databaseName;
+        this.translateToMainSpace = translateToMainSpace;
     }
 
     private ArangoDB getArangoDB(){
@@ -59,5 +61,9 @@ public class ArangoDriver {
 
     public String getDatabaseName() {
         return databaseName;
+    }
+
+    public boolean isTranslateToMainSpace() {
+        return translateToMainSpace;
     }
 }

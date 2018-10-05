@@ -24,14 +24,14 @@ public class GraphSpecificationController {
     @Autowired
     JsonTransformer jsonTransformer;
 
-    public QualifiedGraphIndexingSpec qualify(GraphIndexingSpec spec, Map map) {
+    public QualifiedGraphIndexingSpec qualify(GraphIndexingSpec spec, Map map, boolean translateToMainSpace) {
         Map qualifiedMap = postProcessMap(map, spec.getDefaultNamespace());
-        List<JsonLdVertex> jsonLdVertices = jsonLdToVerticesAndEdges.transformFullyQualifiedJsonLdToVerticesAndEdges(spec, qualifiedMap);
+        List<JsonLdVertex> jsonLdVertices = jsonLdToVerticesAndEdges.transformFullyQualifiedJsonLdToVerticesAndEdges(spec, qualifiedMap, translateToMainSpace);
         return new QualifiedGraphIndexingSpec(spec, qualifiedMap, jsonLdVertices);
     }
 
-    public QualifiedGraphIndexingSpec qualify(GraphIndexingSpec spec) {
-        return qualify(spec, jsonTransformer.parseToMap(spec.getJsonOrJsonLdPayload()));
+    public QualifiedGraphIndexingSpec qualify(GraphIndexingSpec spec, boolean translateToMainSpace) {
+        return qualify(spec, jsonTransformer.parseToMap(spec.getJsonOrJsonLdPayload()), translateToMainSpace);
     }
 
     private Map postProcessMap(Map data, String defaultNamespace) {

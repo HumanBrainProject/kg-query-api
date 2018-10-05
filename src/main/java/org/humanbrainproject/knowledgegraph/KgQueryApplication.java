@@ -18,48 +18,54 @@ public class KgQueryApplication {
 	@Bean
 	@Qualifier("default-test")
 	public ArangoDriver createDefaultTestDb() {
-		return new ArangoDriver("kg-test");
+		return new ArangoDriver("kg-test", false);
 	}
 
 	@Bean
 	@Qualifier("internal-test")
 	public ArangoDriver createInternalTestDb() {
-		return new ArangoDriver("kg_internal");
+		return new ArangoDriver("kg_internal", false);
 	}
 
 	@Bean
 	@Qualifier("released-test")
 	public ArangoDriver createReleasedTestDb() {
-		return new ArangoDriver("kg_released-test");
+		return new ArangoDriver("kg_released-test", false);
 	}
 
 	@Bean
 	@Qualifier("default")
 	public ArangoDriver createDefaultDb() {
-		return new ArangoDriver("kg");
+		return new ArangoDriver("kg", false);
+	}
+
+	@Bean
+	@Qualifier("reconciled")
+	public ArangoDriver createReconciledDb() {
+		return new ArangoDriver("kg_reconciled", true);
 	}
 
 	@Bean
 	@Qualifier("playground")
 	public ArangoDriver createPlaygroundDb() {
-		return new ArangoDriver("kg_playground");
+		return new ArangoDriver("kg_playground", false);
 	}
 
 	@Bean
 	@Qualifier("playground-released")
 	public ArangoDriver createPlaygroundReleasedDb() {
-		return new ArangoDriver("kg_playground_released");
+		return new ArangoDriver("kg_playground_released", false);
 	}
 
 	@Bean
 	@Qualifier("internal")
 	public ArangoDriver createInternalDb() {
-		return new ArangoDriver("kg_internal");
+		return new ArangoDriver("kg_internal", false);
 	}
 
 	@Bean
 	@Qualifier("released")
 	public ArangoDriver createReleasedDb() {
-		return new ArangoDriver("kg_released");
+		return new ArangoDriver("kg_released", false);
 	}
 }

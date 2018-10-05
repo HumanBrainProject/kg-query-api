@@ -22,7 +22,7 @@ public abstract class VertexRepository<T> {
 
     public abstract List<JsonLdEdge> getEdgesToBeRemoved(JsonLdVertex vertex, T transactionOrConnection);
 
-    private void insertOrUpdateEdges(JsonLdVertex vertex, T transactionOrConnection) {
+    public void insertOrUpdateEdges(JsonLdVertex vertex, T transactionOrConnection) {
         for (int i = 0; i < vertex.getEdges().size(); i++) {
             JsonLdEdge edge = vertex.getEdges().get(i);
             if(edge.isEmbedded() || isInternalEdge(edge, configuration.getNexusBase())){
@@ -37,25 +37,24 @@ public abstract class VertexRepository<T> {
         }
     }
 
+    public void uploadToPropertyGraph(JsonLdVertex vertex, T transactionOrConnection){
+        if (alreadyExists(vertex, transactionOrConnection)) {
+            updateVertex(vertex, transactionOrConnection);
+        } else {
+            insertVertex(vertex, transactionOrConnection);
+        }
+        for (JsonLdEdge edge : getEdgesToBeRemoved(vertex, transactionOrConnection)) {
+            removeEdge(vertex, edge, transactionOrConnection);
+        }
+        insertOrUpdateEdges(vertex, transactionOrConnection);
+    }
+
 
     public void uploadToPropertyGraph(QualifiedGraphIndexingSpec spec, T transactionOrConnection)  {
         for (JsonLdVertex vertex : spec.getVertices()) {
-            if (alreadyExists(vertex, transactionOrConnection)) {
-                updateVertex(vertex, transactionOrConnection);
-            } else {
-                insertVertex(vertex, transactionOrConnection);
-            }
-            for (JsonLdEdge edge : getEdgesToBeRemoved(vertex, transactionOrConnection)) {
-                removeEdge(vertex, edge, transactionOrConnection);
-            }
-            insertOrUpdateEdges(vertex, transactionOrConnection);
+            uploadToPropertyGraph(vertex, transactionOrConnection);
         }
-        for (JsonLdVertex vertex : spec.getVertices()) {
-            for (int i = 0; i < vertex.getEdges().size(); i++) {
-                updateUnresolved(vertex, transactionOrConnection);
-            }
-        }
-    };
+    }
 
 
     protected boolean isInternalEdge(JsonLdEdge edge, String nexusBase){
@@ -78,7 +77,5 @@ public abstract class VertexRepository<T> {
     protected abstract void replaceEdge(JsonLdVertex vertex, JsonLdEdge edge, T transactionOrConnection);
 
     protected abstract void removeEdge(JsonLdVertex vertex, JsonLdEdge edge, T transactionOrConnection);
-
-    public abstract void updateUnresolved(JsonLdVertex vertex, T transactionOrConnection);
 
 }
