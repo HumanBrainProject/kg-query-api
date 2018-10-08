@@ -96,7 +96,10 @@ public class ArangoQueryFactory {
                 !col.startsWith("rel-hbp_eu-reconciled-original_parent") &&
                 !col.startsWith("rel-hbp_eu-reconciled-alternatives") &&
                 !col.startsWith("rel-hbp_eu-reconciled-origin") &&
-                !col.startsWith("rel-hbp_eu-reconciled-parents")
+                !col.startsWith("rel-hbp_eu-reconciled-parents") &&
+                !col.startsWith("rel-hbp_eu-manual-origin") &&
+                !col.startsWith("rel-hbp_eu-manual-parents") &&
+                !col.startsWith("rel-hbp_eu-manual-parent")
         ).collect(Collectors.toSet());
         String names = String.join("`, `", collectionLabelsFiltered);
         String start = String.format("DOCUMENT(\"%s\")", startinVertexId);
