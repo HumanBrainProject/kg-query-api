@@ -71,8 +71,6 @@ public class ArangoQueryFactory {
     }
 
     public String getDocument(String documentID){
-//        return String.format("LET doc = DOCUMENT(\"%s\")\n" +
-//                "RETURN doc", documentID);
         return String.format(
                 "LET doc = DOCUMENT(\"%s\")" +
                         "LET status = (FOR status_doc IN 1..1 INBOUND doc `rel-hbp_eu-minds-releaseinstance`\n" +

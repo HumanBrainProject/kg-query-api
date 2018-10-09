@@ -1,13 +1,12 @@
 package org.humanbrainproject.knowledgegraph.control.arango.query;
 
+import org.humanbrainproject.knowledgegraph.entity.query.ArangoBindVariable;
 import org.humanbrainproject.knowledgegraph.entity.specification.SpecField;
 import org.humanbrainproject.knowledgegraph.entity.specification.Specification;
 import org.springframework.boot.configurationprocessor.json.JSONArray;
 import org.springframework.boot.configurationprocessor.json.JSONException;
 
-import java.util.List;
-import java.util.Set;
-import java.util.Stack;
+import java.util.*;
 
 public abstract class AbstractQueryBuilder {
     protected static String DOC_POSTFIX = "doc";
@@ -25,6 +24,7 @@ public abstract class AbstractQueryBuilder {
     protected SpecField currentField;
     protected String instanceId;
     protected String searchTerm;
+    protected ArangoBindVariable bindVariables = new ArangoBindVariable();
 
     public void setCurrentField(SpecField currentField) {
         this.currentField = currentField;

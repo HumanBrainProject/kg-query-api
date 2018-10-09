@@ -16,26 +16,34 @@ public class ArangoQueryBuilder extends AbstractQueryBuilder {
 
     @Override
     public void addTraversal(boolean reverse, String relationCollection) {
-        sb.append(String.format(", %s `%s`", reverse ? "INBOUND" : "OUTBOUND", relationCollection));
+        String name = this.bindVariables.put("@traversalCollection", relationCollection, null);
+        sb.append(String.format(", %s @%s", reverse ? "INBOUND" : "OUTBOUND", name));
     }
 
     @Override
     public void addComplexFieldRequiredFilter(String leaf_field) {
-        sb.append(String.format("\n%s AND %s_%s.`%s` != null ", getIndentation(), currentAlias, DOC_POSTFIX, leaf_field));
-        sb.append(String.format("\n%s AND %s_%s.`%s` != \"\" ", getIndentation(), currentAlias, DOC_POSTFIX, leaf_field));
-        sb.append(String.format("\n%s AND %s_%s.`%s` != [] ", getIndentation(), currentAlias, DOC_POSTFIX, leaf_field));
+        String name = this.bindVariables.put("complexFieldsRequired", leaf_field, null);
+        sb.append(String.format("\n%s AND %s_%s.@%s != null ", getIndentation(), currentAlias, DOC_POSTFIX, name));
+        sb.append(String.format("\n%s AND %s_%s.@%s != \"\" ", getIndentation(), currentAlias, DOC_POSTFIX, name));
+        sb.append(String.format("\n%s AND %s_%s.@%s != [] ", getIndentation(), currentAlias, DOC_POSTFIX, name));
     }
 
     @Override
     public void addTraversalFieldRequiredFilter(String alias) {
-        sb.append(String.format("\n%s AND %s != null", getIndentation(), alias));
-        sb.append(String.format("\n%s AND %s != \"\"", getIndentation(), alias));
-        sb.append(String.format("\n%s AND %s != []", getIndentation(), alias));
+        String name = this.bindVariables.put("traversalFieldRequired", alias, null);
+        sb.append(String.format("\n%s AND @%s != null", getIndentation(), name));
+        sb.append(String.format("\n%s AND @%s != \"\"", getIndentation(), name));
+        sb.append(String.format("\n%s AND @%s != []", getIndentation(), name));
     }
 
     @Override
     protected void doEnterTraversal(String targetName, int numberOfTraversals, boolean reverse, String relationCollection, boolean hasGroup, boolean ensureOrder) {
-        sb.append(String.format("\n%sLET %s = %s ( FOR %s_%s %s IN %d..%d %s %s_%s `%s` ", getIndentation(), currentAlias, hasGroup ? " (FOR grp IN " : "", currentAlias, DOC_POSTFIX, ensureOrder ? ", e" : "", numberOfTraversals, numberOfTraversals, reverse ? "INBOUND" : "OUTBOUND", previousAlias.peek(), DOC_POSTFIX, relationCollection));
+        String relColName = this.bindVariables.put("@relationCollection", relationCollection, null);
+        String numOfTraversalName = this.bindVariables.put("numberOfTraversals",numberOfTraversals, null);
+        sb.append(String.format("\n%sLET %s = %s ( FOR %s_%s %s IN @%s..@%s %s %s_%s @%s ", getIndentation(), currentAlias,
+                hasGroup ? " (FOR grp IN " : "", currentAlias, DOC_POSTFIX,
+                ensureOrder ? ", e" : "", numOfTraversalName, numOfTraversalName,
+                reverse ? "INBOUND" : "OUTBOUND", previousAlias.peek(), DOC_POSTFIX, relColName));
     }
 
     @Override
@@ -65,19 +73,30 @@ public class ArangoQueryBuilder extends AbstractQueryBuilder {
     @Override
     public void buildGrouping(String groupedInstancesLabel, List<String> groupingFields, List<String> nonGroupingFields) {
         sb.append("COLLECT ");
-        List<String> groupings = groupingFields.stream().map(f -> String.format("`%s` = grp.`%s`", f, f)).collect(Collectors.toList());
+        List<String> groupings = groupingFields.stream().map(f -> {
+            String name = this.bindVariables.put("groupTarget", f, null);
+            String escaped = this.escapeVariableName(f);
+            return String.format("`%s` = grp.@%s", escaped, name);
+        }).collect(Collectors.toList());
         sb.append(String.join(", ", groupings));
         sb.append(" INTO group\n");
         sb.append("LET instances = ( FOR el IN group RETURN {\n");
 
-        List<String> nonGrouping = nonGroupingFields.stream().map(s -> String.format("\"%s\": el.grp.`%s`", s, s)).collect(Collectors.toList());
+        List<String> nonGrouping = nonGroupingFields.stream().map(s -> {
+            String name = this.bindVariables.put("groupTarget", s, null);
+            return String.format("@%s: el.grp.@%s", name, name);
+        }).collect(Collectors.toList());
         sb.append(String.join(",\n", nonGrouping));
         sb.append("\n} )\n");
         sb.append("RETURN {\n");
 
-        List<String> returnGrouped = groupingFields.stream().map(f -> String.format("\"%s\": `%s`", f, f)).collect(Collectors.toList());
+        List<String> returnGrouped = groupingFields.stream().map(f -> {
+            String name = this.bindVariables.put("groupTarget", f, null);
+            return String.format("@%s: @%s", name, name);
+        }).collect(Collectors.toList());
         sb.append(String.join(",\n", returnGrouped));
-        sb.append(String.format(",\n \"%s\": instances\n", groupedInstancesLabel));
+        String name = this.bindVariables.put("groupInstance", groupedInstancesLabel, null);
+        sb.append(String.format(",\n @%s: instances\n", name));
         sb.append("} )");
     }
 
@@ -85,7 +104,8 @@ public class ArangoQueryBuilder extends AbstractQueryBuilder {
 
     @Override
     public ArangoQueryBuilder addRoot(String rootCollection) {
-        sb.append(String.format("FOR %s_%s IN `%s`\n", ROOT_ALIAS, DOC_POSTFIX, rootCollection));
+        String name = this.bindVariables.put("@rootCollection", rootCollection, null);
+        sb.append(String.format("FOR %s_%s IN @%s\n", ROOT_ALIAS, DOC_POSTFIX, name));
         addOrganizationFilter();
         return this;
     }
@@ -93,10 +113,12 @@ public class ArangoQueryBuilder extends AbstractQueryBuilder {
     @Override
     public void addLimit() {
         if (size != null) {
+            this.bindVariables.put("size", size.toString(), null);
             if (start != null) {
-                sb.append(String.format("\nLIMIT %d, %d\n", start, size));
+                this.bindVariables.put("start", start.toString(), null);
+                sb.append("\nLIMIT @start, @size\n");
             } else {
-                sb.append(String.format("\nLIMIT %d\n", size));
+                sb.append("\nLIMIT @size\n");
             }
         }
     }
@@ -106,13 +128,19 @@ public class ArangoQueryBuilder extends AbstractQueryBuilder {
         if (!firstReturnEntry) {
             sb.append(",\n");
         }
-        sb.append(String.format("%s    \"%s\": %s", getIndentation(), targetName, alias));
+        String name = this.bindVariables.put("traversalResultField", targetName, null);
+        sb.append(String.format("%s    @%s: %s", getIndentation(), name, alias));
         firstReturnEntry = false;
     }
 
     @Override
     public void addSortByLeafField(Set<String> fields) {
-        List<String> fullSortFields = fields.stream().map(s -> String.format("%s_%s.`%s`", currentAlias, DOC_POSTFIX, s)).collect(Collectors.toList());
+        List<String> fullSortFields = fields.stream().map(s -> {
+                    String name = this.bindVariables.put("sortByLeafField", s, null);
+                    return String.format("%s_%s.@%s", currentAlias, DOC_POSTFIX, name);
+                }
+        )
+        .collect(Collectors.toList());
         String concat = String.join(", ", fullSortFields);
         sb.append(String.format("%s   SORT %s ASC\n", getIndentation(), concat));
     }
@@ -127,7 +155,9 @@ public class ArangoQueryBuilder extends AbstractQueryBuilder {
         if (!firstReturnEntry) {
             sb.append(",\n");
         }
-        sb.append(String.format("%s    \"%s\": %s_%s.`%s`", getIndentation(), targetName, currentAlias, DOC_POSTFIX, leaf_field));
+        String genTargetName = this.bindVariables.put("complexLeafFieldTarget", targetName, null);
+        String name = this.bindVariables.put("complexLeafField", leaf_field, null);
+        sb.append(String.format("%s    @%s: %s_%s.@%s", getIndentation(), genTargetName, currentAlias, DOC_POSTFIX, name));
         firstReturnEntry = false;
     }
 
@@ -137,25 +167,35 @@ public class ArangoQueryBuilder extends AbstractQueryBuilder {
             sb.append(",\n");
             addOrganizationFilter();
         }
-        sb.append(String.format("\n%s  RETURN DISTINCT %s_%s.`%s`\n", getIndentation(), currentAlias, DOC_POSTFIX, leaf_field));
+        String name = this.bindVariables.put("simpleLeafField", leaf_field, null);
+        sb.append(String.format("\n%s  RETURN DISTINCT %s_%s.@%s\n", getIndentation(), currentAlias, DOC_POSTFIX, name));
         firstReturnEntry = true;
     }
 
     @Override
     public void addMerge(String leaf_field, Set<String> merged_fields, boolean sorted) {
-        sb.append(String.format("\n%s LET %s = %s APPEND(%s, true) %s\n", getIndentation(), leaf_field, sorted ? "( FOR el IN" : "", String.join(", ", merged_fields), sorted ? " SORT el ASC RETURN el)" : ""));
+        String fields =  String.join(", ", merged_fields);
+        sb.append(String.format("\n%s LET %s = %s APPEND(%s, true) %s\n", getIndentation(), leaf_field, sorted ? "( FOR el IN" : "", fields, sorted ? " SORT el ASC RETURN el)" : ""));
     }
 
     @Override
     public void addInstanceIdFilter() {
-        sb.append(String.format("\nFILTER %s_%s._id == \"%s\"\n", currentAlias, DOC_POSTFIX, this.instanceId));
+        String name = this.bindVariables.put("instanceFilter", this.instanceId, null);
+        sb.append(String.format("\nFILTER %s_%s._id == @%s\n", currentAlias, DOC_POSTFIX, name));
     }
 
     @Override
     public void addSearchQuery() {
         if (searchTerm != null) {
-            sb.append(String.format("\n FILTER LIKE(%s_%s.`http://schema.org/name`, \"%%%s%%\")", ROOT_ALIAS, DOC_POSTFIX, searchTerm));
+            String name = this.bindVariables.put("search", searchTerm, null);
+            sb.append(String.format("\n FILTER LIKE(%s_%s.`http://schema.org/name`, CONCAT(\"%%\", @%s, \"%%\"))", ROOT_ALIAS, DOC_POSTFIX, name));
         }
+    }
+
+    private String escapeVariableName(String s){
+        return s
+                .replaceAll("`", "\\`")
+                .replaceAll("\"", "\\\"");
     }
 
 }

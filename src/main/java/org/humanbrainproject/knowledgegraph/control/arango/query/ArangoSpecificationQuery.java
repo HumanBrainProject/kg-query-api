@@ -64,7 +64,7 @@ public class ArangoSpecificationQuery {
         else{
             options.count(true);
         }
-        ArangoCursor<Map> cursor = getArangoDriver(parameters).getOrCreateDB().query(query, null, options, Map.class);
+        ArangoCursor<Map> cursor = getArangoDriver(parameters).getOrCreateDB().query(query, queryBuilder.bindVariables.extractMap(), options, Map.class);
         Long count;
         if(parameters.size!=null) {
             count = cursor.getStats().getFullCount();
