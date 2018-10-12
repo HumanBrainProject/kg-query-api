@@ -28,12 +28,8 @@ public class ArangoMetaQueryBuilder extends AbstractQueryBuilder {
     }
 
     protected void createCol(String fieldName, String targetName, int numberOfTraversals, boolean reverse, String relationCollection, boolean hasGroup, boolean ensureOrder) {
-
-        sb.append(String.format("      LET %s_col = ( FOR %s_%s IN %s_%s.`%s`\n", targetName, targetName, DOC_POSTFIX,
-                previousAlias.size()>0 ? previousAlias.peek() : ROOT_ALIAS, DOC_POSTFIX, GraphQueryKeys.GRAPH_QUERY_FIELDS.getFieldName())
-        );
-        String nameCurrentField = this.bindVariables.put("fieldName", currentField.fieldName, null);
-        sb.append(String.format("          FILTER %s_%s.`%s`.`@id`== @%s\n", targetName, DOC_POSTFIX, GraphQueryKeys.GRAPH_QUERY_FIELDNAME.getFieldName(), nameCurrentField));
+        sb.append(String.format("      LET %s_col = ( FOR %s_%s IN %s_%s.`%s`\n", targetName, targetName, DOC_POSTFIX, previousAlias.size()>0 ? previousAlias.peek() : ROOT_ALIAS, DOC_POSTFIX, GraphQueryKeys.GRAPH_QUERY_FIELDS.getFieldName()));
+        sb.append(String.format("          FILTER %s_%s.`%s`.`@id`== \"%s\"\n", targetName, DOC_POSTFIX, GraphQueryKeys.GRAPH_QUERY_FIELDNAME.getFieldName(), currentField.fieldName));
         sb.append(String.format("          LET %s_att = MERGE(\n", targetName));
         sb.append(String.format("               FOR attr IN ATTRIBUTES(%s_%s)\n", targetName, DOC_POSTFIX));
         sb.append("               FILTER attr NOT IN internal_fields\n");
@@ -132,11 +128,9 @@ public class ArangoMetaQueryBuilder extends AbstractQueryBuilder {
     @Override
     public ArangoMetaQueryBuilder addRoot(String rootCollection) throws JSONException {
         if (specification.getSpecificationId() == null) {
-            String root = this.bindVariables.put("root", specification.originalDocument, null);
-            sb.append(String.format("LET %s_%s = @%s\n", ROOT_ALIAS, DOC_POSTFIX, root));
+            sb.append(String.format("LET %s_%s = %s\n", ROOT_ALIAS, DOC_POSTFIX, specification.originalDocument));
         } else {
-            String rootId = this.bindVariables.put("rootId", specification.getSpecificationId(), null);
-            sb.append(String.format("LET %s_%s = DOCUMENT(\"%s/%s\")\n", ROOT_ALIAS, DOC_POSTFIX, ArangoQuery.SPECIFICATION_QUERIES, rootId));
+            sb.append(String.format("LET %s_%s = DOCUMENT(\"%s/%s\"))\n", ROOT_ALIAS, DOC_POSTFIX, ArangoQuery.SPECIFICATION_QUERIES, specification.getSpecificationId()));
         }
         addOrganizationFilter();
 
