@@ -25,6 +25,7 @@ public abstract class AbstractQueryBuilder {
     protected String instanceId;
     protected String searchTerm;
     protected ArangoBindVariable bindVariables = new ArangoBindVariable();
+    protected Integer latestDoc = 0;
 
     public void setCurrentField(SpecField currentField) {
         this.currentField = currentField;
@@ -134,4 +135,16 @@ public abstract class AbstractQueryBuilder {
     public abstract void addInstanceIdFilter();
 
     public abstract void addSearchQuery();
+
+    protected String escapeVariableName(String s){
+        return s
+                .replaceAll("`", "\\`")
+                .replaceAll("\"", "\\\"");
+    }
+
+    protected String generateDocName(){
+        this.latestDoc ++;
+        return "generatedDocName" + this.latestDoc.toString();
+    }
+
 }

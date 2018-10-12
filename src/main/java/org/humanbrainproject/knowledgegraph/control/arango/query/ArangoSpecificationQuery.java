@@ -46,8 +46,9 @@ public class ArangoSpecificationQuery {
 
     public QueryResult<List<Map>> metaSpecification(Specification spec, QueryParameters parameters) throws JSONException {
         QueryResult<List<Map>> result = new QueryResult<>();
-        String query = createQuery(new ArangoMetaQueryBuilder(spec), parameters);
-        ArangoCursor<Map> cursor = getArangoDriver(parameters).getOrCreateDB().query(query, null, new AqlQueryOptions(), Map.class);
+        ArangoMetaQueryBuilder queryBuilder = new ArangoMetaQueryBuilder(spec);
+        String query = createQuery(queryBuilder, parameters);
+        ArangoCursor<Map> cursor = getArangoDriver(parameters).getOrCreateDB().query(query, queryBuilder.bindVariables.extractMap(), new AqlQueryOptions(), Map.class);
         result.setResults(cursor.asListRemaining());
         result.setApiName(spec.name);
         return result;

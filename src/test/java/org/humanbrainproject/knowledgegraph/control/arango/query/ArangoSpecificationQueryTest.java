@@ -13,6 +13,7 @@ import org.mockito.Mockito;
 import org.springframework.boot.configurationprocessor.json.JSONException;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -38,7 +39,6 @@ public class ArangoSpecificationQueryTest {
         this.whitelistedOrganizations.add("neuralactivity");
 
     }
-
 
 
     @Test

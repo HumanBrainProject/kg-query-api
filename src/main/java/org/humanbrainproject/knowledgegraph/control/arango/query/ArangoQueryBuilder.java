@@ -192,10 +192,8 @@ public class ArangoQueryBuilder extends AbstractQueryBuilder {
         }
     }
 
-    private String escapeVariableName(String s){
-        return s
-                .replaceAll("`", "\\`")
-                .replaceAll("\"", "\\\"");
+    @Override
+    protected String escapeVariableName(String s) {
+        return super.escapeVariableName(s);
     }
-
 }
