@@ -1,29 +1,29 @@
 package org.humanbrainproject.knowledgegraph;
 
-import org.humanbrainproject.knowledgegraph.control.arango.ArangoDriver;
-import org.humanbrainproject.knowledgegraph.control.arango.DatabaseController;
+import org.humanbrainproject.knowledgegraph.propertyGraph.arango.control.ArangoConnection;
+import org.humanbrainproject.knowledgegraph.propertyGraph.arango.control.ArangoDatabaseFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 @Component
-public class TestDatabaseController extends DatabaseController{
+public class TestDatabaseController extends ArangoDatabaseFactory {
 
     @Autowired
     @Qualifier("released-test")
-    ArangoDriver releasedTestDB;
+    ArangoConnection releasedTestDB;
 
     @Autowired
     @Qualifier("default-test")
-    ArangoDriver defaultTestDB;
+    ArangoConnection defaultTestDB;
 
     @Override
-    public ArangoDriver getReleasedDB() {
+    public ArangoConnection getReleasedDB() {
         return releasedTestDB;
     }
 
     @Override
-    public ArangoDriver getDefaultDB() {
+    public ArangoConnection getDefaultDB() {
         return defaultTestDB;
     }
 }

@@ -5,7 +5,7 @@ FILTER root_doc.`http://schema.hbp.eu/internal#permissionGroup` IN whitelist_org
 LET schema_hbp_eu_search_ui_contributors =  ( FOR schema_hbp_eu_search_ui_contributors_doc, e IN 1..1 OUTBOUND root_doc `rel-hbp_eu-minds-contributors` FILTER schema_hbp_eu_search_ui_contributors_doc.`http://schema.hbp.eu/internal#permissionGroup` IN whitelist_organizations
 SORT e.orderNumber ASC
 RETURN DISTINCT {
-"http://schema.hbp.eu/search_ui/name": schema_hbp_eu_search_ui_contributors_doc.`http://hbp.eu/minds#shortName`,
+"http://schema.hbp.eu/search_ui/postFix": schema_hbp_eu_search_ui_contributors_doc.`http://hbp.eu/minds#shortName`,
 "http://schema.hbp.eu/search_ui/uuid": schema_hbp_eu_search_ui_contributors_doc.`https://nexus-dev.humanbrainproject.org/vocabs/nexus/core/terms/v0.1.0/uuid`,
 "http://schema.hbp.eu/search_ui/identifier": schema_hbp_eu_search_ui_contributors_doc.`http://schema.org/identifier`
 })
@@ -14,13 +14,13 @@ FILTER root_doc.`http://schema.hbp.eu/internal#permissionGroup` IN whitelist_org
 AND root_doc.`http://schema.org/identifier` != null
 AND root_doc.`http://schema.org/identifier` != ""
 AND root_doc.`http://schema.org/identifier` != []
-AND root_doc.`http://schema.org/name` != null
-AND root_doc.`http://schema.org/name` != ""
-AND root_doc.`http://schema.org/name` != []    SORT root_doc.`http://schema.org/name` ASC
+AND root_doc.`http://schema.org/postFix` != null
+AND root_doc.`http://schema.org/postFix` != ""
+AND root_doc.`http://schema.org/postFix` != []    SORT root_doc.`http://schema.org/postFix` ASC
 
 RETURN DISTINCT {
 "http://schema.org/identifier": root_doc.`http://schema.org/identifier`,
 
-"http://schema.org/name": root_doc.`http://schema.org/name`,
+"http://schema.org/postFix": root_doc.`http://schema.org/postFix`,
 "http://schema.hbp.eu/search_ui/contributors": schema_hbp_eu_search_ui_contributors
 }

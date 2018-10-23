@@ -1,0 +1,137 @@
+package org.humanbrainproject.knowledgegraph.query.control;
+
+import com.arangodb.ArangoCollection;
+import com.arangodb.ArangoDatabase;
+import com.google.gson.Gson;
+import deprecated.control.arango.ArangoNamingConvention;
+import freemarker.cache.StringTemplateLoader;
+import freemarker.template.Configuration;
+import freemarker.template.Template;
+import freemarker.template.TemplateException;
+import org.humanbrainproject.knowledgegraph.propertyGraph.arango.control.ArangoConnection;
+import org.humanbrainproject.knowledgegraph.propertyGraph.arango.control.ArangoRepository;
+import org.humanbrainproject.knowledgegraph.propertyGraph.arango.entity.ArangoCollectionReference;
+import org.humanbrainproject.knowledgegraph.query.entity.QueryResult;
+import org.humanbrainproject.knowledgegraph.query.entity.StoredLibraryReference;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Component;
+
+import java.io.IOException;
+import java.io.StringReader;
+import java.io.StringWriter;
+import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.*;
+
+@Component
+@Scope(scopeName = "singleton")
+public class FreemarkerTemplating {
+
+    @Autowired
+    ArangoRepository repository;
+
+    protected Logger logger = LoggerFactory.getLogger(ArangoNamingConvention.class);
+
+    private final static ArangoCollectionReference TEMPLATES = new ArangoCollectionReference("templates");
+    private final static ArangoCollectionReference LIBRARIES = new ArangoCollectionReference("libraries");
+
+    private Gson gson = new Gson();
+
+    private String getTemplateContent(String name) throws URISyntaxException, IOException {
+        return new String(Files.readAllBytes(Paths.get(getClass().getResource(String.format("/freemarker/%s.ftl", name)).toURI())));
+    }
+
+    public void saveTemplate(org.humanbrainproject.knowledgegraph.query.entity.Template template, ArangoConnection driver){
+        saveFreemarker(template, TEMPLATES, driver);
+    }
+
+    public void saveLibrary(org.humanbrainproject.knowledgegraph.query.entity.Template template, ArangoConnection driver){
+        saveFreemarker(template, LIBRARIES, driver);
+    }
+
+    private void saveFreemarker(org.humanbrainproject.knowledgegraph.query.entity.Template template, ArangoCollectionReference collectionReference, ArangoConnection driver){
+        ArangoDatabase db = driver.getOrCreateDB();
+        ArangoCollection collection = db.collection(collectionReference.getName());
+        if(!collection.exists()){
+            db.createCollection(collectionReference.getName());
+        }
+        if(collection.documentExists(template.getKey())){
+            collection.replaceDocument(template.getKey(), gson.toJson(template));
+        }
+        else{
+            String t = gson.toJson(template);
+            collection.insertDocument(t);
+        }
+    }
+
+    public org.humanbrainproject.knowledgegraph.query.entity.Template getTemplateById(String templateId, ArangoConnection driver){
+        ArangoDatabase db = driver.getOrCreateDB();
+        org.humanbrainproject.knowledgegraph.query.entity.Template document = db.collection(TEMPLATES.getName()).getDocument(templateId, org.humanbrainproject.knowledgegraph.query.entity.Template.class);
+        return document;
+    }
+
+
+    public String applyTemplate(String template, QueryResult<List<Map>> queryResult, StoredLibraryReference library, ArangoConnection driver) {
+        return applyTemplate(template, queryResult, library, repository.getAll(LIBRARIES, org.humanbrainproject.knowledgegraph.query.entity.Template.class, driver));
+    }
+
+    String applyTemplate(String template, QueryResult<List<Map>> queryResult, StoredLibraryReference chosenLibrary, List<org.humanbrainproject.knowledgegraph.query.entity.Template> libraries) {
+        //queryResult.getResults().forEach(this::replaceSpecialCharacters);
+        String finalTemplate;
+        if(chosenLibrary!=null){
+            finalTemplate = String.format("<#include \"%s\">\n\n%s", chosenLibrary.getName(), template);
+        }
+        else{
+            finalTemplate = template;
+        }
+
+        try (StringWriter writer = new StringWriter(); StringReader reader = new StringReader(finalTemplate)) {
+            Configuration cfg = new Configuration(Configuration.VERSION_2_3_28);
+            cfg.setEncoding(Locale.ENGLISH, "utf-8");
+            cfg.setURLEscapingCharset("utf-8");
+            StringTemplateLoader stringLoader = new StringTemplateLoader();
+            for (org.humanbrainproject.knowledgegraph.query.entity.Template library : libraries) {
+                stringLoader.putTemplate(library.getKey(), library.getTemplateContent());
+            }
+            cfg.setTemplateLoader(stringLoader);
+            Template t = new Template("dynamic", reader, cfg);
+            t.process(queryResult, writer);
+            return writer.toString();
+        } catch (TemplateException | IOException e) {
+            throw new RuntimeException("Was not able to apply template", e);
+        }
+    }
+
+    private String replaceSpecialChars(String original){
+        return original.replaceAll(":", "_");
+    }
+
+    private void replaceSpecialCharacters(Object o){
+        if(o instanceof Map){
+            Map map = (Map)o;
+            Set<Object> keys = new HashSet<Object>();
+            keys.addAll(map.keySet());
+            for (Object key : keys) {
+                replaceSpecialCharacters(map.get(key));
+                if(key instanceof String){
+                    String newkey = replaceSpecialChars((String)key);
+                    if(!key.equals(newkey)){
+                        map.put(newkey, map.get(key));
+                        map.remove(key);
+                    }
+                }
+            }
+        }
+        else if(o instanceof Collection) {
+            Collection c = (Collection) o;
+            for (Object el : c) {
+                replaceSpecialCharacters(el);
+            }
+        }
+    }
+
+}
