@@ -1,13 +1,13 @@
 package org.humanbrainproject.knowledgegraph.indexing.control;
 
-import org.humanbrainproject.knowledgegraph.propertyGraph.entity.SubSpace;
-import org.humanbrainproject.knowledgegraph.jsonld.control.JsonTransformer;
-import org.humanbrainproject.knowledgegraph.jsonld.control.JsonLdStandardization;
-import org.humanbrainproject.knowledgegraph.jsonld.control.JsonLdToVerticesAndEdges;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.SubSpace;
+import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
+import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonLdStandardization;
+import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonLdToVerticesAndEdges;
 import org.humanbrainproject.knowledgegraph.indexing.entity.IndexingMessage;
 import org.humanbrainproject.knowledgegraph.indexing.entity.QualifiedIndexingMessage;
-import org.humanbrainproject.knowledgegraph.propertyGraph.entity.MainVertex;
-import org.humanbrainproject.knowledgegraph.propertyGraph.entity.ResolvedVertexStructure;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.MainVertex;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.ResolvedVertexStructure;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 

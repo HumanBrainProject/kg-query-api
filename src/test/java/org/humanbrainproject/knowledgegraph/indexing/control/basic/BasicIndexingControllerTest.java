@@ -8,7 +8,7 @@ import org.humanbrainproject.knowledgegraph.indexing.entity.InstanceReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.QualifiedIndexingMessage;
 import org.humanbrainproject.knowledgegraph.indexing.entity.TodoList;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
-import org.humanbrainproject.knowledgegraph.jsonld.control.JsonTransformer;
+import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;

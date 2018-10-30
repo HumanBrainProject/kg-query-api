@@ -5,7 +5,7 @@ import com.github.jsonldjava.core.JsonLdConsts;
 import java.util.*;
 
 /**
- * This is a wrapper - the message we get from Nexus contains non-resolved contexts. As a pre-processing step we fully qualify the
+ * This is a wrapper - the message we getInstance from Nexus contains non-resolved contexts. As a pre-processing step we fully qualify the
  * properties and store them in the corresponding map. This means, in the map you will find fully written keys (e.g. "http://schema.org/name" instead of "schema:name"
  *
  */

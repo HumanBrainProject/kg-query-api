@@ -1,6 +1,6 @@
 package org.humanbrainproject.knowledgegraph.query.boundary;
 
-import org.humanbrainproject.knowledgegraph.propertyGraph.arango.control.ArangoDatabaseFactory;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoDatabaseFactory;
 import org.humanbrainproject.knowledgegraph.query.control.FreemarkerTemplating;
 import org.humanbrainproject.knowledgegraph.query.entity.StoredQueryReference;
 import org.humanbrainproject.knowledgegraph.query.entity.StoredTemplateReference;

@@ -1,20 +1,25 @@
 package org.humanbrainproject.knowledgegraph.indexing.control;
 
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.control.DatabaseConnection;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.MainVertex;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.ReferenceType;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.VertexOrEdgeReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.InstanceReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.TargetDatabase;
-import org.humanbrainproject.knowledgegraph.propertyGraph.control.DatabaseConnection;
-import org.humanbrainproject.knowledgegraph.propertyGraph.entity.MainVertex;
-import org.humanbrainproject.knowledgegraph.propertyGraph.entity.SubSpace;
 
 import java.util.Set;
 
-public interface IndexingProvider<Connection extends DatabaseConnection<?>> {
+public interface IndexingProvider {
 
-    Connection getConnection(TargetDatabase database);
+    DatabaseConnection getConnection(TargetDatabase database);
 
-    MainVertex getVertexStructureById(InstanceReference incomingReference, TargetDatabase database);
+    Set<VertexOrEdgeReference> getVertexOrEdgeReferences(InstanceReference mainVertex, TargetDatabase database);
 
-    MainVertex getVertexStructureById(InstanceReference incomingReference, TargetDatabase database, SubSpace targetSpace);
+    MainVertex getVertexStructureById(InstanceReference incomingReference);
+
+//    MainVertex getVertexStructureById(InstanceReference incomingReference, TargetDatabase database);
+//
+//    MainVertex getVertexStructureById(InstanceReference incomingReference, TargetDatabase database, SubSpace targetSpace);
 
     String getPayloadById(InstanceReference instanceReference, TargetDatabase database);
 
@@ -36,5 +41,5 @@ public interface IndexingProvider<Connection extends DatabaseConnection<?>> {
 
     Set<InstanceReference> findAllIdsForEntity(InstanceReference anyReference);
 
-    Set<InstanceReference> findInstancesWithLinkTo(String originalParentProperty, InstanceReference originalId);
+    Set<? extends InstanceReference> findInstancesWithLinkTo(String originalParentProperty, InstanceReference originalId, ReferenceType referenceType);
 }

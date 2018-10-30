@@ -1,6 +1,6 @@
 package org.humanbrainproject.knowledgegraph;
 
-import org.humanbrainproject.knowledgegraph.propertyGraph.arango.control.ArangoConnection;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoConnection;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

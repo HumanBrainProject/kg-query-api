@@ -1,6 +1,6 @@
 package org.humanbrainproject.knowledgegraph.query.control;
 
-import org.humanbrainproject.knowledgegraph.nexus.control.NexusConfiguration;
+import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
 import org.humanbrainproject.knowledgegraph.query.entity.Template;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
@@ -108,9 +108,9 @@ public class SpecificationRepository {
 //        try {
 //            ResponseEntity<Map> result = restTemplate.exchange(String.format("%s?size=100", getNexusOrganizationsUrl()), HttpMethod.GET, entity, Map.class);
 //            if(result.getBody().containsKey("results")) {
-//                List<Map> results = (List<Map>)result.getBody().get("results");
+//                List<Map> results = (List<Map>)result.getBody().getInstance("results");
 //                if(results!=null){
-//                    Set<String> organizations = results.stream().map(r -> r.get("resultId").toString().replaceAll(getNexusOrganizationsUrl(), "")).collect(Collectors.toSet());
+//                    Set<String> organizations = results.stream().map(r -> r.getInstance("resultId").toString().replaceAll(getNexusOrganizationsUrl(), "")).collect(Collectors.toSet());
 //                    tokenToOrganizations.put(authorizationToken, organizations);
 //                    return organizations;
 //                }

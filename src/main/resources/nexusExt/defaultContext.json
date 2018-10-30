@@ -1,0 +1,24 @@
+{
+  "datatype": {
+    "@id": "sh:datatype",
+    "@type": "@id"
+  },
+  "path": {
+    "@id": "sh:path",
+    "@type": "@id"
+  },
+  "property": {
+    "@id": "sh:property",
+    "@type": "@id"
+  },
+  "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+  "sh": "http://www.w3.org/ns/shacl#",
+  "shapes": {
+    "@type": "@id",
+    "@reverse": "rdfs:isDefinedBy"
+  },
+  "targetClass": {
+    "@id": "sh:targetClass",
+    "@type": "@id"
+  }
+}

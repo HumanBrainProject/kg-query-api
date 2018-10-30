@@ -1,6 +1,7 @@
 package org.humanbrainproject.knowledgegraph.indexing.entity.nexus;
 
-import org.humanbrainproject.knowledgegraph.propertyGraph.entity.SubSpace;
+import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.SubSpace;
 
 import java.util.Objects;
 
@@ -61,8 +62,16 @@ public class NexusSchemaReference {
         return schemaVersion;
     }
 
-    public String getRelativeUrl() {
-        return String.format("%s%s/%s/%s/%s", getOrganization(), subSpace != null ? subSpace.getPostFix() : "", getDomain(), getSchema(), getSchemaVersion());
+    public NexusRelativeUrl getRelativeUrlForOrganization() {
+        return new NexusRelativeUrl(NexusConfiguration.ResourceType.ORGANIZATION, String.format("%s%s", getOrganization(), subSpace != null ? subSpace.getPostFix() : ""));
+    }
+
+    public NexusRelativeUrl getRelativeUrlForDomain(){
+        return new NexusRelativeUrl(NexusConfiguration.ResourceType.DOMAIN, String.format("%s/%s", getRelativeUrlForOrganization().getUrl(), getDomain()));
+    }
+
+    public NexusRelativeUrl getRelativeUrl() {
+        return new NexusRelativeUrl(NexusConfiguration.ResourceType.SCHEMA, String.format("%s/%s/%s", getRelativeUrlForDomain().getUrl(), getSchema(), getSchemaVersion()));
     }
 
     private static String extractMainOrganization(String organization) {
@@ -100,5 +109,10 @@ public class NexusSchemaReference {
     public int hashCode() {
 
         return Objects.hash(organization, subSpace, domain, schema, schemaVersion);
+    }
+
+    @Override
+    public String toString() {
+        return organization + subSpace + "/" + domain + '/' + schema + '/' + schemaVersion;
     }
 }

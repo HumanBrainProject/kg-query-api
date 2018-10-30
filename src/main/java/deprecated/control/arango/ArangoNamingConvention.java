@@ -72,7 +72,7 @@ public class ArangoNamingConvention {
 //    }
 //
 //    public String getEdgeLabel(JsonLdEdge edge) {
-//        return getEdgeLabel(edge.getName());
+//        return getEdgeLabel(edge.getTypeName());
 //    }
 //
 //    private String reduceStringToMaxSizeByHashing(String string) {

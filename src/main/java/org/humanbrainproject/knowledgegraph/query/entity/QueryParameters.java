@@ -1,6 +1,6 @@
 package org.humanbrainproject.knowledgegraph.query.entity;
 
-import org.humanbrainproject.knowledgegraph.authorization.entity.OidcAccessToken;
+import org.humanbrainproject.knowledgegraph.commons.authorization.entity.OidcAccessToken;
 
 import java.util.Collections;
 import java.util.Map;

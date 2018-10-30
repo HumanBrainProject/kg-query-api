@@ -10,7 +10,8 @@ import java.util.Map;
 public class Release extends KnownSemantic {
 
     public static final String RELEASE_TYPE = "http://hbp.eu/minds#Release";
-    private static final String RELEASE_INSTANCE_PROPERTYNAME = "http://hbp.eu/minds#releaseinstance";
+    public static final String RELEASE_INSTANCE_PROPERTYNAME = "http://hbp.eu/minds#releaseinstance";
+    public static final String RELEASE_REVISION_PROPERTYNAME = "http://hbp.eu/minds#releaserevision";
 
     public Release(QualifiedIndexingMessage spec) {
         super(spec, RELEASE_TYPE);
@@ -19,9 +20,15 @@ public class Release extends KnownSemantic {
     public NexusInstanceReference getReleaseInstance(){
         Object releaseInstance = this.spec.getQualifiedMap().get(RELEASE_INSTANCE_PROPERTYNAME);
         if(releaseInstance instanceof Map && ((Map)releaseInstance).containsKey(JsonLdConsts.ID)){
-            return NexusInstanceReference.createFromUrl((String)((Map)releaseInstance).get(JsonLdConsts.ID));
+            NexusInstanceReference reference = NexusInstanceReference.createFromUrl((String) ((Map) releaseInstance).get(JsonLdConsts.ID));
+            Number revision = (Number)this.spec.getQualifiedMap().get(RELEASE_REVISION_PROPERTYNAME);
+            if(revision!=null && reference!=null) {
+                reference.setRevision(revision.intValue());
+            }
+            return reference;
         }
         return null;
     }
+
 
 }

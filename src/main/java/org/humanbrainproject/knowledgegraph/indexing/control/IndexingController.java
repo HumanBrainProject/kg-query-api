@@ -4,13 +4,15 @@ import org.humanbrainproject.knowledgegraph.indexing.entity.InstanceReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.QualifiedIndexingMessage;
 import org.humanbrainproject.knowledgegraph.indexing.entity.TodoList;
 
+import java.io.IOException;
+
 public interface IndexingController {
 
-    void insert(QualifiedIndexingMessage message, TodoList todoList);
+    <T> TodoList<T> insert(QualifiedIndexingMessage message, TodoList<T> todoList) throws IOException;
 
-    void update(QualifiedIndexingMessage message, TodoList todoList);
+    <T> TodoList<T> update(QualifiedIndexingMessage message, TodoList<T> todoList) throws IOException;
 
-    void delete(InstanceReference reference, TodoList todoList);
+    <T> TodoList<T> delete(InstanceReference reference, TodoList<T> todoList);
 
     void clear();
 

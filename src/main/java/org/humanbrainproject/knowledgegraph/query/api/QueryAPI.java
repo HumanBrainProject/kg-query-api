@@ -2,7 +2,7 @@ package org.humanbrainproject.knowledgegraph.query.api;
 
 import io.swagger.annotations.Api;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
-import org.humanbrainproject.knowledgegraph.propertyGraph.arango.entity.ArangoDocumentReference;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
 import org.humanbrainproject.knowledgegraph.query.boundary.ArangoQuery;
 import org.humanbrainproject.knowledgegraph.query.boundary.Templating;
 import org.humanbrainproject.knowledgegraph.query.entity.*;

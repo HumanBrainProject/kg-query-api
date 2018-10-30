@@ -1,8 +1,8 @@
 package org.humanbrainproject.knowledgegraph.query.control;
 
 import com.github.jsonldjava.core.JsonLdConsts;
-import deprecated.control.Constants;
 import deprecated.control.GraphQueryKeys;
+import org.humanbrainproject.knowledgegraph.commons.vocabulary.SchemaOrgVocabulary;
 import org.humanbrainproject.knowledgegraph.query.entity.SpecField;
 import org.humanbrainproject.knowledgegraph.query.entity.SpecTraverse;
 import org.humanbrainproject.knowledgegraph.query.entity.Specification;
@@ -29,8 +29,8 @@ public class SpecificationInterpreter {
             originalContext = jsonObject.getString(JsonLdConsts.CONTEXT);
         }
         String name = null;
-        if (jsonObject.has(Constants.SCHEMA_ORG_NAME)) {
-            name = jsonObject.getString(Constants.SCHEMA_ORG_NAME);
+        if (jsonObject.has(SchemaOrgVocabulary.NAME)) {
+            name = jsonObject.getString(SchemaOrgVocabulary.NAME);
         }
         String rootSchema = null;
         if (jsonObject.has(GraphQueryKeys.GRAPH_QUERY_ROOT_SCHEMA.getFieldName())) {

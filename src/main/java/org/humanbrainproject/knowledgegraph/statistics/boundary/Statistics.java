@@ -3,9 +3,9 @@ package org.humanbrainproject.knowledgegraph.statistics.boundary;
 import com.arangodb.ArangoDatabase;
 import com.arangodb.entity.CollectionType;
 import deprecated.entity.Tuple;
-import org.humanbrainproject.knowledgegraph.propertyGraph.arango.control.ArangoDatabaseFactory;
-import org.humanbrainproject.knowledgegraph.propertyGraph.arango.control.ArangoRepository;
-import org.humanbrainproject.knowledgegraph.propertyGraph.arango.entity.ArangoCollectionReference;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoDatabaseFactory;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoRepository;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 

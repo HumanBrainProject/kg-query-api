@@ -3,20 +3,18 @@ package org.humanbrainproject.knowledgegraph.query.control;
 import com.arangodb.ArangoCollection;
 import com.arangodb.ArangoDatabase;
 import com.google.gson.Gson;
-import deprecated.control.arango.ArangoNamingConvention;
 import freemarker.cache.StringTemplateLoader;
 import freemarker.template.Configuration;
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
-import org.humanbrainproject.knowledgegraph.propertyGraph.arango.control.ArangoConnection;
-import org.humanbrainproject.knowledgegraph.propertyGraph.arango.control.ArangoRepository;
-import org.humanbrainproject.knowledgegraph.propertyGraph.arango.entity.ArangoCollectionReference;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoConnection;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoRepository;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
 import org.humanbrainproject.knowledgegraph.query.entity.QueryResult;
 import org.humanbrainproject.knowledgegraph.query.entity.StoredLibraryReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -28,13 +26,12 @@ import java.nio.file.Paths;
 import java.util.*;
 
 @Component
-@Scope(scopeName = "singleton")
 public class FreemarkerTemplating {
 
     @Autowired
     ArangoRepository repository;
 
-    protected Logger logger = LoggerFactory.getLogger(ArangoNamingConvention.class);
+    protected Logger logger = LoggerFactory.getLogger(FreemarkerTemplating.class);
 
     private final static ArangoCollectionReference TEMPLATES = new ArangoCollectionReference("templates");
     private final static ArangoCollectionReference LIBRARIES = new ArangoCollectionReference("libraries");

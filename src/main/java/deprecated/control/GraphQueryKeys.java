@@ -1,5 +1,7 @@
 package deprecated.control;
 
+import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
+
 public enum GraphQueryKeys {
 
 
@@ -23,7 +25,7 @@ public enum GraphQueryKeys {
     private final String fieldName;
 
     GraphQueryKeys(String fieldName){
-        this.fieldName = Constants.GRAPH_QUERY_VOCAB+fieldName;
+        this.fieldName = HBPVocabulary.GRAPH_QUERY+fieldName;
     }
 
     public String getFieldName() {

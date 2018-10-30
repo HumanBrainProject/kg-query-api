@@ -1,7 +1,7 @@
 package org.humanbrainproject.knowledgegraph.indexing.control.inference;
 
 import org.humanbrainproject.knowledgegraph.indexing.entity.QualifiedIndexingMessage;
-import org.humanbrainproject.knowledgegraph.propertyGraph.entity.MainVertex;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.MainVertex;
 
 import java.util.Set;
 
