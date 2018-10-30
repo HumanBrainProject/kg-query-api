@@ -423,4 +423,11 @@ public class ArangoRepository extends VertexRepository<ArangoDriver> {
         ArangoCursor<Map> q = db.query(query, null, new AqlQueryOptions(), Map.class );
         return q.asListRemaining();
     }
+
+    public List<Map> getInstancesFromBookMarkList(String bookmarkListId, Integer start, Integer size, String searchTerm, ArangoDriver driver){
+        ArangoDatabase db = driver.getOrCreateDB();
+        String query = queryFactory.bookmarkFromBookmarkLists(bookmarkListId, start, size, searchTerm);
+        ArangoCursor<Map> q = db.query(query, null, new AqlQueryOptions(), Map.class );
+        return q.asListRemaining();
+    }
 }

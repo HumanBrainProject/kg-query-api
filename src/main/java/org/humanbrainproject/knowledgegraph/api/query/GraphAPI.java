@@ -102,4 +102,16 @@ public class GraphAPI {
             return ResponseEntity.status(e.getStatusCode()).build();
         }
     }
+
+    @GetMapping(value = "/bookmarkList/{org}/{domain}/{schema}/{version}/{id}", consumes = { MediaType.WILDCARD})
+    public ResponseEntity<List<Map>> getReleaseGraph(@PathVariable("org") String org, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("version") String version, @PathVariable("id") String id, @RequestParam(value = "size", required = false) Integer size, @RequestParam(value = "start", required = false) Integer start, @RequestParam(value="search", required = false) String searchTerm) throws Exception{
+        try{
+            String bookmarkListId =  String.format("%s/%s/%s/%s/%s", org,domain, schema, version, id);
+            List<Map> rootList = graph.getInstancesFromBookMarkList(bookmarkListId, start, size, searchTerm);
+            return ResponseEntity.ok(rootList);
+        } catch (HttpClientErrorException e){
+            return ResponseEntity.status(e.getStatusCode()).build();
+        }
+    }
+
 }

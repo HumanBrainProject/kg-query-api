@@ -49,4 +49,8 @@ public class ArangoGraph {
     public List<Map> getReleaseStatus(String vertexId, String reconciledId) throws IOException{
         return arangoRepository.getReleaseStatus(vertexId,reconciledId, arango);
     }
+
+    public List<Map> getInstancesFromBookMarkList(String bookmarkListId, Integer from, Integer size, String searchTerm) throws IOException{
+        return arangoRepository.getInstancesFromBookMarkList(bookmarkListId, from, size, searchTerm , arango);
+    }
 }

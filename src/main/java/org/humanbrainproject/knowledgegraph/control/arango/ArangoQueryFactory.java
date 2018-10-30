@@ -171,4 +171,26 @@ public class ArangoQueryFactory {
                 "    return {\"status\":s, \"child_status\":child_status }",reconciledId, startingVertexId, names);
     }
 
+    public String bookmarkFromBookmarkLists(String bookmarkListId, Integer start, Integer size, String searchTerm){
+        String bookmarkColl = "kgeditor-core-bookmark-v0_0_1";
+        return String.format(
+            "LET instances = (FOR doc IN `%s`\n" +
+            "FILTER doc.`http://hbp.eu/kgeditor/bookmarkList`.`@id` == \"https://nexus-dev.humanbrainproject.org/v0/data/%s\"\n" +
+            "LET instance = (FOR instance_doc IN 1..1 OUTBOUND doc `rel-hbp_eu-kgeditor-bookmarkInstanceLink`\n" +
+            "    RETURN {\n" +
+            "        \"name\":instance_doc.`http://schema.org/name`,\n" +
+            "        \"id\":instance_doc.`@id`,\n" +
+            "        \"description\":instance_doc.`http://schema.org/description`\n" +
+            "    }\n" +
+            ")\n" +
+            "RETURN FIRST(instance))\n" +
+            "\n" +
+            "FOR inst IN instances\n" +
+            "FILTER LIKE (LOWER(inst.name), \"%%%s%%\")\n" +
+            "SORT inst.name\n" +
+            "LIMIT %s, %s\n" +
+            "RETURN inst", bookmarkColl, bookmarkListId, searchTerm, start.toString(), size.toString()
+        );
+    }
+
 }
