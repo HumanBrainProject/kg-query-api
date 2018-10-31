@@ -66,6 +66,6 @@ public class KgQueryApplication {
 	@Bean
 	@Qualifier("released")
 	public ArangoConnection createReleasedDb() {
-		return new ArangoConnection("kg_released", false);
+		return new ArangoConnection("kg_released_new", false);
 	}
 }
