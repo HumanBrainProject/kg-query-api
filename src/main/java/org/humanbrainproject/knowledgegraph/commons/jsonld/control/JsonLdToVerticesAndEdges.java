@@ -40,7 +40,7 @@ public class JsonLdToVerticesAndEdges {
     }
 
     private boolean isInternalEdge(URL url) {
-        return url.toExternalForm().startsWith(configuration.getNexusEndpoint());
+        return url.toExternalForm().startsWith(configuration.getNexusBase());
     }
 
     private void handleSingleElement(Vertex parentVertex, String key, Object element, Integer orderNumber, MainVertex mainVertex) {

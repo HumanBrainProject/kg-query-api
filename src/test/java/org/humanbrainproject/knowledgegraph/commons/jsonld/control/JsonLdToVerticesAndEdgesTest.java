@@ -25,7 +25,7 @@ public class JsonLdToVerticesAndEdgesTest {
     public void setup(){
         controller = new JsonLdToVerticesAndEdges();
         controller.configuration = Mockito.mock(NexusConfiguration.class);
-        Mockito.doReturn(HTTPS_NEXUSTEST_ORG).when(controller.configuration).getNexusEndpoint();
+        Mockito.doReturn(HTTPS_NEXUSTEST_ORG).when(controller.configuration).getNexusBase();
     }
 
 

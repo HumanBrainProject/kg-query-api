@@ -129,7 +129,7 @@ public class ArangoRepository extends VertexRepository<ArangoConnection, ArangoD
                             processPayload(vertex, result.get(key), edgesCollections, arango, key.toString(), (Integer) innerMap.get("_orderNumber"), mainVertex);
                         }
                     }
-                } else if (innerMap.containsKey(JsonLdConsts.ID) && innerMap.get(JsonLdConsts.ID).toString().startsWith(configuration.getNexusEndpoint())) {
+                } else if (innerMap.containsKey(JsonLdConsts.ID) && innerMap.get(JsonLdConsts.ID).toString().startsWith(configuration.getNexusBase())) {
                     Edge edge = new InternalEdge(fieldName, parentVertex, NexusInstanceReference.createFromUrl(innerMap.get(JsonLdConsts.ID).toString()), orderNumber, mainVertex);
                     for (Object innerKey : innerMap.keySet()) {
                         if (!innerKey.toString().startsWith("_")) {
