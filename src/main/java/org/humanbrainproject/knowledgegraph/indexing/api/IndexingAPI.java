@@ -33,7 +33,8 @@ public class IndexingAPI {
         logger.info("Received insert request for {}", path.getRelativeUrl());
         logger.debug("Payload for insert request {}: {}", path.getRelativeUrl(), payload);
         try {
-            indexer.insert(new IndexingMessage(path, payload));
+            IndexingMessage message = new IndexingMessage(path, payload, timestamp, authorId);
+            indexer.insert(message);
             return ResponseEntity.ok(null);
         } catch (JsonLdError | InvalidPayloadException e) {
             logger.warn(String.format("INS: Was not able to process the payload %s", payload), e);
@@ -50,7 +51,7 @@ public class IndexingAPI {
         logger.info("Received update request for {} in rev {}", path.getRelativeUrl(), rev);
         logger.debug("Payload for update request {} in rev {}: {}", path.getRelativeUrl(), rev, payload);
         try {
-            IndexingMessage message = new IndexingMessage(path, payload);
+            IndexingMessage message = new IndexingMessage(path, payload, timestamp, authorId);
             indexer.update(message);
             return ResponseEntity.ok(null);
         } catch (JsonLdError | InvalidPayloadException  e) {

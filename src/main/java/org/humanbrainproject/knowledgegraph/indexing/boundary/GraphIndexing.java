@@ -1,6 +1,7 @@
 package org.humanbrainproject.knowledgegraph.indexing.boundary;
 
 import com.arangodb.ArangoDatabase;
+import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.humanbrainproject.knowledgegraph.indexing.control.IndexingController;
 import org.humanbrainproject.knowledgegraph.indexing.control.MessageProcessor;
 import org.humanbrainproject.knowledgegraph.indexing.control.basic.BasicIndexingController;
@@ -50,6 +51,7 @@ public class GraphIndexing {
     public TodoList<?> insert(IndexingMessage message) throws IOException {
         //Pre-process
         QualifiedIndexingMessage qualifiedSpec = messageProcessor.qualify(message);
+        qualifiedSpec.getQualifiedMap().put(HBPVocabulary.CREATED_AT, message.getTimestamp());
 
         //Gather execution plan
         TodoList<ArangoDatabase> todoList = new TodoList<>();
