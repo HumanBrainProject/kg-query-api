@@ -1,14 +1,25 @@
 package org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity;
 
 import java.util.Map;
+import java.util.Set;
 
 public class Property<T> {
     private final String name;
     private final T value;
+    private Set<Property<?>> alternatives;
+
 
     private Property(String name, T value) {
         this.name = name;
         this.value = value;
+    }
+
+    public Set<Property<?>> getAlternatives() {
+        return alternatives;
+    }
+
+    public void setAlternatives(Set<Property<?>> alternatives) {
+        this.alternatives = alternatives;
     }
 
     public String getName() {

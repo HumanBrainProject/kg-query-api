@@ -29,6 +29,7 @@ public class InferenceController implements IndexingController{
 
     public final static String INFERENCE_OF_PROPERTY = HBPVocabulary.NAMESPACE+"inferenceOf";
     public final static String ORIGINAL_PARENT_PROPERTY = "http://hbp.eu/reconciled#original_parent";
+    public final static String ALTERNATIVES_PROPERTY = INFERRED_BASE+"alternatives";
 
     private final static List<String> EDGE_BLACKLIST_FOR_INFERENCE = Arrays.asList(INFERENCE_OF_PROPERTY, ORIGINAL_PARENT_PROPERTY);
 

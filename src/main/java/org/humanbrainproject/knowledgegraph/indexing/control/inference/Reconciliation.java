@@ -111,7 +111,7 @@ public class Reconciliation implements InferenceStrategy, InitializingBean {
         for (Property property : vertex.getProperties()) {
             //It is important, that we only take care of properties that not have been addressed before.
             if (newVertex.getPropertyByName(property.getName()) == null) {
-                mergeProperty(newVertex, property, additionalInstances.stream().map(i -> i.getPropertyByName(property.getName())).collect(Collectors.toList()));
+                mergeProperty(newVertex, property, additionalInstances.stream().map(i -> i.getPropertyByName(property.getName())).filter(i -> i!=null && !i.equals(property.getValue())).collect(Collectors.toSet()));
             }
         }
         int orderNumber = 0;
@@ -137,9 +137,10 @@ public class Reconciliation implements InferenceStrategy, InitializingBean {
     }
 
 
-    private void mergeProperty(Vertex newVertex, Property property, List<? extends Property> additionalProperties) {
-        if (additionalProperties.isEmpty() && !NAME_BLACKLIST_FOR_MERGE.contains(property.getName())) {
+    private void mergeProperty(Vertex newVertex, Property property, Set<? extends Property> additionalProperties) {
+        if (!NAME_BLACKLIST_FOR_MERGE.contains(property.getName())) {
             newVertex.getProperties().add(property);
+            property.setAlternatives(additionalProperties);
         }
     }
 

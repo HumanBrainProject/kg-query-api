@@ -3,6 +3,7 @@ package org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.contro
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.*;
+import org.humanbrainproject.knowledgegraph.indexing.control.inference.InferenceController;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -38,8 +39,20 @@ public class ArangoDocumentConverter {
                 }
             }
         }
-        for (Property property : vertexOrEdge.getProperties()) {
+        for (Property<?> property : vertexOrEdge.getProperties()) {
             jsonObject.put(property.getName(), property.getValue());
+            if(property.getAlternatives()!=null && !property.getAlternatives().isEmpty()){
+                Object alternatives = jsonObject.get(InferenceController.ALTERNATIVES_PROPERTY);
+                if(alternatives==null){
+                    alternatives = new LinkedHashMap<>();
+                    jsonObject.put(InferenceController.ALTERNATIVES_PROPERTY, alternatives);
+                }
+                if(alternatives instanceof Map){
+                    for (Property<?> p : property.getAlternatives()) {
+                        ((Map) alternatives).put(p.getName(), p.getValue());
+                    }
+                }
+            }
         }
         for (Edge edge : vertexOrEdge.getEdges()) {
             if(!(edge instanceof EmbeddedEdge)){
