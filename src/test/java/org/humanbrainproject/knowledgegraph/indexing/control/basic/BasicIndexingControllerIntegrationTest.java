@@ -5,6 +5,7 @@ import org.humanbrainproject.knowledgegraph.indexing.entity.TodoList;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.testFactory.TestObjectFactory;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +17,8 @@ import java.util.Map;
 
 @SpringBootTest
 @RunWith(SpringRunner.class)
+
+@Ignore("IntegrationTest")
 public class BasicIndexingControllerIntegrationTest {
 
     @Autowired

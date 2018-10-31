@@ -2,6 +2,7 @@ package org.humanbrainproject.knowledgegraph.commons.nexusToArangoIndexing.contr
 
 import com.arangodb.ArangoDatabase;
 import com.arangodb.entity.CollectionType;
+import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusDocumentConverter;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.SystemNexusClient;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoDocumentConverter;
@@ -15,6 +16,7 @@ import org.humanbrainproject.knowledgegraph.indexing.entity.InsertOrUpdateInPrim
 import org.humanbrainproject.knowledgegraph.indexing.entity.InsertTodoItem;
 import org.humanbrainproject.knowledgegraph.indexing.entity.TodoList;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
+import org.humanbrainproject.knowledgegraph.nexusExt.control.InstanceController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,6 +41,11 @@ public class NexusArangoTransaction implements DatabaseTransaction<ArangoDatabas
     @Autowired
     SystemNexusClient nexusClient;
 
+    @Autowired
+    JsonTransformer jsonTransformer;
+
+    @Autowired
+    InstanceController instanceController;
 
     protected Logger logger = LoggerFactory.getLogger(NexusArangoTransaction.class);
 
@@ -67,12 +74,9 @@ public class NexusArangoTransaction implements DatabaseTransaction<ArangoDatabas
         List<InsertOrUpdateInPrimaryStoreTodoItem<ArangoDatabase>> insertOrUpdateInPrimaryStoreItems = todoList.getInsertOrUpdateInPrimaryStoreTodoItems();
         for (InsertOrUpdateInPrimaryStoreTodoItem<ArangoDatabase> insertOrUpdateInPrimaryStoreItem : insertOrUpdateInPrimaryStoreItems) {
             MainVertex mainVertex = insertOrUpdateInPrimaryStoreItem.getObject();
-            if (mainVertex.getInstanceReference() instanceof NexusInstanceReference) {
-                String jsonFromVertexOrEdge = nexusDocumentConverter.createJsonFromVertex((NexusInstanceReference) mainVertex.getInstanceReference(), mainVertex);
-                nexusClient.createOrUpdateInstance((NexusInstanceReference) mainVertex.getInstanceReference(), jsonFromVertexOrEdge);
-            } else {
-                logger.error("The main vertex didn't have a nexus instance reference - this is unexpected!");
-            }
+            String jsonFromVertexOrEdge = nexusDocumentConverter.createJsonFromVertex(mainVertex.getInstanceReference(), mainVertex);
+            NexusInstanceReference newReference = nexusClient.createOrUpdateInstance(mainVertex.getInstanceReference().setRevision(null), jsonTransformer.parseToMap(jsonFromVertexOrEdge));
+            mainVertex.setInstanceReference(newReference);
         }
     }
 

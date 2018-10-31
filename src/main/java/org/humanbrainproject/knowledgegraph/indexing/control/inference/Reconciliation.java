@@ -1,14 +1,15 @@
 package org.humanbrainproject.knowledgegraph.indexing.control.inference;
 
 import com.github.jsonldjava.core.JsonLdConsts;
+import deprecated.exceptions.InferenceException;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoDatabaseFactory;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoRepository;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.*;
 import org.humanbrainproject.knowledgegraph.indexing.control.IndexingProvider;
 import org.humanbrainproject.knowledgegraph.indexing.control.MessageProcessor;
-import org.humanbrainproject.knowledgegraph.indexing.entity.InstanceReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.QualifiedIndexingMessage;
+import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
@@ -21,8 +22,7 @@ import java.util.stream.Collectors;
 @Component
 public class Reconciliation implements InferenceStrategy, InitializingBean {
 
-
-    public final static String ORIGINAL_PARENT_PROPERTY = "http://hbp.eu/reconciled#original_parent";
+    private final static List<String> NAME_BLACKLIST_FOR_MERGE = Arrays.asList(JsonLdConsts.ID, InferenceController.ORIGINAL_PARENT_PROPERTY);
 
     @Autowired
     InferenceController controller;
@@ -37,7 +37,7 @@ public class Reconciliation implements InferenceStrategy, InitializingBean {
     NexusConfiguration nexusConfiguration;
 
     @Autowired
-    MessageProcessor graphSpecificationController;
+    MessageProcessor messageProcessor;
 
     @Autowired
     IndexingProvider indexingProvider;
@@ -53,25 +53,48 @@ public class Reconciliation implements InferenceStrategy, InitializingBean {
     @Override
     public void infer(QualifiedIndexingMessage message, Set<MainVertex> documents) {
         //We collect all instances from the default space
-        InstanceReference originalId = indexingProvider.findOriginalId(message.getOriginalMessage().getInstanceReference());
-        Set<? extends InstanceReference> relativeInstances = indexingProvider.findInstancesWithLinkTo(ORIGINAL_PARENT_PROPERTY, originalId, ReferenceType.INTERNAL);
-        if (!relativeInstances.isEmpty()) {
+        NexusInstanceReference originalId = message.getOriginalId();
+        boolean isOriginal = originalId.equals(message.getOriginalMessage().getInstanceReference());
+
+        Set<NexusInstanceReference> relativeInstances = indexingProvider.findInstancesWithLinkTo(InferenceController.ORIGINAL_PARENT_PROPERTY, originalId, ReferenceType.INTERNAL);
+        Set<NexusInstanceReference> inferredInstances = indexingProvider.findInstancesWithLinkTo(InferenceController.INFERENCE_OF_PROPERTY, originalId, ReferenceType.INTERNAL);
+        if (!isOriginal || (relativeInstances!=null && !relativeInstances.isEmpty())) {
             MainVertex originalStructure = indexingProvider.getVertexStructureById(originalId);
             if (originalStructure != null) {
-                Set<MainVertex> relativeInstanceStructures = relativeInstances != null ? relativeInstances.stream().map(relativeInstance -> {
-                    return indexingProvider.getVertexStructureById(relativeInstance);
-
-                }).collect(Collectors.toSet()) : Collections.emptySet();
+                List<MainVertex> relativeStructures = relativeInstances.stream().filter(r -> r.equals(message.getOriginalMessage().getInstanceReference())).map(relativeInstance -> indexingProvider.getVertexStructureById(relativeInstance)).collect(Collectors.toList());
+                if(!isOriginal) {
+                    //Add the new message as part of the relative structure
+                    relativeStructures.add(messageProcessor.createVertexStructure(message).getMainVertex());
+                }
                 //Now we apply the inference logic
-                MainVertex newVertex = mergeInstances(originalStructure, new ArrayList<>(relativeInstanceStructures));
+                MainVertex newVertex = mergeInstances(originalStructure, new ArrayList<>(relativeStructures), inferredInstances);
                 //And we add the inferred instance to the collection of documents
                 documents.add(newVertex);
             }
         }
     }
 
-    private MainVertex mergeInstances(MainVertex original, List<MainVertex> additionalInstances) {
-        MainVertex newVertex = new MainVertex(original.getInstanceReference());
+
+
+
+
+    private MainVertex mergeInstances(MainVertex original, List<MainVertex> additionalInstances, Set<NexusInstanceReference> inferredInstances) {
+        MainVertex newVertex;
+        if(inferredInstances!=null && !inferredInstances.isEmpty()){
+            if(inferredInstances.size()==1){
+                newVertex = new MainVertex(inferredInstances.iterator().next());
+            }
+            else{
+                throw new InferenceException(String.format("Multiple inferred entities for the original entity %s", original.getInstanceReference().getFullId(true)));
+            }
+        }
+        else{
+            //There is no inferred instance yet - so we create a new one.
+            newVertex = new MainVertex(new NexusInstanceReference(original.getInstanceReference().getNexusSchema(), null).toSubSpace(SubSpace.INFERRED));
+        }
+        newVertex.getEdges().add(new InternalEdge(InferenceController.INFERENCE_OF_PROPERTY, newVertex, original.getInstanceReference(), 0, newVertex));
+        //newVertex.getProperties().add(Property.createReference(INFERENCE_OF_PROPERTY, nexusConfiguration.getAbsoluteUrl(original.getInstanceReference())));
+
         Property<List<String>> types = Property.createProperty(JsonLdConsts.TYPE, new ArrayList<String>());
         types.getValue().addAll(original.getTypes());
         types.getValue().add(InferenceController.INFERRED_TYPE);
@@ -108,14 +131,14 @@ public class Reconciliation implements InferenceStrategy, InitializingBean {
     }
 
     private void mergeReference(Vertex newVertex, Edge edge, List<? extends Edge> additionalEdges) {
-        if (additionalEdges.isEmpty()) {
+        if (additionalEdges.isEmpty() && !NAME_BLACKLIST_FOR_MERGE.contains(edge.getName())) {
             newVertex.getEdges().add(edge);
         }
     }
 
 
     private void mergeProperty(Vertex newVertex, Property property, List<? extends Property> additionalProperties) {
-        if (additionalProperties.isEmpty()) {
+        if (additionalProperties.isEmpty() && !NAME_BLACKLIST_FOR_MERGE.contains(property.getName())) {
             newVertex.getProperties().add(property);
         }
     }

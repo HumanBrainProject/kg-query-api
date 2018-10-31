@@ -1,13 +1,12 @@
 package org.humanbrainproject.knowledgegraph.indexing.control;
 
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.SubSpace;
-import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonLdStandardization;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonLdToVerticesAndEdges;
-import org.humanbrainproject.knowledgegraph.indexing.entity.IndexingMessage;
-import org.humanbrainproject.knowledgegraph.indexing.entity.QualifiedIndexingMessage;
+import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.MainVertex;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.ResolvedVertexStructure;
+import org.humanbrainproject.knowledgegraph.indexing.entity.IndexingMessage;
+import org.humanbrainproject.knowledgegraph.indexing.entity.QualifiedIndexingMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -35,11 +34,7 @@ public class MessageProcessor {
     }
 
     public ResolvedVertexStructure createVertexStructure(QualifiedIndexingMessage qualifiedNexusIndexingMessage){
-        return createVertexStructureInAlternativeSpace(qualifiedNexusIndexingMessage, null);
-    }
-
-    public ResolvedVertexStructure createVertexStructureInAlternativeSpace(QualifiedIndexingMessage qualifiedMessage, SubSpace targetSubSpace){
-        MainVertex vertex = jsonLdToVerticesAndEdges.transformFullyQualifiedJsonLdToVerticesAndEdges(qualifiedMessage, targetSubSpace);
-        return new ResolvedVertexStructure(qualifiedMessage, vertex, targetSubSpace);
+        MainVertex vertex = jsonLdToVerticesAndEdges.transformFullyQualifiedJsonLdToVerticesAndEdges(qualifiedNexusIndexingMessage);
+        return new ResolvedVertexStructure(qualifiedNexusIndexingMessage, vertex);
     }
 }

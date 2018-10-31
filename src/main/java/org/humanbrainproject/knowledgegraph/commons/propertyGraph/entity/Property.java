@@ -27,4 +27,10 @@ public class Property<T> {
         return new Property<T>(name, value);
     }
 
+//    public static Property<Map> createReference(String name, String url){
+//        Map<String, String> reference = new LinkedHashMap<>();
+//        reference.put(JsonLdConsts.ID, url);
+//        return new Property<Map>(name, reference);
+//    }
+
 }

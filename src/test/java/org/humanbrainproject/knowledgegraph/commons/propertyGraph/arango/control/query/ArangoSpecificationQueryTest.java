@@ -16,6 +16,7 @@ import org.springframework.boot.configurationprocessor.json.JSONException;
 import java.io.IOException;
 import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class ArangoSpecificationQueryTest {
 
@@ -32,8 +33,10 @@ public class ArangoSpecificationQueryTest {
         query = new ArangoSpecificationQuery();
         query.databaseFactory = Mockito.mock(ArangoDatabaseFactory.class);
         ArangoConnection mockConnection = Mockito.mock(ArangoConnection.class);
-        Mockito.doReturn(mockConnection).when(query.databaseFactory).getDefaultDB();
-        Mockito.doReturn(gson.fromJson(collectionLabels, Set.class).stream().map(c -> new ArangoCollectionReference(c.toString()))).when(mockConnection).getCollections();
+        Mockito.doReturn(mockConnection).when(query.databaseFactory).getConnection(Mockito.any());
+        Set collectionLabelSet = gson.fromJson(collectionLabels, Set.class);
+        Set<ArangoCollectionReference> collectionReferences = (Set<ArangoCollectionReference>) collectionLabelSet.stream().map(c -> new ArangoCollectionReference(c.toString())).collect(Collectors.toSet());
+        Mockito.doReturn(collectionReferences).when(mockConnection).getCollections();
         this.whitelistedOrganizations = new LinkedHashSet<>();
         this.whitelistedOrganizations.add("minds");
         this.whitelistedOrganizations.add("cscs");

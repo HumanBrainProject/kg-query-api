@@ -32,10 +32,13 @@ public class SchemaController {
 
     private Map defaultContextPayload;
 
-    private Map getDefaultContextPayload() throws IOException {
+    private Map getDefaultContextPayload() {
         if (defaultContextPayload == null) {
             try (Reader reader = new BufferedReader(new InputStreamReader(defaultContext.getInputStream()));) {
                 this.defaultContextPayload = new Gson().fromJson(reader, Map.class);
+            }
+            catch (IOException e){
+                throw new RuntimeException("Can not find default context!");
             }
         }
         return this.defaultContextPayload;
@@ -72,7 +75,7 @@ public class SchemaController {
         nexusClient.patch(new NexusRelativeUrl(NexusConfiguration.ResourceType.SCHEMA, String.format("%s/config", nexusSchemaReference.getRelativeUrl().getUrl())), revision, payload);
     }
 
-    public void createSchema(NexusSchemaReference nexusSchemaReference) throws IOException {
+    public void createSchema(NexusSchemaReference nexusSchemaReference) {
         createSchema(nexusSchemaReference, createSimpleSchema(nexusSchemaReference));
     }
 
@@ -85,7 +88,7 @@ public class SchemaController {
     }
 
 
-    private Map createSimpleSchema(NexusSchemaReference schemaReference) throws IOException {
+    private Map createSimpleSchema(NexusSchemaReference schemaReference) {
         Map<String, Object> schema = new LinkedHashMap<>();
         schema.put(JsonLdConsts.CONTEXT, getDefaultContextPayload());
         Map<String, Object> shape = new LinkedHashMap<>();

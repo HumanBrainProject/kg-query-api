@@ -5,10 +5,9 @@ import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransform
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusRelativeUrl;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
+import org.humanbrainproject.knowledgegraph.nexusExt.control.InstanceController;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
 import java.util.List;
@@ -34,6 +33,8 @@ public class SystemNexusClient {
     @Autowired
     NexusClient nexusClient;
 
+    @Autowired
+    InstanceController instanceController;
 
     public List<Map> find(NexusSchemaReference reference, String fieldName, String fieldValue) throws IOException {
         return nexusClient.find(reference, fieldName, fieldValue, systemOidc.getToken());
@@ -59,15 +60,8 @@ public class SystemNexusClient {
         return nexusClient.get(nexusInstanceReference.getRelativeUrl(), systemOidc.getToken(), String.class);
     }
 
-    public void createOrUpdateInstance(NexusInstanceReference nexusInstanceReference, String payload) {
-        RestTemplate restTemplate = new RestTemplateBuilder().interceptors(systemOidc).build();
-        String payloadWithTechnicalUser = getPayload(nexusInstanceReference);
-        if(payloadWithTechnicalUser!=null){
-            restTemplate.put(configuration.getAbsoluteUrl(nexusInstanceReference), payload);
-        }
-        else{
-            restTemplate.postForObject(configuration.getAbsoluteUrl(nexusInstanceReference.getNexusSchema()), payload, String.class);
-        }
+    public NexusInstanceReference createOrUpdateInstance(NexusInstanceReference nexusInstanceReference, Map<String, Object> payload) {
+        return instanceController.createInstanceByNexusId(nexusInstanceReference.getNexusSchema(), nexusInstanceReference.getId(), nexusInstanceReference.getRevision(), payload, systemOidc.getToken());
     }
 
 }

@@ -37,7 +37,7 @@ public class JsonLdToVerticesAndEdgesTest {
         QualifiedIndexingMessage indexingMessage = TestObjectFactory.createQualifiedIndexingMessage(TestObjectFactory.fooInstanceReference(), fullyQualified);
 
         //when
-        MainVertex mainVertex = controller.transformFullyQualifiedJsonLdToVerticesAndEdges(indexingMessage, SubSpace.MAIN);
+        MainVertex mainVertex = controller.transformFullyQualifiedJsonLdToVerticesAndEdges(indexingMessage);
 
         //then
         Assert.assertEquals(1, mainVertex.getProperties().size());
@@ -57,7 +57,7 @@ public class JsonLdToVerticesAndEdgesTest {
         QualifiedIndexingMessage indexingMessage = TestObjectFactory.createQualifiedIndexingMessage(TestObjectFactory.fooInstanceReference(), fullyQualified);
 
         //when
-        MainVertex mainVertex = controller.transformFullyQualifiedJsonLdToVerticesAndEdges(indexingMessage, SubSpace.MAIN);
+        MainVertex mainVertex = controller.transformFullyQualifiedJsonLdToVerticesAndEdges(indexingMessage);
 
         //then
         Assert.assertEquals(1, mainVertex.getEdges().size());
@@ -87,7 +87,7 @@ public class JsonLdToVerticesAndEdgesTest {
         QualifiedIndexingMessage indexingMessage = TestObjectFactory.createQualifiedIndexingMessage(TestObjectFactory.fooInstanceReference(), fullyQualified);
 
         //when
-        MainVertex mainVertex = controller.transformFullyQualifiedJsonLdToVerticesAndEdges(indexingMessage, SubSpace.MAIN);
+        MainVertex mainVertex = controller.transformFullyQualifiedJsonLdToVerticesAndEdges(indexingMessage);
 
         //then
         Assert.assertEquals(1, mainVertex.getEdges().size());
@@ -102,7 +102,7 @@ public class JsonLdToVerticesAndEdgesTest {
 
         Assert.assertEquals(1, toVertex.getEdges().size());
         Edge deepEmbeddedEdge = toVertex.getEdges().get(0);
-        Assert.assertEquals("http://test/deepembed", deepEmbeddedEdge.getTypeName());
+        Assert.assertEquals("emb-http://test/deepembed", deepEmbeddedEdge.getTypeName());
         Vertex deepEmbeddedVertex = ((EmbeddedEdge)deepEmbeddedEdge).getToVertex();
         Assert.assertEquals(1, deepEmbeddedVertex.getProperties().size());
         Assert.assertEquals("http://test/deepembedvalue", deepEmbeddedVertex.getProperties().get(0).getName());
@@ -120,7 +120,7 @@ public class JsonLdToVerticesAndEdgesTest {
         QualifiedIndexingMessage indexingMessage = TestObjectFactory.createQualifiedIndexingMessage(TestObjectFactory.fooInstanceReference(), fullyQualified);
 
         //when
-        MainVertex mainVertex = controller.transformFullyQualifiedJsonLdToVerticesAndEdges(indexingMessage, SubSpace.MAIN);
+        MainVertex mainVertex = controller.transformFullyQualifiedJsonLdToVerticesAndEdges(indexingMessage);
 
         //then
         Assert.assertEquals(1, mainVertex.getEdges().size());
@@ -143,7 +143,7 @@ public class JsonLdToVerticesAndEdgesTest {
         QualifiedIndexingMessage indexingMessage = TestObjectFactory.createQualifiedIndexingMessage(TestObjectFactory.fooInstanceReference(), fullyQualified);
 
         //when
-        MainVertex mainVertex = controller.transformFullyQualifiedJsonLdToVerticesAndEdges(indexingMessage, SubSpace.MAIN);
+        MainVertex mainVertex = controller.transformFullyQualifiedJsonLdToVerticesAndEdges(indexingMessage);
 
         //then
         Assert.assertEquals(1, mainVertex.getEdges().size());
@@ -154,6 +154,6 @@ public class JsonLdToVerticesAndEdgesTest {
 
         NexusInstanceReference reference = ((InternalEdge) mainVertex.getEdges().get(0)).getReference();
         Assert.assertNotNull(reference);
-        Assert.assertEquals("foo/core/foobar/v0.0.1/bar", reference.getRelativeUrl());
+        Assert.assertEquals("foo/core/foobar/v0.0.1/bar", reference.getRelativeUrl().getUrl());
     }
 }

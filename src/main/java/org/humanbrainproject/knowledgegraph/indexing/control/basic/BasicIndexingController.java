@@ -6,10 +6,10 @@ import org.humanbrainproject.knowledgegraph.indexing.control.ExecutionPlanner;
 import org.humanbrainproject.knowledgegraph.indexing.control.IndexingController;
 import org.humanbrainproject.knowledgegraph.indexing.control.IndexingProvider;
 import org.humanbrainproject.knowledgegraph.indexing.control.MessageProcessor;
-import org.humanbrainproject.knowledgegraph.indexing.entity.InstanceReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.QualifiedIndexingMessage;
 import org.humanbrainproject.knowledgegraph.indexing.entity.TargetDatabase;
 import org.humanbrainproject.knowledgegraph.indexing.entity.TodoList;
+import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -43,7 +43,7 @@ public class BasicIndexingController implements IndexingController {
     }
 
     @Override
-    public <T> TodoList<T> delete(InstanceReference reference, TodoList<T> todoList) {
+    public <T> TodoList<T> delete(NexusInstanceReference reference, TodoList<T> todoList) {
         Set<VertexOrEdgeReference> vertexOrEdgeReferences = indexingProvider.getVertexOrEdgeReferences(reference, TargetDatabase.DEFAULT);
         for (VertexOrEdgeReference vertexOrEdgeReference : vertexOrEdgeReferences) {
             executionPlanner.deleteVertexOrEdge(todoList, vertexOrEdgeReference, indexingProvider.getConnection(TargetDatabase.DEFAULT));

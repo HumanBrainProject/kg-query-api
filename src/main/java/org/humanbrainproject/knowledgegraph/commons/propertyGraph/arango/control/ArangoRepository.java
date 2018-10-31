@@ -19,7 +19,6 @@ import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.control.VertexRepository;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.*;
 import org.humanbrainproject.knowledgegraph.indexing.control.inference.InferenceController;
-import org.humanbrainproject.knowledgegraph.indexing.entity.InstanceReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
@@ -57,6 +56,9 @@ public class ArangoRepository extends VertexRepository<ArangoConnection, ArangoD
         Map byKey = getByKey(arangoDocumentReference, Map.class, databaseFactory.getDefaultDB());
         if (byKey != null) {
             Object originalParent = byKey.get(InferenceController.ORIGINAL_PARENT_PROPERTY);
+            if(originalParent==null){
+                originalParent = byKey.get(InferenceController.INFERENCE_OF_PROPERTY);
+            }
             if (originalParent instanceof Map) {
                 String id = (String) ((Map) originalParent).get(JsonLdConsts.ID);
                 return NexusInstanceReference.createFromUrl(id);
@@ -66,8 +68,12 @@ public class ArangoRepository extends VertexRepository<ArangoConnection, ArangoD
     }
 
     public Set<String> findOriginalIdsWithLinkTo(ArangoDocumentReference instanceReference, ArangoCollectionReference collectionReference, ArangoConnection arangoConnection) {
-        String query = queryFactory.queryOriginalIdForLink(instanceReference, collectionReference);
-        return arangoConnection.getOrCreateDB().query(query, null, new AqlQueryOptions(), String.class).asListRemaining().stream().filter(Objects::nonNull).collect(Collectors.toSet());
+        Set<ArangoCollectionReference> collections = arangoConnection.getCollections();
+        if (collections.contains(instanceReference.getCollection()) && collections.contains(collectionReference)) {
+            String query = queryFactory.queryOriginalIdForLink(instanceReference, collectionReference);
+            return arangoConnection.getOrCreateDB().query(query, null, new AqlQueryOptions(), String.class).asListRemaining().stream().filter(Objects::nonNull).collect(Collectors.toSet());
+        }
+        return Collections.emptySet();
     }
 
 
@@ -77,13 +83,13 @@ public class ArangoRepository extends VertexRepository<ArangoConnection, ArangoD
 
 
     public Set<ArangoDocumentReference> getReferencesBelongingToInstance(NexusInstanceReference nexusInstanceReference, ArangoConnection arangoConnection) {
-        Set<ArangoCollectionReference> collections = arangoConnection.getCollections().stream().filter(c -> c.getName().startsWith(ReferenceType.EMBEDDED.getPrefix()+"-") || c.getName().startsWith(EmbeddedVertex.NAME_PREFIX) || c.getName().startsWith(ReferenceType.INTERNAL.getPrefix()+"-")).collect(Collectors.toSet());
-        String query = queryFactory.queryForIdsWithProperty("_originalId", nexusInstanceReference.getFullId(), collections);
-        List<List> result = arangoConnection.getOrCreateDB().query(query, null, new AqlQueryOptions(), List.class).asListRemaining();
+        Set<ArangoCollectionReference> collections = arangoConnection.getCollections().stream().filter(c -> c.getName().startsWith(ReferenceType.EMBEDDED.getPrefix() + "-") || c.getName().startsWith(EmbeddedVertex.NAME_PREFIX) || c.getName().startsWith(ReferenceType.INTERNAL.getPrefix() + "-")).collect(Collectors.toSet());
+        String query = queryFactory.queryForIdsWithProperty("_originalId", nexusInstanceReference.getFullId(true), collections);
+        List<List> result = query == null ? new ArrayList<>() : arangoConnection.getOrCreateDB().query(query, null, new AqlQueryOptions(), List.class).asListRemaining();
         if (result.size() == 1) {
             return ((List<String>) result.get(0)).stream().filter(Objects::nonNull).map(id -> ArangoDocumentReference.fromId(id.toString())).collect(Collectors.toSet());
         }
-        return Collections.emptySet();
+        return new LinkedHashSet<>();
     }
 
 
@@ -95,7 +101,7 @@ public class ArangoRepository extends VertexRepository<ArangoConnection, ArangoD
         if (results.size() == 1) {
             //TODO read reference from payload;
             Map originalDocument = results.get(0);
-            InstanceReference reference = NexusInstanceReference.createFromUrl(originalDocument.get("_originalId").toString());
+            NexusInstanceReference reference = NexusInstanceReference.createFromUrl(originalDocument.get("_originalId").toString());
             MainVertex vertex = new MainVertex(reference);
             for (Object key : originalDocument.keySet()) {
                 processPayload(vertex, originalDocument.get(key), edgesCollectionNames, arango, key.toString(), null, vertex);

@@ -1,6 +1,8 @@
 package org.humanbrainproject.knowledgegraph.indexing.entity;
 
 import com.github.jsonldjava.core.JsonLdConsts;
+import org.humanbrainproject.knowledgegraph.indexing.control.inference.InferenceController;
+import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 
 import java.util.*;
 
@@ -43,4 +45,22 @@ public class QualifiedIndexingMessage {
     public Map getQualifiedMap() {
         return qualifiedMap;
     }
+
+    public NexusInstanceReference getOriginalId(){
+        Object originalParent = qualifiedMap.get(InferenceController.ORIGINAL_PARENT_PROPERTY);
+        if(originalParent==null){
+            originalParent = qualifiedMap.get(InferenceController.INFERENCE_OF_PROPERTY);
+        }
+        if(originalParent==null){
+            //The message neither points to an origin, nor to an inferred origin - it has to be the original itself.
+            return originalMessage.getInstanceReference();
+        }
+        if (originalParent instanceof Map) {
+          String id = (String) ((Map) originalParent).get(JsonLdConsts.ID);
+          return NexusInstanceReference.createFromUrl(id);
+        }
+        return null;
+    }
+
+
 }

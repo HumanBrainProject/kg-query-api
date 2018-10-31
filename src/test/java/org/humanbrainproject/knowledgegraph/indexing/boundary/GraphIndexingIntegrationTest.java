@@ -1,12 +1,13 @@
 package org.humanbrainproject.knowledgegraph.indexing.boundary;
 
 import com.github.jsonldjava.core.JsonLdConsts;
-import org.humanbrainproject.knowledgegraph.indexing.control.inference.Reconciliation;
-import org.humanbrainproject.knowledgegraph.indexing.entity.IndexingMessage;
-import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.SubSpace;
+import org.humanbrainproject.knowledgegraph.indexing.control.inference.InferenceController;
+import org.humanbrainproject.knowledgegraph.indexing.entity.IndexingMessage;
+import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.testFactory.TestObjectFactory;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +21,7 @@ import java.util.Map;
 
 @SpringBootTest
 @RunWith(SpringRunner.class)
+@Ignore("IntegrationTest")
 public class GraphIndexingIntegrationTest {
 
     @Autowired
@@ -81,7 +83,7 @@ public class GraphIndexingIntegrationTest {
         editorFullyQualified.put("http://test/foo", "bar");
         Map<String, String> reference = new LinkedHashMap<>();
         reference.put(JsonLdConsts.ID, configuration.getAbsoluteUrl(instanceReference));
-        editorFullyQualified.put(Reconciliation.ORIGINAL_PARENT_PROPERTY, reference);
+        editorFullyQualified.put(InferenceController.ORIGINAL_PARENT_PROPERTY, reference);
         IndexingMessage editorMessage = TestObjectFactory.createIndexingMessage(editorReference, editorFullyQualified);
         graphIndexing.insert(editorMessage);
 

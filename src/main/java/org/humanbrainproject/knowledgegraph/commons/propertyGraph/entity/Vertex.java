@@ -27,7 +27,7 @@ public abstract class Vertex implements VertexOrEdge {
 
     public Property getPropertyByName(String propertyName) {
         for (Property property : properties) {
-            if (property.getName().equals(propertyName)) {
+            if (property!=null && property.getName().equals(propertyName)) {
                 return property;
             }
         }

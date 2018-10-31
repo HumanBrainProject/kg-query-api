@@ -64,14 +64,16 @@ public class InstanceController {
     }
 
 
-    public NexusInstanceReference createInstanceByNexusId(NexusSchemaReference nexusSchemaReference, String id, Integer revision, Map<String, Object> payload, OidcAccessToken oidcAccessToken) throws IOException {
+    public NexusInstanceReference createInstanceByNexusId(NexusSchemaReference nexusSchemaReference, String id, Integer revision, Map<String, Object> payload, OidcAccessToken oidcAccessToken)  {
         schemaController.createSchema(nexusSchemaReference);
         Object type = payload.get(JsonLdConsts.TYPE);
         String targetClass = schemaController.getTargetClass(nexusSchemaReference);
         if (type == null) {
             payload.put(JsonLdConsts.TYPE, targetClass);
-        } else if (type instanceof Collection && !((Collection) type).contains(targetClass)) {
-            ((Collection) type).add(targetClass);
+        } else if (type instanceof Collection) {
+            if(!((Collection)type).contains(targetClass)) {
+                ((Collection)type).add(targetClass);
+            }
         } else if (!type.equals(targetClass)) {
             payload.put(JsonLdConsts.TYPE, Arrays.asList(type, targetClass));
         }

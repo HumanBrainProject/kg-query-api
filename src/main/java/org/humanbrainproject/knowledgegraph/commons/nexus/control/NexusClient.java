@@ -5,6 +5,8 @@ import org.humanbrainproject.knowledgegraph.commons.authorization.entity.OidcAcc
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusRelativeUrl;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
@@ -30,6 +32,8 @@ public class NexusClient {
 
     @Autowired
     JsonTransformer jsonTransformer;
+
+    protected Logger logger = LoggerFactory.getLogger(NexusClient.class);
 
 
     public Set<String> getAllOrganizations(OidcAccessToken authorizationToken) {
@@ -57,9 +61,18 @@ public class NexusClient {
     }
 
     public Map delete(NexusRelativeUrl url, Integer revision, OidcAccessToken oidcAccessToken) {
-        ResponseEntity<Map> result = new RestTemplate().exchange(String.format("%s%s", configuration.getAbsoluteUrl(url), revision != null ? String.format("%srev=%d", !url.getUrl().contains("?") ? "?" : "&", revision) : ""), HttpMethod.DELETE, new HttpEntity<>(createHeaders(oidcAccessToken)), Map.class);
-        if (result.getStatusCode().is2xxSuccessful() && result.getBody() != null) {
-            return result.getBody();
+        try {
+            ResponseEntity<Map> result = new RestTemplate().exchange(String.format("%s%s", configuration.getAbsoluteUrl(url), revision != null ? String.format("%srev=%d", !url.getUrl().contains("?") ? "?" : "&", revision) : ""), HttpMethod.DELETE, new HttpEntity<>(createHeaders(oidcAccessToken)), Map.class);
+            if (result.getStatusCode().is2xxSuccessful() && result.getBody() != null) {
+                return result.getBody();
+            }
+        }
+        catch (HttpClientErrorException e){
+            if(e.getStatusCode()==HttpStatus.CONFLICT){
+                logger.info("Was not able to remove the instance {} due to a conflict. It seems as it is already deprecated", url);
+                return null;
+            }
+
         }
         return null;
     }
@@ -86,6 +99,7 @@ public class NexusClient {
     public List<Map> find(NexusSchemaReference nexusSchemaReference, String fieldName, String fieldValue, OidcAccessToken oidcAccessToken) {
         NexusRelativeUrl relativeUrl = new NexusRelativeUrl(NexusConfiguration.ResourceType.DATA, nexusSchemaReference.getRelativeUrl().getUrl());
         relativeUrl.addQueryParameter("fields", "all");
+        relativeUrl.addQueryParameter("deprecated", "false");
         relativeUrl.addQueryParameter("filter", String.format("{\"op\":\"eq\",\"path\":\"%s\",\"value\":\"%s\"}", fieldName, fieldValue));
         String url = configuration.getAbsoluteUrl(relativeUrl);
         ResponseEntity<Map> result = new RestTemplate().exchange(url, HttpMethod.GET, new HttpEntity<>(createHeaders(oidcAccessToken)), Map.class);

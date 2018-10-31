@@ -36,7 +36,7 @@ public class KgQueryApplication {
 	@Bean
 	@Qualifier("default")
 	public ArangoConnection createDefaultDb() {
-		return new ArangoConnection("kg", false);
+		return new ArangoConnection("kg_new", false);
 	}
 
 	@Bean

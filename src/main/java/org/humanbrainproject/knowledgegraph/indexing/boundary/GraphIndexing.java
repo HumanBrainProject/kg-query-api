@@ -47,7 +47,7 @@ public class GraphIndexing {
 
     }
 
-    public void insert(IndexingMessage message) throws IOException {
+    public TodoList<?> insert(IndexingMessage message) throws IOException {
         //Pre-process
         QualifiedIndexingMessage qualifiedSpec = messageProcessor.qualify(message);
 
@@ -59,9 +59,10 @@ public class GraphIndexing {
 
         //Execute
         transaction.execute(todoList);
+        return todoList;
     }
 
-    public void update(IndexingMessage message) throws IOException {
+    public TodoList<?> update(IndexingMessage message) throws IOException {
         //Pre-process
         QualifiedIndexingMessage qualifiedSpec = messageProcessor.qualify(message);
 
@@ -73,10 +74,11 @@ public class GraphIndexing {
 
         //Execute
         transaction.execute(todoList);
+        return todoList;
     }
 
 
-    public void delete(NexusInstanceReference reference){
+    public TodoList<?> delete(NexusInstanceReference reference){
 
         //Gather execution plan
         TodoList<ArangoDatabase> todoList = new TodoList<>();
@@ -85,6 +87,7 @@ public class GraphIndexing {
         }
         //Execute
         transaction.execute(todoList);
+        return todoList;
     }
 
     public void clearGraph() {

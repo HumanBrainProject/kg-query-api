@@ -6,13 +6,10 @@ public class ResolvedVertexStructure {
 
     private final QualifiedIndexingMessage qualifiedMessage;
     private final MainVertex mainVertex;
-    private final SubSpace targetSubSpace;
 
-
-    public ResolvedVertexStructure(QualifiedIndexingMessage qualifiedMessage, MainVertex vertex, SubSpace targetSubSpace) {
+    public ResolvedVertexStructure(QualifiedIndexingMessage qualifiedMessage, MainVertex vertex) {
         this.qualifiedMessage = qualifiedMessage;
         this.mainVertex = vertex;
-        this.targetSubSpace = targetSubSpace;
     }
 
     public QualifiedIndexingMessage getQualifiedMessage() {

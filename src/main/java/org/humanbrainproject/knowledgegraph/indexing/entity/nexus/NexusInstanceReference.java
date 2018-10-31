@@ -2,7 +2,6 @@ package org.humanbrainproject.knowledgegraph.indexing.entity.nexus;
 
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.SubSpace;
-import org.humanbrainproject.knowledgegraph.indexing.entity.InstanceReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.util.UriComponents;
@@ -10,7 +9,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.Objects;
 
-public class NexusInstanceReference implements InstanceReference {
+public class NexusInstanceReference {
 
     private final NexusSchemaReference nexusSchema;
     private final String id;
@@ -36,7 +35,6 @@ public class NexusInstanceReference implements InstanceReference {
         return null;
     }
 
-    @Override
     public String getTypeName() {
         return nexusSchema.getRelativeUrl().getUrl();
     }
@@ -47,16 +45,15 @@ public class NexusInstanceReference implements InstanceReference {
     }
 
     public NexusInstanceReference toSubSpace(SubSpace subSpace) {
-        return new NexusInstanceReference(nexusSchema.toSubSpace(subSpace), id);
+        return new NexusInstanceReference(nexusSchema.toSubSpace(subSpace), id).setRevision(getRevision());
     }
 
     public NexusInstanceReference(String organization, String domain, String schema, String schemaVersion, String id) {
         this(new NexusSchemaReference(organization, domain, schema, schemaVersion), id);
     }
 
-    @Override
-    public String getFullId() {
-        return String.format("%s%s", getRelativeUrl().getUrl(), getRevision()==null ? "" : String.format("?rev=%d", getRevision()));
+    public String getFullId(boolean withRevision) {
+        return String.format("%s%s", getRelativeUrl().getUrl(), !withRevision || getRevision()==null ? "" : String.format("?rev=%d", getRevision()));
     }
 
     public NexusRelativeUrl getRelativeUrl() {
@@ -67,7 +64,6 @@ public class NexusInstanceReference implements InstanceReference {
         return nexusSchema;
     }
 
-    @Override
     public String getId() {
         return id;
     }
@@ -81,7 +77,6 @@ public class NexusInstanceReference implements InstanceReference {
         return this;
     }
 
-    @Override
     public SubSpace getSubspace() {
         return getNexusSchema().getSubSpace();
     }
@@ -101,7 +96,6 @@ public class NexusInstanceReference implements InstanceReference {
         return Objects.hash(nexusSchema, id, revision);
     }
 
-    @Override
     public String createUniqueNamespace() {
         return getNexusSchema().createUniqueNamespace();
     }

@@ -20,7 +20,7 @@ public class ArangoDocumentConverter {
         Map<String, Object> jsonObject = new LinkedHashMap<>();
         jsonObject.put("_id", reference.getId());
         jsonObject.put("_key", reference.getKey());
-        jsonObject.put("_originalId", vertexOrEdge.getMainVertex().getInstanceReference().getFullId());
+        jsonObject.put("_originalId", vertexOrEdge.getMainVertex().getInstanceReference().getFullId(true));
         if(vertexOrEdge instanceof Edge){
             Vertex fromVertex = ((Edge) vertexOrEdge).getFromVertex();
             jsonObject.put("_name", ((Edge)vertexOrEdge).getName());
