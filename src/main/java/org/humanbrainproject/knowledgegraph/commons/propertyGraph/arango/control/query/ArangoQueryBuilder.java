@@ -89,7 +89,7 @@ public class ArangoQueryBuilder extends AbstractArangoQueryBuilder {
 
     @Override
     public ArangoQueryBuilder addRoot(ArangoCollectionReference rootCollection) {
-        sb.append(String.format("FOR %s_%s IN `%s`\n", ROOT_ALIAS, DOC_POSTFIX, rootCollection.getName()));
+        sb.append(String.format("FOR %s_%s IN `%s`\n", ROOT_ALIAS.getName(), DOC_POSTFIX, rootCollection.getName()));
         addOrganizationFilter();
         return this;
     }
