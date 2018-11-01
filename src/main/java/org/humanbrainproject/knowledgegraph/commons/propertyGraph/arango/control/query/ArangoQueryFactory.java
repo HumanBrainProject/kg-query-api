@@ -1,12 +1,10 @@
 package org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.query;
 
-import com.github.jsonldjava.core.JsonLdConsts;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoConnection;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.ReferenceType;
-import org.humanbrainproject.knowledgegraph.indexing.control.inference.InferenceController;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -222,12 +220,12 @@ public class ArangoQueryFactory {
     }
 
 
-    public String getReconciledEntityGroup(String reconciledSpace, String relativeSourceId) {
-        return String.format("FOR doc IN `%s` FILTER \n" +
-                "    \"%s\" == doc.`%s`.`%s` OR \n" +
-                "    \"%s\" IN doc.`%s`[*].`%s`\n" +
-                "    RETURN { \"reconciled\": doc.`%s`, \"sources\": UNION([doc.`%s`.`%s`], doc.`%s`[*].`%s`)}", reconciledSpace, relativeSourceId, InferenceController.INFERRED_SOURCE, JsonLdConsts.ID, relativeSourceId, InferenceController.INFERRED_SOURCE, JsonLdConsts.ID, JsonLdConsts.ID, InferenceController.INFERRED_SOURCE, JsonLdConsts.ID, InferenceController.INFERRED_SOURCE, JsonLdConsts.ID);
-    }
+//    public String getReconciledEntityGroup(String reconciledSpace, String relativeSourceId) {
+//        return String.format("FOR doc IN `%s` FILTER \n" +
+//                "    \"%s\" == doc.`%s`.`%s` OR \n" +
+//                "    \"%s\" IN doc.`%s`[*].`%s`\n" +
+//                "    RETURN { \"reconciled\": doc.`%s`, \"sources\": UNION([doc.`%s`.`%s`], doc.`%s`[*].`%s`)}", reconciledSpace, relativeSourceId, InferenceController.INFERRED_SOURCE, JsonLdConsts.ID, relativeSourceId, InferenceController.INFERRED_SOURCE, JsonLdConsts.ID, JsonLdConsts.ID, InferenceController.INFERRED_SOURCE, JsonLdConsts.ID, InferenceController.INFERRED_SOURCE, JsonLdConsts.ID);
+//    }
 
 
 }

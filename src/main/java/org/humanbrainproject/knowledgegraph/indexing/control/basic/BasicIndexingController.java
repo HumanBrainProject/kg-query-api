@@ -4,8 +4,8 @@ import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Resolve
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.VertexOrEdgeReference;
 import org.humanbrainproject.knowledgegraph.indexing.control.ExecutionPlanner;
 import org.humanbrainproject.knowledgegraph.indexing.control.IndexingController;
-import org.humanbrainproject.knowledgegraph.indexing.control.IndexingProvider;
 import org.humanbrainproject.knowledgegraph.indexing.control.MessageProcessor;
+import org.humanbrainproject.knowledgegraph.indexing.control.nexusToArango.NexusToArangoIndexingProvider;
 import org.humanbrainproject.knowledgegraph.indexing.entity.QualifiedIndexingMessage;
 import org.humanbrainproject.knowledgegraph.indexing.entity.TargetDatabase;
 import org.humanbrainproject.knowledgegraph.indexing.entity.TodoList;
@@ -25,25 +25,25 @@ public class BasicIndexingController implements IndexingController {
     ExecutionPlanner executionPlanner;
 
     @Autowired
-    IndexingProvider indexingProvider;
+    NexusToArangoIndexingProvider indexingProvider;
 
 
     @Override
-    public <T> TodoList<T> insert(QualifiedIndexingMessage message, TodoList<T> todoList){
+    public TodoList insert(QualifiedIndexingMessage message, TodoList todoList){
         ResolvedVertexStructure vertexStructure = messageProcessor.createVertexStructure(message);
         executionPlanner.insertVerticesAndEdgesWithoutCheck(todoList, vertexStructure, indexingProvider.getConnection(TargetDatabase.DEFAULT));
         return todoList;
     }
 
     @Override
-    public <T> TodoList<T> update(QualifiedIndexingMessage message, TodoList<T> todoList){
-        delete(message.getOriginalMessage().getInstanceReference(), todoList);
+    public TodoList update(QualifiedIndexingMessage message, TodoList todoList){
+        delete(message.getOriginalMessage().getInstanceReference(), todoList, message.getOriginalMessage().getTimestamp(), message.getOriginalMessage().getUserId());
         insert(message, todoList);
         return todoList;
     }
 
     @Override
-    public <T> TodoList<T> delete(NexusInstanceReference reference, TodoList<T> todoList) {
+    public TodoList delete(NexusInstanceReference reference, TodoList todoList, String timestamp, String userId) {
         Set<VertexOrEdgeReference> vertexOrEdgeReferences = indexingProvider.getVertexOrEdgeReferences(reference, TargetDatabase.DEFAULT);
         for (VertexOrEdgeReference vertexOrEdgeReference : vertexOrEdgeReferences) {
             executionPlanner.deleteVertexOrEdge(todoList, vertexOrEdgeReference, indexingProvider.getConnection(TargetDatabase.DEFAULT));

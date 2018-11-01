@@ -1,7 +1,7 @@
 package org.humanbrainproject.knowledgegraph.indexing.entity;
 
 import com.github.jsonldjava.core.JsonLdConsts;
-import org.humanbrainproject.knowledgegraph.indexing.control.inference.InferenceController;
+import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 
 import java.util.*;
@@ -47,9 +47,9 @@ public class QualifiedIndexingMessage {
     }
 
     public NexusInstanceReference getOriginalId(){
-        Object originalParent = qualifiedMap.get(InferenceController.ORIGINAL_PARENT_PROPERTY);
+        Object originalParent = qualifiedMap.get(HBPVocabulary.INFERENCE_EXTENDS);
         if(originalParent==null){
-            originalParent = qualifiedMap.get(InferenceController.INFERENCE_OF_PROPERTY);
+            originalParent = qualifiedMap.get(HBPVocabulary.INFERENCE_OF_PROPERTY);
         }
         if(originalParent==null){
             //The message neither points to an origin, nor to an inferred origin - it has to be the original itself.

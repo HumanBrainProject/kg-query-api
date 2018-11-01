@@ -34,9 +34,9 @@ public class MessageProcessor {
         jsonLdStandardization.ensureContext(map, message.getInstanceReference().createUniqueNamespace());
         map = jsonLdStandardization.fullyQualify(map);
         map = jsonLdStandardization.filterKeysByVocabBlacklists(map);
-        map.put(HBPVocabulary.INDEXED_IN_ARANGO_AT, ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_INSTANT));
-        map.put(HBPVocabulary.LAST_MODIFICATION_USER_ID, message.getUserId());
-        map.put(HBPVocabulary.MODIFIED_AT, message.getTimestamp());
+        map.put(HBPVocabulary.PROVENANCE_INDEXED_IN_ARANGO_AT, ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_INSTANT));
+        map.put(HBPVocabulary.PROVENANCE_LAST_MODIFICATION_USER_ID, message.getUserId());
+        map.put(HBPVocabulary.PROVENANCE_MODIFIED_AT, message.getTimestamp());
         return new QualifiedIndexingMessage(message, map);
     }
 

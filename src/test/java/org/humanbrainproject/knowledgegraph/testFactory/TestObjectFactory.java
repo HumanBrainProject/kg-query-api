@@ -29,7 +29,7 @@ public class TestObjectFactory {
 
     public static IndexingMessage createIndexingMessage(NexusInstanceReference reference, Map<String, Object> map){
         JsonTransformer jsonTransformer = new JsonTransformer();
-        return new IndexingMessage(reference, jsonTransformer.getMapAsJson(map));
+        return new IndexingMessage(reference, jsonTransformer.getMapAsJson(map), "2018-10-31", "Foo");
     }
 
 

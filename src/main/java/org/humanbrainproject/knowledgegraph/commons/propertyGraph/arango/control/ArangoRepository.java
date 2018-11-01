@@ -18,7 +18,7 @@ import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.control.VertexRepository;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.*;
-import org.humanbrainproject.knowledgegraph.indexing.control.inference.InferenceController;
+import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
@@ -55,9 +55,9 @@ public class ArangoRepository extends VertexRepository<ArangoConnection, ArangoD
         ArangoDocumentReference arangoDocumentReference = ArangoDocumentReference.fromNexusInstance(reference);
         Map byKey = getByKey(arangoDocumentReference, Map.class, databaseFactory.getDefaultDB());
         if (byKey != null) {
-            Object originalParent = byKey.get(InferenceController.ORIGINAL_PARENT_PROPERTY);
+            Object originalParent = byKey.get(HBPVocabulary.INFERENCE_EXTENDS);
             if(originalParent==null){
-                originalParent = byKey.get(InferenceController.INFERENCE_OF_PROPERTY);
+                originalParent = byKey.get(HBPVocabulary.INFERENCE_OF_PROPERTY);
             }
             if (originalParent instanceof Map) {
                 String id = (String) ((Map) originalParent).get(JsonLdConsts.ID);

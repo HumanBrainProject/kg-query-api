@@ -6,8 +6,9 @@ import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfigura
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoDatabaseFactory;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoRepository;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.*;
-import org.humanbrainproject.knowledgegraph.indexing.control.IndexingProvider;
+import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.humanbrainproject.knowledgegraph.indexing.control.MessageProcessor;
+import org.humanbrainproject.knowledgegraph.indexing.control.nexusToArango.NexusToArangoIndexingProvider;
 import org.humanbrainproject.knowledgegraph.indexing.entity.QualifiedIndexingMessage;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.slf4j.Logger;
@@ -22,7 +23,7 @@ import java.util.stream.Collectors;
 @Component
 public class Reconciliation implements InferenceStrategy, InitializingBean {
 
-    private final static List<String> NAME_BLACKLIST_FOR_MERGE = Arrays.asList(JsonLdConsts.ID, InferenceController.ORIGINAL_PARENT_PROPERTY);
+    private final static List<String> NAME_BLACKLIST_FOR_MERGE = Arrays.asList(JsonLdConsts.ID, HBPVocabulary.INFERENCE_EXTENDS);
 
     @Autowired
     InferenceController controller;
@@ -40,7 +41,7 @@ public class Reconciliation implements InferenceStrategy, InitializingBean {
     MessageProcessor messageProcessor;
 
     @Autowired
-    IndexingProvider indexingProvider;
+    NexusToArangoIndexingProvider indexingProvider;
 
     protected Logger logger = LoggerFactory.getLogger(Reconciliation.class);
 
@@ -56,10 +57,16 @@ public class Reconciliation implements InferenceStrategy, InitializingBean {
         NexusInstanceReference originalId = message.getOriginalId();
         boolean isOriginal = originalId.equals(message.getOriginalMessage().getInstanceReference());
 
-        Set<NexusInstanceReference> relativeInstances = indexingProvider.findInstancesWithLinkTo(InferenceController.ORIGINAL_PARENT_PROPERTY, originalId, ReferenceType.INTERNAL);
-        Set<NexusInstanceReference> inferredInstances = indexingProvider.findInstancesWithLinkTo(InferenceController.INFERENCE_OF_PROPERTY, originalId, ReferenceType.INTERNAL);
+        Set<NexusInstanceReference> relativeInstances = indexingProvider.findInstancesWithLinkTo(HBPVocabulary.INFERENCE_EXTENDS, originalId, ReferenceType.INTERNAL);
+        Set<NexusInstanceReference> inferredInstances = indexingProvider.findInstancesWithLinkTo(HBPVocabulary.INFERENCE_OF_PROPERTY, originalId, ReferenceType.INTERNAL);
         if (!isOriginal || (relativeInstances!=null && !relativeInstances.isEmpty())) {
-            MainVertex originalStructure = indexingProvider.getVertexStructureById(originalId);
+            MainVertex originalStructure;
+            if(isOriginal){
+                originalStructure = messageProcessor.createVertexStructure(message).getMainVertex();
+            }
+            else{
+                originalStructure = indexingProvider.getVertexStructureById(originalId);
+            }
             if (originalStructure != null) {
                 List<MainVertex> relativeStructures = relativeInstances.stream().filter(r -> r.equals(message.getOriginalMessage().getInstanceReference())).map(relativeInstance -> indexingProvider.getVertexStructureById(relativeInstance)).collect(Collectors.toList());
                 if(!isOriginal) {
@@ -92,12 +99,12 @@ public class Reconciliation implements InferenceStrategy, InitializingBean {
             //There is no inferred instance yet - so we create a new one.
             newVertex = new MainVertex(new NexusInstanceReference(original.getInstanceReference().getNexusSchema(), null).toSubSpace(SubSpace.INFERRED));
         }
-        newVertex.getEdges().add(new InternalEdge(InferenceController.INFERENCE_OF_PROPERTY, newVertex, original.getInstanceReference(), 0, newVertex));
+        newVertex.getEdges().add(new InternalEdge(HBPVocabulary.INFERENCE_OF_PROPERTY, newVertex, original.getInstanceReference(), 0, newVertex));
         //newVertex.getProperties().add(Property.createReference(INFERENCE_OF_PROPERTY, nexusConfiguration.getAbsoluteUrl(original.getInstanceReference())));
 
         Property<List<String>> types = Property.createProperty(JsonLdConsts.TYPE, new ArrayList<String>());
         types.getValue().addAll(original.getTypes());
-        types.getValue().add(InferenceController.INFERRED_TYPE);
+        types.getValue().add(HBPVocabulary.INFERENCE_TYPE);
         newVertex.getProperties().add(types);
         mergeVertex(newVertex, original, additionalInstances, newVertex);
         for (MainVertex additionalInstance : additionalInstances) {

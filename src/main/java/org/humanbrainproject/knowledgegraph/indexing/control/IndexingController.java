@@ -8,11 +8,11 @@ import java.io.IOException;
 
 public interface IndexingController {
 
-    <T> TodoList<T> insert(QualifiedIndexingMessage message, TodoList<T> todoList) throws IOException;
+    TodoList insert(QualifiedIndexingMessage message, TodoList todoList) throws IOException;
 
-    <T> TodoList<T> update(QualifiedIndexingMessage message, TodoList<T> todoList) throws IOException;
+    TodoList update(QualifiedIndexingMessage message, TodoList todoList) throws IOException;
 
-    <T> TodoList<T> delete(NexusInstanceReference reference, TodoList<T> todoList);
+    TodoList delete(NexusInstanceReference reference, TodoList todoList, String timestamp, String userId);
 
     void clear();
 

@@ -2,7 +2,7 @@ package org.humanbrainproject.knowledgegraph.indexing.entity;
 
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.MainVertex;
 
-public class InsertOrUpdateInPrimaryStoreTodoItem<T> implements TodoItem {
+public class InsertOrUpdateInPrimaryStoreTodoItem implements TodoItem {
 
     private final MainVertex object;
 

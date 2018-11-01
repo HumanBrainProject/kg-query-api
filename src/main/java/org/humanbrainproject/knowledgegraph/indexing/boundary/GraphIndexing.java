@@ -1,7 +1,6 @@
 package org.humanbrainproject.knowledgegraph.indexing.boundary;
 
-import com.arangodb.ArangoDatabase;
-import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.control.DatabaseTransaction;
 import org.humanbrainproject.knowledgegraph.indexing.control.IndexingController;
 import org.humanbrainproject.knowledgegraph.indexing.control.MessageProcessor;
 import org.humanbrainproject.knowledgegraph.indexing.control.basic.BasicIndexingController;
@@ -11,7 +10,6 @@ import org.humanbrainproject.knowledgegraph.indexing.entity.IndexingMessage;
 import org.humanbrainproject.knowledgegraph.indexing.entity.QualifiedIndexingMessage;
 import org.humanbrainproject.knowledgegraph.indexing.entity.TodoList;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.control.DatabaseTransaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,13 +46,12 @@ public class GraphIndexing {
 
     }
 
-    public TodoList<?> insert(IndexingMessage message) throws IOException {
+    public TodoList insert(IndexingMessage message) throws IOException {
         //Pre-process
         QualifiedIndexingMessage qualifiedSpec = messageProcessor.qualify(message);
-        qualifiedSpec.getQualifiedMap().put(HBPVocabulary.CREATED_AT, message.getTimestamp());
 
         //Gather execution plan
-        TodoList<ArangoDatabase> todoList = new TodoList<>();
+        TodoList todoList = new TodoList();
         for (IndexingController indexingController : getIndexingControllers()) {
             indexingController.insert(qualifiedSpec, todoList);
         }
@@ -64,12 +61,12 @@ public class GraphIndexing {
         return todoList;
     }
 
-    public TodoList<?> update(IndexingMessage message) throws IOException {
+    public TodoList update(IndexingMessage message) throws IOException {
         //Pre-process
         QualifiedIndexingMessage qualifiedSpec = messageProcessor.qualify(message);
 
         //Gather execution plan
-        TodoList<ArangoDatabase> todoList = new TodoList<>();
+        TodoList todoList = new TodoList();
         for (IndexingController indexingController : getIndexingControllers()) {
             indexingController.update(qualifiedSpec, todoList);
         }
@@ -80,12 +77,12 @@ public class GraphIndexing {
     }
 
 
-    public TodoList<?> delete(NexusInstanceReference reference){
+    public TodoList delete(NexusInstanceReference reference, String timestamp, String userId){
 
         //Gather execution plan
-        TodoList<ArangoDatabase> todoList = new TodoList<>();
+        TodoList todoList = new TodoList();
         for (IndexingController indexingController : getIndexingControllers()) {
-            indexingController.delete(reference, todoList);
+            indexingController.delete(reference, todoList, timestamp, userId);
         }
         //Execute
         transaction.execute(todoList);

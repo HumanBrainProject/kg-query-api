@@ -68,7 +68,7 @@ public class IndexingAPI {
         NexusInstanceReference path = new NexusInstanceReference(organization, domain, schema, schemaVersion, id).setRevision(rev);
         logger.info("Received delete request for {} in rev {}", path.getRelativeUrl(), id, rev);
         try {
-            indexer.delete(path);
+            indexer.delete(path, timestamp, authorId);
             return ResponseEntity.ok(String.format("Successfully deleted the instance %s", path.getRelativeUrl()));
         } catch(InvalidPayloadException e ){
             logger.error(String.format("DEL: Was not able to delete the instance %s", path.getRelativeUrl() ), e);

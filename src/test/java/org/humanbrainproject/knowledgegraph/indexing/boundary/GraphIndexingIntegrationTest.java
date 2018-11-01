@@ -3,7 +3,7 @@ package org.humanbrainproject.knowledgegraph.indexing.boundary;
 import com.github.jsonldjava.core.JsonLdConsts;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.SubSpace;
-import org.humanbrainproject.knowledgegraph.indexing.control.inference.InferenceController;
+import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.humanbrainproject.knowledgegraph.indexing.entity.IndexingMessage;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.testFactory.TestObjectFactory;
@@ -38,9 +38,8 @@ public class GraphIndexingIntegrationTest {
         IndexingMessage message = TestObjectFactory.createIndexingMessage(instanceReference, fullyQualified);
         graphIndexing.insert(message);
 
-
         //cleanup
-        graphIndexing.delete(instanceReference);
+        graphIndexing.delete(instanceReference, "2018-10-31", "Foo");
 
     }
 
@@ -56,7 +55,7 @@ public class GraphIndexingIntegrationTest {
         graphIndexing.insert(message);
 
         //cleanup
-        graphIndexing.delete(instanceReference);
+        graphIndexing.delete(instanceReference, "2018-10-31", "Foo");
     }
 
 
@@ -83,14 +82,14 @@ public class GraphIndexingIntegrationTest {
         editorFullyQualified.put("http://test/foo", "bar");
         Map<String, String> reference = new LinkedHashMap<>();
         reference.put(JsonLdConsts.ID, configuration.getAbsoluteUrl(instanceReference));
-        editorFullyQualified.put(InferenceController.ORIGINAL_PARENT_PROPERTY, reference);
+        editorFullyQualified.put(HBPVocabulary.INFERENCE_EXTENDS, reference);
         IndexingMessage editorMessage = TestObjectFactory.createIndexingMessage(editorReference, editorFullyQualified);
         graphIndexing.insert(editorMessage);
 
 
         //cleanup
-        graphIndexing.delete(editorReference);
-        graphIndexing.delete(instanceReference);
+        graphIndexing.delete(editorReference, "2018-10-31", "Foo");
+        graphIndexing.delete(instanceReference, "2018-10-31", "Foo");
     }
 
 
@@ -116,7 +115,7 @@ public class GraphIndexingIntegrationTest {
         graphIndexing.update(message);
 
         //cleanup
-        graphIndexing.delete(instanceReference);
+        graphIndexing.delete(instanceReference, "2018-10-31", "Foo");
     }
 
 }

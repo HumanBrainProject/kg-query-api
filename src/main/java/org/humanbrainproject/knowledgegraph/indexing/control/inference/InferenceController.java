@@ -7,8 +7,8 @@ import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.VertexO
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.humanbrainproject.knowledgegraph.indexing.control.ExecutionPlanner;
 import org.humanbrainproject.knowledgegraph.indexing.control.IndexingController;
-import org.humanbrainproject.knowledgegraph.indexing.control.IndexingProvider;
 import org.humanbrainproject.knowledgegraph.indexing.control.MessageProcessor;
+import org.humanbrainproject.knowledgegraph.indexing.control.nexusToArango.NexusToArangoIndexingProvider;
 import org.humanbrainproject.knowledgegraph.indexing.entity.QualifiedIndexingMessage;
 import org.humanbrainproject.knowledgegraph.indexing.entity.TargetDatabase;
 import org.humanbrainproject.knowledgegraph.indexing.entity.TodoList;
@@ -21,17 +21,7 @@ import java.util.*;
 @Component
 public class InferenceController implements IndexingController{
 
-    public final static String INFERRED_BASE = HBPVocabulary.NAMESPACE + "inference/";
-    public final static String INFERRED_TYPE = INFERRED_BASE + "Inferred";
-    public final static String INFERRED_SOURCE = INFERRED_BASE + "source";
-
-    //TODO normalize namespace
-
-    public final static String INFERENCE_OF_PROPERTY = HBPVocabulary.NAMESPACE+"inferenceOf";
-    public final static String ORIGINAL_PARENT_PROPERTY = "http://hbp.eu/reconciled#original_parent";
-    public final static String ALTERNATIVES_PROPERTY = INFERRED_BASE+"alternatives";
-
-    private final static List<String> EDGE_BLACKLIST_FOR_INFERENCE = Arrays.asList(INFERENCE_OF_PROPERTY, ORIGINAL_PARENT_PROPERTY);
+    private final static List<String> EDGE_BLACKLIST_FOR_INFERENCE = Arrays.asList(HBPVocabulary.INFERENCE_OF_PROPERTY, HBPVocabulary.INFERENCE_EXTENDS);
 
     @Autowired
     MessageProcessor messageProcessor;
@@ -40,14 +30,14 @@ public class InferenceController implements IndexingController{
     ExecutionPlanner executionPlanner;
 
     @Autowired
-    IndexingProvider indexingProvider;
+    NexusToArangoIndexingProvider indexingProvider;
 
     private Set<InferenceStrategy> strategies = Collections.synchronizedSet(new HashSet<>());
 
 
     @Override
-    public <T> TodoList<T> insert(QualifiedIndexingMessage message, TodoList<T> todoList){
-        if(message.isOfType(INFERRED_TYPE)){
+    public TodoList insert(QualifiedIndexingMessage message, TodoList todoList){
+        if(message.isOfType(HBPVocabulary.INFERENCE_TYPE)){
             ResolvedVertexStructure vertexStructure = messageProcessor.createVertexStructure(message);
             indexingProvider.mapToOriginalSpace(vertexStructure.getMainVertex(), message.getOriginalId());
             executionPlanner.insertVertexWithEmbeddedInstances(todoList, vertexStructure.getMainVertex(), indexingProvider.getConnection(TargetDatabase.INFERRED), EDGE_BLACKLIST_FOR_INFERENCE);
@@ -69,14 +59,14 @@ public class InferenceController implements IndexingController{
     }
 
     @Override
-    public <T> TodoList<T> update(QualifiedIndexingMessage message, TodoList<T> todoList) {
-        delete(message.getOriginalMessage().getInstanceReference(), todoList);
+    public TodoList update(QualifiedIndexingMessage message, TodoList todoList) {
+        delete(message.getOriginalMessage().getInstanceReference(), todoList, message.getOriginalMessage().getTimestamp(), message.getOriginalMessage().getUserId());
         insert(message, todoList);
         return todoList;
     }
 
     @Override
-    public <T> TodoList<T> delete(NexusInstanceReference reference, TodoList<T> todoList) {
+    public TodoList delete(NexusInstanceReference reference, TodoList todoList, String timestamp, String userId) {
         NexusInstanceReference originalIdInMainSpace = indexingProvider.findOriginalId(reference).toSubSpace(SubSpace.MAIN);
         Set<VertexOrEdgeReference> vertexOrEdgeReferences = indexingProvider.getVertexOrEdgeReferences(originalIdInMainSpace, TargetDatabase.INFERRED);
         for (VertexOrEdgeReference vertexOrEdgeReference : vertexOrEdgeReferences) {

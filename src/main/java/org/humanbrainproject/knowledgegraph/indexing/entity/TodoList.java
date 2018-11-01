@@ -3,37 +3,37 @@ package org.humanbrainproject.knowledgegraph.indexing.entity;
 import java.util.ArrayList;
 import java.util.List;
 
-public class TodoList<T> {
+public class TodoList {
 
-    private List<DeleteTodoItem<T>> deleteTodoItems = new ArrayList<>();
-    private List<InsertTodoItem<T>> insertTodoItems = new ArrayList<>();
-    private List<InsertOrUpdateInPrimaryStoreTodoItem<T>> insertOrUpdateInPrimaryStoreTodoItems = new ArrayList<>();
+    private List<DeleteTodoItem> deleteTodoItems = new ArrayList<>();
+    private List<InsertTodoItem> insertTodoItems = new ArrayList<>();
+    private List<InsertOrUpdateInPrimaryStoreTodoItem> insertOrUpdateInPrimaryStoreTodoItems = new ArrayList<>();
 
 
     private final List<TodoItem> todoItems = new ArrayList<>();
 
-    public void addTodoItem(DeleteTodoItem<T> deleteTodoItem){
+    public void addTodoItem(DeleteTodoItem deleteTodoItem){
         this.deleteTodoItems.add(deleteTodoItem);
     }
 
-    public void addTodoItem(InsertTodoItem<T> insertTodoItem){
+    public void addTodoItem(InsertTodoItem insertTodoItem){
         this.insertTodoItems.add(insertTodoItem);
     }
 
 
-    public void addTodoItem(InsertOrUpdateInPrimaryStoreTodoItem<T> insertOrUpdateInPrimaryStoreTodoItem){
+    public void addTodoItem(InsertOrUpdateInPrimaryStoreTodoItem insertOrUpdateInPrimaryStoreTodoItem){
         this.insertOrUpdateInPrimaryStoreTodoItems.add(insertOrUpdateInPrimaryStoreTodoItem);
     }
 
-    public List<DeleteTodoItem<T>> getDeleteTodoItems() {
+    public List<DeleteTodoItem> getDeleteTodoItems() {
         return deleteTodoItems;
     }
 
-    public List<InsertTodoItem<T>> getInsertTodoItems() {
+    public List<InsertTodoItem> getInsertTodoItems() {
         return insertTodoItems;
     }
 
-    public List<InsertOrUpdateInPrimaryStoreTodoItem<T>> getInsertOrUpdateInPrimaryStoreTodoItems() {
+    public List<InsertOrUpdateInPrimaryStoreTodoItem> getInsertOrUpdateInPrimaryStoreTodoItems() {
         return insertOrUpdateInPrimaryStoreTodoItems;
     }
 }
