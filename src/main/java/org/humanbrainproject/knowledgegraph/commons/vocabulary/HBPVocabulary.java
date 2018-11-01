@@ -5,7 +5,7 @@ public class HBPVocabulary {
     public static final String ALIAS = "hbp";
     public static final String NAMESPACE = "https://schema.hbp.eu/";
 
-    public static final String GRAPH_QUERY = NAMESPACE+"graph_query/";
+    public static final String GRAPH_QUERY = NAMESPACE+"graphQuery/";
 
     // FOR PROVENANCE
     private static final String PROVENANCE = NAMESPACE+"provenance/";

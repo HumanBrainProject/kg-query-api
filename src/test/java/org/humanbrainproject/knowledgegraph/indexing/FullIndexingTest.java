@@ -17,6 +17,7 @@ import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceR
 import org.humanbrainproject.knowledgegraph.nexusExt.control.InstanceController;
 import org.humanbrainproject.knowledgegraph.nexusExt.control.ReleaseController;
 import org.humanbrainproject.knowledgegraph.testFactory.TestObjectFactory;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +31,7 @@ import java.util.Set;
 
 @SpringBootTest
 @RunWith(SpringRunner.class)
+@Ignore("Integration test")
 public class FullIndexingTest {
 
     @Autowired
