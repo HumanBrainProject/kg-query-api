@@ -1,6 +1,7 @@
 package org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control;
 
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.query.ArangoSpecificationQuery;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.*;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
@@ -22,6 +23,7 @@ public class ArangoDocumentConverter {
         jsonObject.put("_id", reference.getId());
         jsonObject.put("_key", reference.getKey());
         jsonObject.put("_originalId", vertexOrEdge.getMainVertex().getInstanceReference().getFullId(true));
+        jsonObject.put(ArangoSpecificationQuery.PERMISSION_GROUP, vertexOrEdge.getMainVertex().getInstanceReference().getNexusSchema().getOrganization());
         if(vertexOrEdge instanceof Edge){
             Vertex fromVertex = ((Edge) vertexOrEdge).getFromVertex();
             jsonObject.put("_name", ((Edge)vertexOrEdge).getName());

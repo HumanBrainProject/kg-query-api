@@ -28,6 +28,8 @@ public class ArangoSpecificationQuery {
     NexusConfiguration configuration;
 
 
+    public final static String PERMISSION_GROUP = "_permissionGroup";
+
     public QueryResult<List<Map>> metaSpecification(Specification spec, QueryParameters parameters) throws JSONException {
         QueryResult<List<Map>> result = new QueryResult<>();
         String query = createQuery(new ArangoMetaQueryBuilder(spec), parameters);
@@ -39,7 +41,7 @@ public class ArangoSpecificationQuery {
 
     public QueryResult<List<Map>> queryForSpecification(Specification spec, Set<String> whiteListOrganizations, QueryParameters parameters, ArangoDocumentReference documentReference) throws JSONException {
         QueryResult<List<Map>> result = new QueryResult<>();
-        ArangoQueryBuilder queryBuilder = new ArangoQueryBuilder(spec, parameters.pagination(), parameters.filter(), new ArangoAlias(configuration.getPermissionGroup()), whiteListOrganizations, documentReference);
+        ArangoQueryBuilder queryBuilder = new ArangoQueryBuilder(spec, parameters.pagination(), parameters.filter(), new ArangoAlias(PERMISSION_GROUP), whiteListOrganizations, documentReference);
         String query = createQuery(queryBuilder, parameters);
         AqlQueryOptions options = new AqlQueryOptions();
         if(parameters.pagination().getSize()!=null) {

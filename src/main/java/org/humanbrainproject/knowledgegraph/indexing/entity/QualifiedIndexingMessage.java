@@ -49,7 +49,7 @@ public class QualifiedIndexingMessage {
     public NexusInstanceReference getOriginalId(){
         Object originalParent = qualifiedMap.get(HBPVocabulary.INFERENCE_EXTENDS);
         if(originalParent==null){
-            originalParent = qualifiedMap.get(HBPVocabulary.INFERENCE_OF_PROPERTY);
+            originalParent = qualifiedMap.get(HBPVocabulary.INFERENCE_OF);
         }
         if(originalParent==null){
             //The message neither points to an origin, nor to an inferred origin - it has to be the original itself.

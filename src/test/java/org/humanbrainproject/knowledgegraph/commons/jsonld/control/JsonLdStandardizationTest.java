@@ -36,7 +36,7 @@ public class JsonLdStandardizationTest {
                 "  \"https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/schema\": {\n" +
                 "    \"@id\": \"https://nexus-dev.humanbrainproject.org/v0/schemas/neuralactivity/experiment/patchedcell/v0.1.0\"\n" +
                 "  },\n" +
-                "  \"http://schema.hbp.eu/internal#permissionGroup\": \"neuralactivity\",\n" +
+                "  \"_permissionGroup\": \"neuralactivity\",\n" +
                 "  \"https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/incoming\": {\n" +
                 "    \"@id\": \"https://nexus-dev.humanbrainproject.org/v0/data/neuralactivity/experiment/patchedcell/v0.1.0/49ce2d7b-0527-46c3-83ac-d443918394b7/incoming\"\n" +
                 "  }\n" +

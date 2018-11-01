@@ -17,10 +17,10 @@ public class Release extends KnownSemantic {
     }
 
     public NexusInstanceReference getReleaseInstance(){
-        Object releaseInstance = this.spec.getQualifiedMap().get(HBPVocabulary.RELEASE_INSTANCE_PROPERTYNAME);
+        Object releaseInstance = this.spec.getQualifiedMap().get(HBPVocabulary.RELEASE_INSTANCE);
         if(releaseInstance instanceof Map && ((Map)releaseInstance).containsKey(JsonLdConsts.ID)){
             NexusInstanceReference reference = NexusInstanceReference.createFromUrl((String) ((Map) releaseInstance).get(JsonLdConsts.ID));
-            Number revision = (Number)this.spec.getQualifiedMap().get(HBPVocabulary.RELEASE_REVISION_PROPERTYNAME);
+            Number revision = (Number)this.spec.getQualifiedMap().get(HBPVocabulary.RELEASE_REVISION);
             if(revision!=null && reference!=null) {
                 reference.setRevision(revision.intValue());
             }

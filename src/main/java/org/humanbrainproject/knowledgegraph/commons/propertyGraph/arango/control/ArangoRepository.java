@@ -57,7 +57,7 @@ public class ArangoRepository extends VertexRepository<ArangoConnection, ArangoD
         if (byKey != null) {
             Object originalParent = byKey.get(HBPVocabulary.INFERENCE_EXTENDS);
             if(originalParent==null){
-                originalParent = byKey.get(HBPVocabulary.INFERENCE_OF_PROPERTY);
+                originalParent = byKey.get(HBPVocabulary.INFERENCE_OF);
             }
             if (originalParent instanceof Map) {
                 String id = (String) ((Map) originalParent).get(JsonLdConsts.ID);
@@ -353,26 +353,23 @@ public class ArangoRepository extends VertexRepository<ArangoConnection, ArangoD
     public Map getInstanceList(ArangoCollectionReference collection, Integer from, Integer size, String
             searchTerm, ArangoConnection driver) {
         ArangoDatabase db = driver.getOrCreateDB();
-        //TODO check what does that function do? Still required with the reconciled switch?
-//        String c = String.join("reconciled-", collection.split("-", 2));
-//        String recCollection = driver.getCollectionLabels().stream().noneMatch(el -> el.equals(c)) ? "[]" : "`" + c + "`";
-//        String query = queryFactory.getInstanceList(collection, from, size, searchTerm, recCollection);
+        String query = queryFactory.getInstanceList(collection, from, size, searchTerm);
         AqlQueryOptions options = new AqlQueryOptions().count(true).fullCount(true);
         Map m = new HashMap();
-//        try {
-////            ArangoCursor<Map> q = db.query(query, null, options, Map.class);
-//            m.put("count", q.getCount());
-//            m.put("fullCount", q.getStats().getFullCount());
-//            m.put("data", q.asListRemaining());
-//        } catch (ArangoDBException e) {
-//            if (e.getResponseCode() == 404) {
-//                m.put("count", 0);
-//                m.put("fullCount", 0);
-//                m.put("data", new ArrayList<Map>());
-//            } else {
-//                throw e;
-//            }
-//        }
+        try {
+            ArangoCursor<Map> q = db.query(query, null, options, Map.class);
+            m.put("count", q.getCount());
+            m.put("fullCount", q.getStats().getFullCount());
+            m.put("data", q.asListRemaining());
+        } catch (ArangoDBException e) {
+            if (e.getResponseCode() == 404) {
+                m.put("count", 0);
+                m.put("fullCount", 0);
+                m.put("data", new ArrayList<Map>());
+            } else {
+                throw e;
+            }
+        }
         return m;
     }
 

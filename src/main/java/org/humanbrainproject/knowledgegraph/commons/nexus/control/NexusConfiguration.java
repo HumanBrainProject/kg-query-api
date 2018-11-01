@@ -9,14 +9,12 @@ import org.springframework.stereotype.Component;
 @Component
 public class NexusConfiguration {
 
-    private static final String DEFAULT_NAMESPACE = "http://schema.hbp.eu/internal#";
-
     public enum ResourceType {
         DATA("data"), SCHEMA("schemas"), ORGANIZATION("organizations"), DOMAIN("domains");
 
         private final String urlDeclaration;
 
-        ResourceType(String urlDeclaration){
+        ResourceType(String urlDeclaration) {
             this.urlDeclaration = urlDeclaration;
         }
 
@@ -38,19 +36,15 @@ public class NexusConfiguration {
         return nexusBase;
     }
 
-    public String getPermissionGroup(){
-        return String.format("%s%s", DEFAULT_NAMESPACE, "permissionGroup");
-    }
-
-    public String getAbsoluteUrl(NexusRelativeUrl relativeUrl){
-        return String.format("%s/v0/%s%s", nexusEndpoint, relativeUrl.getResourceType().urlDeclaration, relativeUrl.getUrl()!=null ? String.format("/%s", relativeUrl.getUrl()) : "");
+    public String getAbsoluteUrl(NexusRelativeUrl relativeUrl) {
+        return String.format("%s/v0/%s%s", nexusEndpoint, relativeUrl.getResourceType().urlDeclaration, relativeUrl.getUrl() != null ? String.format("/%s", relativeUrl.getUrl()) : "");
     }
 
     public String getAbsoluteUrl(NexusSchemaReference schema) {
         return getAbsoluteUrl(schema.getRelativeUrl());
     }
 
-    public String getAbsoluteUrl(NexusInstanceReference instanceReference){
+    public String getAbsoluteUrl(NexusInstanceReference instanceReference) {
         return getAbsoluteUrl(instanceReference.getRelativeUrl());
     }
 }

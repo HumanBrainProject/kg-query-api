@@ -21,7 +21,7 @@ import java.util.*;
 @Component
 public class InferenceController implements IndexingController{
 
-    private final static List<String> EDGE_BLACKLIST_FOR_INFERENCE = Arrays.asList(HBPVocabulary.INFERENCE_OF_PROPERTY, HBPVocabulary.INFERENCE_EXTENDS);
+    private final static List<String> EDGE_BLACKLIST_FOR_INFERENCE = Arrays.asList(HBPVocabulary.INFERENCE_OF, HBPVocabulary.INFERENCE_EXTENDS);
 
     @Autowired
     MessageProcessor messageProcessor;

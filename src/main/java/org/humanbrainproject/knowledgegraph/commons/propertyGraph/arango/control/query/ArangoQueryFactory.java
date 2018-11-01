@@ -5,6 +5,7 @@ import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.ReferenceType;
+import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -17,17 +18,9 @@ public class ArangoQueryFactory {
     @Autowired
     NexusConfiguration configuration;
 
-    public String queryEdgesToBeRemoved(ArangoDocumentReference document, Set<ArangoCollectionReference> edgeCollections, Set<ArangoDocumentReference> excludeIds, ArangoConnection driver) {
-        Set<ArangoCollectionReference> collectionLabels = driver != null ? driver.filterExistingCollectionLabels(edgeCollections) : edgeCollections;
-        return String.format("LET doc = DOCUMENT(\"%s\")\n" +
-                "    FOR v, e IN OUTBOUND doc `%s`\n" +
-                "       FILTER e._id NOT IN [\"%s\"]\n" +
-                "       return e._id", document.getId(), String.join("`, `", collectionLabels.stream().map(ArangoCollectionReference::getName).collect(Collectors.toSet())), String.join("\", \"", excludeIds.stream().map(ArangoDocumentReference::getId).collect(Collectors.toSet())));
-    }
-
 
     public String queryForIdsWithProperty(String propertyName, String propertyValue, Set<ArangoCollectionReference> collectionsToCheck) {
-        if (collectionsToCheck!=null && !collectionsToCheck.isEmpty()) {
+        if (collectionsToCheck != null && !collectionsToCheck.isEmpty()) {
             StringBuilder sb = new StringBuilder();
             for (ArangoCollectionReference arangoCollectionReference : collectionsToCheck) {
                 sb.append(String.format("LET `%s` = (FOR v IN `%s` FILTER v.`%s` == \"%s\" RETURN v._id)\n", arangoCollectionReference.getName(), arangoCollectionReference.getName(), propertyName, propertyValue));
@@ -38,18 +31,6 @@ public class ArangoQueryFactory {
         return null;
     }
 
-
-//    public String queryAllEmbeddedInstancesForDocument(ArangoDocumentReference document){
-//        return String.format("LET doc = DOCUMENT(\"%s\")\n" +
-//                "    FOR v, e IN 1..10 OUTBOUND doc `%s`\n")
-//
-//
-//    }
-
-
-//    public String queryEdgeByFromAndTo(String edgeLabel, String from, String to){
-//        return String.format("FOR rel IN `%s` FILTER rel._from==\"%s\" AND rel._to==\"%s\" RETURN rel", edgeLabel, from, to);
-//    }
 
     public String queryPropertyCount(ArangoCollectionReference collection) {
         return String.format("LET attributesPerDocument = ( FOR doc IN `%s` RETURN ATTRIBUTES(doc, true) )\n" +
@@ -64,29 +45,20 @@ public class ArangoQueryFactory {
         return String.format("FOR doc IN `%s` RETURN {\"arango\": doc._key, \"original\": doc.originalName}", lookupCollection.getName());
     }
 
-
     public String getAll(ArangoCollectionReference collection) {
         return String.format("FOR doc IN `%s` RETURN doc", collection.getName());
     }
-
-//    public String createEmbeddedInstancesQuery(Set<ArangoCollectionReference> edgeCollectionNames, String id, ArangoConnection driver) {
-//        Set<String> collectionLabels= driver!=null ? driver.filterExistingCollectionLabels(edgeCollectionNames) : edgeCollectionNames;
-//        String names = String.join("`, `", collectionLabels);
-//        return String.format("FOR v, e IN 1..1 OUTBOUND \"%s\" `%s` \n" +
-//                "        \n" +
-//                "        return {\"vertexId\":v._id, \"edgeId\": e._id, \"isEmbedded\": v.`%s`==true}", id, names, configuration.getEmbedded());
-//    }
 
     public String queryInDepthGraph(Set<ArangoCollectionReference> edgeCollections, ArangoDocumentReference startDocument, Integer step, ArangoConnection driver) {
         Set<ArangoCollectionReference> collectionLabels = driver != null ? driver.filterExistingCollectionLabels(edgeCollections) : edgeCollections;
         String names = String.join("`, `", collectionLabels.stream().map(ArangoCollectionReference::getName).collect(Collectors.toSet()));
         String outbound = String.format("" +
                 "FOR v, e, p IN 1..%s OUTBOUND \"%s\" `%s` \n" +
-                "FILTER v.`http://schema.hbp.eu/internal#permissionGroup` IN whitelist_organizations \n " +
+                "FILTER v.`_permissionGroup` IN whitelist_organizations \n " +
                 "        return p", step, startDocument.getId(), names);
         String inbound = String.format("" +
                 "FOR v, e, p IN 1..1 INBOUND \"%s\" `%s` \n" +
-                "FILTER v.`http://schema.hbp.eu/internal#permissionGroup` IN whitelist_organizations \n " +
+                "FILTER v.`_permissionGroup` IN whitelist_organizations \n " +
                 "        return p", startDocument.getId(), names);
         return String.format("" +
                 "LET whitelist_organizations=[\"minds\",\"brainviewer\",\"cscs\",\"datacite\",\"licenses\",\"minds2\",\"neuroglancer\"]" +
@@ -101,11 +73,11 @@ public class ArangoQueryFactory {
 //                "RETURN doc", documentID);
         return String.format(
                 "LET doc = DOCUMENT(\"%s\")" +
-                        "LET status = (FOR status_doc IN 1..1 INBOUND doc `rel-hbp_eu-minds-releaseinstance`\n" +
-                        "FILTER  status_doc.`http://hbp.eu/minds#releasestate` != null \n" +
-                        "RETURN DISTINCT status_doc.`http://hbp.eu/minds#releasestate`)\n" +
-                        "RETURN MERGE({\"status\": status, \"rev\": doc.`http://schema.hbp.eu/internal#rev` }, doc)"
-                , document.getId());
+                        "LET status = (FOR status_doc IN 1..1 INBOUND doc `%s`\n" +
+                        "FILTER  status_doc.`%s` != null \n" +
+                        "RETURN DISTINCT status_doc.`%s`)\n" +
+                        "RETURN MERGE({\"status\": status, \"rev\": doc.`%s` }, doc)"
+                , document.getId(), ArangoCollectionReference.fromFieldName(HBPVocabulary.RELEASE_INSTANCE, ReferenceType.INTERNAL).getName(), HBPVocabulary.RELEASE_STATE, HBPVocabulary.RELEASE_STATE, HBPVocabulary.PROVENANCE_REVISION);
     }
 
     public String getGetEditorSpecDocument(ArangoCollectionReference collection) {
@@ -137,13 +109,6 @@ public class ArangoQueryFactory {
 
     public String queryReleaseGraph(Set<ArangoCollectionReference> edgeCollections, ArangoDocumentReference rootInstance, Integer maxDepth, ArangoConnection driver) {
         Set<ArangoCollectionReference> collectionLabels = driver != null ? driver.filterExistingCollectionLabels(edgeCollections) : edgeCollections;
-        Set<ArangoCollectionReference> collectionLabelsFiltered = collectionLabels.stream().filter(col ->
-                !col.getName().startsWith("rel-www_w3_org") &&
-                        !col.getName().startsWith("rel-hbp_eu-reconciled-original_parent") &&
-                        !col.getName().startsWith("rel-hbp_eu-reconciled-alternatives") &&
-                        !col.getName().startsWith("rel-hbp_eu-reconciled-origin") &&
-                        !col.getName().startsWith("rel-hbp_eu-reconciled-parents")
-        ).collect(Collectors.toSet());
         String names = String.join("`, `", collectionLabels.stream().map(ArangoCollectionReference::getName).collect(Collectors.toSet()));
         String start = String.format("DOCUMENT(\"%s\")", rootInstance.getId());
         return childrenStatus(start, 1, maxDepth, names);
@@ -167,30 +132,22 @@ public class ArangoQueryFactory {
         );
     }
 
-    public String getInstanceList(String collection, Integer from, Integer size, String searchTerm, String recCollection) {
+    public String getInstanceList(ArangoCollectionReference collection, Integer from, Integer size, String searchTerm) {
         String search = "";
         if (searchTerm != null && !searchTerm.isEmpty()) {
             searchTerm = searchTerm.toLowerCase();
-            search = String.format("FILTER LIKE (LOWER(el.`http://schema.org/name`), \"%%%s%%\")\n", searchTerm);
+            search = String.format("FILTER LIKE (LOWER(doc.`http://schema.org/name`), \"%%%s%%\")\n", searchTerm);
         }
         String limit = "";
         if (from != null && size != null) {
             limit = String.format("LIMIT %s, %s \n", from.toString(), size.toString());
         }
-        return String.format("LET rec = (FOR rec_doc IN %s\n" +
-                "    RETURN rec_doc)\n" +
-                "LET f = (FOR e IN rec\n" +
-                "    RETURN SPLIT( e.`http://hbp.eu/reconciled#origin`, \"v0/data/\")[1]\n" +
-                ")\n" +
-                "LET minds = ( FOR doc IN `%s`\n" +
-                "    FILTER (doc.`@id` NOT IN f)\n" +
-                "    RETURN doc\n" +
-                ")\n" +
-                "FOR el IN UNION(minds, rec)\n" +
-                "%s" +
-                "SORT el.`http://schema.org/name`, el.`http://hbp.eu/minds#title`, el.`http://hbp.eu/minds#alias`\n" +
-                "%s" +
-                "    RETURN el", recCollection, collection, search, limit);
+        return String.format(
+                "FOR doc IN `%s`\n" +
+                        "%s" +
+                        "SORT doc.`http://schema.org/name`, doc.`http://hbp.eu/minds#title`, doc.`http://hbp.eu/minds#alias`\n" +
+                        "%s" +
+                        "    RETURN doc", collection.getName(), collection, search, limit);
     }
 
     public String releaseStatus(Set<ArangoCollectionReference> edgeCollections, ArangoDocumentReference documentReference, ArangoConnection driver) {
@@ -218,14 +175,6 @@ public class ArangoQueryFactory {
 //                "    return {\"status\":s, \"child_status\":child_status }",reconciledId, documentReference.getId(), names);
         return null;
     }
-
-
-//    public String getReconciledEntityGroup(String reconciledSpace, String relativeSourceId) {
-//        return String.format("FOR doc IN `%s` FILTER \n" +
-//                "    \"%s\" == doc.`%s`.`%s` OR \n" +
-//                "    \"%s\" IN doc.`%s`[*].`%s`\n" +
-//                "    RETURN { \"reconciled\": doc.`%s`, \"sources\": UNION([doc.`%s`.`%s`], doc.`%s`[*].`%s`)}", reconciledSpace, relativeSourceId, InferenceController.INFERRED_SOURCE, JsonLdConsts.ID, relativeSourceId, InferenceController.INFERRED_SOURCE, JsonLdConsts.ID, JsonLdConsts.ID, InferenceController.INFERRED_SOURCE, JsonLdConsts.ID, InferenceController.INFERRED_SOURCE, JsonLdConsts.ID);
-//    }
 
 
 }

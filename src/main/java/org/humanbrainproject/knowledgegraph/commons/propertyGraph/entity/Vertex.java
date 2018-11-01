@@ -45,6 +45,7 @@ public abstract class Vertex implements VertexOrEdge {
         }
     }
 
+
     public List<Edge> getEdges() {
         return edges;
     }
