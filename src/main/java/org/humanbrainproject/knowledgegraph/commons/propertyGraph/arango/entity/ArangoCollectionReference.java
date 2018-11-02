@@ -29,7 +29,7 @@ public class ArangoCollectionReference {
     }
 
     public static ArangoCollectionReference fromSpecTraversal(SpecTraverse specTraverse){
-        return new ArangoCollectionReference(ArangoNamingHelper.reduceStringToMaxSizeByHashing(ArangoNamingHelper.replaceSpecialCharacters(specTraverse.pathName)));
+        return new ArangoCollectionReference(ArangoNamingHelper.reduceStringToMaxSizeByHashing(ArangoNamingHelper.replaceSpecialCharacters(ArangoNamingHelper.removeTrailingHttps(specTraverse.pathName))));
     }
 
     public String getName() {
