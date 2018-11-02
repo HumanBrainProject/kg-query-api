@@ -51,7 +51,7 @@ public class NexusToArangoIndexingProvider {
         vertex.toSubSpace(SubSpace.MAIN);
         for (EdgeX edge : vertex.getEdges()) {
             NexusInstanceReference relatedOriginalId = repository.findOriginalId(edge.getReference());
-            edge.setReference(relatedOriginalId);
+            edge.setReference(relatedOriginalId.toSubSpace(SubSpace.MAIN));
         }
     }
 
