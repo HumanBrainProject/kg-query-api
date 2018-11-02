@@ -16,7 +16,6 @@ import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.control.VertexRepository;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.ReferenceType;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Vertex;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.humanbrainproject.knowledgegraph.indexing.control.MessageProcessor;
@@ -179,14 +178,14 @@ public class ArangoRepository extends VertexRepository<ArangoConnection, ArangoD
 
     }
 
-    public void deleteOutgoingRelations(ArangoDocumentReference document, ArangoDatabase db) {
+    public void deleteOutgoingRelations(ArangoDocumentReference document, ArangoConnection connection) {
         if (document != null) {
+            ArangoDatabase db = connection.getOrCreateDB();
             ArangoCollection collection = db.collection(document.getCollection().getName());
             if (collection.exists()) {
                 if (collection.documentExists(document.getKey())) {
                     try {
-                        Set<ArangoCollectionReference> edgeCollections = db.getCollections().stream().filter(c -> c.getName().startsWith(ReferenceType.INTERNAL.getPrefix() + "-")).map(c -> new ArangoCollectionReference(c.getName())).collect(Collectors.toSet());
-                        ArangoCursor<String> result = db.query(queryFactory.queryOutboundRelationsForDocument(document, edgeCollections), null, new AqlQueryOptions(), String.class);
+                        ArangoCursor<String> result = db.query(queryFactory.queryOutboundRelationsForDocument(document, connection.getEdgesCollectionNames()), null, new AqlQueryOptions(), String.class);
                         for (String id : result.asListRemaining()) {
                             deleteDocument(ArangoDocumentReference.fromId(id), db);
                         }
@@ -304,10 +303,10 @@ public class ArangoRepository extends VertexRepository<ArangoConnection, ArangoD
         }
     }
 
-    public List<Map> inDepthGraph(ArangoDocumentReference document, Integer step, ArangoConnection driver) {
-        ArangoDatabase db = driver.getOrCreateDB();
-        Set<ArangoCollectionReference> edgesCollections = driver.getEdgesCollectionNames();
-        String query = queryFactory.queryInDepthGraph(edgesCollections, document, step, driver);
+    public List<Map> inDepthGraph(ArangoDocumentReference document, Integer step, ArangoConnection connection) {
+        ArangoDatabase db = connection.getOrCreateDB();
+        Set<ArangoCollectionReference> edgesCollections = connection.getEdgesCollectionNames();
+        String query = queryFactory.queryInDepthGraph(edgesCollections, document, step, connection);
         try {
             ArangoCursor<Map> q = db.query(query, null, new AqlQueryOptions(), Map.class);
             return q.asListRemaining();

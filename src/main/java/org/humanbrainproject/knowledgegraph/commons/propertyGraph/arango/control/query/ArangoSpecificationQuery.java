@@ -3,12 +3,12 @@ package org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.contro
 import com.arangodb.ArangoCursor;
 import com.arangodb.model.AqlQueryOptions;
 import org.apache.commons.text.StrSubstitutor;
-import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoDatabaseFactory;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoAlias;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
+import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
 import org.humanbrainproject.knowledgegraph.query.entity.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.configurationprocessor.json.JSONException;
@@ -26,7 +26,6 @@ public class ArangoSpecificationQuery {
 
     @Autowired
     NexusConfiguration configuration;
-
 
     public final static String PERMISSION_GROUP = "_permissionGroup";
 

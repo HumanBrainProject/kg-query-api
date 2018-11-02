@@ -31,8 +31,10 @@ public class ArangoDocumentConverter {
         return path;
     }
 
-    public String createJsonFromEdge(Vertex vertex, EdgeX edge, Set<JsonPath> blackList) {
+    public String createJsonFromEdge(ArangoDocumentReference targetDocument, Vertex vertex, EdgeX edge, Set<JsonPath> blackList) {
         Map<String, Object> map = new HashMap<>();
+        map.put("_id", targetDocument.getId());
+        map.put("_key", targetDocument.getKey());
         map.put("_from", ArangoDocumentReference.fromNexusInstance(vertex.getInstanceReference()).getId());
         map.put("_to", ArangoDocumentReference.fromNexusInstance(edge.getReference()).getId());
         map.put("_path", buildPath(null, edge.getPath()));

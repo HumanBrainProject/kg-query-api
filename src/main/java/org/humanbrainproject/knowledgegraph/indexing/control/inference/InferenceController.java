@@ -60,7 +60,7 @@ public class InferenceController implements IndexingController{
 
     @Override
     public TodoList update(QualifiedIndexingMessage message, TodoList todoList) {
-        delete(message.getOriginalMessage().getInstanceReference(), todoList);
+        //delete(message.getOriginalMessage().getInstanceReference(), todoList);
         insert(message, todoList);
         return todoList;
     }

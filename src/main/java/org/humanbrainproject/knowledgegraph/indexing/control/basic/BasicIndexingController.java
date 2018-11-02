@@ -29,7 +29,6 @@ public class BasicIndexingController implements IndexingController {
 
     @Override
     public TodoList update(QualifiedIndexingMessage message, TodoList todoList){
-        delete(message.getOriginalMessage().getInstanceReference(), todoList);
         //TODO transfer information about creation / previous authors to new message?
         insert(message, todoList);
         return todoList;

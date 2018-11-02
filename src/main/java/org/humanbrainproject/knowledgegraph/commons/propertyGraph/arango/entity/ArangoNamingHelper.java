@@ -17,4 +17,8 @@ public class ArangoNamingHelper {
     static String removeTrailingHttps(String value){
         return value!=null ? value.replaceAll("http(s)?://", "") : value;
     }
+
+    public static String createCompatibleId(String id){
+        return reduceStringToMaxSizeByHashing(removeTrailingHttps(replaceSpecialCharacters(id)));
+    }
 }

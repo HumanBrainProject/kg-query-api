@@ -19,7 +19,7 @@ public class ArangoDocumentReference {
 
     public static ArangoDocumentReference fromEdge(EdgeX edge){
         ArangoCollectionReference collection = ArangoCollectionReference.fromEdge(edge);
-        return new ArangoDocumentReference(collection, ArangoNamingHelper.replaceSpecialCharacters(edge.getId()));
+        return new ArangoDocumentReference(collection, ArangoNamingHelper.createCompatibleId(edge.getId()));
     }
 
     public static ArangoDocumentReference fromId(String id) {

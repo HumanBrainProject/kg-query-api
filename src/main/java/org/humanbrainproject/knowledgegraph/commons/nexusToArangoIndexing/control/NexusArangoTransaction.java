@@ -55,8 +55,8 @@ public class NexusArangoTransaction implements DatabaseTransaction {
             if(databaseConnection!=null) {
                 ArangoDatabase database = databaseConnection.getOrCreateDB();
                 ArangoDocumentReference reference = ArangoDocumentReference.fromNexusInstance(deleteItem.getReference());
+                repository.deleteOutgoingRelations(reference, databaseConnection);
                 repository.deleteDocument(reference, database);
-                repository.deleteOutgoingRelations(reference, database);
             }
         }
 
@@ -68,13 +68,19 @@ public class NexusArangoTransaction implements DatabaseTransaction {
                 ArangoDatabase database = databaseConnection.getOrCreateDB();
                 Vertex vertex = insertItem.getVertex();
                 ArangoDocumentReference reference = ArangoDocumentReference.fromNexusInstance(vertex.getInstanceReference());
+
+                //Remove already existing instances
+                repository.deleteOutgoingRelations(reference, databaseConnection);
+                repository.deleteDocument(reference, database);
+
                 String vertexJson = arangoDocumentConverter.createJsonFromVertex(reference, vertex, insertItem.getBlacklist());
                 if (vertexJson != null) {
                     repository.insertDocument(reference, vertexJson, CollectionType.DOCUMENT, database);
                 }
                 for (EdgeX edge : vertex.getEdges()) {
-                    String jsonFromEdge = arangoDocumentConverter.createJsonFromEdge(vertex, edge, insertItem.getBlacklist());
-                    repository.insertDocument(ArangoDocumentReference.fromEdge(edge), jsonFromEdge, CollectionType.EDGES, database);
+                    ArangoDocumentReference document = ArangoDocumentReference.fromEdge(edge);
+                    String jsonFromEdge = arangoDocumentConverter.createJsonFromEdge(document, vertex, edge, insertItem.getBlacklist());
+                    repository.insertDocument(document, jsonFromEdge, CollectionType.EDGES, database);
                 }
             }
         }
