@@ -10,15 +10,18 @@ import com.arangodb.model.AqlQueryOptions;
 import com.arangodb.model.CollectionCreateOptions;
 import com.github.jsonldjava.core.JsonLdConsts;
 import deprecated.entity.Tuple;
-import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonLdToVerticesAndEdges;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.query.ArangoQueryFactory;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.control.VertexRepository;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.*;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.ReferenceType;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Vertex;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
+import org.humanbrainproject.knowledgegraph.indexing.control.MessageProcessor;
+import org.humanbrainproject.knowledgegraph.indexing.entity.IndexingMessage;
+import org.humanbrainproject.knowledgegraph.indexing.entity.QualifiedIndexingMessage;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
@@ -38,13 +41,13 @@ public class ArangoRepository extends VertexRepository<ArangoConnection, ArangoD
     JsonTransformer transformer;
 
     @Autowired
-    JsonLdToVerticesAndEdges jsonLdToVerticesAndEdges;
-
-    @Autowired
     ArangoDatabaseFactory databaseFactory;
 
     @Autowired
     NexusConfiguration configuration;
+
+    @Autowired
+    MessageProcessor messageProcessor;
 
     @Override
     public void clearDatabase(ArangoConnection connection) {
@@ -56,7 +59,7 @@ public class ArangoRepository extends VertexRepository<ArangoConnection, ArangoD
         Map byKey = getByKey(arangoDocumentReference, Map.class, databaseFactory.getDefaultDB());
         if (byKey != null) {
             Object originalParent = byKey.get(HBPVocabulary.INFERENCE_EXTENDS);
-            if(originalParent==null){
+            if (originalParent == null) {
                 originalParent = byKey.get(HBPVocabulary.INFERENCE_OF);
             }
             if (originalParent instanceof Map) {
@@ -81,9 +84,14 @@ public class ArangoRepository extends VertexRepository<ArangoConnection, ArangoD
         return arangoConnection.getOrCreateDB().getDocument(documentReference.getId(), String.class);
     }
 
+    public Map getDocument(ArangoDocumentReference documentReference, ArangoConnection arangoConnection) {
+        return arangoConnection.getOrCreateDB().getDocument(documentReference.getId(), Map.class);
+    }
+
+
 
     public Set<ArangoDocumentReference> getReferencesBelongingToInstance(NexusInstanceReference nexusInstanceReference, ArangoConnection arangoConnection) {
-        Set<ArangoCollectionReference> collections = arangoConnection.getCollections().stream().filter(c -> c.getName().startsWith(ReferenceType.EMBEDDED.getPrefix() + "-") || c.getName().startsWith(EmbeddedVertex.NAME_PREFIX) || c.getName().startsWith(ReferenceType.INTERNAL.getPrefix() + "-")).collect(Collectors.toSet());
+        Set<ArangoCollectionReference> collections = new HashSet<>(arangoConnection.getEdgesCollectionNames());
         String query = queryFactory.queryForIdsWithProperty("_originalId", nexusInstanceReference.getFullId(true), collections);
         List<List> result = query == null ? new ArrayList<>() : arangoConnection.getOrCreateDB().query(query, null, new AqlQueryOptions(), List.class).asListRemaining();
         if (result.size() == 1) {
@@ -94,63 +102,16 @@ public class ArangoRepository extends VertexRepository<ArangoConnection, ArangoD
 
 
     @Override
-    public MainVertex getVertexStructureById(ArangoDocumentReference documentReference, ArangoConnection arango) {
-        Set<ArangoCollectionReference> edgesCollectionNames = arango.getEdgesCollectionNames();
-        String query = queryFactory.queryDocumentWith1LevelOfEmbeddedInstances(documentReference, edgesCollectionNames);
-        List<Map> results = arango.getOrCreateDB().query(query, null, new AqlQueryOptions(), Map.class).asListRemaining();
-        if (results.size() == 1) {
-            //TODO read reference from payload;
-            Map originalDocument = results.get(0);
-            NexusInstanceReference reference = NexusInstanceReference.createFromUrl(originalDocument.get("_originalId").toString());
-            MainVertex vertex = new MainVertex(reference);
-            for (Object key : originalDocument.keySet()) {
-                processPayload(vertex, originalDocument.get(key), edgesCollectionNames, arango, key.toString(), null, vertex);
-            }
-            return vertex;
-        } else {
-            logger.error(String.format("Received multiple instances by querying the single document reference %s - there is definitively something wrong!", documentReference.getId()));
-            return null;
+    public Vertex getVertexStructureById(ArangoDocumentReference documentReference, ArangoConnection arango) {
+        Map document = arango.getOrCreateDB().getDocument(documentReference.getId(), Map.class);
+        if(document!=null) {
+            NexusInstanceReference reference = NexusInstanceReference.createFromUrl(document.get("_originalId").toString());
+            QualifiedIndexingMessage qualified = messageProcessor.qualify(new IndexingMessage(reference, transformer.getMapAsJson(document), null, null));
+            return messageProcessor.createVertexStructure(qualified);
         }
-    }
-
-
-    private void processPayload(Vertex parentVertex, Object value, Set<ArangoCollectionReference> edgesCollections, ArangoConnection arango, String fieldName, Integer orderNumber, MainVertex mainVertex) {
-        if (!fieldName.startsWith("_")) {
-            if (value instanceof Map) {
-                Map innerMap = ((Map) value);
-                if (innerMap.containsKey("_id")) {
-                    String query = queryFactory.queryDocumentWith1LevelOfEmbeddedInstances(ArangoDocumentReference.fromId(innerMap.get("_id").toString()), edgesCollections);
-                    List<Map> results = arango.getOrCreateDB().query(query, null, new AqlQueryOptions(), Map.class).asListRemaining();
-                    EmbeddedEdge edge = new EmbeddedEdge(fieldName, parentVertex, orderNumber, mainVertex);
-                    parentVertex.getEdges().add(edge);
-                    EmbeddedVertex vertex = new EmbeddedVertex(edge);
-                    for (Map result : results) {
-                        for (Object key : result.keySet()) {
-                            processPayload(vertex, result.get(key), edgesCollections, arango, key.toString(), (Integer) innerMap.get("_orderNumber"), mainVertex);
-                        }
-                    }
-                } else if (innerMap.containsKey(JsonLdConsts.ID) && innerMap.get(JsonLdConsts.ID).toString().startsWith(configuration.getNexusBase())) {
-                    Edge edge = new InternalEdge(fieldName, parentVertex, NexusInstanceReference.createFromUrl(innerMap.get(JsonLdConsts.ID).toString()), orderNumber, mainVertex);
-                    for (Object innerKey : innerMap.keySet()) {
-                        if (!innerKey.toString().startsWith("_")) {
-                            edge.getProperties().add(Property.createProperty(innerKey.toString(), innerMap.get(innerKey)));
-                        }
-                    }
-                    parentVertex.getEdges().add(edge);
-                }
-            } else if (value instanceof Collection) {
-                int orderCounter = 0;
-                for (Object o : ((Collection) value)) {
-                    processPayload(parentVertex, o, edgesCollections, arango, fieldName, orderCounter++, mainVertex);
-                }
-            } else {
-                Property property = Property.createProperty(fieldName, value);
-                parentVertex.getProperties().add(property);
-            }
-        }
+        return null;
 
     }
-
 
     private static final ArangoCollectionReference NAME_LOOKUP_MAP = new ArangoCollectionReference("name_lookup");
 
@@ -217,6 +178,34 @@ public class ArangoRepository extends VertexRepository<ArangoConnection, ArangoD
         }
 
     }
+
+    public void deleteOutgoingRelations(ArangoDocumentReference document, ArangoDatabase db) {
+        if (document != null) {
+            ArangoCollection collection = db.collection(document.getCollection().getName());
+            if (collection.exists()) {
+                if (collection.documentExists(document.getKey())) {
+                    try {
+                        Set<ArangoCollectionReference> edgeCollections = db.getCollections().stream().filter(c -> c.getName().startsWith(ReferenceType.INTERNAL.getPrefix() + "-")).map(c -> new ArangoCollectionReference(c.getName())).collect(Collectors.toSet());
+                        ArangoCursor<String> result = db.query(queryFactory.queryOutboundRelationsForDocument(document, edgeCollections), null, new AqlQueryOptions(), String.class);
+                        for (String id : result.asListRemaining()) {
+                            deleteDocument(ArangoDocumentReference.fromId(id), db);
+                        }
+                        logger.info("Deleted document: {} from database {}", document.getId(), db.name());
+                    } catch (ArangoDBException dbexception) {
+                        logger.error(String.format("Was not able to delete document: %s in database %s", document.getId(), db.name()), dbexception);
+                        throw dbexception;
+                    }
+                } else {
+                    logger.warn("Was not able to delete {} because the document does not exist. Skip.", document.getId());
+                }
+            } else {
+                logger.warn("Tried to delete {} although the collection doesn't exist. Skip.", document.getId());
+            }
+        } else {
+            logger.error("Was not able to delete document due to missing id");
+        }
+    }
+
 
 
     public void deleteDocument(ArangoDocumentReference document, ArangoDatabase db) {
@@ -336,9 +325,9 @@ public class ArangoRepository extends VertexRepository<ArangoConnection, ArangoD
         return q.asListRemaining();
     }
 
-    public List<Map> getDocument(ArangoDocumentReference document, ArangoConnection driver) {
+    public List<Map> getDocumentWithReleaseStatus(ArangoDocumentReference document, ArangoConnection driver) {
         ArangoDatabase db = driver.getOrCreateDB();
-        String query = queryFactory.getDocument(document);
+        String query = queryFactory.getDocumentWithReleaseStatus(document);
         ArangoCursor<Map> q = db.query(query, null, new AqlQueryOptions(), Map.class);
         return q.asListRemaining();
     }

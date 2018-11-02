@@ -2,22 +2,28 @@ package org.humanbrainproject.knowledgegraph.indexing.control.inference;
 
 import com.github.jsonldjava.core.JsonLdConsts;
 import deprecated.exceptions.InferenceException;
+import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoDatabaseFactory;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoRepository;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.*;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Property;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.ReferenceType;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.SubSpace;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Vertex;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.humanbrainproject.knowledgegraph.indexing.control.MessageProcessor;
 import org.humanbrainproject.knowledgegraph.indexing.control.nexusToArango.NexusToArangoIndexingProvider;
+import org.humanbrainproject.knowledgegraph.indexing.entity.IndexingMessage;
 import org.humanbrainproject.knowledgegraph.indexing.entity.QualifiedIndexingMessage;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
+import org.humanbrainproject.knowledgegraph.query.entity.JsonDocument;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.time.*;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -45,6 +51,10 @@ public class Reconciliation implements InferenceStrategy, InitializingBean {
     @Autowired
     NexusToArangoIndexingProvider indexingProvider;
 
+    @Autowired
+    JsonTransformer transformer;
+
+
     protected Logger logger = LoggerFactory.getLogger(Reconciliation.class);
 
 
@@ -54,7 +64,7 @@ public class Reconciliation implements InferenceStrategy, InitializingBean {
     }
 
     @Override
-    public void infer(QualifiedIndexingMessage message, Set<MainVertex> documents) {
+    public void infer(QualifiedIndexingMessage message, Set<Vertex> documents) {
         //We collect all instances from the default space
         NexusInstanceReference originalId = message.getOriginalId();
         boolean isOriginal = originalId.equals(message.getOriginalMessage().getInstanceReference());
@@ -62,20 +72,20 @@ public class Reconciliation implements InferenceStrategy, InitializingBean {
         Set<NexusInstanceReference> relativeInstances = indexingProvider.findInstancesWithLinkTo(HBPVocabulary.INFERENCE_EXTENDS, originalId, ReferenceType.INTERNAL);
         Set<NexusInstanceReference> inferredInstances = indexingProvider.findInstancesWithLinkTo(HBPVocabulary.INFERENCE_OF, originalId, ReferenceType.INTERNAL);
         if (!isOriginal || (relativeInstances != null && !relativeInstances.isEmpty())) {
-            MainVertex originalStructure;
+            Vertex originalVertex;
             if (isOriginal) {
-                originalStructure = messageProcessor.createVertexStructure(message).getMainVertex();
+                originalVertex = messageProcessor.createVertexStructure(message);
             } else {
-                originalStructure = indexingProvider.getVertexStructureById(originalId);
+                originalVertex = indexingProvider.getVertexStructureById(originalId);
             }
-            if (originalStructure != null) {
-                List<MainVertex> relativeStructures = relativeInstances.stream().filter(r -> r.equals(message.getOriginalMessage().getInstanceReference())).map(relativeInstance -> indexingProvider.getVertexStructureById(relativeInstance)).collect(Collectors.toList());
+            if (originalVertex != null) {
+                List<Vertex> relativeStructures = relativeInstances.stream().filter(r -> r!=null && r.equals(message.getOriginalMessage().getInstanceReference())).map(relativeInstance -> indexingProvider.getVertexStructureById(relativeInstance)).collect(Collectors.toList());
                 if (!isOriginal) {
                     //Add the new message as part of the relative structure
-                    relativeStructures.add(messageProcessor.createVertexStructure(message).getMainVertex());
+                    relativeStructures.add(messageProcessor.createVertexStructure(message));
                 }
                 //Now we apply the inference logic
-                MainVertex newVertex = mergeInstances(originalStructure, new ArrayList<>(relativeStructures), inferredInstances);
+                Vertex newVertex = mergeInstances(originalVertex, new ArrayList<>(relativeStructures), inferredInstances);
                 //And we add the inferred instance to the collection of documents
                 documents.add(newVertex);
             }
@@ -83,54 +93,81 @@ public class Reconciliation implements InferenceStrategy, InitializingBean {
     }
 
 
-    private MainVertex mergeInstances(MainVertex original, List<MainVertex> additionalInstances, Set<NexusInstanceReference> inferredInstances) {
-        MainVertex newVertex;
-        if (inferredInstances != null && !inferredInstances.isEmpty()) {
+    private NexusInstanceReference getInstanceReferenceForInferred(NexusInstanceReference original, Set<NexusInstanceReference> inferredInstances){
+        if(inferredInstances!=null && !inferredInstances.isEmpty()){
             if (inferredInstances.size() == 1) {
-                newVertex = new MainVertex(inferredInstances.iterator().next());
+                return inferredInstances.iterator().next();
             } else {
-                throw new InferenceException(String.format("Multiple inferred entities for the original entity %s", original.getInstanceReference().getFullId(true)));
+                throw new InferenceException(String.format("Multiple inferred entities for the original entity %s", original.getFullId(true)));
             }
-        } else {
-            //There is no inferred instance yet - so we create a new one.
-            newVertex = new MainVertex(new NexusInstanceReference(original.getInstanceReference().getNexusSchema(), null).toSubSpace(SubSpace.INFERRED));
         }
-        newVertex.getEdges().add(new InternalEdge(HBPVocabulary.INFERENCE_OF, newVertex, original.getInstanceReference(), 0, newVertex));
-        //newVertex.getProperties().add(Property.createReference(INFERENCE_OF, nexusConfiguration.getAbsoluteUrl(original.getInstanceReference())));
-
-        List<String> types = new ArrayList<>(original.getTypes());
-        types.add(HBPVocabulary.INFERENCE_TYPE);
-        newVertex.getProperties().add(Property.createProperty(JsonLdConsts.TYPE, types));
-        Set<MainVertex> allVertices = new HashSet<>();
-        allVertices.add(original);
-        allVertices.addAll(additionalInstances);
-        mergeVertex(newVertex, allVertices);
-        return newVertex;
+        else{
+            //There is no inferred instance yet - so we create a new one.
+            return new NexusInstanceReference(original.getNexusSchema(), null).toSubSpace(SubSpace.INFERRED);
+        }
     }
 
 
-    private void mergeVertex(Vertex newVertex, Set<? extends Vertex> vertices) {
-        Set<String> handledKeys = new HashSet<>();
-        for (Vertex vertex : vertices) {
-            for (Property property : vertex.getProperties()) {
-                if (!handledKeys.contains(property.getName())) {
-                    newVertex.getProperties().add(mergeProperty(property.getName(), vertices));
-                    handledKeys.add(property.getName());
+    private Vertex mergeInstances(Vertex original, List<Vertex> additionalInstances, Set<NexusInstanceReference> inferredInstances) {
+        JsonDocument document = new JsonDocument();
+        NexusInstanceReference referenceForInferred = getInstanceReferenceForInferred(original.getInstanceReference(), inferredInstances);
+        Set<Vertex> allVertices = new HashSet<>(additionalInstances);
+        allVertices.add(original);
+        mergeVertex(document, allVertices);
+        document.addReference(HBPVocabulary.INFERENCE_OF, nexusConfiguration.getAbsoluteUrl(original.getInstanceReference()));
+        document.addType(HBPVocabulary.INFERENCE_TYPE);
+        IndexingMessage indexingMessage = new IndexingMessage(referenceForInferred, transformer.getMapAsJson(document), null, null);
+        return messageProcessor.createVertexStructure(messageProcessor.qualify(indexingMessage));
+    }
+
+    private Property mergeProperty(String currentProperty, Set<? extends Vertex> vertices){
+        if(!HBPVocabulary.INFERENCE_EXTENDS.equals(currentProperty)) {
+
+            List<Vertex> verticesWithProperty = vertices.stream().filter(v -> v.getQualifiedIndexingMessage().getQualifiedMap().get(currentProperty) != null).collect(Collectors.toList());
+            Object result = null;
+            Vertex originOfResult = null;
+            Set<Object> alternatives = new LinkedHashSet<>();
+            Map<Object, Integer> valueCount = new HashMap<>();
+            for (Vertex vertex : verticesWithProperty) {
+                Object valueByName = vertex.getQualifiedIndexingMessage().getQualifiedMap().get(currentProperty);
+                if (overrides(vertex, originOfResult, valueByName, result, valueCount)) {
+                    if (result != null && !result.equals(valueByName)) {
+                        alternatives.add(result);
+                    }
+                    result = valueByName;
+                    originOfResult = vertex;
+                } else if (valueByName != null && !valueByName.equals(result)) {
+                    alternatives.add(valueByName);
                 }
             }
-            List<SortedEdgeGroup> edgeGroups = vertex.getEdgeGroups();
-            for (SortedEdgeGroup edgeGroup : edgeGroups) {
-                if(!handledKeys.contains(edgeGroup.getName())){
-                    SortedEdgeGroup sortedEdgeGroup = mergeEdges(edgeGroup.getName(), vertices);
-                    vertex.getEdges().addAll(sortedEdgeGroup.getEdges());
+            return new Property(currentProperty, result).setAlternatives(alternatives);
+        }
+        return null;
+    }
+
+
+    private void mergeVertex(JsonDocument newDocument, Set<? extends Vertex> vertices) {
+        Set<String> handledKeys = new HashSet<>();
+        for (Vertex vertex : vertices) {
+            for (Object k : vertex.getQualifiedIndexingMessage().getQualifiedMap().keySet()) {
+                String key = (String)k;
+                if(!handledKeys.contains(key)) {
+                    Property property = mergeProperty(key, vertices);
+                    if(property!=null) {
+                        newDocument.put(key, property.getValue());
+                        if (property.getAlternatives() != null) {
+                            property.getAlternatives().forEach(p -> newDocument.addAlternative(key, p));
+                        }
+                        handledKeys.add(key);
+                    }
                 }
             }
         }
     }
 
     private int compareVertexPower(Vertex newVertex, Vertex oldVertex) {
-        SubSpace subspaceNew = newVertex == null ? null : newVertex.getMainVertex().getInstanceReference().getSubspace();
-        SubSpace subspaceOld = oldVertex == null ? null : oldVertex.getMainVertex().getInstanceReference().getSubspace();
+        SubSpace subspaceNew = newVertex == null ? null : newVertex.getInstanceReference().getSubspace();
+        SubSpace subspaceOld = oldVertex == null ? null : oldVertex.getInstanceReference().getSubspace();
         if (subspaceNew == subspaceOld) {
             return 0;
         } else if (SubSpace.EDITOR == subspaceNew) {
@@ -140,8 +177,8 @@ public class Reconciliation implements InferenceStrategy, InitializingBean {
         }
     }
 
-    private LocalDateTime getIndexedAt(MainVertex vertex){
-        Object indexedAt = vertex.getPropertyByName(HBPVocabulary.PROVENANCE_INDEXED_IN_ARANGO_AT).getValue();
+    private LocalDateTime getIndexedAt(Vertex vertex){
+        Object indexedAt = vertex.getQualifiedIndexingMessage().getQualifiedMap().get(HBPVocabulary.PROVENANCE_INDEXED_IN_ARANGO_AT);
         if(indexedAt!=null){
             return LocalDateTime.from(DateTimeFormatter.ISO_INSTANT.parse(indexedAt.toString()));
         }
@@ -166,10 +203,10 @@ public class Reconciliation implements InferenceStrategy, InitializingBean {
             if (counts > countsOfCurrentResult) {
                 overrides = true;
             } else if (counts.intValue() == countsOfCurrentResult.intValue()) {
-                LocalDateTime indexedAt = getIndexedAt(potentialOverride.getMainVertex());
+                LocalDateTime indexedAt = getIndexedAt(potentialOverride);
                 if(currentVertex!=null){
                     if(indexedAt != null){
-                        LocalDateTime originIndexedAt = getIndexedAt(currentVertex.getMainVertex());
+                        LocalDateTime originIndexedAt = getIndexedAt(currentVertex);
                         if(originIndexedAt==null || indexedAt.isAfter(originIndexedAt)){
                             overrides = true;
                         }
@@ -182,81 +219,5 @@ public class Reconciliation implements InferenceStrategy, InitializingBean {
         }
         return overrides;
     }
-
-
-    private Property mergeProperty(String propertyName, Set<? extends Vertex> vertices) {
-        List<Vertex> verticesWithProperty = vertices.stream().filter(v -> v.getPropertyByName(propertyName) != null).collect(Collectors.toList());
-        Property result = null;
-        Vertex originOfResult = null;
-        Set<Property<?>> alternatives = new LinkedHashSet<>();
-        Map<Object, Integer> valueCount = new HashMap<>();
-        for (Vertex vertex : verticesWithProperty) {
-            Property propertyByName = vertex.getPropertyByName(propertyName);
-            if (overrides(vertex, originOfResult, propertyByName.getValue(), result, valueCount)) {
-                if (result != null) {
-                    alternatives.add(result);
-                }
-                result = propertyByName;
-                originOfResult = vertex;
-            }
-        }
-        Property<?> property = Property.createProperty(propertyName, result.getValue());
-        property.setAlternatives(alternatives);
-        return property;
-    }
-
-    private SortedEdgeGroup mergeEdges(String key, Set<? extends Vertex> vertices){
-        List<Vertex> verticesWithEdge = vertices.stream().filter(v -> v.getEdgeByName(key)!=null).collect(Collectors.toList());
-        SortedEdgeGroup result = null;
-        Vertex originOfResult = null;
-        Map<Object, Integer> valueCount = new HashMap<>();
-        for (Vertex vertex : verticesWithEdge) {
-            SortedEdgeGroup edgeGroupByName = vertex.getEdgeGroupByName(key);
-            if (overrides(vertex, originOfResult, edgeGroupByName, result, valueCount)) {
-                result = edgeGroupByName;
-                originOfResult = vertex;
-            }
-        }
-        return result;
-    }
-
-    private void mergeVertex(Vertex newVertex, Vertex vertex, List<? extends Vertex> additionalInstances, MainVertex mainVertex) {
-        //Add all properties of the original instance
-        for (Property property : vertex.getProperties()) {
-            //It is important, that we only take care of properties that not have been addressed before.
-            if (newVertex.getPropertyByName(property.getName()) == null) {
-                mergeProperty(newVertex, property, additionalInstances.stream().map(i -> i.getPropertyByName(property.getName())).filter(i -> i != null && !i.equals(property.getValue())).collect(Collectors.toSet()));
-            }
-        }
-        int orderNumber = 0;
-        for (Edge edge : vertex.getEdges()) {
-            if (newVertex.getEdgeByName(edge.getTypeName()) == null) {
-                //merge edge
-                if (edge instanceof EmbeddedEdge) {
-                    EmbeddedEdge newEmbeddedEdge = new EmbeddedEdge(edge.getTypeName(), newVertex, orderNumber++, mainVertex);
-                    EmbeddedVertex embeddedVertex = new EmbeddedVertex(newEmbeddedEdge);
-                    List<Vertex> alternativeEmbeddedInstances = additionalInstances.stream().map(i -> i.getEdgeByName(edge.getTypeName())).filter(e -> e instanceof EmbeddedEdge).map(e -> ((EmbeddedEdge) e).getToVertex()).collect(Collectors.toList());
-                    mergeVertex(embeddedVertex, ((EmbeddedEdge) edge).getToVertex(), alternativeEmbeddedInstances, mainVertex);
-                } else {
-                    mergeReference(newVertex, edge, additionalInstances.stream().map(i -> i.getEdgeByName(edge.getTypeName())).filter(Objects::nonNull).collect(Collectors.toList()));
-                }
-            }
-        }
-    }
-
-    private void mergeReference(Vertex newVertex, Edge edge, List<? extends Edge> additionalEdges) {
-        if (additionalEdges.isEmpty() && !NAME_BLACKLIST_FOR_MERGE.contains(edge.getName())) {
-            newVertex.getEdges().add(edge);
-        }
-    }
-
-
-    private void mergeProperty(Vertex newVertex, Property property, Set<? extends Property> additionalProperties) {
-        if (!NAME_BLACKLIST_FOR_MERGE.contains(property.getName())) {
-            newVertex.getProperties().add(property);
-            property.setAlternatives(additionalProperties);
-        }
-    }
-
 
 }

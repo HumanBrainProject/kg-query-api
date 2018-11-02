@@ -44,93 +44,85 @@ public class ArangoSpecificationQuery {
         ArangoQueryBuilder queryBuilder = new ArangoQueryBuilder(spec, parameters.pagination(), parameters.filter(), new ArangoAlias(PERMISSION_GROUP), whiteListOrganizations, documentReference);
         String query = createQuery(queryBuilder, parameters);
         AqlQueryOptions options = new AqlQueryOptions();
-        if(parameters.pagination().getSize()!=null) {
+        if (parameters.pagination().getSize() != null) {
             options.fullCount(true);
-        }
-        else{
+        } else {
             options.count(true);
         }
         ArangoCursor<Map> cursor = databaseFactory.getConnection(parameters.databaseScope()).getOrCreateDB().query(query, null, options, Map.class);
         Long count;
-        if(parameters.pagination().getSize()!=null) {
+        if (parameters.pagination().getSize() != null) {
             count = cursor.getStats().getFullCount();
-        }
-        else{
+        } else {
             count = cursor.getCount().longValue();
         }
         result.setResults(cursor.asListRemaining());
         result.setTotal(count);
         result.setApiName(spec.name);
-        result.setSize(parameters.pagination().getSize()==null ? count : parameters.pagination().getSize());
-        result.setStart(parameters.pagination().getStart()!=null ? parameters.pagination().getStart() : 0L);
+        result.setSize(parameters.pagination().getSize() == null ? count : parameters.pagination().getSize());
+        result.setStart(parameters.pagination().getStart() != null ? parameters.pagination().getStart() : 0L);
         return result;
     }
 
     String createQuery(AbstractArangoQueryBuilder queryBuilder, QueryParameters parameters) throws JSONException {
-        Set<ArangoCollectionReference> existingCollections = databaseFactory.getConnection(parameters.databaseScope()).getCollections();
         NexusSchemaReference nexusReference = NexusSchemaReference.createFromUrl(StrSubstitutor.replace(queryBuilder.getSpecification().rootSchema, parameters.getAllParameters()));
         ArangoCollectionReference collection = ArangoCollectionReference.fromNexusSchemaReference(nexusReference);
-        if (existingCollections.contains(collection)) {
-            queryBuilder.addRoot(collection);
-            handleFields(queryBuilder.getSpecification().fields, queryBuilder, existingCollections, true, false);
-        } else {
-            throw new RuntimeException(String.format("Was not able to find the vertex collection with the name %s", collection.getName()));
-        }
+        queryBuilder.addRoot(collection);
+        handleFields(queryBuilder.getSpecification().fields, queryBuilder, true, false);
         String query = queryBuilder.build();
-        if(parameters.getAllParameters()!=null) {
+        if (parameters.getAllParameters() != null) {
             query = StrSubstitutor.replace(query, parameters.getAllParameters());
         }
         return query;
     }
 
-    private List<ArangoAlias> getGroupingFields(SpecField field){
+    private List<ArangoAlias> getGroupingFields(SpecField field) {
         return field.fields.stream().filter(SpecField::isGroupby).map(ArangoAlias::fromSpecField).collect(Collectors.toList());
     }
 
-    private List<ArangoAlias> getNonGroupingFields(SpecField field){
+    private List<ArangoAlias> getNonGroupingFields(SpecField field) {
         return field.fields.stream().filter(f -> !f.isGroupby()).map(ArangoAlias::fromSpecField).collect(Collectors.toList());
     }
 
-    private void handleFields(List<SpecField> fields, AbstractArangoQueryBuilder queryBuilder, Set<ArangoCollectionReference> existingCollections, boolean isRoot, boolean isMerge) {
+    private void handleFields(List<SpecField> fields, AbstractArangoQueryBuilder queryBuilder, boolean isRoot, boolean isMerge) {
         Set<String> skipFields = new HashSet<>();
         SpecField originalField = queryBuilder.currentField;
         for (SpecField field : fields) {
             ArangoAlias arangoField = ArangoAlias.fromSpecField(field);
             queryBuilder.setCurrentField(field);
-            if(field.isMerge()){
-                handleFields(field.fields, queryBuilder, existingCollections, false, true);
+            if (field.isMerge()) {
+                handleFields(field.fields, queryBuilder, false, true);
                 Set<ArangoAlias> mergedFields = field.fields.stream().map(ArangoAlias::fromSpecField).collect(Collectors.toSet());
                 queryBuilder.addMerge(arangoField, mergedFields, field.sortAlphabetically);
-            }
-            else if (field.needsTraversal()) {
+            } else if (field.needsTraversal()) {
                 SpecTraverse firstTraversal = field.getFirstTraversal();
-                ArangoCollectionReference traverseCollection = ArangoCollectionReference.fromSpecTraversal(firstTraversal, existingCollections);
-                if (traverseCollection!=null) {
+                ArangoCollectionReference traverseCollection = ArangoCollectionReference.fromSpecTraversal(firstTraversal);
+                if (traverseCollection != null) {
                     List<ArangoAlias> groupingFields = getGroupingFields(field);
                     queryBuilder.addAlias(arangoField);
                     queryBuilder.enterTraversal(arangoField, field.numberOfDirectTraversals(), firstTraversal.reverse, traverseCollection, !groupingFields.isEmpty(), field.ensureOrder);
                     for (SpecTraverse traversal : field.getAdditionalDirectTraversals()) {
-                        traverseCollection = ArangoCollectionReference.fromSpecTraversal(traversal, existingCollections);
-                        if (traverseCollection!=null) {
+                        traverseCollection = ArangoCollectionReference.fromSpecTraversal(traversal);
+                        if (traverseCollection != null) {
                             queryBuilder.addTraversal(traversal.reverse, traverseCollection);
                         } else {
                             skipFields.add(field.fieldName);
                         }
                     }
                     queryBuilder.nullFilter();
-                    if(field.ensureOrder){
+                    if (field.ensureOrder) {
                         queryBuilder.ensureOrder();
                     }
                     if (field.fields.isEmpty()) {
-                        if (field.isSortAlphabetically()){
+                        if (field.isSortAlphabetically()) {
                             queryBuilder.addSortByLeafField(Collections.singleton(ArangoAlias.fromLeafPath(field.getLeafPath())));
                         }
                         queryBuilder.addSimpleLeafResultField(ArangoAlias.fromLeafPath(field.getLeafPath()));
                     } else {
-                        handleFields(field.fields, queryBuilder, existingCollections, false, false);
+                        handleFields(field.fields, queryBuilder, false, false);
                     }
                     queryBuilder.leaveTraversal();
-                    if(!groupingFields.isEmpty()){
+                    if (!groupingFields.isEmpty()) {
                         queryBuilder.buildGrouping(field.getGroupedInstances(), groupingFields, getNonGroupingFields(field));
                     }
                     queryBuilder.dropAlias();
@@ -140,7 +132,7 @@ public class ArangoSpecificationQuery {
             }
         }
         queryBuilder.setCurrentField(originalField);
-        if(!isMerge) {
+        if (!isMerge) {
             queryBuilder.addOrganizationFilter();
             for (SpecField field : fields) {
                 if (!skipFields.contains(field.fieldName)) {
@@ -157,7 +149,7 @@ public class ArangoSpecificationQuery {
             queryBuilder.setCurrentField(originalField);
             if (isRoot) {
                 queryBuilder.addLimit();
-                if(queryBuilder.documentReference != null){
+                if (queryBuilder.documentReference != null) {
                     queryBuilder.addInstanceIdFilter();
                 }
                 queryBuilder.addSearchQuery();

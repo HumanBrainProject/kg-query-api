@@ -3,15 +3,14 @@ package org.humanbrainproject.knowledgegraph.commons.nexusToArangoIndexing.contr
 import com.arangodb.ArangoDatabase;
 import com.arangodb.entity.CollectionType;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
-import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusDocumentConverter;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.SystemNexusClient;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoConnection;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoDocumentConverter;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoRepository;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.control.DatabaseTransaction;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Edge;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.MainVertex;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.EdgeX;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Vertex;
 import org.humanbrainproject.knowledgegraph.indexing.entity.DeleteTodoItem;
 import org.humanbrainproject.knowledgegraph.indexing.entity.InsertOrUpdateInPrimaryStoreTodoItem;
 import org.humanbrainproject.knowledgegraph.indexing.entity.InsertTodoItem;
@@ -37,9 +36,6 @@ public class NexusArangoTransaction implements DatabaseTransaction {
     ArangoDocumentConverter arangoDocumentConverter;
 
     @Autowired
-    NexusDocumentConverter nexusDocumentConverter;
-
-    @Autowired
     SystemNexusClient nexusClient;
 
     @Autowired
@@ -58,8 +54,9 @@ public class NexusArangoTransaction implements DatabaseTransaction {
             ArangoConnection databaseConnection = deleteItem.getDatabaseConnection(ArangoConnection.class);
             if(databaseConnection!=null) {
                 ArangoDatabase database = databaseConnection.getOrCreateDB();
-                ArangoDocumentReference reference = ArangoDocumentReference.fromVertexOrEdgeReference(deleteItem.getReference());
+                ArangoDocumentReference reference = ArangoDocumentReference.fromNexusInstance(deleteItem.getReference());
                 repository.deleteDocument(reference, database);
+                repository.deleteOutgoingRelations(reference, database);
             }
         }
 
@@ -69,10 +66,15 @@ public class NexusArangoTransaction implements DatabaseTransaction {
             ArangoConnection databaseConnection = insertItem.getDatabaseConnection(ArangoConnection.class);
             if(databaseConnection!=null) {
                 ArangoDatabase database = databaseConnection.getOrCreateDB();
-                ArangoDocumentReference reference = ArangoDocumentReference.fromVertexOrEdgeReference(insertItem.getObject());
-                String jsonFromVertexOrEdge = arangoDocumentConverter.createJsonFromVertexOrEdge(reference, insertItem.getObject());
-                if (jsonFromVertexOrEdge != null) {
-                    repository.insertDocument(reference, jsonFromVertexOrEdge, insertItem.getObject() instanceof Edge ? CollectionType.EDGES : CollectionType.DOCUMENT, database);
+                Vertex vertex = insertItem.getVertex();
+                ArangoDocumentReference reference = ArangoDocumentReference.fromNexusInstance(vertex.getInstanceReference());
+                String vertexJson = arangoDocumentConverter.createJsonFromVertex(reference, vertex, insertItem.getBlacklist());
+                if (vertexJson != null) {
+                    repository.insertDocument(reference, vertexJson, CollectionType.DOCUMENT, database);
+                }
+                for (EdgeX edge : vertex.getEdges()) {
+                    String jsonFromEdge = arangoDocumentConverter.createJsonFromEdge(vertex, edge, insertItem.getBlacklist());
+                    repository.insertDocument(ArangoDocumentReference.fromEdge(edge), jsonFromEdge, CollectionType.EDGES, database);
                 }
             }
         }
@@ -80,10 +82,9 @@ public class NexusArangoTransaction implements DatabaseTransaction {
         //and finally trigger primary store insertions/updates.
         List<InsertOrUpdateInPrimaryStoreTodoItem> insertOrUpdateInPrimaryStoreItems = todoList.getInsertOrUpdateInPrimaryStoreTodoItems();
         for (InsertOrUpdateInPrimaryStoreTodoItem insertOrUpdateInPrimaryStoreItem : insertOrUpdateInPrimaryStoreItems) {
-            MainVertex mainVertex = insertOrUpdateInPrimaryStoreItem.getObject();
-            String jsonFromVertexOrEdge = nexusDocumentConverter.createJsonFromVertex(mainVertex.getInstanceReference(), mainVertex);
-            NexusInstanceReference newReference = nexusClient.createOrUpdateInstance(mainVertex.getInstanceReference().setRevision(null), jsonTransformer.parseToMap(jsonFromVertexOrEdge));
-            mainVertex.setInstanceReference(newReference);
+            Vertex vertex = insertOrUpdateInPrimaryStoreItem.getVertex();
+            NexusInstanceReference newReference = nexusClient.createOrUpdateInstance(vertex.getInstanceReference().setRevision(null), vertex.getQualifiedIndexingMessage().getQualifiedMap());
+            vertex.setInstanceReference(newReference);
         }
     }
 

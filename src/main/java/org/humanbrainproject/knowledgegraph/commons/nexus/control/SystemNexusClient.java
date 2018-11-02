@@ -9,7 +9,6 @@ import org.humanbrainproject.knowledgegraph.nexusExt.control.InstanceController;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -36,7 +35,7 @@ public class SystemNexusClient {
     @Autowired
     InstanceController instanceController;
 
-    public List<Map> find(NexusSchemaReference reference, String fieldName, String fieldValue) throws IOException {
+    public List<Map> find(NexusSchemaReference reference, String fieldName, String fieldValue) {
         return nexusClient.find(reference, fieldName, fieldValue, systemOidc.getToken());
     }
 

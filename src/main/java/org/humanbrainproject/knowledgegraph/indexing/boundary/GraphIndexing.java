@@ -82,7 +82,7 @@ public class GraphIndexing {
         //Gather execution plan
         TodoList todoList = new TodoList();
         for (IndexingController indexingController : getIndexingControllers()) {
-            indexingController.delete(reference, todoList, timestamp, userId);
+            indexingController.delete(reference, todoList);
         }
         //Execute
         transaction.execute(todoList);

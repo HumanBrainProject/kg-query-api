@@ -1,17 +1,13 @@
 package org.humanbrainproject.knowledgegraph.indexing.control.inference;
 
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.MainVertex;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.ResolvedVertexStructure;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.JsonPath;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.SubSpace;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.VertexOrEdgeReference;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Vertex;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
-import org.humanbrainproject.knowledgegraph.indexing.control.ExecutionPlanner;
 import org.humanbrainproject.knowledgegraph.indexing.control.IndexingController;
 import org.humanbrainproject.knowledgegraph.indexing.control.MessageProcessor;
 import org.humanbrainproject.knowledgegraph.indexing.control.nexusToArango.NexusToArangoIndexingProvider;
-import org.humanbrainproject.knowledgegraph.indexing.entity.QualifiedIndexingMessage;
-import org.humanbrainproject.knowledgegraph.indexing.entity.TargetDatabase;
-import org.humanbrainproject.knowledgegraph.indexing.entity.TodoList;
+import org.humanbrainproject.knowledgegraph.indexing.entity.*;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -21,13 +17,11 @@ import java.util.*;
 @Component
 public class InferenceController implements IndexingController{
 
-    private final static List<String> EDGE_BLACKLIST_FOR_INFERENCE = Arrays.asList(HBPVocabulary.INFERENCE_OF, HBPVocabulary.INFERENCE_EXTENDS);
+    private final static List<JsonPath> EDGE_BLACKLIST_FOR_INFERENCE = Arrays.asList(new JsonPath(HBPVocabulary.INFERENCE_OF), new JsonPath(HBPVocabulary.INFERENCE_EXTENDS));
 
     @Autowired
     MessageProcessor messageProcessor;
 
-    @Autowired
-    ExecutionPlanner executionPlanner;
 
     @Autowired
     NexusToArangoIndexingProvider indexingProvider;
@@ -38,43 +32,43 @@ public class InferenceController implements IndexingController{
     @Override
     public TodoList insert(QualifiedIndexingMessage message, TodoList todoList){
         if(message.isOfType(HBPVocabulary.INFERENCE_TYPE)){
-            ResolvedVertexStructure vertexStructure = messageProcessor.createVertexStructure(message);
-            indexingProvider.mapToOriginalSpace(vertexStructure.getMainVertex(), message.getOriginalId());
-            executionPlanner.insertVertexWithEmbeddedInstances(todoList, vertexStructure.getMainVertex(), indexingProvider.getConnection(TargetDatabase.INFERRED), EDGE_BLACKLIST_FOR_INFERENCE);
+            insertVertexStructure(message, todoList);
         } else {
-            Set<MainVertex> documents = new HashSet<>();
+            Set<Vertex> documents = new HashSet<>();
             for (InferenceStrategy strategy : strategies) {
                 strategy.infer(message, documents);
             }
             if(documents.isEmpty()){
-                ResolvedVertexStructure vertexStructure = messageProcessor.createVertexStructure(message);
-                indexingProvider.mapToOriginalSpace(vertexStructure.getMainVertex(), message.getOriginalId());
-                executionPlanner.insertVertexWithEmbeddedInstances(todoList, vertexStructure.getMainVertex(), indexingProvider.getConnection(TargetDatabase.INFERRED), EDGE_BLACKLIST_FOR_INFERENCE);
+                insertVertexStructure(message, todoList);
             }
             else{
-                documents.forEach(doc -> executionPlanner.insertVertexOrEdgeInPrimaryStore(todoList, doc));
+                documents.forEach(doc -> {
+                    todoList.addTodoItem(new InsertOrUpdateInPrimaryStoreTodoItem(doc));
+                });
             }
         }
         return todoList;
     }
 
+    private void insertVertexStructure(QualifiedIndexingMessage message, TodoList todoList) {
+        Vertex vertexStructure = messageProcessor.createVertexStructure(message);
+        indexingProvider.mapToOriginalSpace(vertexStructure, message.getOriginalId());
+        InsertTodoItem insertTodoItem = new InsertTodoItem(vertexStructure, indexingProvider.getConnection(TargetDatabase.INFERRED));
+        insertTodoItem.getBlacklist().addAll(EDGE_BLACKLIST_FOR_INFERENCE);
+        todoList.addTodoItem(insertTodoItem);
+    }
+
     @Override
     public TodoList update(QualifiedIndexingMessage message, TodoList todoList) {
-        delete(message.getOriginalMessage().getInstanceReference(), todoList, message.getOriginalMessage().getTimestamp(), message.getOriginalMessage().getUserId());
+        delete(message.getOriginalMessage().getInstanceReference(), todoList);
         insert(message, todoList);
         return todoList;
     }
 
     @Override
-    public TodoList delete(NexusInstanceReference reference, TodoList todoList, String timestamp, String userId) {
+    public TodoList delete(NexusInstanceReference reference, TodoList todoList) {
         NexusInstanceReference originalIdInMainSpace = indexingProvider.findOriginalId(reference).toSubSpace(SubSpace.MAIN);
-        Set<VertexOrEdgeReference> vertexOrEdgeReferences = indexingProvider.getVertexOrEdgeReferences(originalIdInMainSpace, TargetDatabase.INFERRED);
-        for (VertexOrEdgeReference vertexOrEdgeReference : vertexOrEdgeReferences) {
-            executionPlanner.deleteVertexOrEdge(todoList, vertexOrEdgeReference, indexingProvider.getConnection(TargetDatabase.INFERRED));
-        }
-        if(!reference.getFullId(false).equals(originalIdInMainSpace.getFullId(false))){
-            //TODO The delete was not on the original document - so we should trigger the inference by new
-        }
+        todoList.addTodoItem(new DeleteTodoItem(originalIdInMainSpace, indexingProvider.getConnection(TargetDatabase.INFERRED)));
         return todoList;
     }
 

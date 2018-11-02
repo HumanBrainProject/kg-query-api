@@ -21,7 +21,7 @@ import java.util.Map;
 import java.util.Set;
 
 @Component
-public class ReleaseController {
+public class NexusReleasingController {
 
     @Autowired
     NexusClient nexusClient;
@@ -38,7 +38,7 @@ public class ReleaseController {
     @Autowired
     NexusToArangoIndexingProvider nexusToArangoIndexingProvider;
 
-    public IndexingMessage release(NexusInstanceReference instanceReference, Integer revision, OidcAccessToken oidcAccessToken) throws IOException {
+    public IndexingMessage release(NexusInstanceReference instanceReference, Integer revision, OidcAccessToken oidcAccessToken) {
         Map<String, Object> payload = new LinkedHashMap<>();
         Map<String, Object> reference = new HashMap<>();
         reference.put(JsonLdConsts.ID, configuration.getAbsoluteUrl(instanceReference));

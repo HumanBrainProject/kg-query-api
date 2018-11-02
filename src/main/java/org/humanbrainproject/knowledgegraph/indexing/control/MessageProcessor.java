@@ -1,20 +1,26 @@
 package org.humanbrainproject.knowledgegraph.indexing.control;
 
+import com.github.jsonldjava.core.JsonLdConsts;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonLdStandardization;
-import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonLdToVerticesAndEdges;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.MainVertex;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.ResolvedVertexStructure;
+import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.EdgeX;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.JsonPath;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Vertex;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Step;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.humanbrainproject.knowledgegraph.indexing.entity.IndexingMessage;
 import org.humanbrainproject.knowledgegraph.indexing.entity.QualifiedIndexingMessage;
+import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Collection;
 import java.util.Map;
+import java.util.Stack;
 
 @Component
 public class MessageProcessor {
@@ -23,10 +29,10 @@ public class MessageProcessor {
     JsonLdStandardization jsonLdStandardization;
 
     @Autowired
-    JsonLdToVerticesAndEdges jsonLdToVerticesAndEdges;
+    JsonTransformer jsonTransformer;
 
     @Autowired
-    JsonTransformer jsonTransformer;
+    NexusConfiguration configuration;
 
 
     public QualifiedIndexingMessage qualify(IndexingMessage message) {
@@ -40,8 +46,46 @@ public class MessageProcessor {
         return new QualifiedIndexingMessage(message, map);
     }
 
-    public ResolvedVertexStructure createVertexStructure(QualifiedIndexingMessage qualifiedNexusIndexingMessage){
-        MainVertex vertex = jsonLdToVerticesAndEdges.transformFullyQualifiedJsonLdToVerticesAndEdges(qualifiedNexusIndexingMessage);
-        return new ResolvedVertexStructure(qualifiedNexusIndexingMessage, vertex);
+    /**
+     * Takes a jsonLdPayload (fully qualified) and transforms it into a vertex including subvertices (for embedded instances) and their outgoing edges and prepared properties.
+     */
+    public Vertex createVertexStructure(QualifiedIndexingMessage qualifiedNexusIndexingMessage){
+        Vertex targetVertex = new Vertex(qualifiedNexusIndexingMessage);
+        findEdges(targetVertex, new Stack<>(), qualifiedNexusIndexingMessage.getQualifiedMap(), null);
+        return targetVertex;
     }
+
+    private NexusInstanceReference getInternalReference(Object value) {
+        if (value instanceof Map && ((Map) value).containsKey(JsonLdConsts.ID)) {
+            Object id = ((Map) value).get(JsonLdConsts.ID);
+            if (id instanceof String && ((String) id).startsWith(configuration.getNexusBase())) {
+                return NexusInstanceReference.createFromUrl((String) id);
+            }
+        }
+        return null;
+    }
+
+    private void findEdges(Vertex vertex, Stack<Step> path, Object map, Integer orderNumber) {
+        if (map instanceof Map) {
+            for (Object key : ((Map) map).keySet()) {
+                Stack<Step> currentPath = new Stack<>();
+                currentPath.addAll(path);
+                currentPath.push(new Step((String)key, orderNumber != null ? orderNumber : 0));
+                Object value = ((Map) map).get(key);
+                NexusInstanceReference internalReference = getInternalReference(value);
+                if (internalReference != null) {
+                    vertex.getEdges().add(new EdgeX(vertex, new JsonPath(currentPath), internalReference));
+                } else {
+                    findEdges(vertex, currentPath, ((Map) map).get(key), null);
+                }
+            }
+        } else if (map instanceof Collection) {
+            int counter = 0;
+            for (Object o : ((Collection) map)) {
+                findEdges(vertex, path, o, counter);
+            }
+        }
+    }
+
+
 }

@@ -1,18 +1,18 @@
 package org.humanbrainproject.knowledgegraph.indexing.entity;
 
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.control.DatabaseConnection;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.VertexOrEdgeReference;
+import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 
 public class DeleteTodoItem extends TodoItemWithDatabaseConnection{
 
-    private final VertexOrEdgeReference reference;
+    private final NexusInstanceReference reference;
 
-    public DeleteTodoItem(VertexOrEdgeReference reference, DatabaseConnection<?> databaseConnection) {
+    public DeleteTodoItem(NexusInstanceReference reference, DatabaseConnection<?> databaseConnection) {
         super(databaseConnection);
         this.reference = reference;
     }
 
-    public VertexOrEdgeReference getReference() {
+    public NexusInstanceReference getReference() {
         return reference;
     }
 

@@ -30,7 +30,7 @@ public class InstanceController {
     SchemaController schemaController;
 
 
-    public Set<NexusInstanceReference> getByIdentifier(NexusSchemaReference schema, String identifier) throws IOException {
+    public Set<NexusInstanceReference> getByIdentifier(NexusSchemaReference schema, String identifier) {
         List<Map> maps = systemNexusClient.find(schema, SchemaOrgVocabulary.IDENTIFIER, identifier);
         return maps.stream().filter(m -> m.containsKey("resultId")).map(m -> {
             NexusInstanceReference reference = NexusInstanceReference.createFromUrl((String) m.get("resultId"));
@@ -40,7 +40,7 @@ public class InstanceController {
         }).collect(Collectors.toSet());
     }
 
-    public NexusInstanceReference createInstanceByIdentifier(NexusSchemaReference schemaReference, String identifier, Map<String, Object> payload, OidcAccessToken oidcAccessToken) throws IOException {
+    public NexusInstanceReference createInstanceByIdentifier(NexusSchemaReference schemaReference, String identifier, Map<String, Object> payload, OidcAccessToken oidcAccessToken) {
         Object o = payload.get(SchemaOrgVocabulary.IDENTIFIER);
         if(o==null){
             payload.put(SchemaOrgVocabulary.IDENTIFIER, identifier);

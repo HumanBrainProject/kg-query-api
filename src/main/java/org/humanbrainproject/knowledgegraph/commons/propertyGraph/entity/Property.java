@@ -1,47 +1,33 @@
 package org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity;
 
-import java.util.Map;
 import java.util.Set;
 
-public class Property<T> {
+public class Property {
+    private final Object value;
     private final String name;
-    private final T value;
-    private Set<Property<?>> alternatives;
 
+    private Set<Object> alternatives;
 
-    private Property(String name, T value) {
+    public Property(String name, Object value) {
         this.name = name;
         this.value = value;
     }
 
-    public Set<Property<?>> getAlternatives() {
+    public Set<Object> getAlternatives() {
         return alternatives;
     }
 
-    public void setAlternatives(Set<Property<?>> alternatives) {
+    public Property setAlternatives(Set<Object> alternatives) {
         this.alternatives = alternatives;
+        return this;
     }
 
     public String getName() {
         return name;
     }
 
-    public T getValue() {
+    public Object getValue() {
         return value;
     }
-
-    public static <T> Property<T> createProperty(String name, T value){
-        //A property graph property is not allowed to contain maps
-        if(value instanceof Map){
-            return null;
-        }
-        return new Property<T>(name, value);
-    }
-
-//    public static Property<Map> createReference(String name, String url){
-//        Map<String, String> reference = new LinkedHashMap<>();
-//        reference.put(JsonLdConsts.ID, url);
-//        return new Property<Map>(name, reference);
-//    }
 
 }

@@ -1,18 +1,27 @@
 package org.humanbrainproject.knowledgegraph.indexing.entity;
 
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.control.DatabaseConnection;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.VertexOrEdge;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.JsonPath;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Vertex;
 
-public class InsertTodoItem extends TodoItemWithDatabaseConnection{
+import java.util.HashSet;
+import java.util.Set;
 
-    private final VertexOrEdge object;
+public class InsertTodoItem extends TodoItemWithDatabaseConnection {
 
-    public InsertTodoItem(VertexOrEdge object, DatabaseConnection<?> databaseConnection) {
+    private final Vertex vertex;
+    private Set<JsonPath> blacklist = new HashSet<>();
+
+    public InsertTodoItem(Vertex vertex, DatabaseConnection<?> databaseConnection) {
         super(databaseConnection);
-        this.object = object;
+        this.vertex = vertex;
     }
 
-    public VertexOrEdge getObject() {
-        return object;
+    public Vertex getVertex() {
+        return vertex;
+    }
+
+    public Set<JsonPath> getBlacklist() {
+        return blacklist;
     }
 }

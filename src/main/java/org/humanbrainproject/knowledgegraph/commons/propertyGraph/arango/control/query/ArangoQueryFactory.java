@@ -68,7 +68,7 @@ public class ArangoQueryFactory {
                 "return path", outbound, inbound);
     }
 
-    public String getDocument(ArangoDocumentReference document) {
+    public String getDocumentWithReleaseStatus(ArangoDocumentReference document) {
 //        return String.format("LET doc = DOCUMENT(\"%s\")\n" +
 //                "RETURN doc", documentID);
         return String.format(
@@ -90,6 +90,12 @@ public class ArangoQueryFactory {
     public String queryOriginalIdForLink(ArangoDocumentReference document, ArangoCollectionReference linkReference) {
         return String.format("FOR vertex IN 1..1 INBOUND DOCUMENT(\"%s\") `%s` RETURN vertex._originalId", document.getId(), linkReference.getName());
     }
+
+
+    public String queryOutboundRelationsForDocument(ArangoDocumentReference document, Set<ArangoCollectionReference> edgeCollections){
+        return String.format("FOR rel, edge IN 1..1 OUTBOUND DOCUMENT(\"%s\") `%s` RETURN edge._id\n", document.getId(), String.join("`, `", edgeCollections.stream().map(ArangoCollectionReference::getName).collect(Collectors.toSet())));
+    }
+
 
 
     public String queryDocumentWith1LevelOfEmbeddedInstances(ArangoDocumentReference document, Set<ArangoCollectionReference> arangoCollections) {

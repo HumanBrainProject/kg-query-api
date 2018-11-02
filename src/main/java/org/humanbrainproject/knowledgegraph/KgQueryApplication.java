@@ -36,13 +36,13 @@ public class KgQueryApplication {
 	@Bean
 	@Qualifier("default")
 	public ArangoConnection createDefaultDb() {
-		return new ArangoConnection("kg_new", false);
+		return new ArangoConnection("kg_oli", false);
 	}
 
 	@Bean
 	@Qualifier("inferred")
 	public ArangoConnection createInferredDb() {
-		return new ArangoConnection("kg_inferred", true);
+		return new ArangoConnection("kg_oli_inferred", true);
 	}
 
 	@Bean
@@ -66,6 +66,6 @@ public class KgQueryApplication {
 	@Bean
 	@Qualifier("released")
 	public ArangoConnection createReleasedDb() {
-		return new ArangoConnection("kg_released_new", false);
+		return new ArangoConnection("kg_oli_released", false);
 	}
 }

@@ -34,6 +34,10 @@ public class QualifiedIndexingMessage {
         }
     }
 
+    public Set<String> getTypes() {
+        return types;
+    }
+
     public boolean isOfType(String type){
         return types.contains(type);
     }

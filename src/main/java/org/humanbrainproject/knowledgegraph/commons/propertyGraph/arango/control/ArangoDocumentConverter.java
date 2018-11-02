@@ -3,13 +3,14 @@ package org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.contro
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.query.ArangoSpecificationQuery;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.*;
-import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.EdgeX;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.JsonPath;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Step;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Vertex;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 
 @Component
 public class ArangoDocumentConverter {
@@ -18,53 +19,64 @@ public class ArangoDocumentConverter {
     JsonTransformer jsonTransformer;
 
 
-    public String createJsonFromVertexOrEdge(ArangoDocumentReference reference, VertexOrEdge vertexOrEdge){
-        Map<String, Object> jsonObject = new LinkedHashMap<>();
+    private Map<String, Object> buildPath(Step step, List<Step> remaining) {
+        Map<String, Object> path = new LinkedHashMap<>();
+        if (step != null) {
+            path.put("_orderNumber", step.getOrderNumber());
+            path.put("_name", step.getName());
+        }
+        if (remaining.size() > 0) {
+            path.put("_next", buildPath(remaining.get(0), remaining.subList(1, remaining.size())));
+        }
+        return path;
+    }
+
+    public String createJsonFromEdge(Vertex vertex, EdgeX edge, Set<JsonPath> blackList) {
+        Map<String, Object> map = new HashMap<>();
+        map.put("_from", ArangoDocumentReference.fromNexusInstance(vertex.getInstanceReference()).getId());
+        map.put("_to", ArangoDocumentReference.fromNexusInstance(edge.getReference()).getId());
+        map.put("_path", buildPath(null, edge.getPath()));
+        map.put("_name", edge.getName());
+        //This is a loop - it can happen (e.g. for reconciled instances - so we should ensure this never reaches the database).
+        if (map.get("_from").equals(map.get("_to"))) {
+            return null;
+        }
+        for (JsonPath steps : blackList) {
+            removePathFromMap(map, steps);
+        }
+        return jsonTransformer.getMapAsJson(map);
+    }
+
+
+    public String createJsonFromVertex(ArangoDocumentReference reference, Vertex vertex, Set<JsonPath> blackList) {
+        Map<String, Object> jsonObject = new LinkedHashMap(vertex.getQualifiedIndexingMessage().getQualifiedMap());
         jsonObject.put("_id", reference.getId());
         jsonObject.put("_key", reference.getKey());
-        jsonObject.put("_originalId", vertexOrEdge.getMainVertex().getInstanceReference().getFullId(true));
-        jsonObject.put(ArangoSpecificationQuery.PERMISSION_GROUP, vertexOrEdge.getMainVertex().getInstanceReference().getNexusSchema().getOrganization());
-        if(vertexOrEdge instanceof Edge){
-            Vertex fromVertex = ((Edge) vertexOrEdge).getFromVertex();
-            jsonObject.put("_name", ((Edge)vertexOrEdge).getName());
-            jsonObject.put("_orderNumber", ((Edge)vertexOrEdge).getOrderNumber());
-            if(vertexOrEdge instanceof EmbeddedEdge) {
-                jsonObject.put("_from", ArangoDocumentReference.fromVertexOrEdgeReference(fromVertex).getId());
-                jsonObject.put("_to", ArangoDocumentReference.fromVertexOrEdgeReference(((EmbeddedEdge)vertexOrEdge).getToVertex()).getId());
-            }
-            else if(vertexOrEdge instanceof InternalEdge){
-                jsonObject.put("_from", ArangoDocumentReference.fromVertexOrEdgeReference(fromVertex).getId());
-                jsonObject.put("_to", ArangoDocumentReference.fromNexusInstance(((InternalEdge)vertexOrEdge).getReference()).getId());
-                //This is a loop - it can happen (e.g. for reconciled instances - so we should ensure this never reaches the database).
-                if(jsonObject.get("_from").equals(jsonObject.get("_to"))){
-                    return null;
-                }
-            }
+        jsonObject.put("_originalId", vertex.getQualifiedIndexingMessage().getOriginalMessage().getInstanceReference().getFullId(true));
+        jsonObject.put(ArangoSpecificationQuery.PERMISSION_GROUP, vertex.getInstanceReference().getNexusSchema().getOrganization());
+        for (JsonPath steps : blackList) {
+            removePathFromMap(jsonObject, steps);
         }
-        for (Property<?> property : vertexOrEdge.getProperties()) {
-            jsonObject.put(property.getName(), property.getValue());
-            if(property.getAlternatives()!=null && !property.getAlternatives().isEmpty()){
-                Object alternatives = jsonObject.get(HBPVocabulary.INFERENCE_ALTERNATIVES);
-                if(alternatives==null){
-                    alternatives = new LinkedHashMap<>();
-                    jsonObject.put(HBPVocabulary.INFERENCE_ALTERNATIVES, alternatives);
-                }
-                if(alternatives instanceof Map){
-                    for (Property<?> p : property.getAlternatives()) {
-                        ((Map) alternatives).put(p.getName(), p.getValue());
+        return jsonTransformer.getMapAsJson(jsonObject);
+    }
+
+    private void removePathFromMap(Map map, List<Step> path) {
+        if (path.size() == 1) {
+            map.remove(path.get(0).getName());
+        } else if (path.size() > 1) {
+            Object nextStep = map.get(0);
+            if (nextStep instanceof Map) {
+                removePathFromMap(((Map) nextStep), path.subList(1, path.size()));
+            } else if (nextStep instanceof Collection) {
+                for (Object o : ((Collection) nextStep)) {
+                    if (o instanceof Map) {
+                        removePathFromMap(((Map) o), path.subList(1, path.size()));
                     }
                 }
             }
+
         }
-        for (Edge edge : vertexOrEdge.getEdges()) {
-            if(!(edge instanceof EmbeddedEdge)){
-                Map<String, Object> referenceMap = new LinkedHashMap<>();
-                for (Property property : edge.getProperties()) {
-                    referenceMap.put(property.getName(), property.getValue());
-                }
-                jsonObject.put(edge.getName(), referenceMap);
-            }
-        }
-        return jsonTransformer.getMapAsJson(jsonObject);
+
+
     }
 }

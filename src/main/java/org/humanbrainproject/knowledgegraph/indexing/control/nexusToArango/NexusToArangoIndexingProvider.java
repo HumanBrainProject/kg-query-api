@@ -1,6 +1,5 @@
 package org.humanbrainproject.knowledgegraph.indexing.control.nexusToArango;
 
-import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonLdToVerticesAndEdges;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.SystemNexusClient;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoConnection;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoDatabaseFactory;
@@ -17,7 +16,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -35,16 +33,12 @@ public class NexusToArangoIndexingProvider {
     SystemNexusClient systemNexusClient;
 
     @Autowired
-    JsonLdToVerticesAndEdges jsonLdToVerticesAndEdges;
-
-    @Autowired
     MessageProcessor messageProcessor;
 
-    public MainVertex getVertexStructureById(NexusInstanceReference incomingReference) {
+    public Vertex getVertexStructureById(NexusInstanceReference incomingReference) {
         String payload = systemNexusClient.getPayload(incomingReference);
         QualifiedIndexingMessage qualifiedMessage = messageProcessor.qualify(new IndexingMessage(incomingReference, payload, null, null));
-        ResolvedVertexStructure vertexStructure = messageProcessor.createVertexStructure(qualifiedMessage);
-        return vertexStructure.getMainVertex();
+        return messageProcessor.createVertexStructure(qualifiedMessage);
     }
 
     public Set<NexusInstanceReference> findInstancesWithLinkTo(String originalParentProperty, NexusInstanceReference originalId, ReferenceType referenceType) {
@@ -52,17 +46,13 @@ public class NexusToArangoIndexingProvider {
         return originalIdsWithLinkTo.stream().map(NexusInstanceReference::createFromUrl).collect(Collectors.toSet());
     }
 
-    public void mapToOriginalSpace(MainVertex vertex, NexusInstanceReference originalId) {
-        NexusInstanceReference instanceReference = vertex.getInstanceReference();
+    public void mapToOriginalSpace(Vertex vertex, NexusInstanceReference originalId) {
         vertex.setInstanceReference(originalId);
         vertex.toSubSpace(SubSpace.MAIN);
-        List<Edge> allEdgesByFollowingEmbedded = vertex.getAllEdgesByFollowingEmbedded();
-        allEdgesByFollowingEmbedded.stream().filter(e -> e instanceof InternalEdge).forEach(
-                e -> {
-                    NexusInstanceReference originalReference = repository.findOriginalId(instanceReference);
-                    ((InternalEdge) e).setReference(originalReference);
-                }
-        );
+        for (EdgeX edge : vertex.getEdges()) {
+            NexusInstanceReference relatedOriginalId = repository.findOriginalId(edge.getReference());
+            edge.setReference(relatedOriginalId);
+        }
     }
 
     public Set<VertexOrEdgeReference> getVertexOrEdgeReferences(NexusInstanceReference nexusInstanceReference, TargetDatabase database) {

@@ -1,78 +1,42 @@
 package org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity;
 
+import org.humanbrainproject.knowledgegraph.indexing.entity.QualifiedIndexingMessage;
+import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.List;
 
-/**
- * A vertex is a representation of a simple key-value map, not allowing any nested elements as values but only primitive values or edges to other vertices.
- */
-public abstract class Vertex implements VertexOrEdge {
+public class Vertex implements VertexOrEdge {
 
+    private final List<EdgeX> edges;
 
-    private final List<Property> properties;
-    private final List<Edge> edges;
+    private final QualifiedIndexingMessage qualifiedIndexingMessage;
 
-    public Vertex() {
-        this.properties = new ArrayList<>();
+    private NexusInstanceReference instanceReference;
+
+    public Vertex(QualifiedIndexingMessage qualifiedIndexingMessage) {
+        this.qualifiedIndexingMessage = qualifiedIndexingMessage;
+        this.instanceReference = qualifiedIndexingMessage.getOriginalMessage().getInstanceReference();
         this.edges = new ArrayList<>();
     }
 
-    public List<Property> getProperties() {
-        return properties;
+    public void toSubSpace(SubSpace subSpace){
+        this.instanceReference = this.instanceReference.toSubSpace(subSpace);
     }
 
-    public Property getPropertyByName(String propertyName) {
-        for (Property property : properties) {
-            if (property!=null && property.getName().equals(propertyName)) {
-                return property;
-            }
-        }
-        return null;
+    public void setInstanceReference(NexusInstanceReference instanceReference) {
+        this.instanceReference = instanceReference;
     }
 
-    public List<String> getValuesByPropertyName(String propertyName) {
-        Property typeProperty = this.getPropertyByName(propertyName);
-        if (typeProperty == null || typeProperty.getValue() == null) {
-            return Collections.emptyList();
-        } else if (typeProperty.getValue() instanceof Collection) {
-            return ((Collection<?>) typeProperty.getValue()).stream().map(e -> e != null ? e.toString() : null).collect(Collectors.toList());
-        } else {
-            return Collections.singletonList(typeProperty.getValue().toString());
-        }
+    public NexusInstanceReference getInstanceReference() {
+        return instanceReference;
     }
 
-    public SortedEdgeGroup getEdgeGroupByName(String name){
-        List<SortedEdgeGroup> edgeGroups = getEdgeGroups();
-        for (SortedEdgeGroup edgeGroup : edgeGroups) {
-            if(name.equals(edgeGroup.getName())){
-                return edgeGroup;
-            }
-        }
-        return null;
-    }
-
-
-    public List<SortedEdgeGroup> getEdgeGroups(){
-        Map<String, Set<Edge>> edges = new HashMap<>();
-        for (Edge edge : this.edges) {
-            edges.computeIfAbsent(edge.getName(), k -> new HashSet<>()).add(edge);
-        }
-        return edges.values().stream().map(SortedEdgeGroup::new).collect(Collectors.toList());
-    }
-
-
-    public List<Edge> getEdges() {
+    public List<EdgeX> getEdges() {
         return edges;
     }
 
-    public Edge getEdgeByName(String edgeName) {
-        for (Edge edge : edges) {
-            if (edge.getTypeName().equals(edgeName)) {
-                return edge;
-            }
-        }
-        return null;
+    public QualifiedIndexingMessage getQualifiedIndexingMessage() {
+        return qualifiedIndexingMessage;
     }
-
 }

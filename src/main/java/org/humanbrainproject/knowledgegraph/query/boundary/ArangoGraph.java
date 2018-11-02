@@ -31,7 +31,7 @@ public class ArangoGraph {
         return arangoRepository.releaseGraph(ArangoDocumentReference.fromNexusInstance(instance), maxDepth, databaseFactory.getDefaultDB());
     }
     public List<Map> getDocument(NexusInstanceReference instance) {
-        return  arangoRepository.getDocument(ArangoDocumentReference.fromNexusInstance(instance), databaseFactory.getDefaultDB());
+        return  arangoRepository.getDocumentWithReleaseStatus(ArangoDocumentReference.fromNexusInstance(instance), databaseFactory.getDefaultDB());
     }
     public List<Map> getGetEditorSpecDocument(ArangoCollectionReference collection) {
         return  arangoRepository.getGetEditorSpecDocument(collection, databaseFactory.getInternalDB());
