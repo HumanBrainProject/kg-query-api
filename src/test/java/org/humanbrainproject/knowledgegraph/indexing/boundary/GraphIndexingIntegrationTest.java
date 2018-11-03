@@ -39,7 +39,7 @@ public class GraphIndexingIntegrationTest {
         graphIndexing.insert(message);
 
         //cleanup
-        graphIndexing.delete(instanceReference, "2018-10-31", "Foo");
+        graphIndexing.delete(instanceReference);
 
     }
 
@@ -55,7 +55,7 @@ public class GraphIndexingIntegrationTest {
         graphIndexing.insert(message);
 
         //cleanup
-        graphIndexing.delete(instanceReference, "2018-10-31", "Foo");
+        graphIndexing.delete(instanceReference);
     }
 
 
@@ -88,8 +88,8 @@ public class GraphIndexingIntegrationTest {
 
 
         //cleanup
-        graphIndexing.delete(editorReference, "2018-10-31", "Foo");
-        graphIndexing.delete(instanceReference, "2018-10-31", "Foo");
+        graphIndexing.delete(editorReference);
+        graphIndexing.delete(instanceReference);
     }
 
 
@@ -115,7 +115,7 @@ public class GraphIndexingIntegrationTest {
         graphIndexing.update(message);
 
         //cleanup
-        graphIndexing.delete(instanceReference, "2018-10-31", "Foo");
+        graphIndexing.delete(instanceReference);
     }
 
 }

@@ -16,6 +16,7 @@ import org.humanbrainproject.knowledgegraph.indexing.entity.TodoList;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.nexusExt.control.InstanceController;
 import org.humanbrainproject.knowledgegraph.nexusExt.control.NexusReleasingController;
+import org.humanbrainproject.knowledgegraph.query.entity.JsonDocument;
 import org.humanbrainproject.knowledgegraph.testFactory.TestObjectFactory;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -52,7 +53,7 @@ public class FullIndexingTest {
     @Autowired
     JsonTransformer jsonTransformer;
 
-    Map<String, Object> payload;
+    JsonDocument payload;
     NexusInstanceReference instance;
 
     private void nexusInsertionTrigger(TodoList todoList) throws IOException {
@@ -67,9 +68,9 @@ public class FullIndexingTest {
 
     @Test
     public void create() throws IOException {
-        payload = new LinkedHashMap<>();
+        payload = new JsonDocument();
         payload.put(SchemaOrgVocabulary.NAMESPACE+"foo", "bar");
-        instance = nexusInstanceController.createInstanceByIdentifier(TestObjectFactory.fooInstanceReference().getNexusSchema(), "helloWorldNoEdit", payload,oidcClient.getAuthorizationToken());
+        instance = nexusInstanceController.createInstanceByIdentifier(TestObjectFactory.fooInstanceReference().getNexusSchema(), "helloWorldNoEdit2", payload,oidcClient.getAuthorizationToken());
 
         //This trigger is typically done by Nexus itself - we're simulating the behavior.
         IndexingMessage indexingMessage = new IndexingMessage(instance, new Gson().toJson(payload), "2018-10-31", "Foo");
@@ -80,15 +81,34 @@ public class FullIndexingTest {
 
     @Test
     public void createWithEditor() throws IOException {
-        payload = new LinkedHashMap<>();
-        payload.put(SchemaOrgVocabulary.NAMESPACE+"foo", "bar");
-        instance = nexusInstanceController.createInstanceByIdentifier(TestObjectFactory.fooEditorInstanceReference().getNexusSchema(), "helloWorldFromEditor", payload,oidcClient.getAuthorizationToken());
+        JsonDocument document =  new JsonDocument();
+        document.put(SchemaOrgVocabulary.NAMESPACE+"foo", "bar");
+        instance = nexusInstanceController.createInstanceByIdentifier(TestObjectFactory.fooEditorInstanceReference().getNexusSchema(), "helloWorldFromEditor2", document, oidcClient.getAuthorizationToken());
 
         //This trigger is typically done by Nexus itself - we're simulating the behavior.
-        IndexingMessage indexingMessage = new IndexingMessage(instance, new Gson().toJson(payload), "2018-10-31", "Foo");
+        IndexingMessage indexingMessage = new IndexingMessage(instance, new Gson().toJson(document), "2018-10-31", "Foo");
         TodoList insert = graphIndexing.insert(indexingMessage);
         nexusInsertionTrigger(insert);
     }
+
+
+    @Test
+    public void createWithEditorAndRelation() throws IOException {
+        createWithEditor();
+
+        JsonDocument document = new JsonDocument();
+        document.addReference(SchemaOrgVocabulary.NAMESPACE+"foolink", configuration.getAbsoluteUrl(instance));
+
+
+        NexusInstanceReference helloWorldFromEditorWithLink = nexusInstanceController.createInstanceByIdentifier(TestObjectFactory.fooEditorInstanceReference().getNexusSchema(), "helloWorldFromEditorWithLink2", document, oidcClient.getAuthorizationToken());
+
+
+        //This trigger is typically done by Nexus itself - we're simulating the behavior.
+        IndexingMessage indexingMessage = new IndexingMessage(helloWorldFromEditorWithLink, new Gson().toJson(document), "2018-10-31", "Foo");
+        TodoList insert = graphIndexing.insert(indexingMessage);
+        nexusInsertionTrigger(insert);
+    }
+
 
 
 
@@ -111,9 +131,10 @@ public class FullIndexingTest {
         createAndRelease();
 
         payload.put(SchemaOrgVocabulary.NAMESPACE+"foo", "foobar");
-        nexusInstanceController.createInstanceByIdentifier(TestObjectFactory.fooInstanceReference().getNexusSchema(), "helloWorld", payload, oidcClient.getAuthorizationToken());
+        payload.put(SchemaOrgVocabulary.IDENTIFIER, null);
+        nexusInstanceController.createInstanceByIdentifier(TestObjectFactory.fooInstanceReference().getNexusSchema(), "helloWorld2", payload, oidcClient.getAuthorizationToken());
 
-        NexusInstanceReference instance = nexusInstanceController.createInstanceByIdentifier(TestObjectFactory.fooInstanceReference().getNexusSchema(), "helloWorld", payload, oidcClient.getAuthorizationToken());
+        NexusInstanceReference instance = nexusInstanceController.createInstanceByIdentifier(TestObjectFactory.fooInstanceReference().getNexusSchema(), "helloWorld2", payload, oidcClient.getAuthorizationToken());
 
         IndexingMessage indexingMessage = new IndexingMessage(instance, new Gson().toJson(payload), "2018-10-31", "Foo");
         graphIndexing.insert(indexingMessage);
@@ -124,7 +145,7 @@ public class FullIndexingTest {
         createAndRelease();
         Set<NexusInstanceReference> unrelease = releaseController.unrelease(instance, oidcClient.getAuthorizationToken());
         for (NexusInstanceReference nexusInstanceReference : unrelease) {
-            graphIndexing.delete(nexusInstanceReference, "2018-10-31", "Foo");
+            graphIndexing.delete(nexusInstanceReference);
         }
     }
 
@@ -138,7 +159,7 @@ public class FullIndexingTest {
         Map<String, String> reference = new LinkedHashMap<>();
         reference.put(JsonLdConsts.ID, configuration.getAbsoluteUrl(instance.getRelativeUrl()));
         editorPayload.put(HBPVocabulary.INFERENCE_EXTENDS, reference);
-        NexusInstanceReference editorInstance = nexusInstanceController.createInstanceByIdentifier(TestObjectFactory.fooInstanceReference().toSubSpace(SubSpace.EDITOR).getNexusSchema(), "helloWorld", editorPayload, oidcClient.getAuthorizationToken());
+        NexusInstanceReference editorInstance = nexusInstanceController.createInstanceByIdentifier(TestObjectFactory.fooInstanceReference().toSubSpace(SubSpace.EDITOR).getNexusSchema(), "helloWorld2", editorPayload, oidcClient.getAuthorizationToken());
 
         IndexingMessage indexingMessage = new IndexingMessage(editorInstance, new Gson().toJson(editorPayload), "2018-10-31", "Foo");
         TodoList inserted = graphIndexing.insert(indexingMessage);
@@ -155,7 +176,7 @@ public class FullIndexingTest {
         Map<String, String> reference = new LinkedHashMap<>();
         reference.put(JsonLdConsts.ID, configuration.getAbsoluteUrl(instance.getRelativeUrl()));
         editorPayload.put(HBPVocabulary.INFERENCE_EXTENDS, reference);
-        NexusInstanceReference editorInstance = nexusInstanceController.createInstanceByIdentifier(TestObjectFactory.fooInstanceReference().toSubSpace(SubSpace.EDITOR).getNexusSchema(), "helloWorld", editorPayload, oidcClient.getAuthorizationToken());
+        NexusInstanceReference editorInstance = nexusInstanceController.createInstanceByIdentifier(TestObjectFactory.fooInstanceReference().toSubSpace(SubSpace.EDITOR).getNexusSchema(), "helloWorld2", editorPayload, oidcClient.getAuthorizationToken());
 
         IndexingMessage indexingMessage = new IndexingMessage(editorInstance, new Gson().toJson(editorPayload), "2018-10-31", "Foo");
         TodoList inserted = graphIndexing.insert(indexingMessage);

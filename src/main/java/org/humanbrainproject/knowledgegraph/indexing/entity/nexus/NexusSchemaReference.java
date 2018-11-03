@@ -113,6 +113,6 @@ public class NexusSchemaReference {
 
     @Override
     public String toString() {
-        return organization + subSpace + "/" + domain + '/' + schema + '/' + schemaVersion;
+        return organization + (subSpace != null ? subSpace.getPostFix() : "") + "/" + domain + '/' + schema + '/' + schemaVersion;
     }
 }
