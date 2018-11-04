@@ -153,7 +153,7 @@ public class ArangoQueryFactory {
                         "%s" +
                         "SORT doc.`http://schema.org/name`, doc.`http://hbp.eu/minds#title`, doc.`http://hbp.eu/minds#alias`\n" +
                         "%s" +
-                        "    RETURN doc", collection.getName(), collection, search, limit);
+                        "    RETURN doc", collection.getName(), collection.getName(), search, limit);
     }
 
     public String releaseStatus(Set<ArangoCollectionReference> edgeCollections, ArangoDocumentReference documentReference, ArangoConnection driver) {
