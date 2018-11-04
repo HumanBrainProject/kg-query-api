@@ -53,7 +53,7 @@ public class GraphAPI {
     }
 
     @GetMapping(value = "/instances/{org}/{domain}/{schema}/{version}", consumes = { MediaType.WILDCARD})
-    public ResponseEntity<Map> getInstanceList(@PathVariable("org") String org, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("version") String version, @RequestParam(value = "size", required = false) Integer size, @RequestParam(value = "from", required = false) Integer from, @RequestParam(value = "search", required = false) String searchTerm) throws Exception{
+    public ResponseEntity<Map> getInstanceList(@PathVariable("org") String org, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("version") String version, @RequestParam(value = "size", required = false) Integer size, @RequestParam(value = "from", required = false, defaultValue = "0") Integer from, @RequestParam(value = "search", required = false) String searchTerm) throws Exception{
         try{
             NexusSchemaReference schemaReference = new NexusSchemaReference(org, domain, schema, version);
             return ResponseEntity.ok(graph.getInstanceList(schemaReference, from, size, searchTerm));
