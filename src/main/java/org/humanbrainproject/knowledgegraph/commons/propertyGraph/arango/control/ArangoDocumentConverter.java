@@ -1,6 +1,8 @@
 package org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control;
 
+import com.github.jsonldjava.core.JsonLdConsts;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
+import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.query.ArangoSpecificationQuery;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.EdgeX;
@@ -17,6 +19,9 @@ public class ArangoDocumentConverter {
 
     @Autowired
     JsonTransformer jsonTransformer;
+
+    @Autowired
+    NexusConfiguration configuration;
 
 
     private Map<String, Object> buildPath(Step step, List<Step> remaining) {
@@ -52,6 +57,7 @@ public class ArangoDocumentConverter {
 
     public String createJsonFromVertex(ArangoDocumentReference reference, Vertex vertex, Set<JsonPath> blackList) {
         Map<String, Object> jsonObject = new LinkedHashMap(vertex.getQualifiedIndexingMessage().getQualifiedMap());
+        jsonObject.put(JsonLdConsts.ID, configuration.getAbsoluteUrl(vertex.getInstanceReference()));
         jsonObject.put("_id", reference.getId());
         jsonObject.put("_key", reference.getKey());
         jsonObject.put("_originalId", vertex.getQualifiedIndexingMessage().getOriginalMessage().getInstanceReference().getFullId(true));
