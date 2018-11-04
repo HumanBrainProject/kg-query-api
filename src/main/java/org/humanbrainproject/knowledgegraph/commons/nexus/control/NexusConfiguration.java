@@ -47,4 +47,8 @@ public class NexusConfiguration {
     public String getAbsoluteUrl(NexusInstanceReference instanceReference) {
         return getAbsoluteUrl(instanceReference.getRelativeUrl());
     }
+
+    public String getExternalAbsoluteUrl(NexusInstanceReference instanceReference) {
+        return String.format("%s/v0/%s%s", nexusBase, instanceReference.getRelativeUrl().getResourceType().urlDeclaration, instanceReference.getRelativeUrl().getUrl() != null ? String.format("/%s", instanceReference.getRelativeUrl().getUrl()) : "");
+    }
 }
