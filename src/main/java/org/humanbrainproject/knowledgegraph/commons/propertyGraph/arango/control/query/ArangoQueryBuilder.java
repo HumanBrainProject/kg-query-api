@@ -14,8 +14,8 @@ import java.util.stream.Collectors;
 public class ArangoQueryBuilder extends AbstractArangoQueryBuilder {
 
 
-    public ArangoQueryBuilder(Specification specification, Pagination pagination, Filter filter, ArangoAlias permissionGroupFieldName, Set<String> whitelistOrganizations, ArangoDocumentReference documentReference) {
-        super(specification, pagination, filter, permissionGroupFieldName, whitelistOrganizations, documentReference);
+    public ArangoQueryBuilder(Specification specification, Pagination pagination, Filter filter, ArangoAlias permissionGroupFieldName, Set<String> whitelistOrganizations, ArangoDocumentReference documentReference, Set<ArangoCollectionReference> existingArangoCollections) {
+        super(specification, pagination, filter, permissionGroupFieldName, whitelistOrganizations, documentReference, existingArangoCollections);
     }
 
     @Override

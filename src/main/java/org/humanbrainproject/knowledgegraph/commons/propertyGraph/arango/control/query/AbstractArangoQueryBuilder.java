@@ -10,6 +10,7 @@ import org.humanbrainproject.knowledgegraph.query.entity.Specification;
 import org.springframework.boot.configurationprocessor.json.JSONArray;
 import org.springframework.boot.configurationprocessor.json.JSONException;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.Stack;
@@ -30,6 +31,8 @@ public abstract class AbstractArangoQueryBuilder {
     protected Set<String> whitelistOrganizations;
     protected SpecField currentField;
     protected ArangoDocumentReference documentReference;
+    protected final Set<ArangoCollectionReference> existingArangoCollections;
+
 
     public void setCurrentField(SpecField currentField) {
         this.currentField = currentField;
@@ -45,14 +48,19 @@ public abstract class AbstractArangoQueryBuilder {
         }
     }
 
-    public AbstractArangoQueryBuilder(Specification specification, Pagination pagination, Filter filter, ArangoAlias permissionGroupFieldName, Set<String> whitelistOrganizations, ArangoDocumentReference documentReference) {
+    public AbstractArangoQueryBuilder(Specification specification, Pagination pagination, Filter filter, ArangoAlias permissionGroupFieldName, Set<String> whitelistOrganizations, ArangoDocumentReference documentReference, Set<ArangoCollectionReference> existingArangoCollections) {
         this.pagination = pagination;
         this.filter = filter;
         this.specification = specification;
         this.permissionGroupFieldName = permissionGroupFieldName;
         this.whitelistOrganizations = whitelistOrganizations;
         this.documentReference = documentReference;
+        this.existingArangoCollections = existingArangoCollections!=null ? Collections.unmodifiableSet(existingArangoCollections) : null;
         addWhitelistOrganizations();
+    }
+
+    public Set<ArangoCollectionReference> getExistingArangoCollections() {
+        return existingArangoCollections;
     }
 
     protected boolean isRoot(){

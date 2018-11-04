@@ -1,6 +1,7 @@
 package org.humanbrainproject.knowledgegraph.query.api;
 
 import io.swagger.annotations.Api;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.exceptions.RootCollectionNotFoundException;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
 import org.humanbrainproject.knowledgegraph.query.boundary.ArangoQuery;
@@ -56,6 +57,8 @@ public class QueryAPI {
             parameters.resultTransformation().setVocab(vocab);
             parameters.authorization().setToken(authorizationToken);
             return ResponseEntity.ok(query.queryPropertyGraphBySpecification(payload, parameters, null));
+        } catch (RootCollectionNotFoundException e){
+            return ResponseEntity.notFound().build();
         } catch (HttpClientErrorException e) {
             return ResponseEntity.status(e.getStatusCode()).build();
         }
@@ -78,6 +81,8 @@ public class QueryAPI {
             }else{
                 return ResponseEntity.noContent().build();
             }
+        } catch (RootCollectionNotFoundException e){
+            return ResponseEntity.notFound().build();
         } catch (HttpClientErrorException e) {
             return ResponseEntity.status(e.getStatusCode()).build();
         }
@@ -95,6 +100,8 @@ public class QueryAPI {
             parameters.filter().setQueryString(searchTerm);
             parameters.authorization().setToken(authorization);
             return ResponseEntity.ok(query.queryPropertyGraphByStoredSpecification(storedQueryReference, parameters, null));
+        } catch (RootCollectionNotFoundException e){
+            return ResponseEntity.notFound().build();
         } catch (HttpClientErrorException e) {
             return ResponseEntity.status(e.getStatusCode()).build();
         }
@@ -120,6 +127,8 @@ public class QueryAPI {
                 return ResponseEntity.noContent().build();
             }
 
+        } catch (RootCollectionNotFoundException e){
+            return ResponseEntity.notFound().build();
         } catch (HttpClientErrorException e) {
             return ResponseEntity.status(e.getStatusCode()).build();
         }
@@ -150,6 +159,8 @@ public class QueryAPI {
             parameters.authorization().setToken(authorization);
             QueryResult<String> result = query.queryPropertyGraphByStoredSpecificationAndFreemarkerTemplate(storedQueryReference, templatePayload, parameters);
             return ResponseEntity.ok(RestUtils.toJsonResultIfPossible(result));
+        } catch (RootCollectionNotFoundException e){
+            return ResponseEntity.notFound().build();
         } catch (HttpClientErrorException e) {
             return ResponseEntity.status(e.getStatusCode()).build();
         }
@@ -172,6 +183,8 @@ public class QueryAPI {
             parameters.authorization().setToken(authorization);
             Map result = query.queryPropertyGraphByStoredSpecificationAndFreemarkerTemplateWithId(storedQueryReference, template, parameters, nexusInstanceReference);
             return ResponseEntity.ok(result);
+        } catch (RootCollectionNotFoundException e){
+            return ResponseEntity.notFound().build();
         } catch (HttpClientErrorException e) {
             return ResponseEntity.status(e.getStatusCode()).build();
         }

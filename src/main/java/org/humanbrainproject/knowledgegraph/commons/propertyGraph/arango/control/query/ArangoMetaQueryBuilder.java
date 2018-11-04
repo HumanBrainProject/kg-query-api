@@ -18,7 +18,7 @@ public class ArangoMetaQueryBuilder extends AbstractArangoQueryBuilder {
 
 
     public ArangoMetaQueryBuilder(Specification specification) {
-        super(specification, null, null, null,null, null);
+        super(specification, null, null, null,null, null, null);
     }
 
     @Override
@@ -59,7 +59,7 @@ public class ArangoMetaQueryBuilder extends AbstractArangoQueryBuilder {
         if (!isRoot()) {
             sb.append(String.format("LET %s_result = FLATTEN([%s_att\n", currentAlias.getName(), currentAlias.getName()));
         } else {
-            sb.append(String.format("LET %s_result = FLATTEN([%s_col\n", ROOT_ALIAS, currentAlias.getName()));
+            sb.append(String.format("LET %s_result = FLATTEN([%s_col\n", ROOT_ALIAS.getName(), currentAlias.getName()));
         }
     }
 

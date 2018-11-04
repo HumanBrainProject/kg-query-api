@@ -13,8 +13,12 @@ public class ArangoAlias {
         this.name = name;
     }
 
+    public static ArangoAlias fromOriginalFieldName(String fieldName){
+        return new ArangoAlias(ArangoNamingHelper.reduceStringToMaxSizeByHashing(ArangoNamingHelper.replaceSpecialCharacters(fieldName).replaceAll("-", "_")));
+    }
+
     public static ArangoAlias fromSpecField(SpecField specField){
-        return new ArangoAlias(ArangoNamingHelper.reduceStringToMaxSizeByHashing(ArangoNamingHelper.replaceSpecialCharacters(specField.fieldName).replaceAll("-", "_")));
+        return fromOriginalFieldName(specField.fieldName);
     }
 
     public static ArangoAlias fromLeafPath(SpecTraverse specTraverse){

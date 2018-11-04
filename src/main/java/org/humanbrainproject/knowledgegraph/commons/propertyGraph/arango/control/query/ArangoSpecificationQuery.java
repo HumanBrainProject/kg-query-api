@@ -8,6 +8,7 @@ import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoAlias;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.exceptions.RootCollectionNotFoundException;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
 import org.humanbrainproject.knowledgegraph.query.entity.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,7 +41,7 @@ public class ArangoSpecificationQuery {
 
     public QueryResult<List<Map>> queryForSpecification(Specification spec, Set<String> whiteListOrganizations, QueryParameters parameters, ArangoDocumentReference documentReference) throws JSONException {
         QueryResult<List<Map>> result = new QueryResult<>();
-        ArangoQueryBuilder queryBuilder = new ArangoQueryBuilder(spec, parameters.pagination(), parameters.filter(), new ArangoAlias(PERMISSION_GROUP), whiteListOrganizations, documentReference);
+        ArangoQueryBuilder queryBuilder = new ArangoQueryBuilder(spec, parameters.pagination(), parameters.filter(), new ArangoAlias(PERMISSION_GROUP), whiteListOrganizations, documentReference, databaseFactory.getConnection(parameters.databaseScope()).getCollections());
         String query = createQuery(queryBuilder, parameters);
         AqlQueryOptions options = new AqlQueryOptions();
         if (parameters.pagination().getSize() != null) {
@@ -66,6 +67,9 @@ public class ArangoSpecificationQuery {
     String createQuery(AbstractArangoQueryBuilder queryBuilder, QueryParameters parameters) throws JSONException {
         NexusSchemaReference nexusReference = NexusSchemaReference.createFromUrl(StrSubstitutor.replace(queryBuilder.getSpecification().rootSchema, parameters.getAllParameters()));
         ArangoCollectionReference collection = ArangoCollectionReference.fromNexusSchemaReference(nexusReference);
+        if(queryBuilder.getExistingArangoCollections()!=null && !queryBuilder.getExistingArangoCollections().contains(collection)){
+            throw new RootCollectionNotFoundException(String.format("Was not able to find the root collection with the name %s", collection.getName()));
+        }
         queryBuilder.addRoot(collection);
         handleFields(queryBuilder.getSpecification().fields, queryBuilder, true, false);
         String query = queryBuilder.build();
@@ -83,26 +87,33 @@ public class ArangoSpecificationQuery {
         return field.fields.stream().filter(f -> !f.isGroupby()).map(ArangoAlias::fromSpecField).collect(Collectors.toList());
     }
 
-    private void handleFields(List<SpecField> fields, AbstractArangoQueryBuilder queryBuilder, boolean isRoot, boolean isMerge) {
+    private Set<String> handleFields(List<SpecField> fields, AbstractArangoQueryBuilder queryBuilder, boolean isRoot, boolean isMerge) {
         Set<String> skipFields = new HashSet<>();
         SpecField originalField = queryBuilder.currentField;
         for (SpecField field : fields) {
             ArangoAlias arangoField = ArangoAlias.fromSpecField(field);
             queryBuilder.setCurrentField(field);
             if (field.isMerge()) {
-                handleFields(field.fields, queryBuilder, false, true);
+                Set<String> skippedMergeFields = handleFields(field.fields, queryBuilder, false, true);
+                Set<ArangoAlias> skippedMergeAliases = skippedMergeFields.stream().map(ArangoAlias::fromOriginalFieldName).collect(Collectors.toSet());
                 Set<ArangoAlias> mergedFields = field.fields.stream().map(ArangoAlias::fromSpecField).collect(Collectors.toSet());
-                queryBuilder.addMerge(arangoField, mergedFields, field.sortAlphabetically);
+                Set<ArangoAlias> nonSkippedMergeFields = mergedFields.stream().filter(f -> !skippedMergeAliases.contains(f)).collect(Collectors.toSet());
+                if(!nonSkippedMergeFields.isEmpty()) {
+                    queryBuilder.addMerge(arangoField, mergedFields, field.sortAlphabetically);
+                }
+                else{
+                    skipFields.add(field.fieldName);
+                }
             } else if (field.needsTraversal()) {
                 SpecTraverse firstTraversal = field.getFirstTraversal();
                 ArangoCollectionReference traverseCollection = ArangoCollectionReference.fromSpecTraversal(firstTraversal);
-                if (traverseCollection != null) {
+                if (queryBuilder.getExistingArangoCollections()==null || queryBuilder.getExistingArangoCollections().contains(traverseCollection)) {
                     List<ArangoAlias> groupingFields = getGroupingFields(field);
                     queryBuilder.addAlias(arangoField);
                     queryBuilder.enterTraversal(arangoField, field.numberOfDirectTraversals(), firstTraversal.reverse, traverseCollection, !groupingFields.isEmpty(), field.ensureOrder);
                     for (SpecTraverse traversal : field.getAdditionalDirectTraversals()) {
                         traverseCollection = ArangoCollectionReference.fromSpecTraversal(traversal);
-                        if (traverseCollection != null) {
+                        if (queryBuilder.getExistingArangoCollections() ==null || queryBuilder.getExistingArangoCollections().contains(traverseCollection)) {
                             queryBuilder.addTraversal(traversal.reverse, traverseCollection);
                         } else {
                             skipFields.add(field.fieldName);
@@ -182,7 +193,7 @@ public class ArangoSpecificationQuery {
             queryBuilder.setCurrentField(originalField);
             queryBuilder.endReturnStructure();
         }
-
+        return skipFields;
     }
 
 }
