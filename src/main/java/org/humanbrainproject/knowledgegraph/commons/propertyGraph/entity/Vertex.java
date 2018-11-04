@@ -1,10 +1,7 @@
 package org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity;
 
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -43,6 +40,25 @@ public abstract class Vertex implements VertexOrEdge {
         } else {
             return Collections.singletonList(typeProperty.getValue().toString());
         }
+    }
+
+    public SortedEdgeGroup getEdgeGroupByName(String name){
+        List<SortedEdgeGroup> edgeGroups = getEdgeGroups();
+        for (SortedEdgeGroup edgeGroup : edgeGroups) {
+            if(name.equals(edgeGroup.getName())){
+                return edgeGroup;
+            }
+        }
+        return null;
+    }
+
+
+    public List<SortedEdgeGroup> getEdgeGroups(){
+        Map<String, Set<Edge>> edges = new HashMap<>();
+        for (Edge edge : this.edges) {
+            edges.computeIfAbsent(edge.getName(), k -> new HashSet<>()).add(edge);
+        }
+        return edges.values().stream().map(SortedEdgeGroup::new).collect(Collectors.toList());
     }
 
 

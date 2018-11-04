@@ -101,32 +101,32 @@ public class Reconciliation implements InferenceStrategy, InitializingBean {
         List<String> types = new ArrayList<>(original.getTypes());
         types.add(HBPVocabulary.INFERENCE_TYPE);
         newVertex.getProperties().add(Property.createProperty(JsonLdConsts.TYPE, types));
-        //Set<MainVertex> allVertices = new HashSet<>();
-        //allVertices.add(original);
-        //allVertices.addAll(additionalInstances);
-        //mergeVertex(newVertex, allVertices);
-        mergeVertex(newVertex, original, additionalInstances, newVertex);
-        for (MainVertex additionalInstance : additionalInstances) {
-            mergeVertex(newVertex, additionalInstance, additionalInstances.stream().filter(i -> i != additionalInstance).collect(Collectors.toList()), newVertex);
-        }
+        Set<MainVertex> allVertices = new HashSet<>();
+        allVertices.add(original);
+        allVertices.addAll(additionalInstances);
+        mergeVertex(newVertex, allVertices);
         return newVertex;
     }
 
 
     private void mergeVertex(Vertex newVertex, Set<? extends Vertex> vertices) {
-        Set<String> handledProperties = new HashSet<>();
+        Set<String> handledKeys = new HashSet<>();
         for (Vertex vertex : vertices) {
             for (Property property : vertex.getProperties()) {
-                if (!handledProperties.contains(property.getName())) {
+                if (!handledKeys.contains(property.getName())) {
                     newVertex.getProperties().add(mergeProperty(property.getName(), vertices));
-                    handledProperties.add(property.getName());
+                    handledKeys.add(property.getName());
+                }
+            }
+            List<SortedEdgeGroup> edgeGroups = vertex.getEdgeGroups();
+            for (SortedEdgeGroup edgeGroup : edgeGroups) {
+                if(!handledKeys.contains(edgeGroup.getName())){
+                    SortedEdgeGroup sortedEdgeGroup = mergeEdges(edgeGroup.getName(), vertices);
+                    vertex.getEdges().addAll(sortedEdgeGroup.getEdges());
                 }
             }
         }
     }
-
-
-
 
     private int compareVertexPower(Vertex newVertex, Vertex oldVertex) {
         SubSpace subspaceNew = newVertex == null ? null : newVertex.getMainVertex().getInstanceReference().getSubspace();
@@ -149,20 +149,19 @@ public class Reconciliation implements InferenceStrategy, InitializingBean {
     }
 
 
-    private boolean overrides(Vertex potentialOverride, Vertex currentVertex, Object currentValue, String propertyName, Map<Object, Integer> valueCount){
+    private boolean overrides(Vertex potentialOverride, Vertex currentVertex, Object potentialValue, Object currentValue, Map<Object, Integer> valueCount){
         int i = compareVertexPower(potentialOverride, currentVertex);
-        Property currentProperty = potentialOverride.getPropertyByName(propertyName);
-        Integer count = valueCount.get(currentProperty.getValue());
+        Integer count = valueCount.get(potentialValue);
         if (count == null) {
             count = 0;
         }
         count += 1;
-        valueCount.put(currentProperty.getValue(), count);
+        valueCount.put(potentialValue, count);
         boolean overrides = currentValue == null;
         if (i > 0) {
             overrides = true;
         } else if (i == 0 && !overrides) {
-            Integer counts = valueCount.get(currentProperty.getValue());
+            Integer counts = valueCount.get(potentialValue);
             Integer countsOfCurrentResult = valueCount.get(currentValue);
             if (counts > countsOfCurrentResult) {
                 overrides = true;
@@ -192,11 +191,12 @@ public class Reconciliation implements InferenceStrategy, InitializingBean {
         Set<Property<?>> alternatives = new LinkedHashSet<>();
         Map<Object, Integer> valueCount = new HashMap<>();
         for (Vertex vertex : verticesWithProperty) {
-            if (overrides(vertex, originOfResult, result, propertyName, valueCount)) {
+            Property propertyByName = vertex.getPropertyByName(propertyName);
+            if (overrides(vertex, originOfResult, propertyByName.getValue(), result, valueCount)) {
                 if (result != null) {
                     alternatives.add(result);
                 }
-                result = vertex.getPropertyByName(propertyName);
+                result = propertyByName;
                 originOfResult = vertex;
             }
         }
@@ -205,6 +205,20 @@ public class Reconciliation implements InferenceStrategy, InitializingBean {
         return property;
     }
 
+    private SortedEdgeGroup mergeEdges(String key, Set<? extends Vertex> vertices){
+        List<Vertex> verticesWithEdge = vertices.stream().filter(v -> v.getEdgeByName(key)!=null).collect(Collectors.toList());
+        SortedEdgeGroup result = null;
+        Vertex originOfResult = null;
+        Map<Object, Integer> valueCount = new HashMap<>();
+        for (Vertex vertex : verticesWithEdge) {
+            SortedEdgeGroup edgeGroupByName = vertex.getEdgeGroupByName(key);
+            if (overrides(vertex, originOfResult, edgeGroupByName, result, valueCount)) {
+                result = edgeGroupByName;
+                originOfResult = vertex;
+            }
+        }
+        return result;
+    }
 
     private void mergeVertex(Vertex newVertex, Vertex vertex, List<? extends Vertex> additionalInstances, MainVertex mainVertex) {
         //Add all properties of the original instance
