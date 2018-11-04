@@ -149,10 +149,10 @@ public class ArangoQueryFactory {
             limit = String.format("LIMIT %s, %s \n", from.toString(), size.toString());
         }
         return String.format(
-                "FOR doc IN `%s`\n" +
-                        "%s" +
-                        "SORT doc.`http://schema.org/name`, doc.`http://hbp.eu/minds#title`, doc.`http://hbp.eu/minds#alias`\n" +
-                        "%s" +
+                "FOR doc IN `%s` \n" +
+                        "%s " +
+                        "SORT doc.`http://schema.org/name`, doc.`http://hbp.eu/minds#title`, doc.`http://hbp.eu/minds#alias` \n" +
+                        "%s " +
                         "    RETURN doc", collection.getName(), collection.getName(), search, limit);
     }
 
