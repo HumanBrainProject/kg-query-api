@@ -66,6 +66,7 @@ public class ArangoQuery {
         readableOrganizations.add("minds2");
         readableOrganizations.add("neuroglancer");
         readableOrganizations.add("kgeditor");
+        readableOrganizations.add("kg");
         if(whitelistedOrganizations!=null){
             readableOrganizations.retainAll(whitelistedOrganizations);
         }

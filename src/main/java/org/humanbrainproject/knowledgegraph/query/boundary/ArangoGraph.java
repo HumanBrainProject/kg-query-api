@@ -44,4 +44,8 @@ public class ArangoGraph {
     public List<Map> getReleaseStatus(NexusInstanceReference instance){
         return arangoRepository.getReleaseStatus(ArangoDocumentReference.fromNexusInstance(instance), databaseFactory.getInternalDB());
     }
+
+    public List<Map> getInstance(ArangoDocumentReference instanceReference){
+        return arangoRepository.getInstance(instanceReference, databaseFactory.getInferredDB());
+    }
 }

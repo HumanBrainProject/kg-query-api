@@ -369,5 +369,12 @@ public class ArangoRepository extends VertexRepository<ArangoConnection, ArangoD
         return q.asListRemaining();
     }
 
+    public List<Map> getInstance(ArangoDocumentReference instanceReference, ArangoConnection driver){
+        ArangoDatabase db = driver.getOrCreateDB();
+        String query = queryFactory.getInstance(instanceReference);
+        ArangoCursor<Map> q = db.query(query, null, new AqlQueryOptions(), Map.class);
+        return q.asListRemaining();
+    }
+
 
 }

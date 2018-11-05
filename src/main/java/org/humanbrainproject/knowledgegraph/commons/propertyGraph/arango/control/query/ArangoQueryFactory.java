@@ -6,6 +6,7 @@ import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.ReferenceType;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
+import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -180,6 +181,14 @@ public class ArangoQueryFactory {
 //                "    LET s = \"released\" IN status? \"RELEASED\": \"NOT_RELEASED\"\n" +
 //                "    return {\"status\":s, \"child_status\":child_status }",reconciledId, documentReference.getId(), names);
         return null;
+    }
+
+    public String getInstance(ArangoDocumentReference ref){
+        return String.format(
+                "LET doc = DOCUMENT(\"%s\") \n" +
+                "RETURN doc",
+                ref.getId()
+        );
     }
 
 

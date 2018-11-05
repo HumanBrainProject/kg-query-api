@@ -1,6 +1,7 @@
 package org.humanbrainproject.knowledgegraph.query.api;
 
 import io.swagger.annotations.Api;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
@@ -57,6 +58,21 @@ public class GraphAPI {
         try{
             NexusSchemaReference schemaReference = new NexusSchemaReference(org, domain, schema, version);
             return ResponseEntity.ok(graph.getInstanceList(schemaReference, from, size, searchTerm));
+        } catch (HttpClientErrorException e){
+            return ResponseEntity.status(e.getStatusCode()).build();
+        }
+    }
+
+    @GetMapping(value = "/instance/{org}/{domain}/{schema}/{version}/{id}", consumes = { MediaType.WILDCARD})
+    public ResponseEntity<Map> getInstance(@PathVariable("org") String org, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("version") String version,@PathVariable("id") String id ) throws Exception{
+        try{
+            ArangoDocumentReference instanceRef = ArangoDocumentReference.fromNexusInstance(new NexusInstanceReference(org, domain, schema, version, id));
+            List<Map> rootList = graph.getInstance(instanceRef);
+            if(rootList.isEmpty()){
+                throw new Exception("Document not found");
+            }
+            Map root = rootList.get(0);
+            return ResponseEntity.ok(root);
         } catch (HttpClientErrorException e){
             return ResponseEntity.status(e.getStatusCode()).build();
         }
