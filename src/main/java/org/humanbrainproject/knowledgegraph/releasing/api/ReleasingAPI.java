@@ -14,8 +14,8 @@ import org.springframework.web.client.HttpClientErrorException;
 import javax.ws.rs.core.MediaType;
 
 @RestController
-@RequestMapping(value = "/releasing", produces = MediaType.APPLICATION_JSON)
-@Api(value = "/releasing", description = "The extension API to release resources in the Knowledge Graph")
+@RequestMapping(value = "/api/releasing", produces = MediaType.APPLICATION_JSON)
+@Api(value = "/api/releasing", description = "The extension API to release resources in the Knowledge Graph")
 public class ReleasingAPI {
 
     @Autowired
