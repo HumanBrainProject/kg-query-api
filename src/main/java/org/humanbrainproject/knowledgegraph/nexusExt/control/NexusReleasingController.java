@@ -14,7 +14,6 @@ import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaRef
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -45,7 +44,7 @@ public class NexusReleasingController {
         payload.put(HBPVocabulary.RELEASE_REVISION, revision);
         payload.put(HBPVocabulary.RELEASE_INSTANCE, reference);
         payload.put(JsonLdConsts.TYPE, HBPVocabulary.RELEASE_TYPE);
-        NexusSchemaReference releaseSchema = new NexusSchemaReference(instanceReference.getNexusSchema().getOrganization(), "prov", "release", "v0.0.1");
+        NexusSchemaReference releaseSchema = new NexusSchemaReference(instanceReference.getNexusSchema().getOrganization(), "prov", "release", "v0.0.2");
         NexusInstanceReference instance = instanceController.createInstanceByIdentifier(releaseSchema, instanceReference.getFullId(false), payload, oidcAccessToken);
         return new IndexingMessage(instance, jsonTransformer.getMapAsJson(payload), null, null);
     }

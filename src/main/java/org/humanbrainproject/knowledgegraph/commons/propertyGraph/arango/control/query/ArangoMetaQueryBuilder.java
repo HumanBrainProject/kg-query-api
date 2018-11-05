@@ -1,7 +1,7 @@
 package org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.query;
 
 import com.github.jsonldjava.core.JsonLdConsts;
-import deprecated.control.GraphQueryKeys;
+import org.humanbrainproject.knowledgegraph.query.entity.GraphQueryKeys;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoAlias;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
 import org.humanbrainproject.knowledgegraph.query.boundary.ArangoQuery;

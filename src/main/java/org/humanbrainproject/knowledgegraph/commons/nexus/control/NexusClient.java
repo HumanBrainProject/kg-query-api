@@ -66,9 +66,8 @@ public class NexusClient {
             if (result.getStatusCode().is2xxSuccessful() && result.getBody() != null) {
                 return result.getBody();
             }
-        }
-        catch (HttpClientErrorException e){
-            if(e.getStatusCode()==HttpStatus.CONFLICT){
+        } catch (HttpClientErrorException e) {
+            if (e.getStatusCode() == HttpStatus.CONFLICT) {
                 logger.info("Was not able to remove the instance {} due to a conflict. It seems as it is already deprecated", url);
                 return null;
             }
@@ -78,9 +77,14 @@ public class NexusClient {
     }
 
     public Map post(NexusRelativeUrl url, Integer revision, Map payload, OidcAccessToken oidcAccessToken) {
-        ResponseEntity<Map> result = new RestTemplate().exchange(String.format("%s%s", configuration.getAbsoluteUrl(url), revision != null ? String.format("%srev=%d", !url.getUrl().contains("?") ? "?" : "&", revision) : ""), HttpMethod.POST, new HttpEntity<>(payload, createHeaders(oidcAccessToken)), Map.class);
-        if (result.getStatusCode().is2xxSuccessful() && result.getBody() != null) {
-            return result.getBody();
+        try {
+            ResponseEntity<Map> result = new RestTemplate().exchange(String.format("%s%s", configuration.getAbsoluteUrl(url), revision != null ? String.format("%srev=%d", !url.getUrl().contains("?") ? "?" : "&", revision) : ""), HttpMethod.POST, new HttpEntity<>(payload, createHeaders(oidcAccessToken)), Map.class);
+            if (result.getStatusCode().is2xxSuccessful() && result.getBody() != null) {
+                return result.getBody();
+            }
+        } catch(HttpClientErrorException e){
+            logger.error("Was not able to create instance in nexus", e.getResponseBodyAsString());
+            throw e;
         }
         return null;
     }

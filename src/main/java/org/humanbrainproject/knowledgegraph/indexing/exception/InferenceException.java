@@ -1,4 +1,4 @@
-package deprecated.exceptions;
+package org.humanbrainproject.knowledgegraph.indexing.exception;
 
 public class InferenceException extends RuntimeException {
 
