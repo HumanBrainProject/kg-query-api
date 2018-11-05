@@ -25,6 +25,10 @@ public class Releasing {
         nexusReleasingController.release(nexusInstanceFromInferredArangoEntry, nexusInstanceFromInferredArangoEntry.getRevision(), accessToken);
     }
 
+    public void unrelease(NexusInstanceReference instanceReference, OidcAccessToken accessToken){
+        nexusReleasingController.unrelease(instanceReference, accessToken);
+    }
+
     public ReleaseStatusResponse getReleaseStatus(NexusInstanceReference instanceReference){
         return releaseControl.getReleaseStatus(instanceReference);
     }

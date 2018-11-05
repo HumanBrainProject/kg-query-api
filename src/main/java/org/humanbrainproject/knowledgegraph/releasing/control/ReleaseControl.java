@@ -28,8 +28,6 @@ public class ReleaseControl {
         return null;
     }
 
-
-
     public ReleaseStatusResponse getReleaseStatus(NexusInstanceReference instance){
         ReleaseStatusResponse releaseStatus = arangoRepository.getReleaseStatus(ArangoDocumentReference.fromNexusInstance(instance), databaseFactory.getInferredDB(), databaseFactory.getReleasedDB());
         releaseStatus.setId(instance);

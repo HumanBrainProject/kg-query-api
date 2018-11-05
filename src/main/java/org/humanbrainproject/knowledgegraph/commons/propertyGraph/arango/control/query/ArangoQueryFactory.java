@@ -18,7 +18,6 @@ public class ArangoQueryFactory {
     @Autowired
     NexusConfiguration configuration;
 
-
     public String queryForIdsWithProperty(String propertyName, String propertyValue, Set<ArangoCollectionReference> collectionsToCheck) {
         if (collectionsToCheck != null && !collectionsToCheck.isEmpty()) {
             StringBuilder sb = new StringBuilder();
@@ -77,7 +76,7 @@ public class ArangoQueryFactory {
                         "FILTER  status_doc.`%s` != null \n" +
                         "RETURN DISTINCT status_doc.`%s`)\n" +
                         "RETURN MERGE({\"status\": status, \"rev\": doc.`%s` }, doc)"
-                , document.getId(), ArangoCollectionReference.fromFieldName(HBPVocabulary.RELEASE_INSTANCE, ReferenceType.INTERNAL).getName(), HBPVocabulary.RELEASE_STATE, HBPVocabulary.RELEASE_STATE, HBPVocabulary.PROVENANCE_REVISION);
+                , document.getId(), ArangoCollectionReference.fromFieldName(HBPVocabulary.RELEASE_INSTANCE).getName(), HBPVocabulary.RELEASE_STATE, HBPVocabulary.RELEASE_STATE, HBPVocabulary.PROVENANCE_REVISION);
     }
 
     public String getGetEditorSpecDocument(ArangoCollectionReference collection) {

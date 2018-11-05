@@ -5,7 +5,6 @@ import org.humanbrainproject.knowledgegraph.commons.authorization.entity.OidcAcc
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusClient;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.ReferenceType;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.humanbrainproject.knowledgegraph.indexing.control.nexusToArango.NexusToArangoIndexingProvider;
 import org.humanbrainproject.knowledgegraph.indexing.entity.IndexingMessage;
@@ -52,9 +51,9 @@ public class NexusReleasingController {
 
     public Set<NexusInstanceReference> unrelease(NexusInstanceReference instanceReference, OidcAccessToken oidcAccessToken) {
         //Find release instance
-        Set<NexusInstanceReference> releases = nexusToArangoIndexingProvider.findInstancesWithLinkTo(HBPVocabulary.RELEASE_INSTANCE, instanceReference, ReferenceType.INTERNAL);
+        Set<NexusInstanceReference> releases = nexusToArangoIndexingProvider.findInstancesWithLinkTo(HBPVocabulary.RELEASE_INSTANCE, instanceReference);
         for (NexusInstanceReference nexusInstanceReference : releases) {
-            nexusClient.delete(nexusInstanceReference.getRelativeUrl(), nexusInstanceReference.getRevision(), oidcAccessToken);
+            nexusClient.delete(nexusInstanceReference.getRelativeUrl(), nexusInstanceReference.getRevision() != null ? nexusInstanceReference.getRevision() : 1, oidcAccessToken);
         }
         return releases;
     }

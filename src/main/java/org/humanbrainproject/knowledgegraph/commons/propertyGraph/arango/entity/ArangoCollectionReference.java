@@ -1,7 +1,6 @@
 package org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity;
 
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.EdgeX;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.ReferenceType;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
 import org.humanbrainproject.knowledgegraph.query.entity.SpecTraverse;
 
@@ -16,7 +15,7 @@ public class ArangoCollectionReference {
         this.name = collectionName;
     }
 
-    public static ArangoCollectionReference fromFieldName(String fieldName, ReferenceType referenceType){
+    public static ArangoCollectionReference fromFieldName(String fieldName){
         return new ArangoCollectionReference(ArangoNamingHelper.reduceStringToMaxSizeByHashing(ArangoNamingHelper.replaceSpecialCharacters(ArangoNamingHelper.removeTrailingHttps(fieldName))));
     }
 

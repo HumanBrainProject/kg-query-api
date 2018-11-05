@@ -41,9 +41,8 @@ public class NexusToArangoIndexingProvider {
         return messageProcessor.createVertexStructure(qualifiedMessage);
     }
 
-    public Set<NexusInstanceReference> findInstancesWithLinkTo(String originalParentProperty, NexusInstanceReference originalId, ReferenceType referenceType) {
-        Set<String> originalIdsWithLinkTo = repository.findOriginalIdsWithLinkTo(ArangoDocumentReference.fromNexusInstance(originalId), ArangoCollectionReference.fromFieldName(originalParentProperty, referenceType), databaseFactory.getDefaultDB());
-        return originalIdsWithLinkTo.stream().map(NexusInstanceReference::createFromUrl).collect(Collectors.toSet());
+    public Set<NexusInstanceReference> findInstancesWithLinkTo(String originalParentProperty, NexusInstanceReference originalId) {
+        return repository.findOriginalIdsWithLinkTo(ArangoDocumentReference.fromNexusInstance(originalId), ArangoCollectionReference.fromFieldName(originalParentProperty), databaseFactory.getDefaultDB());
     }
 
     public void mapToOriginalSpace(Vertex vertex, NexusInstanceReference originalId) {

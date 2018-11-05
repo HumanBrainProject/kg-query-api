@@ -74,11 +74,12 @@ public class ArangoRepository extends VertexRepository<ArangoConnection, ArangoD
         return reference;
     }
 
-    public Set<String> findOriginalIdsWithLinkTo(ArangoDocumentReference instanceReference, ArangoCollectionReference collectionReference, ArangoConnection arangoConnection) {
+    public Set<NexusInstanceReference> findOriginalIdsWithLinkTo(ArangoDocumentReference instanceReference, ArangoCollectionReference collectionReference, ArangoConnection arangoConnection) {
         Set<ArangoCollectionReference> collections = arangoConnection.getCollections();
         if (collections.contains(instanceReference.getCollection()) && collections.contains(collectionReference)) {
             String query = queryFactory.queryOriginalIdForLink(instanceReference, collectionReference);
-            return arangoConnection.getOrCreateDB().query(query, null, new AqlQueryOptions(), String.class).asListRemaining().stream().filter(Objects::nonNull).collect(Collectors.toSet());
+            List<String> ids = arangoConnection.getOrCreateDB().query(query, null, new AqlQueryOptions(), String.class).asListRemaining();
+            return ids.stream().filter(Objects::nonNull).map(NexusInstanceReference::createFromUrl).collect(Collectors.toSet());
         }
         return Collections.emptySet();
     }

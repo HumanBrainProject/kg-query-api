@@ -1,13 +1,11 @@
 package org.humanbrainproject.knowledgegraph.indexing.control.inference;
 
 import com.github.jsonldjava.core.JsonLdConsts;
-import org.humanbrainproject.knowledgegraph.indexing.exception.InferenceException;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoDatabaseFactory;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoRepository;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Property;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.ReferenceType;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.SubSpace;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Vertex;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
@@ -16,6 +14,7 @@ import org.humanbrainproject.knowledgegraph.indexing.control.nexusToArango.Nexus
 import org.humanbrainproject.knowledgegraph.indexing.entity.IndexingMessage;
 import org.humanbrainproject.knowledgegraph.indexing.entity.QualifiedIndexingMessage;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
+import org.humanbrainproject.knowledgegraph.indexing.exception.InferenceException;
 import org.humanbrainproject.knowledgegraph.query.entity.JsonDocument;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,8 +68,8 @@ public class Reconciliation implements InferenceStrategy, InitializingBean {
         NexusInstanceReference originalId = message.getOriginalId();
         boolean isOriginal = originalId.equals(message.getOriginalMessage().getInstanceReference());
 
-        Set<NexusInstanceReference> relativeInstances = indexingProvider.findInstancesWithLinkTo(HBPVocabulary.INFERENCE_EXTENDS, originalId, ReferenceType.INTERNAL);
-        Set<NexusInstanceReference> inferredInstances = indexingProvider.findInstancesWithLinkTo(HBPVocabulary.INFERENCE_OF, originalId, ReferenceType.INTERNAL);
+        Set<NexusInstanceReference> relativeInstances = indexingProvider.findInstancesWithLinkTo(HBPVocabulary.INFERENCE_EXTENDS, originalId);
+        Set<NexusInstanceReference> inferredInstances = indexingProvider.findInstancesWithLinkTo(HBPVocabulary.INFERENCE_OF, originalId);
         if (!isOriginal || (relativeInstances != null && !relativeInstances.isEmpty())) {
             Vertex originalVertex;
             if (isOriginal) {
