@@ -9,19 +9,24 @@ import com.arangodb.entity.CollectionType;
 import com.arangodb.model.AqlQueryOptions;
 import com.arangodb.model.CollectionCreateOptions;
 import com.github.jsonldjava.core.JsonLdConsts;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Tuple;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.query.ArangoQueryFactory;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.exceptions.UnexpectedNumberOfResults;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.exceptions.UnexpectedResultStructure;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.control.VertexRepository;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Tuple;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Vertex;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.humanbrainproject.knowledgegraph.indexing.control.MessageProcessor;
 import org.humanbrainproject.knowledgegraph.indexing.entity.IndexingMessage;
 import org.humanbrainproject.knowledgegraph.indexing.entity.QualifiedIndexingMessage;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
+import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
+import org.humanbrainproject.knowledgegraph.releasing.entity.ReleaseStatus;
+import org.humanbrainproject.knowledgegraph.releasing.entity.ReleaseStatusResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
@@ -88,7 +93,6 @@ public class ArangoRepository extends VertexRepository<ArangoConnection, ArangoD
     }
 
 
-
     public Set<ArangoDocumentReference> getReferencesBelongingToInstance(NexusInstanceReference nexusInstanceReference, ArangoConnection arangoConnection) {
         Set<ArangoCollectionReference> collections = new HashSet<>(arangoConnection.getEdgesCollectionNames());
         String query = queryFactory.queryForIdsWithProperty("_originalId", nexusInstanceReference.getFullId(true), collections);
@@ -103,7 +107,7 @@ public class ArangoRepository extends VertexRepository<ArangoConnection, ArangoD
     @Override
     public Vertex getVertexStructureById(ArangoDocumentReference documentReference, ArangoConnection arango) {
         Map document = arango.getOrCreateDB().getDocument(documentReference.getId(), Map.class);
-        if(document!=null) {
+        if (document != null) {
             NexusInstanceReference reference = NexusInstanceReference.createFromUrl(document.get("_originalId").toString());
             QualifiedIndexingMessage qualified = messageProcessor.qualify(new IndexingMessage(reference, transformer.getMapAsJson(document), null, null));
             return messageProcessor.createVertexStructure(qualified);
@@ -204,7 +208,6 @@ public class ArangoRepository extends VertexRepository<ArangoConnection, ArangoD
             logger.error("Was not able to delete document due to missing id");
         }
     }
-
 
 
     public void deleteDocument(ArangoDocumentReference document, ArangoDatabase db) {
@@ -361,12 +364,77 @@ public class ArangoRepository extends VertexRepository<ArangoConnection, ArangoD
         return m;
     }
 
-    public List<Map> getReleaseStatus(ArangoDocumentReference document, ArangoConnection driver) {
-        ArangoDatabase db = driver.getOrCreateDB();
-        Set<ArangoCollectionReference> edgesCollections = driver.getEdgesCollectionNames();
-        String query = queryFactory.releaseStatus(edgesCollections, document, driver);
-        ArangoCursor<Map> q = db.query(query, null, new AqlQueryOptions(), Map.class);
-        return q.asListRemaining();
+    public ReleaseStatusResponse getReleaseStatus(ArangoDocumentReference document, ArangoConnection inferredConnection, ArangoConnection releasedConnection) {
+        String queryInferred = queryFactory.getOriginalIdOfDocumentWithChildren(document, inferredConnection);
+        List<Map> inferredResult = inferredConnection.getOrCreateDB().query(queryInferred, null, new AqlQueryOptions(), Map.class).asListRemaining().stream().filter(Objects::nonNull).collect(Collectors.toList());
+        if (inferredResult.isEmpty()) {
+            return null;
+        } else if (inferredResult.size() == 1) {
+            String queryReleased = queryFactory.getOriginalIdOfDocumentWithChildren(document, releasedConnection);
+            List<Map> releasedResult = releasedConnection.getOrCreateDB().query(queryReleased, null, new AqlQueryOptions(), Map.class).asListRemaining().stream().filter(Objects::nonNull).collect(Collectors.toList());
+            ReleaseStatusResponse releaseStatusResponse = new ReleaseStatusResponse();
+            Map inferred = inferredResult.get(0);
+            Object inferredChildren = inferred.get("children");
+            if (!(inferredChildren instanceof List)) {
+                throw new UnexpectedResultStructure("Expected list for children");
+            }
+            if (releasedResult.isEmpty()) {
+                releaseStatusResponse.setRootStatus(ReleaseStatus.NOT_RELEASED);
+                List<String> releasedChildren = new ArrayList<>();
+                Map<NexusSchemaReference, Set<String>> keysBySchema = ((List<String>) inferredChildren).stream().filter(Objects::nonNull).map(NexusInstanceReference::createFromUrl).collect(Collectors.groupingBy(c -> c.getNexusSchema(), Collectors.mapping(NexusInstanceReference::getId, Collectors.toSet())));
+                for (NexusSchemaReference nexusSchemaReference : keysBySchema.keySet()) {
+                    String queryChildren = queryFactory.getOriginalIds(ArangoCollectionReference.fromNexusSchemaReference(nexusSchemaReference), keysBySchema.get(nexusSchemaReference), releasedConnection);
+                    List<Set> sets = releasedConnection.getOrCreateDB().query(queryChildren, null, new AqlQueryOptions(), Set.class).asListRemaining();
+                    if (sets.isEmpty() || sets.size() > 1) {
+                        throw new UnexpectedResultStructure(String.format("Unexpected number of elements when querying for originalIds: %d root elements found", sets.size()));
+                    }
+                    releasedChildren.addAll(sets.stream().filter(Objects::nonNull).map(s -> s.toString()).collect(Collectors.toSet()));
+                }
+                releaseStatusResponse.setChildrenStatus(findChildrenReleaseState((List<String>) inferredChildren, releasedChildren));
+                return releaseStatusResponse;
+            } else if (releasedResult.size() == 1) {
+                Object inferredId = inferred.get("root");
+                Map released = releasedResult.get(0);
+                Object releasedId = released.get("root");
+                if (inferredId == null) {
+                    throw new UnexpectedResultStructure("Did not expect the result structure for root");
+                }
+                if(releasedId==null){
+                    releaseStatusResponse.setRootStatus(ReleaseStatus.NOT_RELEASED);
+                } else if (inferredId.equals(releasedId)) {
+                    releaseStatusResponse.setRootStatus(ReleaseStatus.RELEASED);
+                } else {
+                    releaseStatusResponse.setRootStatus(ReleaseStatus.HAS_CHANGED);
+                }
+                Object releasedChildren = released.get("children");
+                if (!(inferredChildren instanceof List && releasedChildren instanceof List)) {
+                    throw new UnexpectedResultStructure("Expected list for children");
+                }
+                ReleaseStatus childrenReleaseState = findChildrenReleaseState((List<String>) inferredChildren, (List<String>) releasedChildren);
+                releaseStatusResponse.setChildrenStatus(childrenReleaseState);
+                return releaseStatusResponse;
+            } else {
+                throw new UnexpectedNumberOfResults(String.format("Too many results in query for id %s in inferred database", document.getId()));
+            }
+        }
+        return null;
+    }
+
+    private ReleaseStatus findChildrenReleaseState
+            (List<String> inferredChildren, List<String> releasedChildren) {
+        inferredChildren.removeAll(releasedChildren);
+        if (inferredChildren.isEmpty()) {
+            return null;
+        } else {
+            List<String> inferredChildrenWithoutRevision = inferredChildren.stream().map(NexusInstanceReference::createFromUrl).filter(Objects::nonNull).map(c -> c.getRelativeUrl().getUrl()).collect(Collectors.toList());
+            List<String> releasedChildrenWithoutRevision = releasedChildren.stream().map(NexusInstanceReference::createFromUrl).filter(Objects::nonNull).map(c -> c.getRelativeUrl().getUrl()).collect(Collectors.toList());
+            inferredChildrenWithoutRevision.removeAll(releasedChildrenWithoutRevision);
+            if (inferredChildrenWithoutRevision.isEmpty()) {
+                return ReleaseStatus.HAS_CHANGED;
+            } else {
+                return ReleaseStatus.NOT_RELEASED;
+            }
+        }
     }
 
     public List<Map> getInstance(ArangoDocumentReference instanceReference, ArangoConnection driver){

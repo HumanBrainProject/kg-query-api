@@ -1,11 +1,11 @@
 package org.humanbrainproject.knowledgegraph.query.boundary;
 
-import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
-import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoDatabaseFactory;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoRepository;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
+import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
+import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -39,10 +39,6 @@ public class ArangoGraph {
 
     public Map getInstanceList(NexusSchemaReference schemaReference, Integer from, Integer size, String searchTerm){
         return arangoRepository.getInstanceList(ArangoCollectionReference.fromNexusSchemaReference(schemaReference), from, size, searchTerm ,databaseFactory.getInferredDB());
-    }
-
-    public List<Map> getReleaseStatus(NexusInstanceReference instance){
-        return arangoRepository.getReleaseStatus(ArangoDocumentReference.fromNexusInstance(instance), databaseFactory.getInternalDB());
     }
 
     public List<Map> getInstance(ArangoDocumentReference instanceReference){

@@ -5,6 +5,7 @@ import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.nexusExt.control.NexusReleasingController;
 import org.humanbrainproject.knowledgegraph.releasing.control.ReleaseControl;
+import org.humanbrainproject.knowledgegraph.releasing.entity.ReleaseStatusResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -17,9 +18,14 @@ public class Releasing {
     @Autowired
     NexusReleasingController nexusReleasingController;
 
+
+
     public void release(NexusInstanceReference instanceReference, OidcAccessToken accessToken){
         NexusInstanceReference nexusInstanceFromInferredArangoEntry = releaseControl.findNexusInstanceFromInferredArangoEntry(ArangoDocumentReference.fromNexusInstance(instanceReference));
         nexusReleasingController.release(nexusInstanceFromInferredArangoEntry, nexusInstanceFromInferredArangoEntry.getRevision(), accessToken);
     }
 
+    public ReleaseStatusResponse getReleaseStatus(NexusInstanceReference instanceReference){
+        return releaseControl.getReleaseStatus(instanceReference);
+    }
 }

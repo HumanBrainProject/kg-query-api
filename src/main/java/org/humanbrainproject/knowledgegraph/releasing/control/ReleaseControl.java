@@ -4,6 +4,7 @@ import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoRepository;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
+import org.humanbrainproject.knowledgegraph.releasing.entity.ReleaseStatusResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -27,5 +28,12 @@ public class ReleaseControl {
         return null;
     }
 
+
+
+    public ReleaseStatusResponse getReleaseStatus(NexusInstanceReference instance){
+        ReleaseStatusResponse releaseStatus = arangoRepository.getReleaseStatus(ArangoDocumentReference.fromNexusInstance(instance), databaseFactory.getInferredDB(), databaseFactory.getReleasedDB());
+        releaseStatus.setId(instance);
+        return releaseStatus;
+    }
 
 }

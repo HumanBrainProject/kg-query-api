@@ -1,10 +1,10 @@
 package org.humanbrainproject.knowledgegraph.query.api;
 
 import io.swagger.annotations.Api;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
 import org.humanbrainproject.knowledgegraph.query.boundary.ArangoGraph;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -78,21 +78,6 @@ public class GraphAPI {
         }
     }
 
-    @GetMapping(value = "/releasestatus/{org}/{domain}/{schema}/{version}/{id}", consumes = { MediaType.WILDCARD})
-    public ResponseEntity<Map<String,Object>> getReleaseStatus(@PathVariable("org") String org, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("version") String version, @PathVariable("id") String id) throws Exception{
-        try{
-            NexusInstanceReference instanceReference = new NexusInstanceReference(org, domain, schema, version, id);
-            List<Map> rootList = graph.getReleaseStatus(instanceReference);
-            if(rootList.isEmpty()){
-                throw new Exception("Document not found");
-            }
-            Map root = rootList.get(0);
-            return ResponseEntity.ok(root);
-
-        } catch (HttpClientErrorException e){
-            return ResponseEntity.status(e.getStatusCode()).build();
-        }
-    }
 
     //TODO rewrite
     @GetMapping(value = "/document/{collection}", consumes = { MediaType.WILDCARD})

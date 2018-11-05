@@ -6,7 +6,6 @@ import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.ReferenceType;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
-import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -157,30 +156,19 @@ public class ArangoQueryFactory {
                         "    RETURN doc", collection.getName(), search, limit);
     }
 
-    public String releaseStatus(Set<ArangoCollectionReference> edgeCollections, ArangoDocumentReference documentReference, ArangoConnection driver) {
-        //TODO still needed with release database?
-//
-//        Set<ArangoCollectionReference> collectionLabels= driver!=null ? driver.filterExistingCollectionLabels(edgeCollections) : edgeCollections;
-//        Set<ArangoCollectionReference> collectionLabelsFiltered = collectionLabels.stream().filter( col -> !col.getTypeName().startsWith("rel-www_w3_org")).collect(Collectors.toSet());
-//        String names = String.join("`, `", collectionLabelsFiltered.stream().map(ArangoCollectionReference::getTypeName).collect(Collectors.toSet()));
-//        return String.format("" +
-//                "LET doc = DOCUMENT(\"%s\")\n" +
-//                "LET root_doc = doc._id != null? doc:DOCUMENT(\"%s\")\n" +
-//                "LET status = (FOR status_doc IN 1..1 INBOUND root_doc `rel-hbp_eu-minds-releaseinstance`\n" +
-//                "        RETURN DISTINCT status_doc.`http://hbp.eu/minds#releasestate`\n" +
-//                "    )\n" +
-//                "    LET child_status  =  ( \n" +
-//                "        FOR level1_doc  IN 1..6 OUTBOUND root_doc `%s`\n" +
-//                "            LET level1_status = ( \n" +
-//                "                FOR level1_status_doc IN 1..1 INBOUND level1_doc `rel-hbp_eu-minds-releaseinstance`\n" +
-//                "                    RETURN DISTINCT level1_status_doc.`http://hbp.eu/minds#releasestate`\n" +
-//                "                )\n" +
-//                "            LET child_s = \"released\" IN status? \"RELEASED\": \"NOT_RELEASED\"\n" +
-//                "            RETURN child_s\n" +
-//                "        )\n" +
-//                "    LET s = \"released\" IN status? \"RELEASED\": \"NOT_RELEASED\"\n" +
-//                "    return {\"status\":s, \"child_status\":child_status }",reconciledId, documentReference.getId(), names);
-        return null;
+    public String getOriginalIdOfDocumentWithChildren(ArangoDocumentReference documentReference, ArangoConnection connection) {
+        StringBuilder queryBuilder = new StringBuilder();
+        queryBuilder.append(String.format("LET doc = DOCUMENT(\"%s\")\n", documentReference.getId()));
+        Set<ArangoCollectionReference> edgesCollectionNames = connection.getEdgesCollectionNames();
+        if(!edgesCollectionNames.isEmpty()){
+            String names = String.join("`, `", edgesCollectionNames.stream().map(ArangoCollectionReference::getName).collect(Collectors.toSet()));
+            queryBuilder.append(String.format("LET children = (FOR child IN 1..6 OUTBOUND doc `%s` return child._originalId ) \n", names));
+        }
+        else{
+            queryBuilder.append("LET children = [] \n");
+        }
+        queryBuilder.append("RETURN {\"root\": doc._originalId, \"children\": children}");
+        return queryBuilder.toString();
     }
 
     public String getInstance(ArangoDocumentReference ref){
@@ -192,4 +180,10 @@ public class ArangoQueryFactory {
     }
 
 
+    public String getOriginalIds(ArangoCollectionReference collectionReference, Set<String> keys, ArangoConnection connection) {
+         return String.format("FOR doc IN `%s`\n" +
+                "FILTER doc._key IN [\"%s\"]\n" +
+                "RETURN doc._originalId\n" +
+                "\n", collectionReference.getName(), String.join("\", \"", keys));
+    }
 }
