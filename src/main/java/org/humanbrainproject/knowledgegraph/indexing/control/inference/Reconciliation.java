@@ -1,7 +1,7 @@
 package org.humanbrainproject.knowledgegraph.indexing.control.inference;
 
 import com.github.jsonldjava.core.JsonLdConsts;
-import deprecated.exceptions.InferenceException;
+import org.humanbrainproject.knowledgegraph.indexing.exception.InferenceException;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoDatabaseFactory;

@@ -1,7 +1,7 @@
 package org.humanbrainproject.knowledgegraph.query.control;
 
 import com.github.jsonldjava.core.JsonLdConsts;
-import deprecated.control.GraphQueryKeys;
+import org.humanbrainproject.knowledgegraph.query.entity.GraphQueryKeys;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.SchemaOrgVocabulary;
 import org.humanbrainproject.knowledgegraph.query.entity.SpecField;
 import org.humanbrainproject.knowledgegraph.query.entity.SpecTraverse;

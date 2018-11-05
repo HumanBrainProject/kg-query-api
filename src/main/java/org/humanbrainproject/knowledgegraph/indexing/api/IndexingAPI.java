@@ -6,7 +6,6 @@ import io.swagger.annotations.ApiOperation;
 import org.humanbrainproject.knowledgegraph.indexing.boundary.GraphIndexing;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.IndexingMessage;
-import deprecated.exceptions.InvalidPayloadException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,7 +35,7 @@ public class IndexingAPI {
             IndexingMessage message = new IndexingMessage(path, payload, timestamp, authorId);
             indexer.insert(message);
             return ResponseEntity.ok(null);
-        } catch (JsonLdError | InvalidPayloadException e) {
+        } catch (JsonLdError e) {
             logger.warn(String.format("INS: Was not able to process the payload %s", payload), e);
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch(Exception e){
@@ -54,7 +53,7 @@ public class IndexingAPI {
             IndexingMessage message = new IndexingMessage(path, payload, timestamp, authorId);
             indexer.update(message);
             return ResponseEntity.ok(null);
-        } catch (JsonLdError | InvalidPayloadException  e) {
+        } catch (JsonLdError  e) {
             logger.warn(String.format("UPD: Was not able to process the payload %s", payload), e);
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch(Exception e){
@@ -70,9 +69,6 @@ public class IndexingAPI {
         try {
             indexer.delete(path);
             return ResponseEntity.ok(String.format("Successfully deleted the instance %s", path.getRelativeUrl()));
-        } catch(InvalidPayloadException e ){
-            logger.error(String.format("DEL: Was not able to delete the instance %s", path.getRelativeUrl() ), e);
-            return ResponseEntity.badRequest().body(e.getMessage());
         }
         catch(Exception e){
             logger.error(String.format("DEL: Was not able to delete the instance %s", path.getRelativeUrl() ), e);

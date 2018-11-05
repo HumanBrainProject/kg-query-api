@@ -2,7 +2,7 @@ package org.humanbrainproject.knowledgegraph.statistics.boundary;
 
 import com.arangodb.ArangoDatabase;
 import com.arangodb.entity.CollectionType;
-import deprecated.entity.Tuple;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Tuple;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoDatabaseFactory;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoRepository;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;

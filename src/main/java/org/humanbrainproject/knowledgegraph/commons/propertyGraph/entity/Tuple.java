@@ -1,4 +1,4 @@
-package deprecated.entity;
+package org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity;
 
 public class Tuple<V,T> {
     private final V value1;

@@ -1,4 +1,4 @@
-package deprecated.entity.query;
+package org.humanbrainproject.knowledgegraph.query.entity;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 
