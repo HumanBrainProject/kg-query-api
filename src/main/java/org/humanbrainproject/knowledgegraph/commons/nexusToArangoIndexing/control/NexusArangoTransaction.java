@@ -2,11 +2,13 @@ package org.humanbrainproject.knowledgegraph.commons.nexusToArangoIndexing.contr
 
 import com.arangodb.ArangoDatabase;
 import com.arangodb.entity.CollectionType;
+import com.arangodb.model.CollectionCreateOptions;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.SystemNexusClient;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoConnection;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoDocumentConverter;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoRepository;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.control.DatabaseTransaction;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.EdgeX;
@@ -81,6 +83,10 @@ public class NexusArangoTransaction implements DatabaseTransaction {
                     ArangoDocumentReference document = ArangoDocumentReference.fromEdge(edge);
                     String jsonFromEdge = arangoDocumentConverter.createJsonFromEdge(document, vertex, edge, insertItem.getBlacklist());
                     repository.insertDocument(document, jsonFromEdge, CollectionType.EDGES, database);
+                    ArangoCollectionReference collection = ArangoCollectionReference.fromNexusSchemaReference(edge.getReference().getNexusSchema());
+                    if(!database.collection(collection.getName()).exists()) {
+                        database.createCollection(collection.getName(), new CollectionCreateOptions().type(CollectionType.DOCUMENT));
+                    }
                 }
             }
         }
