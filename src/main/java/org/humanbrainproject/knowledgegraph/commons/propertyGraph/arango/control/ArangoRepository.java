@@ -10,6 +10,7 @@ import com.arangodb.model.AqlQueryOptions;
 import com.arangodb.model.CollectionCreateOptions;
 import com.github.jsonldjava.core.JsonLdConsts;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
+import org.humanbrainproject.knowledgegraph.commons.labels.SemanticsToHumanTranslator;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.query.ArangoQueryFactory;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
@@ -19,6 +20,7 @@ import org.humanbrainproject.knowledgegraph.commons.propertyGraph.control.Vertex
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Tuple;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Vertex;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
+import org.humanbrainproject.knowledgegraph.commons.vocabulary.SchemaOrgVocabulary;
 import org.humanbrainproject.knowledgegraph.indexing.control.MessageProcessor;
 import org.humanbrainproject.knowledgegraph.indexing.entity.IndexingMessage;
 import org.humanbrainproject.knowledgegraph.indexing.entity.QualifiedIndexingMessage;
@@ -50,6 +52,10 @@ public class ArangoRepository extends VertexRepository<ArangoConnection, ArangoD
 
     @Autowired
     MessageProcessor messageProcessor;
+
+    @Autowired
+    SemanticsToHumanTranslator semanticsToHumanTranslator;
+
 
     @Override
     public void clearDatabase(ArangoConnection connection) {
@@ -318,6 +324,52 @@ public class ArangoRepository extends VertexRepository<ArangoConnection, ArangoD
         }
     }
 
+
+    private Map interpretMap(Map map){
+        if(map.containsKey(SchemaOrgVocabulary.NAME)){
+            map.put("label", map.get(SchemaOrgVocabulary.NAME));
+        }
+        if(map.containsKey(JsonLdConsts.TYPE)){
+            Object types = map.get(JsonLdConsts.TYPE);
+            Object relevantType = null;
+            if(types instanceof List && !((List)types).isEmpty()){
+                relevantType = ((List)types).get(0);
+            }
+            else{
+                relevantType = types;
+            }
+            if(relevantType!=null) {
+                map.put("type", semanticsToHumanTranslator.translateSemanticValueToHumanReadableLabel(relevantType.toString()));
+            }
+        }
+        if(map.containsKey(JsonLdConsts.ID)){
+            NexusInstanceReference fromUrl = NexusInstanceReference.createFromUrl((String)map.get(JsonLdConsts.ID));
+            map.put("relativeUrl", fromUrl.getRelativeUrl().getUrl());
+        }
+
+        Object linkType = map.get("linkType");
+        if(linkType!=null){
+            ArangoDocumentReference arangoDocumentReference = ArangoDocumentReference.fromId((String)linkType);
+            map.put("linkType", semanticsToHumanTranslator.translateArangoCollectionName(arangoDocumentReference.getCollection()));
+        }
+
+        for (Object key : map.keySet()) {
+            if(map.get(key) instanceof Map){
+                interpretMap((Map)map.get(key));
+            }
+            else if (map.get(key) instanceof Collection){
+                for (Object o : ((Collection) map.get(key))) {
+                    if(o instanceof Map){
+                        interpretMap((Map)o);
+                    }
+                }
+            }
+        }
+        return map;
+
+    }
+
+
     public Map getReleaseGraph(ArangoDocumentReference document, Optional<Integer> maxDepth) {
         ArangoDatabase db = databaseFactory.getInferredDB().getOrCreateDB();
         String query = queryFactory.queryReleaseGraph(databaseFactory.getInferredDB().getEdgesCollectionNames(), document, maxDepth.orElse(6));
@@ -326,7 +378,7 @@ public class ArangoRepository extends VertexRepository<ArangoConnection, ArangoD
         if (results.size() > 1) {
             throw new UnexpectedNumberOfResults("The release graph query should only return a single document since it is based on an id");
         }
-        return !results.isEmpty() ? results.get(0) : null;
+        return !results.isEmpty() ? interpretMap(results.get(0)) : null;
     }
 
     public List<Map> getGetEditorSpecDocument(ArangoCollectionReference collection, ArangoConnection driver) {
@@ -398,7 +450,7 @@ public class ArangoRepository extends VertexRepository<ArangoConnection, ArangoD
     }
 
 
-    public ReleaseStatusResponse getReleaseStatusAlternative(ArangoDocumentReference document) {
+    public ReleaseStatusResponse getReleaseStatus(ArangoDocumentReference document) {
         Map releaseGraph = getReleaseGraph(document, Optional.empty());
         if (releaseGraph != null) {
             ReleaseStatusResponse response = new ReleaseStatusResponse();
