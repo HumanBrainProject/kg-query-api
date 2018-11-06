@@ -39,7 +39,7 @@ public class NexusReleasingController {
     public IndexingMessage release(NexusInstanceReference instanceReference, Integer revision, OidcAccessToken oidcAccessToken) {
         Map<String, Object> payload = new LinkedHashMap<>();
         Map<String, Object> reference = new HashMap<>();
-        reference.put(JsonLdConsts.ID, configuration.getAbsoluteUrl(instanceReference));
+        reference.put(JsonLdConsts.ID, configuration.getExternalAbsoluteUrl(instanceReference));
         payload.put(HBPVocabulary.RELEASE_REVISION, revision);
         payload.put(HBPVocabulary.RELEASE_INSTANCE, reference);
         payload.put(JsonLdConsts.TYPE, HBPVocabulary.RELEASE_TYPE);
