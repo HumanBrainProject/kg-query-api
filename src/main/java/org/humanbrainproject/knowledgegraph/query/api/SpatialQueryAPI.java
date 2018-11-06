@@ -6,12 +6,14 @@ import org.humanbrainproject.knowledgegraph.query.boundary.Templating;
 import org.humanbrainproject.knowledgegraph.query.entity.SpatialSearchResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import springfox.documentation.annotations.ApiIgnore;
 
 import javax.ws.rs.core.MediaType;
 import java.util.Set;
 
 @RestController
 @RequestMapping(value = "/spatial", produces = MediaType.APPLICATION_JSON)
+@ApiIgnore
 @Api(value="/spatial", description = "The API for querying the knowledge graph")
 public class SpatialQueryAPI {
 

@@ -11,7 +11,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 @Component
 public class ArangoGraph {
@@ -26,13 +25,6 @@ public class ArangoGraph {
         return arangoRepository.inDepthGraph(ArangoDocumentReference.fromNexusInstance(instance), step, databaseFactory.getDefaultDB());
     }
 
-    public List<Map> getReleaseGraph(NexusInstanceReference instance, Optional<Integer> maxDepthOpt) {
-        Integer maxDepth = maxDepthOpt.orElse(6);
-        return arangoRepository.releaseGraph(ArangoDocumentReference.fromNexusInstance(instance), maxDepth, databaseFactory.getDefaultDB());
-    }
-    public List<Map> getDocument(NexusInstanceReference instance) {
-        return  arangoRepository.getDocumentWithReleaseStatus(ArangoDocumentReference.fromNexusInstance(instance), databaseFactory.getDefaultDB());
-    }
     public List<Map> getGetEditorSpecDocument(ArangoCollectionReference collection) {
         return  arangoRepository.getGetEditorSpecDocument(collection, databaseFactory.getInternalDB());
     }

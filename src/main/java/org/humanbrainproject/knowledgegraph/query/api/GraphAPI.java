@@ -14,7 +14,6 @@ import org.springframework.web.client.HttpClientErrorException;
 import javax.ws.rs.core.MediaType;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 @RestController
 @RequestMapping(value = "/arango", produces = MediaType.APPLICATION_JSON)
@@ -30,24 +29,6 @@ public class GraphAPI {
             NexusInstanceReference instanceReference = new NexusInstanceReference(org, domain, schema, version, id);
             //TODO Validate step value
             return ResponseEntity.ok(graph.getGraph(instanceReference, step));
-        } catch (HttpClientErrorException e){
-            return ResponseEntity.status(e.getStatusCode()).build();
-        }
-    }
-
-    @GetMapping(value = "/release/{org}/{domain}/{schema}/{version}/{id}", consumes = { MediaType.WILDCARD})
-    public ResponseEntity<Map<String,Object>> getReleaseGraph(@PathVariable("org") String org, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("version") String version, @PathVariable("id") String id) throws Exception{
-        try{
-            NexusInstanceReference instanceReference = new NexusInstanceReference(org, domain, schema, version, id);
-            List<Map> rootList = graph.getDocument(instanceReference);
-            if(rootList.isEmpty()){
-                throw new Exception("Document not found");
-            }
-            Map root = rootList.get(0);
-            List<Map> res = graph.getReleaseGraph(instanceReference, Optional.empty());
-            root.put("children", res);
-            return ResponseEntity.ok(root);
-
         } catch (HttpClientErrorException e){
             return ResponseEntity.status(e.getStatusCode()).build();
         }
@@ -78,8 +59,6 @@ public class GraphAPI {
         }
     }
 
-
-    //TODO rewrite
     @GetMapping(value = "/document/{collection}", consumes = { MediaType.WILDCARD})
     public ResponseEntity<List<Map>> getGetEditorSpecDocument(@PathVariable("collection") String col) throws Exception{
         try{

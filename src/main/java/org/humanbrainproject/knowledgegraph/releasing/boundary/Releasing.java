@@ -9,6 +9,9 @@ import org.humanbrainproject.knowledgegraph.releasing.entity.ReleaseStatusRespon
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.Map;
+import java.util.Optional;
+
 @Component
 public class Releasing {
 
@@ -17,8 +20,6 @@ public class Releasing {
 
     @Autowired
     NexusReleasingController nexusReleasingController;
-
-
 
     public void release(NexusInstanceReference instanceReference, OidcAccessToken accessToken){
         NexusInstanceReference nexusInstanceFromInferredArangoEntry = releaseControl.findNexusInstanceFromInferredArangoEntry(ArangoDocumentReference.fromNexusInstance(instanceReference));
@@ -32,4 +33,9 @@ public class Releasing {
     public ReleaseStatusResponse getReleaseStatus(NexusInstanceReference instanceReference){
         return releaseControl.getReleaseStatus(instanceReference);
     }
+
+    public Map<String, Object> getReleaseGraph(NexusInstanceReference instanceReference){
+        return releaseControl.getReleaseGraph(instanceReference, Optional.empty());
+    }
+
 }

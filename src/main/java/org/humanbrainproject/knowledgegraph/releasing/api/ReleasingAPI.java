@@ -12,10 +12,11 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.HttpClientErrorException;
 
 import javax.ws.rs.core.MediaType;
+import java.util.Map;
 
 @RestController
-@RequestMapping(value = "/api/releasing", produces = MediaType.APPLICATION_JSON)
-@Api(value = "/api/releasing", description = "The extension API to release resources in the Knowledge Graph")
+@RequestMapping(value = "/api/releases", produces = MediaType.APPLICATION_JSON)
+@Api(value = "/api/releases", description = "The extension API to release resources in the Knowledge Graph")
 public class ReleasingAPI {
 
     @Autowired
@@ -34,6 +35,25 @@ public class ReleasingAPI {
             return ResponseEntity.status(e.getStatusCode()).build();
         }
     }
+
+
+    @GetMapping(value = "/{org}/{domain}/{schema}/{version}/{id}/graph", consumes = { MediaType.WILDCARD})
+    public ResponseEntity<Map<String,Object>> getReleaseGraph(@PathVariable("org") String org, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("version") String version, @PathVariable("id") String id, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken) {
+        try{
+            NexusInstanceReference instanceReference = new NexusInstanceReference(org, domain, schema, version, id);
+            Map<String, Object> releaseGraph = releasing.getReleaseGraph(instanceReference);
+            if(releaseGraph==null){
+                return ResponseEntity.notFound().build();
+            }
+            else{
+                return ResponseEntity.ok(releaseGraph);
+            }
+        } catch (HttpClientErrorException e){
+            return ResponseEntity.status(e.getStatusCode()).build();
+        }
+    }
+
+
 
     @PutMapping(value = "/{org}/{domain}/{schema}/{version}/{id}", consumes = {MediaType.APPLICATION_JSON})
     public ResponseEntity<Void> release(@PathVariable("org") String org, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("version") String version, @PathVariable("id") String id, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken) {

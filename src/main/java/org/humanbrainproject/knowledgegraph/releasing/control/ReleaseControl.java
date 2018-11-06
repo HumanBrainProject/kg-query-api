@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
+import java.util.Optional;
 
 @Component
 public class ReleaseControl {
@@ -29,9 +30,15 @@ public class ReleaseControl {
     }
 
     public ReleaseStatusResponse getReleaseStatus(NexusInstanceReference instance){
-        ReleaseStatusResponse releaseStatus = arangoRepository.getReleaseStatus(ArangoDocumentReference.fromNexusInstance(instance), databaseFactory.getInferredDB(), databaseFactory.getReleasedDB());
-        releaseStatus.setId(instance);
+        ReleaseStatusResponse releaseStatus = arangoRepository.getReleaseStatusAlternative(ArangoDocumentReference.fromNexusInstance(instance));
+        if(releaseStatus!=null) {
+            releaseStatus.setId(instance);
+        }
         return releaseStatus;
+    }
+
+    public Map getReleaseGraph(NexusInstanceReference instance, Optional<Integer> maxDepthOpt) {
+        return arangoRepository.getReleaseGraph(ArangoDocumentReference.fromNexusInstance(instance),  maxDepthOpt);
     }
 
 }

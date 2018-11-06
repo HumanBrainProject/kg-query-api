@@ -1,19 +1,25 @@
 package org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.query;
 
+import com.github.jsonldjava.core.JsonLdConsts;
+import org.apache.commons.text.StringSubstitutor;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoConnection;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.ReferenceType;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
+import org.humanbrainproject.knowledgegraph.commons.vocabulary.SchemaOrgVocabulary;
+import org.humanbrainproject.knowledgegraph.releasing.entity.ReleaseStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 @Component
 public class ArangoQueryFactory {
+
 
     @Autowired
     NexusConfiguration configuration;
@@ -29,7 +35,6 @@ public class ArangoQueryFactory {
         }
         return null;
     }
-
 
     public String queryPropertyCount(ArangoCollectionReference collection) {
         return String.format("LET attributesPerDocument = ( FOR doc IN `%s` RETURN ATTRIBUTES(doc, true) )\n" +
@@ -67,18 +72,6 @@ public class ArangoQueryFactory {
                 "return path", outbound, inbound);
     }
 
-    public String getDocumentWithReleaseStatus(ArangoDocumentReference document) {
-//        return String.format("LET doc = DOCUMENT(\"%s\")\n" +
-//                "RETURN doc", documentID);
-        return String.format(
-                "LET doc = DOCUMENT(\"%s\")" +
-                        "LET status = (FOR status_doc IN 1..1 INBOUND doc `%s`\n" +
-                        "FILTER  status_doc.`%s` != null \n" +
-                        "RETURN DISTINCT status_doc.`%s`)\n" +
-                        "RETURN MERGE({\"status\": status, \"rev\": doc.`%s` }, doc)"
-                , document.getId(), ArangoCollectionReference.fromFieldName(HBPVocabulary.RELEASE_INSTANCE).getName(), HBPVocabulary.RELEASE_STATE, HBPVocabulary.RELEASE_STATE, HBPVocabulary.PROVENANCE_REVISION);
-    }
-
     public String getGetEditorSpecDocument(ArangoCollectionReference collection) {
         return String.format(
                 "FOR spec IN `%s`" +
@@ -91,50 +84,70 @@ public class ArangoQueryFactory {
     }
 
 
-    public String queryOutboundRelationsForDocument(ArangoDocumentReference document, Set<ArangoCollectionReference> edgeCollections){
+    public String queryOutboundRelationsForDocument(ArangoDocumentReference document, Set<ArangoCollectionReference> edgeCollections) {
         return String.format("FOR rel, edge IN 1..1 OUTBOUND DOCUMENT(\"%s\") `%s` RETURN edge._id\n", document.getId(), String.join("`, `", edgeCollections.stream().map(ArangoCollectionReference::getName).collect(Collectors.toSet())));
     }
 
-
-
-    public String queryDocumentWith1LevelOfEmbeddedInstances(ArangoDocumentReference document, Set<ArangoCollectionReference> arangoCollections) {
-        Set<String> embeddedCollections = arangoCollections.stream().filter(c -> c.getName().startsWith(ReferenceType.EMBEDDED.getPrefix() + "-")).map(ArangoCollectionReference::getName).collect(Collectors.toSet());
-        return String.format("LET doc = DOCUMENT(\"%s\")\n" +
-                "LET embedded = (FOR vertex, edge IN 1..1 OUTBOUND doc `%s`\n" +
-                "    COLLECT name = edge._name INTO verticesByEdgeName\n" +
-                "    SORT verticesByEdgeName.edge._orderNumber\n" +
-                "    RETURN {\n" +
-                "        [ name ]: (FOR vertexByEdgeName IN verticesByEdgeName[*]\n" +
-                "                RETURN vertexByEdgeName.vertex)\n" +
-                "    })\n" +
-                "\n" +
-                "RETURN MERGE(APPEND([doc], embedded))", document.getId(), String.join("`, `", embeddedCollections));
+    public String queryReleaseGraph(Set<ArangoCollectionReference> edgeCollections, ArangoDocumentReference rootInstance, Integer maxDepth) {
+        String names = String.join("`, `", edgeCollections.stream().map(ArangoCollectionReference::getName).collect(Collectors.toSet()));
+        return childrenStatus(rootInstance, null, 0, maxDepth, names);
     }
 
 
-    public String queryReleaseGraph(Set<ArangoCollectionReference> edgeCollections, ArangoDocumentReference rootInstance, Integer maxDepth, ArangoConnection driver) {
-        Set<ArangoCollectionReference> collectionLabels = driver != null ? driver.filterExistingCollectionLabels(edgeCollections) : edgeCollections;
-        String names = String.join("`, `", collectionLabels.stream().map(ArangoCollectionReference::getName).collect(Collectors.toSet()));
-        String start = String.format("DOCUMENT(\"%s\")", rootInstance.getId());
-        return childrenStatus(start, 1, maxDepth, names);
+    private String createIndent(int level) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < level; i++) {
+            sb.append("   ");
+        }
+        return sb.toString();
     }
 
-    private String childrenStatus(String startingVertex, Integer level, Integer maxDepth, String collectionLabels) {
+    private String childrenStatus(ArangoDocumentReference rootInstance, String startingVertex, Integer level, Integer maxDepth, String collectionLabels) {
         String name = "level" + level;
         String childrenQuery = "[]";
         if (level < maxDepth) {
-            childrenQuery = String.format("(%s)", childrenStatus(name + "_doc", level + 1, maxDepth, collectionLabels));
+            childrenQuery = String.format("(%s)", childrenStatus(rootInstance, name + "_doc", level + 1, maxDepth, collectionLabels));
         }
 
-        return String.format("FOR %s_doc, %s_edge IN 1..1 OUTBOUND %s `%s`\n" +
-                        "SORT %s_doc.`@type`, %s_doc.`http://schema.org/name`\n" +
-                        "LET %s_status = (FOR %s_status_doc IN 1..1 INBOUND %s_doc `rel-hbp_eu-minds-releaseinstance`\n" +
-                        "FILTER  %s_status_doc.`http://hbp.eu/minds#releasestate` != null \n" +
-                        "RETURN DISTINCT %s_status_doc.`http://hbp.eu/minds#releasestate`)\n" +
-                        "LET %s_children = %s\n" +
-                        "RETURN MERGE({\"status\": %s_status, \"children\": %s_children, \"linkType\": %s_edge._id, \"rev\": %s_doc.`http://schema.hbp.eu/internal#rev`}, %s_doc)\n",
-                name, name, startingVertex, collectionLabels, name, name, name, name, name, name, name, name, childrenQuery, name, name, name, name, name
-        );
+        Map<String, String> valueMap = new HashMap<>();
+        valueMap.put("name", "level" + level);
+        valueMap.put("startId", rootInstance.getId());
+        valueMap.put("doc", startingVertex);
+        valueMap.put("collections", collectionLabels);
+        valueMap.put("releaseInstanceRelation", ArangoCollectionReference.fromFieldName(HBPVocabulary.RELEASE_INSTANCE).getName());
+        valueMap.put("releaseState", HBPVocabulary.RELEASE_STATE);
+        valueMap.put("revision", HBPVocabulary.PROVENANCE_REVISION);
+        valueMap.put("childrenQuery", childrenQuery);
+        valueMap.put("schemaOrgName", SchemaOrgVocabulary.NAME);
+        valueMap.put("releaseInstanceProperty", HBPVocabulary.RELEASE_INSTANCE);
+        valueMap.put("releaseRevisionProperty", HBPVocabulary.RELEASE_REVISION);
+        valueMap.put("nexusBaseForInstances", configuration.getNexusBase(NexusConfiguration.ResourceType.DATA));
+        valueMap.put("originalId", "_originalId");
+        valueMap.put("releasedValue", ReleaseStatus.RELEASED.name());
+        valueMap.put("changedValue", ReleaseStatus.HAS_CHANGED.name());
+        valueMap.put("notReleasedValue", ReleaseStatus.NOT_RELEASED.name());
+
+        String indent = createIndent(level);
+        String query = "";
+        if (level == 0) {
+            query += indent + "LET ${name}_doc = DOCUMENT(\"${startId}\")\n ";
+        } else {
+            query += indent + "FOR ${name}_doc, ${name}_edge IN 1..1 OUTBOUND ${doc} `${collections}`\n " +
+                    indent + "SORT ${name}_doc.`" + JsonLdConsts.TYPE + "`, ${name}_doc.`${schemaOrgName}`\n";
+        }
+        query += indent + "LET ${name}_release = (FOR ${name}_status_doc IN 1..1 INBOUND ${name}_doc `${releaseInstanceRelation}`\n" +
+                indent + "  LET ${name}_release_instance = SUBSTITUTE(CONCAT(${name}_status_doc.`${releaseInstanceProperty}`.`" + JsonLdConsts.ID + "`, \"?rev=\", ${name}_status_doc.`${releaseRevisionProperty}`), \"${nexusBaseForInstances}/\", \"\")\n" +
+                indent + "  RETURN ${name}_release_instance==${name}_doc.${originalId} ? \"${releasedValue}\" : \"${changedValue}\"\n" +
+                indent + ")\n" +
+                indent + "LET ${name}_status = LENGTH(${name}_release)>0 ? ${name}_release[0] : \"${notReleasedValue}\"\n" +
+                indent + "LET ${name}_children = ${childrenQuery}\n";
+        if (level == 0) {
+            query += indent + "RETURN MERGE({\"status\": ${name}_status, \"children\": ${name}_children, \"rev\": ${name}_doc.`${revision}` }, ${name}_doc)";
+        } else {
+            query += indent + "RETURN MERGE({\"status\": ${name}_status, \"children\": ${name}_children, \"linkType\": ${name}_edge._id, \"rev\": ${name}_doc.`${revision}`}, ${name}_doc)\n";
+        }
+        return StringSubstitutor.replace(query, valueMap);
+
     }
 
     public String getInstanceList(ArangoCollectionReference collection, Integer from, Integer size, String searchTerm) {
@@ -159,28 +172,27 @@ public class ArangoQueryFactory {
         StringBuilder queryBuilder = new StringBuilder();
         queryBuilder.append(String.format("LET doc = DOCUMENT(\"%s\")\n", documentReference.getId()));
         Set<ArangoCollectionReference> edgesCollectionNames = connection.getEdgesCollectionNames();
-        if(!edgesCollectionNames.isEmpty()){
+        if (!edgesCollectionNames.isEmpty()) {
             String names = String.join("`, `", edgesCollectionNames.stream().map(ArangoCollectionReference::getName).collect(Collectors.toSet()));
             queryBuilder.append(String.format("LET children = (FOR child IN 1..6 OUTBOUND doc `%s` return child._originalId ) \n", names));
-        }
-        else{
+        } else {
             queryBuilder.append("LET children = [] \n");
         }
         queryBuilder.append("RETURN {\"root\": doc._originalId, \"children\": children}");
         return queryBuilder.toString();
     }
 
-    public String getInstance(ArangoDocumentReference ref){
+    public String getInstance(ArangoDocumentReference ref) {
         return String.format(
                 "LET doc = DOCUMENT(\"%s\") \n" +
-                "RETURN doc",
+                        "RETURN doc",
                 ref.getId()
         );
     }
 
 
     public String getOriginalIds(ArangoCollectionReference collectionReference, Set<String> keys, ArangoConnection connection) {
-         return String.format("FOR doc IN `%s`\n" +
+        return String.format("FOR doc IN `%s`\n" +
                 "FILTER doc._key IN [\"%s\"]\n" +
                 "RETURN doc._originalId\n" +
                 "\n", collectionReference.getName(), String.join("\", \"", keys));

@@ -11,12 +11,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import springfox.documentation.annotations.ApiIgnore;
 
 import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 
 @RestController
 @RequestMapping(value = "/indexing")
+@ApiIgnore
 @Api(value="/indexing", description = "The indexing api to upload JSON-LD to the arango database")
 public class IndexingAPI {
 
