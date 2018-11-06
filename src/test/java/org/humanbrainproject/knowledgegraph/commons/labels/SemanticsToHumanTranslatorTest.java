@@ -29,7 +29,7 @@ public class SemanticsToHumanTranslatorTest {
     @Test
     public void translateArangoCollectionName(){
         String humanReadable = new SemanticsToHumanTranslator().translateArangoCollectionName(new ArangoCollectionReference("www_w3_org-ns-prov-agent"));
-        Assert.assertEquals("Agent", humanReadable);
+        Assert.assertEquals("agent", humanReadable);
 
     }
 }
