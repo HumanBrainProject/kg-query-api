@@ -19,7 +19,7 @@ public class OidcAccessToken {
     }
 
     public String getBearerToken(){
-        return this.token != null ? String.format("Bearer %s", this.token) : null;
+        return this.token != null ? this.token.toLowerCase().startsWith("bearer ") ? this.token : String.format("Bearer %s", this.token) : null;
     }
 
     @Override
