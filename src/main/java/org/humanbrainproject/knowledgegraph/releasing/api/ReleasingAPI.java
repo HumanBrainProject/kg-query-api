@@ -72,7 +72,7 @@ public class ReleasingAPI {
 
 
 
-    @PutMapping(value = "/{org}/{domain}/{schema}/{version}/{id}", consumes = {MediaType.APPLICATION_JSON})
+    @PutMapping(value = "/{org}/{domain}/{schema}/{version}/{id}")
     public ResponseEntity<Void> release(@PathVariable("org") String org, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("version") String version, @PathVariable("id") String id, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken) {
         NexusInstanceReference nexusInstanceReference = new NexusInstanceReference(org, domain, schema, version, id);
         releasing.release(nexusInstanceReference, new OidcAccessToken().setToken(authorizationToken));
