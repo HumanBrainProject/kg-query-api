@@ -12,7 +12,9 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.HttpClientErrorException;
 
 import javax.ws.rs.core.MediaType;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping(value = "/api/releases", produces = MediaType.APPLICATION_JSON)
@@ -35,6 +37,21 @@ public class ReleasingAPI {
             return ResponseEntity.status(e.getStatusCode()).build();
         }
     }
+
+
+    @PostMapping(consumes = { MediaType.APPLICATION_JSON})
+    public ResponseEntity<List<ReleaseStatusResponse>> getReleaseStatusList(@RequestBody List<String> relativeNexusIds) {
+        try{
+            if(relativeNexusIds!=null){
+                List<ReleaseStatusResponse> collect = relativeNexusIds.stream().map(ref -> releasing.getReleaseStatus(NexusInstanceReference.createFromUrl(ref))).collect(Collectors.toList());
+                return ResponseEntity.ok(collect);
+            }
+            return ResponseEntity.badRequest().build();
+        } catch (HttpClientErrorException e){
+            return ResponseEntity.status(e.getStatusCode()).build();
+        }
+    }
+
 
 
     @GetMapping(value = "/{org}/{domain}/{schema}/{version}/{id}/graph", consumes = { MediaType.WILDCARD})
