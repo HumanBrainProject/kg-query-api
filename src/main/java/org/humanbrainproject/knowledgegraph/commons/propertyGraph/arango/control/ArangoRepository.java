@@ -325,42 +325,48 @@ public class ArangoRepository extends VertexRepository<ArangoConnection, ArangoD
     }
 
 
-    private Map interpretMap(Map map){
-        if(map.containsKey(SchemaOrgVocabulary.NAME)){
-            map.put("label", map.get(SchemaOrgVocabulary.NAME));
+    private Map interpretMap(Map map) {
+        Object name = map.get(SchemaOrgVocabulary.NAME);
+        Object identifier = map.get(SchemaOrgVocabulary.IDENTIFIER);
+        if (name!=null) {
+            map.put("label", name);
+        } else {
+            map.put("label", identifier);
         }
-        if(map.containsKey(JsonLdConsts.TYPE)){
+        if (map.containsKey(JsonLdConsts.TYPE)) {
             Object types = map.get(JsonLdConsts.TYPE);
             Object relevantType = null;
-            if(types instanceof List && !((List)types).isEmpty()){
-                relevantType = ((List)types).get(0);
-            }
-            else{
+            if (types instanceof List && !((List) types).isEmpty()) {
+                relevantType = ((List) types).get(0);
+            } else {
                 relevantType = types;
             }
-            if(relevantType!=null) {
+            if (relevantType != null) {
                 map.put("type", semanticsToHumanTranslator.translateSemanticValueToHumanReadableLabel(relevantType.toString()));
             }
         }
-        if(map.containsKey(JsonLdConsts.ID)){
-            NexusInstanceReference fromUrl = NexusInstanceReference.createFromUrl((String)map.get(JsonLdConsts.ID));
-            map.put("relativeUrl", fromUrl.getRelativeUrl().getUrl());
+        if (map.containsKey(JsonLdConsts.ID)) {
+            NexusInstanceReference fromUrl = NexusInstanceReference.createFromUrl((String) map.get(JsonLdConsts.ID));
+            if (fromUrl != null) {
+                map.put("relativeUrl", fromUrl.getRelativeUrl().getUrl());
+            }
         }
 
         Object linkType = map.get("linkType");
-        if(linkType!=null){
-            ArangoDocumentReference arangoDocumentReference = ArangoDocumentReference.fromId((String)linkType);
-            map.put("linkType", semanticsToHumanTranslator.translateArangoCollectionName(arangoDocumentReference.getCollection()));
+        if (linkType != null) {
+            ArangoDocumentReference arangoDocumentReference = ArangoDocumentReference.fromId((String) linkType);
+            if(arangoDocumentReference!=null){
+                map.put("linkType", semanticsToHumanTranslator.translateArangoCollectionName(arangoDocumentReference.getCollection()));
+            }
         }
 
         for (Object key : map.keySet()) {
-            if(map.get(key) instanceof Map){
-                interpretMap((Map)map.get(key));
-            }
-            else if (map.get(key) instanceof Collection){
+            if (map.get(key) instanceof Map) {
+                interpretMap((Map) map.get(key));
+            } else if (map.get(key) instanceof Collection) {
                 for (Object o : ((Collection) map.get(key))) {
-                    if(o instanceof Map){
-                        interpretMap((Map)o);
+                    if (o instanceof Map) {
+                        interpretMap((Map) o);
                     }
                 }
             }
@@ -415,7 +421,7 @@ public class ArangoRepository extends VertexRepository<ArangoConnection, ArangoD
         ReleaseStatus worstStatusSoFar = currentStatus;
         if (map != null) {
             //Skip status of root instance
-            if(!isRoot) {
+            if (!isRoot) {
                 try {
                     Object status = map.get("status");
                     if (status instanceof String) {
