@@ -157,7 +157,7 @@ public class FullIndexingTest {
         editorPayload.put(SchemaOrgVocabulary.NAMESPACE+"foo", "editbar");
         editorPayload.put(SchemaOrgVocabulary.NAMESPACE+"bar", "editfoo");
         Map<String, String> reference = new LinkedHashMap<>();
-        reference.put(JsonLdConsts.ID, configuration.getAbsoluteUrl(instance.getRelativeUrl()));
+        reference.put(JsonLdConsts.ID, configuration.getAbsoluteUrl(instance));
         editorPayload.put(HBPVocabulary.INFERENCE_EXTENDS, reference);
         NexusInstanceReference editorInstance = nexusInstanceController.createInstanceByIdentifier(TestObjectFactory.fooInstanceReference().toSubSpace(SubSpace.EDITOR).getNexusSchema(), "helloWorld2", editorPayload, oidcClient.getAuthorizationToken());
 
@@ -174,7 +174,7 @@ public class FullIndexingTest {
         editorPayload.put(SchemaOrgVocabulary.NAMESPACE+"foo", "editbar");
         editorPayload.put(SchemaOrgVocabulary.NAMESPACE+"bar", "editfoo");
         Map<String, String> reference = new LinkedHashMap<>();
-        reference.put(JsonLdConsts.ID, configuration.getAbsoluteUrl(instance.getRelativeUrl()));
+        reference.put(JsonLdConsts.ID, configuration.getAbsoluteUrl(instance));
         editorPayload.put(HBPVocabulary.INFERENCE_EXTENDS, reference);
         NexusInstanceReference editorInstance = nexusInstanceController.createInstanceByIdentifier(TestObjectFactory.fooInstanceReference().toSubSpace(SubSpace.EDITOR).getNexusSchema(), "helloWorld2", editorPayload, oidcClient.getAuthorizationToken());
 

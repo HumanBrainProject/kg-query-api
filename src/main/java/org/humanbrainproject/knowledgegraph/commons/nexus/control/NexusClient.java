@@ -53,7 +53,7 @@ public class NexusClient {
     }
 
     public Map put(NexusRelativeUrl url, Integer revision, Map payload, OidcAccessToken oidcAccessToken) {
-        ResponseEntity<Map> result = new RestTemplate().exchange(String.format("%s%s", configuration.getAbsoluteUrl(url), revision != null ? String.format("%srev=%d", !url.getUrl().contains("?") ? "?" : "&", revision) : ""), HttpMethod.PUT, new HttpEntity<>(payload, createHeaders(oidcAccessToken)), Map.class);
+        ResponseEntity<Map> result = new RestTemplate().exchange(String.format("%s%s", configuration.getEndpoint(url), revision != null ? String.format("%srev=%d", !url.getUrl().contains("?") ? "?" : "&", revision) : ""), HttpMethod.PUT, new HttpEntity<>(payload, createHeaders(oidcAccessToken)), Map.class);
         if (result.getStatusCode().is2xxSuccessful() && result.getBody() != null) {
             return result.getBody();
         }
@@ -62,7 +62,7 @@ public class NexusClient {
 
     public Map delete(NexusRelativeUrl url, Integer revision, OidcAccessToken oidcAccessToken) {
         try {
-            ResponseEntity<Map> result = new RestTemplate().exchange(String.format("%s%s", configuration.getAbsoluteUrl(url), revision != null ? String.format("%srev=%d", !url.getUrl().contains("?") ? "?" : "&", revision) : ""), HttpMethod.DELETE, new HttpEntity<>(createHeaders(oidcAccessToken)), Map.class);
+            ResponseEntity<Map> result = new RestTemplate().exchange(String.format("%s%s", configuration.getEndpoint(url), revision != null ? String.format("%srev=%d", !url.getUrl().contains("?") ? "?" : "&", revision) : ""), HttpMethod.DELETE, new HttpEntity<>(createHeaders(oidcAccessToken)), Map.class);
             if (result.getStatusCode().is2xxSuccessful() && result.getBody() != null) {
                 return result.getBody();
             }
@@ -78,7 +78,7 @@ public class NexusClient {
 
     public Map post(NexusRelativeUrl url, Integer revision, Map payload, OidcAccessToken oidcAccessToken) {
         try {
-            ResponseEntity<Map> result = new RestTemplate().exchange(String.format("%s%s", configuration.getAbsoluteUrl(url), revision != null ? String.format("%srev=%d", !url.getUrl().contains("?") ? "?" : "&", revision) : ""), HttpMethod.POST, new HttpEntity<>(payload, createHeaders(oidcAccessToken)), Map.class);
+            ResponseEntity<Map> result = new RestTemplate().exchange(String.format("%s%s", configuration.getEndpoint(url), revision != null ? String.format("%srev=%d", !url.getUrl().contains("?") ? "?" : "&", revision) : ""), HttpMethod.POST, new HttpEntity<>(payload, createHeaders(oidcAccessToken)), Map.class);
             if (result.getStatusCode().is2xxSuccessful() && result.getBody() != null) {
                 return result.getBody();
             }
@@ -92,7 +92,7 @@ public class NexusClient {
     public Map patch(NexusRelativeUrl url, Integer revision, Map payload, OidcAccessToken oidcAccessToken) {
         RestTemplate template = new RestTemplate();
         template.setRequestFactory(new HttpComponentsClientHttpRequestFactory());
-        ResponseEntity<Map> result = template.exchange(String.format("%s%s", configuration.getAbsoluteUrl(url), revision != null ? String.format("%srev=%d", !url.getUrl().contains("?") ? "?" : "&", revision) : ""), HttpMethod.PATCH, new HttpEntity<>(payload, createHeaders(oidcAccessToken)), Map.class);
+        ResponseEntity<Map> result = template.exchange(String.format("%s%s", configuration.getEndpoint(url), revision != null ? String.format("%srev=%d", !url.getUrl().contains("?") ? "?" : "&", revision) : ""), HttpMethod.PATCH, new HttpEntity<>(payload, createHeaders(oidcAccessToken)), Map.class);
         if (result.getStatusCode().is2xxSuccessful() && result.getBody() != null) {
             return result.getBody();
         }
@@ -105,7 +105,7 @@ public class NexusClient {
         relativeUrl.addQueryParameter("fields", "all");
         relativeUrl.addQueryParameter("deprecated", "false");
         relativeUrl.addQueryParameter("filter", String.format("{\"op\":\"eq\",\"path\":\"%s\",\"value\":\"%s\"}", fieldName, fieldValue));
-        String url = configuration.getAbsoluteUrl(relativeUrl);
+        String url = configuration.getEndpoint(relativeUrl);
         ResponseEntity<Map> result = new RestTemplate().exchange(url, HttpMethod.GET, new HttpEntity<>(createHeaders(oidcAccessToken)), Map.class);
         if (result.getStatusCode().is2xxSuccessful() && result.getBody() != null && result.getBody().containsKey("results") && result.getBody().get("results") instanceof List) {
             return (List<Map>) result.getBody().get("results");
@@ -121,7 +121,7 @@ public class NexusClient {
 
     public <T> T get(NexusRelativeUrl url, OidcAccessToken oidcAccessToken, Class<T> resultClass) {
         try {
-            ResponseEntity<T> result = new RestTemplate().exchange(configuration.getAbsoluteUrl(url), HttpMethod.GET, new HttpEntity<>(createHeaders(oidcAccessToken)), resultClass);
+            ResponseEntity<T> result = new RestTemplate().exchange(configuration.getEndpoint(url), HttpMethod.GET, new HttpEntity<>(createHeaders(oidcAccessToken)), resultClass);
             if (result.getStatusCode().is2xxSuccessful() && result.getBody() != null) {
                 return result.getBody();
             }
@@ -135,7 +135,7 @@ public class NexusClient {
     }
 
     public List<Map> list(NexusRelativeUrl relativeUrl, OidcAccessToken oidcAccessToken, boolean followPages) {
-        ResponseEntity<Map> result = new RestTemplate().exchange(configuration.getAbsoluteUrl(relativeUrl), HttpMethod.GET, new HttpEntity<>(createHeaders(oidcAccessToken)), Map.class);
+        ResponseEntity<Map> result = new RestTemplate().exchange(configuration.getEndpoint(relativeUrl), HttpMethod.GET, new HttpEntity<>(createHeaders(oidcAccessToken)), Map.class);
         if (result.getStatusCode().is2xxSuccessful() && result.getBody() != null && result.getBody().containsKey("results") && result.getBody().get("results") instanceof List) {
             List<Map> results = (List<Map>) result.getBody().get("results");
             if (followPages) {
