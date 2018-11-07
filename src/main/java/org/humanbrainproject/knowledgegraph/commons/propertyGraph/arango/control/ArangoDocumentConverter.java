@@ -62,7 +62,8 @@ public class ArangoDocumentConverter {
         jsonObject.put("_key", reference.getKey());
         Integer revision = vertex.getQualifiedIndexingMessage().getOriginalMessage().getInstanceReference().getRevision();
         jsonObject.put("_nexusRev", revision);
-        jsonObject.put("_relativeUrl", vertex.getInstanceReference().getRelativeUrl());
+        jsonObject.put("_relativeUrl", vertex.getInstanceReference().getRelativeUrl().getUrl());
+        jsonObject.put("_nexusRelativeUrl", vertex.getQualifiedIndexingMessage().getOriginalMessage().getInstanceReference().getRelativeUrl().getUrl());
         jsonObject.put("_originalId", vertex.getQualifiedIndexingMessage().getOriginalMessage().getInstanceReference().getFullId(true));
         jsonObject.put(ArangoSpecificationQuery.PERMISSION_GROUP, vertex.getInstanceReference().getNexusSchema().getOrganization());
         for (JsonPath steps : blackList) {
