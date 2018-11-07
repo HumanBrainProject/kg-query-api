@@ -97,7 +97,9 @@ public class InstanceController {
                     fromUrl.setRevision((Integer) post.get(NexusVocabulary.REVISION_ALIAS));
                     newInstanceReference = fromUrl;
                 }
-                newInstanceReference = null;
+                else {
+                    newInstanceReference = null;
+                }
             } else {
                 Map put = nexusClient.put(nexusInstanceReference.getRelativeUrl(), (Integer) map.get(NexusVocabulary.REVISION_ALIAS), payload, oidcAccessToken);
                 if (put.containsKey(NexusVocabulary.REVISION_ALIAS)) {
@@ -112,7 +114,9 @@ public class InstanceController {
             }
             newInstanceReference = nexusInstanceReference;
         }
-        immediateIndexing(payload, newInstanceReference);
+        if(newInstanceReference!=null) {
+            immediateIndexing(payload, newInstanceReference);
+        }
         return newInstanceReference;
     }
 
