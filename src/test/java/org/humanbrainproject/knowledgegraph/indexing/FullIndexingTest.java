@@ -18,6 +18,7 @@ import org.humanbrainproject.knowledgegraph.instances.control.InstanceController
 import org.humanbrainproject.knowledgegraph.instances.control.NexusReleasingController;
 import org.humanbrainproject.knowledgegraph.query.entity.JsonDocument;
 import org.humanbrainproject.knowledgegraph.testFactory.TestObjectFactory;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +32,7 @@ import java.util.Set;
 
 @SpringBootTest
 @RunWith(SpringRunner.class)
+@Ignore("Integration test")
 public class FullIndexingTest {
 
     @Autowired
@@ -68,7 +70,7 @@ public class FullIndexingTest {
     public void create() throws IOException {
         payload = new JsonDocument();
         payload.put(SchemaOrgVocabulary.NAMESPACE+"foo", "bar");
-        instance = nexusInstanceController.createInstanceByIdentifier(TestObjectFactory.fooInstanceReference().getNexusSchema(), "helloWorldNoEdit3", payload,oidcClient.getAuthorizationToken());
+        instance = nexusInstanceController.createInstanceByIdentifier(TestObjectFactory.fooInstanceReference().getNexusSchema(), "helloWorldNoEdit2", payload,oidcClient.getAuthorizationToken());
 
         //This trigger is typically done by Nexus itself - we're simulating the behavior.
         IndexingMessage indexingMessage = new IndexingMessage(instance, new Gson().toJson(payload), "2018-10-31", "Foo");
@@ -81,7 +83,7 @@ public class FullIndexingTest {
     public void createWithEditor() throws IOException {
         JsonDocument document =  new JsonDocument();
         document.put(SchemaOrgVocabulary.NAMESPACE+"foo", "bar");
-        instance = nexusInstanceController.createInstanceByIdentifier(TestObjectFactory.fooEditorInstanceReference().getNexusSchema(), "helloWorldFromEditor2", document, oidcClient.getAuthorizationToken());
+        instance = nexusInstanceController.createInstanceByIdentifier(TestObjectFactory.fooEditorInstanceReference().getNexusSchema(), "helloWorldFromEditor3", document, oidcClient.getAuthorizationToken());
 
         //This trigger is typically done by Nexus itself - we're simulating the behavior.
         IndexingMessage indexingMessage = new IndexingMessage(instance, new Gson().toJson(document), "2018-10-31", "Foo");
