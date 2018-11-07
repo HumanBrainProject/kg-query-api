@@ -25,6 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 
 @Component
@@ -95,7 +96,7 @@ public class NexusArangoTransaction implements DatabaseTransaction {
         List<InsertOrUpdateInPrimaryStoreTodoItem> insertOrUpdateInPrimaryStoreItems = todoList.getInsertOrUpdateInPrimaryStoreTodoItems();
         for (InsertOrUpdateInPrimaryStoreTodoItem insertOrUpdateInPrimaryStoreItem : insertOrUpdateInPrimaryStoreItems) {
             Vertex vertex = insertOrUpdateInPrimaryStoreItem.getVertex();
-            NexusInstanceReference newReference = nexusClient.createOrUpdateInstance(vertex.getInstanceReference().setRevision(null), vertex.getQualifiedIndexingMessage().getQualifiedMap());
+            NexusInstanceReference newReference = nexusClient.createOrUpdateInstance(vertex.getInstanceReference().setRevision(null), new LinkedHashMap<>(vertex.getQualifiedIndexingMessage().getQualifiedMap()));
             vertex.setInstanceReference(newReference);
         }
     }

@@ -25,12 +25,16 @@ public class ArangoQueryFactory {
     NexusConfiguration configuration;
 
     public String queryForIdsWithProperty(String propertyName, String propertyValue, Set<ArangoCollectionReference> collectionsToCheck) {
+        return queryForValueWithProperty(propertyName, propertyValue,collectionsToCheck, "_id");
+    }
+
+    public String queryForValueWithProperty(String propertyName, String propertyValue, Set<ArangoCollectionReference> collectionsToCheck, String lookupProperty) {
         if (collectionsToCheck != null && !collectionsToCheck.isEmpty()) {
             StringBuilder sb = new StringBuilder();
             for (ArangoCollectionReference arangoCollectionReference : collectionsToCheck) {
-                sb.append(String.format("LET `%s` = (FOR v IN `%s` FILTER v.`%s` == \"%s\" RETURN v._id)\n", arangoCollectionReference.getName(), arangoCollectionReference.getName(), propertyName, propertyValue));
+                sb.append(String.format("LET `%s` = (FOR v IN `%s` FILTER v.`%s` == \"%s\" RETURN v.`%s`)\n", arangoCollectionReference.getName(), arangoCollectionReference.getName(), propertyName, propertyValue, lookupProperty));
             }
-            sb.append(String.format("RETURN UNIQUE(UNION(`%s`))", String.join("`, `", collectionsToCheck.stream().map(ArangoCollectionReference::getName).collect(Collectors.toSet()))));
+            sb.append(String.format("RETURN UNIQUE(%s(`%s`))", collectionsToCheck.size()>1 ? "UNION" : "", String.join("`, `", collectionsToCheck.stream().map(ArangoCollectionReference::getName).collect(Collectors.toSet()))));
             return sb.toString();
         }
         return null;
@@ -82,7 +86,6 @@ public class ArangoQueryFactory {
     public String queryOriginalIdForLink(ArangoDocumentReference document, ArangoCollectionReference linkReference) {
         return String.format("FOR vertex IN 1..1 INBOUND DOCUMENT(\"%s\") `%s` RETURN vertex._originalId", document.getId(), linkReference.getName());
     }
-
 
     public String queryOutboundRelationsForDocument(ArangoDocumentReference document, Set<ArangoCollectionReference> edgeCollections) {
         return String.format("FOR rel, edge IN 1..1 OUTBOUND DOCUMENT(\"%s\") `%s` RETURN edge._id\n", document.getId(), String.join("`, `", edgeCollections.stream().map(ArangoCollectionReference::getName).collect(Collectors.toSet())));

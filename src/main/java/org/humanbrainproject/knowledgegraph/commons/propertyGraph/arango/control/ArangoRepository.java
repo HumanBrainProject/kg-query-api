@@ -9,6 +9,7 @@ import com.arangodb.entity.CollectionType;
 import com.arangodb.model.AqlQueryOptions;
 import com.arangodb.model.CollectionCreateOptions;
 import com.github.jsonldjava.core.JsonLdConsts;
+import org.apache.commons.lang.StringUtils;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
 import org.humanbrainproject.knowledgegraph.commons.labels.SemanticsToHumanTranslator;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
@@ -61,6 +62,29 @@ public class ArangoRepository extends VertexRepository<ArangoConnection, ArangoD
     public void clearDatabase(ArangoConnection connection) {
 
     }
+
+    public NexusInstanceReference findBySchemaOrgIdentifier(ArangoCollectionReference collectionReference, String value){
+        String query = queryFactory.queryForValueWithProperty(SchemaOrgVocabulary.IDENTIFIER, value, Collections.singleton(collectionReference), "_originalId");
+        List<List> result = query == null ? new ArrayList<>() : databaseFactory.getDefaultDB().getOrCreateDB().query(query, null, new AqlQueryOptions(), List.class).asListRemaining();
+        if (result.size() == 1) {
+            if (result.get(0) != null) {
+                List list = (List) result.get(0);
+                if (list.isEmpty()) {
+                    return null;
+                } else if (list.size() == 1) {
+                    String url = (String) ((List) result.get(0)).get(0);
+                    return url != null ? NexusInstanceReference.createFromUrl(url) : null;
+                } else {
+                    throw new UnexpectedNumberOfResults(String.format("Multiple instances with the same identifier in the same schema: %s", StringUtils.join(list.stream().filter(Objects::nonNull).map(Object::toString).toArray(), ", ")));
+                }
+            } else {
+                return null;
+            }
+        }
+        throw new UnexpectedNumberOfResults("The query for value with property should return a single item");
+    }
+
+
 
     public NexusInstanceReference findOriginalId(NexusInstanceReference reference) {
         ArangoDocumentReference arangoDocumentReference = ArangoDocumentReference.fromNexusInstance(reference);
