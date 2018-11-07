@@ -133,6 +133,7 @@ public class ArangoQueryFactory {
             query += indent + "LET ${name}_doc = DOCUMENT(\"${startId}\")\n ";
         } else {
             query += indent + "FOR ${name}_doc, ${name}_edge IN 1..1 OUTBOUND ${doc} `${collections}`\n " +
+                    indent + "FILTER ${name}_doc != NULL" +
                     indent + "SORT ${name}_doc.`" + JsonLdConsts.TYPE + "`, ${name}_doc.`${schemaOrgName}`\n";
         }
         query += indent + "LET ${name}_release = (FOR ${name}_status_doc IN 1..1 INBOUND ${name}_doc `${releaseInstanceRelation}`\n" +
