@@ -1,6 +1,7 @@
 package org.humanbrainproject.knowledgegraph.nexusExt.control;
 
 import com.github.jsonldjava.core.JsonLdConsts;
+import org.apache.commons.lang.StringUtils;
 import org.humanbrainproject.knowledgegraph.commons.authorization.entity.OidcAccessToken;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusClient;
@@ -68,7 +69,7 @@ public class InstanceController {
             return createInstanceByNexusId(foundReference.getNexusSchema(), foundReference.getId(), foundReference.getRevision(), payload, oidcAccessToken);
         }
         else{
-            throw new RuntimeException("Multiple instances with the same identifier in the same schema");
+            throw new RuntimeException(String.format("Multiple instances with the same identifier in the same schema: %s", StringUtils.join(existingInstances.stream().map(i-> i.getId()).toArray(), ", ")));
         }
     }
 
