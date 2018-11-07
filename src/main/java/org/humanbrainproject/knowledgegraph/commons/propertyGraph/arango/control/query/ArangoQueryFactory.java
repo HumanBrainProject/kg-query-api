@@ -93,15 +93,6 @@ public class ArangoQueryFactory {
         return childrenStatus(rootInstance, null, 0, maxDepth, names);
     }
 
-
-    private String createIndent(int level) {
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < level; i++) {
-            sb.append("   ");
-        }
-        return sb.toString();
-    }
-
     private String childrenStatus(ArangoDocumentReference rootInstance, String startingVertex, Integer level, Integer maxDepth, String collectionLabels) {
         String name = "level" + level;
         String childrenQuery = "[]";
@@ -169,33 +160,14 @@ public class ArangoQueryFactory {
                         "    RETURN doc", collection.getName(), search, limit);
     }
 
-    public String getOriginalIdOfDocumentWithChildren(ArangoDocumentReference documentReference, ArangoConnection connection) {
-        StringBuilder queryBuilder = new StringBuilder();
-        queryBuilder.append(String.format("LET doc = DOCUMENT(\"%s\")\n", documentReference.getId()));
-        Set<ArangoCollectionReference> edgesCollectionNames = connection.getEdgesCollectionNames();
-        if (!edgesCollectionNames.isEmpty()) {
-            String names = String.join("`, `", edgesCollectionNames.stream().map(ArangoCollectionReference::getName).collect(Collectors.toSet()));
-            queryBuilder.append(String.format("LET children = (FOR child IN 1..6 OUTBOUND doc `%s` return child._originalId ) \n", names));
-        } else {
-            queryBuilder.append("LET children = [] \n");
+
+
+    private String createIndent(int level) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < level; i++) {
+            sb.append("   ");
         }
-        queryBuilder.append("RETURN {\"root\": doc._originalId, \"children\": children}");
-        return queryBuilder.toString();
+        return sb.toString();
     }
 
-    public String getInstance(ArangoDocumentReference ref) {
-        return String.format(
-                "LET doc = DOCUMENT(\"%s\") \n" +
-                        "RETURN doc",
-                ref.getId()
-        );
-    }
-
-
-    public String getOriginalIds(ArangoCollectionReference collectionReference, Set<String> keys, ArangoConnection connection) {
-        return String.format("FOR doc IN `%s`\n" +
-                "FILTER doc._key IN [\"%s\"]\n" +
-                "RETURN doc._originalId\n" +
-                "\n", collectionReference.getName(), String.join("\", \"", keys));
-    }
 }

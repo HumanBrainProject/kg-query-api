@@ -1,4 +1,4 @@
-package org.humanbrainproject.knowledgegraph.nexusExt.control;
+package org.humanbrainproject.knowledgegraph.instances.control;
 
 import com.github.jsonldjava.core.JsonLdConsts;
 import com.google.gson.Gson;

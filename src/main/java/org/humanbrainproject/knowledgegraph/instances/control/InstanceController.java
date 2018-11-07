@@ -1,4 +1,4 @@
-package org.humanbrainproject.knowledgegraph.nexusExt.control;
+package org.humanbrainproject.knowledgegraph.instances.control;
 
 import com.github.jsonldjava.core.JsonLdConsts;
 import org.apache.commons.lang.StringUtils;
@@ -73,6 +73,12 @@ public class InstanceController {
         }
     }
 
+    public void deprecateInstanceByNexusId(NexusInstanceReference instanceReference, OidcAccessToken oidcAccessToken){
+        boolean delete = nexusClient.delete(instanceReference.getRelativeUrl(), instanceReference.getRevision() != null ? instanceReference.getRevision() : 1, oidcAccessToken);
+        if(delete){
+            immediateDeprecation(instanceReference);
+        }
+    }
 
     public NexusInstanceReference createInstanceByNexusId(NexusSchemaReference nexusSchemaReference, String id, Integer revision, Map<String, Object> payload, OidcAccessToken oidcAccessToken)  {
         schemaController.createSchema(nexusSchemaReference);
@@ -119,6 +125,10 @@ public class InstanceController {
             immediateIndexing(payload, newInstanceReference);
         }
         return newInstanceReference;
+    }
+
+    private void immediateDeprecation(NexusInstanceReference newInstanceReference) {
+        graphIndexing.delete(newInstanceReference);
     }
 
     private void immediateIndexing(Map<String, Object> payload, NexusInstanceReference newInstanceReference) {

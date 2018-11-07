@@ -32,8 +32,4 @@ public class ArangoGraph {
     public Map getInstanceList(NexusSchemaReference schemaReference, Integer from, Integer size, String searchTerm){
         return arangoRepository.getInstanceList(ArangoCollectionReference.fromNexusSchemaReference(schemaReference), from, size, searchTerm ,databaseFactory.getInferredDB());
     }
-
-    public List<Map> getInstance(ArangoDocumentReference instanceReference){
-        return arangoRepository.getInstance(instanceReference, databaseFactory.getInferredDB());
-    }
 }

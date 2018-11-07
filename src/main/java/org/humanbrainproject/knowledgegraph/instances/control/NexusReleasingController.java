@@ -1,4 +1,4 @@
-package org.humanbrainproject.knowledgegraph.nexusExt.control;
+package org.humanbrainproject.knowledgegraph.instances.control;
 
 import com.github.jsonldjava.core.JsonLdConsts;
 import org.humanbrainproject.knowledgegraph.commons.authorization.entity.OidcAccessToken;
@@ -48,12 +48,11 @@ public class NexusReleasingController {
         return new IndexingMessage(instance, jsonTransformer.getMapAsJson(payload), null, null);
     }
 
-
     public Set<NexusInstanceReference> unrelease(NexusInstanceReference instanceReference, OidcAccessToken oidcAccessToken) {
         //Find release instance
         Set<NexusInstanceReference> releases = nexusToArangoIndexingProvider.findInstancesWithLinkTo(HBPVocabulary.RELEASE_INSTANCE, instanceReference);
         for (NexusInstanceReference nexusInstanceReference : releases) {
-            nexusClient.delete(nexusInstanceReference.getRelativeUrl(), nexusInstanceReference.getRevision() != null ? nexusInstanceReference.getRevision() : 1, oidcAccessToken);
+            instanceController.deprecateInstanceByNexusId(nexusInstanceReference, oidcAccessToken);
         }
         return releases;
     }

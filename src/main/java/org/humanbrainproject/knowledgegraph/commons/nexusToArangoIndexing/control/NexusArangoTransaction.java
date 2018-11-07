@@ -18,7 +18,7 @@ import org.humanbrainproject.knowledgegraph.indexing.entity.InsertOrUpdateInPrim
 import org.humanbrainproject.knowledgegraph.indexing.entity.InsertTodoItem;
 import org.humanbrainproject.knowledgegraph.indexing.entity.TodoList;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
-import org.humanbrainproject.knowledgegraph.nexusExt.control.InstanceController;
+import org.humanbrainproject.knowledgegraph.instances.control.InstanceController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

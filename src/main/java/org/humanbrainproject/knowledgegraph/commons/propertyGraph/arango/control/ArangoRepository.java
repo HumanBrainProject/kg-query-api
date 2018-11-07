@@ -465,11 +465,13 @@ public class ArangoRepository extends VertexRepository<ArangoConnection, ArangoD
     }
 
 
-    public List<Map> getInstance(ArangoDocumentReference instanceReference, ArangoConnection driver) {
+    public Map getInstance(ArangoDocumentReference instanceReference, ArangoConnection driver) {
         ArangoDatabase db = driver.getOrCreateDB();
-        String query = queryFactory.getInstance(instanceReference);
-        ArangoCursor<Map> q = db.query(query, null, new AqlQueryOptions(), Map.class);
-        return q.asListRemaining();
+        ArangoCollection collection = db.collection(instanceReference.getCollection().getName());
+        if(collection.exists()){
+            return collection.documentExists(instanceReference.getKey()) ? collection.getDocument(instanceReference.getKey(), Map.class) : null;
+        }
+        return null;
     }
 
 

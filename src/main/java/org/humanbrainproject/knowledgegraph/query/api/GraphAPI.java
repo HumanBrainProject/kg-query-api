@@ -2,9 +2,9 @@ package org.humanbrainproject.knowledgegraph.query.api;
 
 import io.swagger.annotations.Api;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
+import org.humanbrainproject.knowledgegraph.instances.boundary.Instances;
 import org.humanbrainproject.knowledgegraph.query.boundary.ArangoGraph;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +22,9 @@ public class GraphAPI {
 
     @Autowired
     ArangoGraph graph;
+
+    @Autowired
+    Instances instances;
 
     @GetMapping(value = "/graph/{org}/{domain}/{schema}/{version}/{id}", consumes = { MediaType.WILDCARD})
     public ResponseEntity<List<Map>> getGraph(@PathVariable("org") String org, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("version") String version, @PathVariable("id") String id, @RequestParam(value= "step", required = false, defaultValue = "2") Integer step) throws Exception{
@@ -44,16 +47,22 @@ public class GraphAPI {
         }
     }
 
+    /**
+     * @deprecated  Use /instances api instead
+     * @param org
+     * @param domain
+     * @param schema
+     * @param version
+     * @param id
+     * @return
+     * @throws Exception
+     */
     @GetMapping(value = "/instance/{org}/{domain}/{schema}/{version}/{id}", consumes = { MediaType.WILDCARD})
+    @Deprecated
     public ResponseEntity<Map> getInstance(@PathVariable("org") String org, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("version") String version,@PathVariable("id") String id ) throws Exception{
         try{
-            ArangoDocumentReference instanceRef = ArangoDocumentReference.fromNexusInstance(new NexusInstanceReference(org, domain, schema, version, id));
-            List<Map> rootList = graph.getInstance(instanceRef);
-            if(rootList.isEmpty()){
-                throw new Exception("Document not found");
-            }
-            Map root = rootList.get(0);
-            return ResponseEntity.ok(root);
+            Map instance = instances.getInstance(new NexusInstanceReference(org, domain, schema, version, id));
+            return instance!=null ? ResponseEntity.ok(instance) : ResponseEntity.notFound().build();
         } catch (HttpClientErrorException e){
             return ResponseEntity.status(e.getStatusCode()).build();
         }
