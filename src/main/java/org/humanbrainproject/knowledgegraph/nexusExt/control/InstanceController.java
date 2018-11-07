@@ -2,18 +2,21 @@ package org.humanbrainproject.knowledgegraph.nexusExt.control;
 
 import com.github.jsonldjava.core.JsonLdConsts;
 import org.humanbrainproject.knowledgegraph.commons.authorization.entity.OidcAccessToken;
+import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusClient;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.SystemNexusClient;
+import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.NexusVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.SchemaOrgVocabulary;
+import org.humanbrainproject.knowledgegraph.indexing.boundary.GraphIndexing;
+import org.humanbrainproject.knowledgegraph.indexing.entity.IndexingMessage;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusRelativeUrl;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -28,6 +31,12 @@ public class InstanceController {
 
     @Autowired
     SchemaController schemaController;
+
+    @Autowired
+    GraphIndexing graphIndexing;
+
+    @Autowired
+    JsonTransformer jsonTransformer;
 
 
     public Set<NexusInstanceReference> getByIdentifier(NexusSchemaReference schema, String identifier) {
@@ -78,6 +87,7 @@ public class InstanceController {
             payload.put(JsonLdConsts.TYPE, Arrays.asList(type, targetClass));
         }
         NexusInstanceReference nexusInstanceReference = new NexusInstanceReference(nexusSchemaReference, id);
+        NexusInstanceReference newInstanceReference = null;
         if (revision == null) {
             Map map = systemNexusClient.get(nexusInstanceReference.getRelativeUrl());
             if (map == null) {
@@ -85,23 +95,31 @@ public class InstanceController {
                 if (post != null && post.containsKey(JsonLdConsts.ID)) {
                     NexusInstanceReference fromUrl = NexusInstanceReference.createFromUrl((String) post.get(JsonLdConsts.ID));
                     fromUrl.setRevision((Integer) post.get(NexusVocabulary.REVISION_ALIAS));
-                    return fromUrl;
+                    newInstanceReference = fromUrl;
                 }
-                return null;
+                newInstanceReference = null;
             } else {
                 Map put = nexusClient.put(nexusInstanceReference.getRelativeUrl(), (Integer) map.get(NexusVocabulary.REVISION_ALIAS), payload, oidcAccessToken);
                 if (put.containsKey(NexusVocabulary.REVISION_ALIAS)) {
                     nexusInstanceReference.setRevision((Integer) put.get(NexusVocabulary.REVISION_ALIAS));
                 }
-                return nexusInstanceReference;
+                newInstanceReference = nexusInstanceReference;
             }
         } else {
             Map put = nexusClient.put(nexusInstanceReference.getRelativeUrl(), revision, payload, oidcAccessToken);
             if (put.containsKey(NexusVocabulary.REVISION_ALIAS)) {
                 nexusInstanceReference.setRevision((Integer) put.get(NexusVocabulary.REVISION_ALIAS));
             }
-            return nexusInstanceReference;
+            newInstanceReference = nexusInstanceReference;
         }
+        immediateIndexing(payload, newInstanceReference);
+        return newInstanceReference;
+    }
+
+    private void immediateIndexing(Map<String, Object> payload, NexusInstanceReference newInstanceReference) {
+        payload.put(HBPVocabulary.PROVENANCE_IMMEDIATE_INDEX, true);
+        IndexingMessage indexingMessage = new IndexingMessage(newInstanceReference, jsonTransformer.getMapAsJson(payload), null, null);
+        graphIndexing.insert(indexingMessage);
     }
 
 }
