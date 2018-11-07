@@ -2,7 +2,7 @@ package org.humanbrainproject.knowledgegraph.instances.entity;
 
 public enum Client {
 
-    editor("editor"), none("");
+    editor("editor");
 
     private String postfix;
 
