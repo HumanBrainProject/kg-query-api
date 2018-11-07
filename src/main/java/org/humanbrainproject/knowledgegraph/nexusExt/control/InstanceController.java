@@ -69,7 +69,7 @@ public class InstanceController {
             return createInstanceByNexusId(foundReference.getNexusSchema(), foundReference.getId(), foundReference.getRevision(), payload, oidcAccessToken);
         }
         else{
-            throw new RuntimeException(String.format("Multiple instances with the same identifier in the same schema: %s", StringUtils.join(existingInstances.stream().map(i-> i.getId()).toArray(), ", ")));
+            throw new RuntimeException(String.format("Multiple instances with the same identifier in the same schema: %s", StringUtils.join(existingInstances.stream().map(i-> i.getRelativeUrl().getUrl()).toArray(), ", ")));
         }
     }
 
