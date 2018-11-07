@@ -23,13 +23,13 @@ public class SemanticsToHumanTranslatorTest {
     @Test
     public void translatePropertyToHumanReadableLabel() {
         String humanReadable = new SemanticsToHumanTranslator().translateSemanticValueToHumanReadableLabel("https://schema.hbp.eu/provenance/indexedInArangoAt");
-        Assert.assertEquals("indexed In Arango At", humanReadable);
+        Assert.assertEquals("Indexed in arango at", humanReadable);
     }
 
     @Test
     public void translateArangoCollectionName(){
         String humanReadable = new SemanticsToHumanTranslator().translateArangoCollectionName(new ArangoCollectionReference("www_w3_org-ns-prov-agent"));
-        Assert.assertEquals("agent", humanReadable);
+        Assert.assertEquals("Agent", humanReadable);
 
     }
 }
