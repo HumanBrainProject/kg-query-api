@@ -48,7 +48,7 @@ public class NexusToArangoIndexingProvider {
     public void mapToOriginalSpace(Vertex vertex, NexusInstanceReference originalId) {
         vertex.setInstanceReference(originalId);
         vertex.toSubSpace(SubSpace.MAIN);
-        for (EdgeX edge : vertex.getEdges()) {
+        for (Edge edge : vertex.getEdges()) {
             NexusInstanceReference relatedOriginalId = repository.findOriginalId(edge.getReference());
             edge.setReference(relatedOriginalId.toSubSpace(SubSpace.MAIN));
         }

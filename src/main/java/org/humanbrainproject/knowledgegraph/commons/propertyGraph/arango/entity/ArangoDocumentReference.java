@@ -1,6 +1,6 @@
 package org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity;
 
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.EdgeX;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Edge;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.SubSpace;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
@@ -17,7 +17,7 @@ public class ArangoDocumentReference {
         this.collection = collection;
     }
 
-    public static ArangoDocumentReference fromEdge(EdgeX edge){
+    public static ArangoDocumentReference fromEdge(Edge edge){
         ArangoCollectionReference collection = ArangoCollectionReference.fromEdge(edge);
         return new ArangoDocumentReference(collection, ArangoNamingHelper.createCompatibleId(edge.getId()));
     }

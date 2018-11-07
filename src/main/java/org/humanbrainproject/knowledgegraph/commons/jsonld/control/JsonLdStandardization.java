@@ -73,6 +73,32 @@ public class JsonLdStandardization {
         return input;
     }
 
+    /**
+     * This logic removes the JSON-LD @list property, which defines ordered lists. This is, because internally we treat JSON-LD as JSON which ensures the insertion-order natively.
+     * The reduction of the @list elements therefore simplifies the treatment (e.g. graph traversal).
+     *
+     * @param input
+     * @param parent
+     * @param parentKey
+     * @param <T>
+     * @return
+     */
+    public <T> T flattenLists(T input, Map parent, String parentKey) {
+        if (input instanceof List) {
+            ((List) input).forEach(i -> flattenLists(i, parent, parentKey));
+        } else if (input instanceof Map) {
+            if(((Map)input).containsKey(JsonLdConsts.LIST)){
+                Object list = ((Map) input).get(JsonLdConsts.LIST);
+                parent.put(parentKey, list);
+            }
+            else{
+                for (Object o : ((Map) input).keySet()) {
+                    flattenLists(((Map) input).get(o), (Map)input, (String)o);
+                }
+            }
+        }
+        return input;
+    }
 
     public <T> T filterKeysByVocabBlacklists(T input) {
         List<String> blacklist = Arrays.asList(NexusVocabulary.NAMESPACE);

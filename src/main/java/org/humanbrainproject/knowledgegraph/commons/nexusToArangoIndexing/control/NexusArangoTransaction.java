@@ -11,7 +11,7 @@ import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.control.DatabaseTransaction;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.EdgeX;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Edge;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Vertex;
 import org.humanbrainproject.knowledgegraph.indexing.entity.DeleteTodoItem;
 import org.humanbrainproject.knowledgegraph.indexing.entity.InsertOrUpdateInPrimaryStoreTodoItem;
@@ -79,7 +79,7 @@ public class NexusArangoTransaction implements DatabaseTransaction {
                 if (vertexJson != null) {
                     repository.insertDocument(reference, vertexJson, CollectionType.DOCUMENT, database);
                 }
-                for (EdgeX edge : vertex.getEdges()) {
+                for (Edge edge : vertex.getEdges()) {
                     ArangoDocumentReference document = ArangoDocumentReference.fromEdge(edge);
                     String jsonFromEdge = arangoDocumentConverter.createJsonFromEdge(document, vertex, edge, insertItem.getBlacklist());
                     repository.insertDocument(document, jsonFromEdge, CollectionType.EDGES, database);
