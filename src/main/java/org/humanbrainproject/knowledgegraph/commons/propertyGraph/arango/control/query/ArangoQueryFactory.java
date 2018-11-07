@@ -144,7 +144,7 @@ public class ArangoQueryFactory {
         if (level == 0) {
             query += indent + "RETURN MERGE({\"status\": ${name}_status, \"children\": ${name}_children, \"rev\": ${name}_doc.`${revision}` }, ${name}_doc)";
         } else {
-            query += indent + "RETURN MERGE({\"status\": ${name}_status, \"children\": ${name}_children, \"linkType\": ${name}_edge._id, \"rev\": ${name}_doc.`${revision}`}, ${name}_doc)\n";
+            query += indent + "RETURN MERGE({\"status\": ${name}_status, \"children\": ${name}_children, \"linkType\": ${name}_edge._name, \"rev\": ${name}_doc.`${revision}`}, ${name}_doc)\n";
         }
         return StringSubstitutor.replace(query, valueMap);
 

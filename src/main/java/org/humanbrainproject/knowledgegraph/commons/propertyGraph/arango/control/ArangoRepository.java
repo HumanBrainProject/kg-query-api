@@ -354,10 +354,7 @@ public class ArangoRepository extends VertexRepository<ArangoConnection, ArangoD
 
         Object linkType = map.get("linkType");
         if (linkType != null) {
-            ArangoDocumentReference arangoDocumentReference = ArangoDocumentReference.fromId((String) linkType);
-            if(arangoDocumentReference!=null){
-                map.put("linkType", semanticsToHumanTranslator.translateArangoCollectionName(arangoDocumentReference.getCollection()));
-            }
+            map.put("linkType", semanticsToHumanTranslator.translateSemanticValueToHumanReadableLabel((String)linkType));
         }
 
         for (Object key : map.keySet()) {
