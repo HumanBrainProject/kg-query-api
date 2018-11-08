@@ -37,7 +37,7 @@ public class SpecificationInterpreterTest {
     @Test
     public void readSpecification() throws JSONException {
         Specification specification = interpreter.readSpecification(testSpecification);
-        assertEquals("https://nexus-dev.humanbrainproject.org/v0/schemas/minds/core/dataset/v0.0.4", specification.rootSchema);
+        assertEquals("https://nexus-dev.humanbrainproject.org/v0/schemas/minds/core/dataset/v1.0.0", specification.rootSchema);
         assertEquals(17, specification.fields.size());
     }
 
