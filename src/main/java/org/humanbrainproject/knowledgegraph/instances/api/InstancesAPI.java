@@ -26,7 +26,7 @@ public class InstancesAPI {
     @Autowired
     Instances instances;
 
-    @GetMapping(value = "/{org}/{domain}/{schema}/{version}/{id}", consumes = {MediaType.WILDCARD})
+    @GetMapping(value = "/{org}/{domain}/{schema}/{version}/{id}")
     public ResponseEntity<Map> getInstance(@PathVariable("org") String org, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("version") String version, @PathVariable("id") String id) throws Exception {
         try {
             Map instance = instances.getInstance(new NexusInstanceReference(org, domain, schema, version, id));
@@ -36,7 +36,7 @@ public class InstancesAPI {
         }
     }
 
-    @PostMapping(value = "/{org}/{domain}/{schema}/{version}", consumes = {MediaType.APPLICATION_JSON, "application/ld+json"})
+    @PostMapping(value = "/{org}/{domain}/{schema}/{version}")
     public ResponseEntity<Map> createNewInstanceForSchema(@PathVariable("org") String org, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("version") String version, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken) {
         NexusInstanceReference reference = instances.createNewInstance(new NexusSchemaReference(org, domain, schema, version), new OidcAccessToken().setToken(authorizationToken));
         if (reference != null) {
@@ -59,7 +59,7 @@ public class InstancesAPI {
         }
     }
 
-    @DeleteMapping(value = "/{org}/{domain}/{schema}/{version}/{id}", consumes = {MediaType.APPLICATION_JSON, "application/ld+json"})
+    @DeleteMapping(value = "/{org}/{domain}/{schema}/{version}/{id}")
     public ResponseEntity<Void> deleteInstance(@PathVariable("org") String org, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("version") String version, @PathVariable("id") String id, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken) {
         if (instances.removeInstance(new NexusInstanceReference(org, domain, schema, version, id), new OidcAccessToken().setToken(authorizationToken))){
             return ResponseEntity.ok().build();
