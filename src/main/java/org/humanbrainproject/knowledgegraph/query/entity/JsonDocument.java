@@ -1,6 +1,7 @@
 package org.humanbrainproject.knowledgegraph.query.entity;
 
 import com.github.jsonldjava.core.JsonLdConsts;
+import org.humanbrainproject.knowledgegraph.commons.vocabulary.ArangoVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.NexusVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.SchemaOrgVocabulary;
@@ -20,6 +21,10 @@ public class JsonDocument extends LinkedHashMap<String, Object>{
     public void addReference(String propertyName, String url){
         Map<String, String> reference = new HashMap<>();
         reference.put(JsonLdConsts.ID, url);
+        NexusInstanceReference internalReference = NexusInstanceReference.createFromUrl(url);
+        if(internalReference!=null) {
+            reference.put(ArangoVocabulary.RELATIVE_URL, internalReference.getRelativeUrl().getUrl());
+        }
         addToProperty(propertyName, reference);
     }
 
