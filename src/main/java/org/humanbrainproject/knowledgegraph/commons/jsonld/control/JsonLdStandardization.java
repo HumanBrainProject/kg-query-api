@@ -6,7 +6,9 @@ import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.gson.Gson;
+import org.humanbrainproject.knowledgegraph.commons.vocabulary.ArangoVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.NexusVocabulary;
+import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -94,6 +96,25 @@ public class JsonLdStandardization {
             else{
                 for (Object o : ((Map) input).keySet()) {
                     flattenLists(((Map) input).get(o), (Map)input, (String)o);
+                }
+            }
+        }
+        return input;
+    }
+
+    public <T> T extendInternalReferencesWithRelativeUrl(T input) {
+        if (input instanceof List) {
+            ((List) input).forEach(i -> extendInternalReferencesWithRelativeUrl(i));
+        } else if (input instanceof Map) {
+            if(((Map)input).containsKey(JsonLdConsts.ID)){
+                NexusInstanceReference fromUrl = NexusInstanceReference.createFromUrl((String) ((Map) input).get(JsonLdConsts.ID));
+                if(fromUrl!=null){
+                    ((Map)input).put(ArangoVocabulary.RELATIVE_URL, fromUrl.getRelativeUrl().getUrl());
+                }
+            }
+            else{
+                for (Object o : ((Map) input).keySet()) {
+                    extendInternalReferencesWithRelativeUrl(((Map) input).get(o));
                 }
             }
         }
