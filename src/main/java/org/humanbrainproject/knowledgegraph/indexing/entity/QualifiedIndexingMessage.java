@@ -18,7 +18,7 @@ public class QualifiedIndexingMessage {
 
 
     public QualifiedIndexingMessage(IndexingMessage spec, Map qualifiedMap) {
-        this.qualifiedMap = Collections.unmodifiableMap(qualifiedMap);
+        this.qualifiedMap = qualifiedMap;
         this.originalMessage = spec;
         Object type = this.qualifiedMap.get(JsonLdConsts.TYPE);
         if(type instanceof String){
