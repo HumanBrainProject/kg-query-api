@@ -52,7 +52,7 @@ public class InferenceController implements IndexingController{
 
     private void insertVertexStructure(QualifiedIndexingMessage message, TodoList todoList) {
         Vertex vertexStructure = messageProcessor.createVertexStructure(message);
-        indexingProvider.mapToOriginalSpace(vertexStructure, message.getOriginalId());
+        vertexStructure = indexingProvider.mapToOriginalSpace(vertexStructure, message.getOriginalId());
         InsertTodoItem insertTodoItem = new InsertTodoItem(vertexStructure, indexingProvider.getConnection(TargetDatabase.INFERRED));
         insertTodoItem.getBlacklist().addAll(EDGE_BLACKLIST_FOR_INFERENCE);
         todoList.addTodoItem(insertTodoItem);

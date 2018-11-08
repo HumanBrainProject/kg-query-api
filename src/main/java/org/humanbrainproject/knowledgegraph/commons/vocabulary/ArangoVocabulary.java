@@ -24,10 +24,10 @@ public class ArangoVocabulary {
     //Backreference to Nexus
     public static final String NEXUS_REV ="_nexusRev";
     public static final String NEXUS_RELATIVE_URL = "_nexusRelativeUrl";
-    //public static final String NEXUS_RELATIVE_URL_WITH_REV = "_nexusRelativeUrlWithRev";
+    public static final String NEXUS_RELATIVE_URL_WITH_REV = "_nexusRelativeUrlWithRev";
 
     //TODO change value and re-index
-    public static final String NEXUS_RELATIVE_URL_WITH_REV = "_originalId";
+    //public static final String NEXUS_RELATIVE_URL_WITH_REV = "_originalId";
 
 
 }

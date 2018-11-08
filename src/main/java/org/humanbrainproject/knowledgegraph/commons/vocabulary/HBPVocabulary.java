@@ -4,8 +4,8 @@ public class HBPVocabulary {
 
     public static final String ALIAS = "hbp";
     public static final String NAMESPACE = "https://schema.hbp.eu/";
-
     public static final String GRAPH_QUERY = NAMESPACE+"graphQuery/";
+    public static final String RELATIVE_URL_OF_INTERNAL_LINK = NAMESPACE+"relativeUrl";
 
 
     // FOR PROVENANCE

@@ -6,7 +6,7 @@ import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.gson.Gson;
-import org.humanbrainproject.knowledgegraph.commons.vocabulary.ArangoVocabulary;
+import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.NexusVocabulary;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.slf4j.Logger;
@@ -89,32 +89,47 @@ public class JsonLdStandardization {
         if (input instanceof List) {
             ((List) input).forEach(i -> flattenLists(i, parent, parentKey));
         } else if (input instanceof Map) {
-            if(((Map)input).containsKey(JsonLdConsts.LIST)){
+            if (((Map) input).containsKey(JsonLdConsts.LIST)) {
                 Object list = ((Map) input).get(JsonLdConsts.LIST);
                 parent.put(parentKey, list);
-            }
-            else{
+            } else {
                 for (Object o : ((Map) input).keySet()) {
-                    flattenLists(((Map) input).get(o), (Map)input, (String)o);
+                    flattenLists(((Map) input).get(o), (Map) input, (String) o);
                 }
             }
         }
         return input;
     }
 
-    public <T> T extendInternalReferencesWithRelativeUrl(T input) {
+    public interface NexusInstanceReferenceTransformer {
+        NexusInstanceReference transform(NexusInstanceReference source);
+    }
+
+
+    public <T> T extendInternalReferencesWithRelativeUrl(T input, NexusInstanceReferenceTransformer transformer) {
         if (input instanceof List) {
-            ((List) input).forEach(i -> extendInternalReferencesWithRelativeUrl(i));
+            ((List) input).forEach(i -> extendInternalReferencesWithRelativeUrl(i, transformer));
         } else if (input instanceof Map) {
-            if(((Map)input).containsKey(JsonLdConsts.ID)){
-                NexusInstanceReference fromUrl = NexusInstanceReference.createFromUrl((String) ((Map) input).get(JsonLdConsts.ID));
-                if(fromUrl!=null){
-                    ((Map)input).put(ArangoVocabulary.RELATIVE_URL, fromUrl.getRelativeUrl().getUrl());
+            if (((Map) input).containsKey(JsonLdConsts.ID)) {
+                String referencedId = (String) ((Map) input).get(JsonLdConsts.ID);
+                NexusInstanceReference fromUrl = NexusInstanceReference.createFromUrl(referencedId);
+                if (fromUrl != null) {
+                    if (transformer != null) {
+                        String formerRelativeUrl = fromUrl.getRelativeUrl().getUrl();
+                        NexusInstanceReference transformed = transformer.transform(fromUrl);
+                        if (transformed != null) {
+                            fromUrl = transformed;
+                            if (!fromUrl.getRelativeUrl().getUrl().equals(formerRelativeUrl)) {
+                                referencedId = referencedId.replace(formerRelativeUrl, fromUrl.getRelativeUrl().getUrl());
+                                ((Map) input).put(JsonLdConsts.ID, referencedId);
+                            }
+                        }
+                    }
+                    ((Map) input).put(HBPVocabulary.RELATIVE_URL_OF_INTERNAL_LINK, fromUrl.getRelativeUrl().getUrl());
                 }
-            }
-            else{
+            } else {
                 for (Object o : ((Map) input).keySet()) {
-                    extendInternalReferencesWithRelativeUrl(((Map) input).get(o));
+                    extendInternalReferencesWithRelativeUrl(((Map) input).get(o), transformer);
                 }
             }
         }

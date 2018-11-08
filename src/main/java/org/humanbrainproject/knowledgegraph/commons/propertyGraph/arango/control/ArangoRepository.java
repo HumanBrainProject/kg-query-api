@@ -406,7 +406,7 @@ public class ArangoRepository extends VertexRepository<ArangoConnection, ArangoD
         ArangoDatabase db = databaseFactory.getInferredDB().getOrCreateDB();
         String query = queryFactory.queryReleaseGraph(databaseFactory.getInferredDB().getEdgesCollectionNames(), document, maxDepth.orElse(6));
         ArangoCursor<Map> q = db.query(query, null, new AqlQueryOptions(), Map.class);
-        List<Map> results = q.asListRemaining();
+        List<Map> results = q.asListRemaining().stream().filter(Objects::nonNull).collect(Collectors.toList());
         if (results.size() > 1) {
             throw new UnexpectedNumberOfResults("The release graph query should only return a single document since it is based on an id");
         }

@@ -41,7 +41,7 @@ public class MessageProcessor {
         map = jsonLdStandardization.fullyQualify(map);
         map = jsonLdStandardization.filterKeysByVocabBlacklists(map);
         map = jsonLdStandardization.flattenLists(map, null, null);
-        map = jsonLdStandardization.extendInternalReferencesWithRelativeUrl(map);
+        map = jsonLdStandardization.extendInternalReferencesWithRelativeUrl(map, null);
         map.put(HBPVocabulary.PROVENANCE_INDEXED_IN_ARANGO_AT, ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_INSTANT));
         map.put(HBPVocabulary.PROVENANCE_LAST_MODIFICATION_USER_ID, message.getUserId());
         map.put(HBPVocabulary.PROVENANCE_MODIFIED_AT, message.getTimestamp());
@@ -56,6 +56,7 @@ public class MessageProcessor {
         findEdges(targetVertex, new Stack<>(), qualifiedNexusIndexingMessage.getQualifiedMap(), null);
         return targetVertex;
     }
+
 
     private NexusInstanceReference getInternalReference(Object value) {
         if (value instanceof Map && ((Map) value).containsKey(JsonLdConsts.ID)) {
