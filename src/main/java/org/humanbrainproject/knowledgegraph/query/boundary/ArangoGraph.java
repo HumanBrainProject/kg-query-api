@@ -22,7 +22,7 @@ public class ArangoGraph {
     ArangoRepository arangoRepository;
 
     public List<Map> getGraph(NexusInstanceReference instance, Integer step) {
-        return arangoRepository.inDepthGraph(ArangoDocumentReference.fromNexusInstance(instance), step, databaseFactory.getDefaultDB());
+        return arangoRepository.inDepthGraph(ArangoDocumentReference.fromNexusInstance(instance), step, databaseFactory.getInferredDB());
     }
 
     public List<Map> getGetEditorSpecDocument(ArangoCollectionReference collection) {

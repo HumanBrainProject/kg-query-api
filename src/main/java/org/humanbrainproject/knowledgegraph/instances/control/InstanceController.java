@@ -16,6 +16,7 @@ import org.humanbrainproject.knowledgegraph.indexing.entity.IndexingMessage;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusRelativeUrl;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
+import org.humanbrainproject.knowledgegraph.query.entity.JsonDocument;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -68,12 +69,28 @@ public class InstanceController {
         }
     }
 
-    public void deprecateInstanceByNexusId(NexusInstanceReference instanceReference, OidcAccessToken oidcAccessToken){
+    public boolean deprecateInstanceByNexusId(NexusInstanceReference instanceReference, OidcAccessToken oidcAccessToken){
         boolean delete = nexusClient.delete(instanceReference.getRelativeUrl(), instanceReference.getRevision() != null ? instanceReference.getRevision() : 1, oidcAccessToken);
         if(delete){
             immediateDeprecation(instanceReference);
         }
+        return delete;
     }
+
+    public NexusInstanceReference createNewEmptyInstance(NexusSchemaReference nexusSchemaReference, OidcAccessToken oidcAccessToken){
+        schemaController.createSchema(nexusSchemaReference);
+        JsonDocument payload = new JsonDocument();
+        payload.addType(schemaController.getTargetClass(nexusSchemaReference));
+        JsonDocument response = nexusClient.post(new NexusRelativeUrl(NexusConfiguration.ResourceType.DATA, nexusSchemaReference.getRelativeUrl().getUrl()), null, payload, oidcAccessToken);
+        if(response!=null){
+            NexusInstanceReference idFromNexus = response.getReference();
+            payload.addToProperty(SchemaOrgVocabulary.IDENTIFIER, idFromNexus.getId());
+            nexusClient.put(idFromNexus.getRelativeUrl(), idFromNexus.getRevision(), payload, oidcAccessToken);
+            return idFromNexus;
+        }
+        return null;
+    }
+
 
     public NexusInstanceReference createInstanceByNexusId(NexusSchemaReference nexusSchemaReference, String id, Integer revision, Map<String, Object> payload, OidcAccessToken oidcAccessToken)  {
         schemaController.createSchema(nexusSchemaReference);

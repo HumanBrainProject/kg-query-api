@@ -6,6 +6,7 @@ import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceR
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusRelativeUrl;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
 import org.humanbrainproject.knowledgegraph.instances.control.InstanceController;
+import org.humanbrainproject.knowledgegraph.query.entity.JsonDocument;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -35,23 +36,23 @@ public class SystemNexusClient {
     @Autowired
     InstanceController instanceController;
 
-    public List<Map> find(NexusSchemaReference reference, String fieldName, String fieldValue) {
+    public List<JsonDocument> find(NexusSchemaReference reference, String fieldName, String fieldValue) {
         return nexusClient.find(reference, fieldName, fieldValue, systemOidc.getToken());
     }
 
-    public Map get(NexusRelativeUrl relativeUrl) {
+    public JsonDocument get(NexusRelativeUrl relativeUrl) {
         return nexusClient.get(relativeUrl, systemOidc.getToken());
     }
 
-    public Map put(NexusRelativeUrl relativeUrl, Integer revision, Map payload){
+    public JsonDocument put(NexusRelativeUrl relativeUrl, Integer revision, Map payload){
         return nexusClient.put(relativeUrl, revision, payload, systemOidc.getToken());
     }
 
-    public Map post(NexusRelativeUrl relativeUrl, Integer revision, Map payload)  {
+    public JsonDocument post(NexusRelativeUrl relativeUrl, Integer revision, Map payload)  {
         return nexusClient.post(relativeUrl, revision, payload, systemOidc.getToken());
     }
 
-    public Map patch(NexusRelativeUrl relativeUrl, Integer revision, Map payload) {
+    public JsonDocument patch(NexusRelativeUrl relativeUrl, Integer revision, Map payload) {
         return nexusClient.patch(relativeUrl, revision, payload, systemOidc.getToken());
     }
 

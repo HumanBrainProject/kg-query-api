@@ -1,16 +1,18 @@
 package org.humanbrainproject.knowledgegraph.instances.entity;
 
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.SubSpace;
+
 public enum Client {
 
-    editor("editor");
+    editor(SubSpace.EDITOR);
 
-    private String postfix;
+    private SubSpace subSpace;
 
-    Client(String postfix) {
-        this.postfix = postfix;
+    Client(SubSpace subSpace) {
+        this.subSpace = subSpace;
     }
 
-    public String getPostfix() {
-        return postfix;
+    public SubSpace getSubSpace() {
+        return subSpace;
     }
 }

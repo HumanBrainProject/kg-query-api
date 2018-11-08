@@ -20,12 +20,14 @@ import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.excepti
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.control.VertexRepository;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Tuple;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Vertex;
+import org.humanbrainproject.knowledgegraph.commons.vocabulary.ArangoVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.SchemaOrgVocabulary;
 import org.humanbrainproject.knowledgegraph.indexing.control.MessageProcessor;
 import org.humanbrainproject.knowledgegraph.indexing.entity.IndexingMessage;
 import org.humanbrainproject.knowledgegraph.indexing.entity.QualifiedIndexingMessage;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
+import org.humanbrainproject.knowledgegraph.query.entity.JsonDocument;
 import org.humanbrainproject.knowledgegraph.releasing.entity.ReleaseStatus;
 import org.humanbrainproject.knowledgegraph.releasing.entity.ReleaseStatusResponse;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -64,7 +66,7 @@ public class ArangoRepository extends VertexRepository<ArangoConnection, ArangoD
     }
 
     public NexusInstanceReference findBySchemaOrgIdentifier(ArangoCollectionReference collectionReference, String value){
-        String query = queryFactory.queryForValueWithProperty(SchemaOrgVocabulary.IDENTIFIER, value, Collections.singleton(collectionReference), "_originalId");
+        String query = queryFactory.queryForValueWithProperty(SchemaOrgVocabulary.IDENTIFIER, value, Collections.singleton(collectionReference), ArangoVocabulary.NEXUS_RELATIVE_URL_WITH_REV);
         List<List> result = query == null ? new ArrayList<>() : databaseFactory.getDefaultDB().getOrCreateDB().query(query, null, new AqlQueryOptions(), List.class).asListRemaining();
         if (result.size() == 1) {
             if (result.get(0) != null) {
@@ -124,7 +126,7 @@ public class ArangoRepository extends VertexRepository<ArangoConnection, ArangoD
 
     public Set<ArangoDocumentReference> getReferencesBelongingToInstance(NexusInstanceReference nexusInstanceReference, ArangoConnection arangoConnection) {
         Set<ArangoCollectionReference> collections = new HashSet<>(arangoConnection.getEdgesCollectionNames());
-        String query = queryFactory.queryForIdsWithProperty("_originalId", nexusInstanceReference.getFullId(true), collections);
+        String query = queryFactory.queryForIdsWithProperty(ArangoVocabulary.NEXUS_RELATIVE_URL_WITH_REV, nexusInstanceReference.getFullId(true), collections);
         List<List> result = query == null ? new ArrayList<>() : arangoConnection.getOrCreateDB().query(query, null, new AqlQueryOptions(), List.class).asListRemaining();
         if (result.size() == 1) {
             return ((List<String>) result.get(0)).stream().filter(Objects::nonNull).map(id -> ArangoDocumentReference.fromId(id.toString())).collect(Collectors.toSet());
@@ -137,7 +139,7 @@ public class ArangoRepository extends VertexRepository<ArangoConnection, ArangoD
     public Vertex getVertexStructureById(ArangoDocumentReference documentReference, ArangoConnection arango) {
         Map document = arango.getOrCreateDB().getDocument(documentReference.getId(), Map.class);
         if (document != null) {
-            NexusInstanceReference reference = NexusInstanceReference.createFromUrl(document.get("_originalId").toString());
+            NexusInstanceReference reference = NexusInstanceReference.createFromUrl(document.get(ArangoVocabulary.NEXUS_RELATIVE_URL_WITH_REV).toString());
             QualifiedIndexingMessage qualified = messageProcessor.qualify(new IndexingMessage(reference, transformer.getMapAsJson(document), null, null));
             return messageProcessor.createVertexStructure(qualified);
         }
@@ -310,7 +312,7 @@ public class ArangoRepository extends VertexRepository<ArangoConnection, ArangoD
         if (!collectionReference.getName().equals(NAME_LOOKUP_MAP) && originalName != null) {
             ArangoCollection namelookup = createCollectionIfNotExists(NAME_LOOKUP_MAP, null, CollectionType.DOCUMENT, arango);
             if (!namelookup.documentExists(collectionReference.getName())) {
-                insertDocument(NAME_LOOKUP_MAP, null, String.format("{\"originalName\": \"%s\", \"_key\": \"%s\"}", originalName, collectionReference.getName()), CollectionType.DOCUMENT, arango);
+                insertDocument(NAME_LOOKUP_MAP, null, String.format("{\"originalName\": \"%s\", \""+ArangoVocabulary.KEY+"\": \"%s\"}", originalName, collectionReference.getName()), CollectionType.DOCUMENT, arango);
             }
         }
         return collection;
@@ -489,11 +491,11 @@ public class ArangoRepository extends VertexRepository<ArangoConnection, ArangoD
     }
 
 
-    public Map getInstance(ArangoDocumentReference instanceReference, ArangoConnection driver) {
+    public JsonDocument getInstance(ArangoDocumentReference instanceReference, ArangoConnection driver) {
         ArangoDatabase db = driver.getOrCreateDB();
         ArangoCollection collection = db.collection(instanceReference.getCollection().getName());
         if(collection.exists()){
-            return collection.documentExists(instanceReference.getKey()) ? collection.getDocument(instanceReference.getKey(), Map.class) : null;
+            return collection.documentExists(instanceReference.getKey()) ? new JsonDocument(collection.getDocument(instanceReference.getKey(), Map.class)) : null;
         }
         return null;
     }

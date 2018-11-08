@@ -1,5 +1,6 @@
 package org.humanbrainproject.knowledgegraph.query.entity;
 
+import org.humanbrainproject.knowledgegraph.commons.vocabulary.ArangoVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 
 public enum GraphQueryKeys {
@@ -18,9 +19,9 @@ public enum GraphQueryKeys {
     GRAPH_QUERY_ENSURE_ORDER("ensure_order"),
     GRAPH_QUERY_GROUPED_INSTANCES("grouped_instances"),
     GRAPH_QUERY_GROUPED_INSTANCES_DEFAULT("instances"),
-    GRAPH_QUERY_ARANGO_ID("_id"),
     GRAPH_QUERY_ARANGO_REV("_rev"),
-    GRAPH_QUERY_ARANGO_KEY("_key");
+    GRAPH_QUERY_ARANGO_ID(ArangoVocabulary.ID),
+    GRAPH_QUERY_ARANGO_KEY(ArangoVocabulary.KEY);
 
     private final String fieldName;
 

@@ -5,6 +5,7 @@ import com.github.jsonldjava.utils.JsonUtils;
 import com.google.gson.Gson;
 import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationController;
 import org.humanbrainproject.knowledgegraph.commons.authorization.entity.OidcAccessToken;
+import org.humanbrainproject.knowledgegraph.commons.vocabulary.ArangoVocabulary;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonLdStandardization;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoDatabaseFactory;
@@ -107,8 +108,8 @@ public class ArangoQuery {
 
     public void storeSpecificationInDb(String specification, String id) throws JSONException {
         JSONObject jsonObject = new JSONObject(specification);
-        jsonObject.put("_key", id);
-        jsonObject.put("_id", id);
+        jsonObject.put(ArangoVocabulary.KEY, id);
+        jsonObject.put(ArangoVocabulary.ID, id);
         ArangoDocumentReference document = new ArangoDocumentReference(SPECIFICATION_QUERIES, id);
         Map spec = arangoRepository.getByKey(document, Map.class, databaseFactory.getInternalDB());
         if (spec != null) {

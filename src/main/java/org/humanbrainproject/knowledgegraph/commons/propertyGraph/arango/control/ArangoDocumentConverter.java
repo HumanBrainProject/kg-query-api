@@ -3,12 +3,12 @@ package org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.contro
 import com.github.jsonldjava.core.JsonLdConsts;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.query.ArangoSpecificationQuery;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Edge;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.JsonPath;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Step;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Vertex;
+import org.humanbrainproject.knowledgegraph.commons.vocabulary.ArangoVocabulary;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -27,25 +27,25 @@ public class ArangoDocumentConverter {
     private Map<String, Object> buildPath(Step step, List<Step> remaining) {
         Map<String, Object> path = new LinkedHashMap<>();
         if (step != null) {
-            path.put("_orderNumber", step.getOrderNumber());
-            path.put("_name", step.getName());
+            path.put(ArangoVocabulary.ORDER_NUMBER, step.getOrderNumber());
+            path.put(ArangoVocabulary.NAME, step.getName());
         }
         if (remaining.size() > 0) {
-            path.put("_next", buildPath(remaining.get(0), remaining.subList(1, remaining.size())));
+            path.put(ArangoVocabulary.NEXT, buildPath(remaining.get(0), remaining.subList(1, remaining.size())));
         }
         return path;
     }
 
     public String createJsonFromEdge(ArangoDocumentReference targetDocument, Vertex vertex, Edge edge, Set<JsonPath> blackList) {
         Map<String, Object> map = new HashMap<>();
-        map.put("_id", targetDocument.getId());
-        map.put("_key", targetDocument.getKey());
-        map.put("_from", ArangoDocumentReference.fromNexusInstance(vertex.getInstanceReference()).getId());
-        map.put("_to", ArangoDocumentReference.fromNexusInstance(edge.getReference()).getId());
-        map.put("_path", buildPath(null, edge.getPath()));
-        map.put("_name", edge.getName());
+        map.put(ArangoVocabulary.ID, targetDocument.getId());
+        map.put(ArangoVocabulary.KEY, targetDocument.getKey());
+        map.put(ArangoVocabulary.FROM, ArangoDocumentReference.fromNexusInstance(vertex.getInstanceReference()).getId());
+        map.put(ArangoVocabulary.TO, ArangoDocumentReference.fromNexusInstance(edge.getReference()).getId());
+        map.put(ArangoVocabulary.PATH, buildPath(null, edge.getPath()));
+        map.put(ArangoVocabulary.NAME, edge.getName());
         //This is a loop - it can happen (e.g. for reconciled instances - so we should ensure this never reaches the database).
-        if (map.get("_from").equals(map.get("_to"))) {
+        if (map.get(ArangoVocabulary.FROM).equals(map.get(ArangoVocabulary.TO))) {
             return null;
         }
         for (JsonPath steps : blackList) {
@@ -58,14 +58,14 @@ public class ArangoDocumentConverter {
     public String createJsonFromVertex(ArangoDocumentReference reference, Vertex vertex, Set<JsonPath> blackList) {
         Map<String, Object> jsonObject = new LinkedHashMap(vertex.getQualifiedIndexingMessage().getQualifiedMap());
         jsonObject.put(JsonLdConsts.ID, configuration.getAbsoluteUrl(vertex.getInstanceReference()));
-        jsonObject.put("_id", reference.getId());
-        jsonObject.put("_key", reference.getKey());
+        jsonObject.put(ArangoVocabulary.ID, reference.getId());
+        jsonObject.put(ArangoVocabulary.KEY, reference.getKey());
+        jsonObject.put(ArangoVocabulary.RELATIVE_URL, vertex.getInstanceReference().getRelativeUrl().getUrl());
         Integer revision = vertex.getQualifiedIndexingMessage().getOriginalMessage().getInstanceReference().getRevision();
-        jsonObject.put("_nexusRev", revision);
-        jsonObject.put("_relativeUrl", vertex.getInstanceReference().getRelativeUrl().getUrl());
-        jsonObject.put("_nexusRelativeUrl", vertex.getQualifiedIndexingMessage().getOriginalMessage().getInstanceReference().getRelativeUrl().getUrl());
-        jsonObject.put("_originalId", vertex.getQualifiedIndexingMessage().getOriginalMessage().getInstanceReference().getFullId(true));
-        jsonObject.put(ArangoSpecificationQuery.PERMISSION_GROUP, vertex.getInstanceReference().getNexusSchema().getOrganization());
+        jsonObject.put(ArangoVocabulary.NEXUS_REV, revision);
+        jsonObject.put(ArangoVocabulary.NEXUS_RELATIVE_URL, vertex.getQualifiedIndexingMessage().getOriginalMessage().getInstanceReference().getRelativeUrl().getUrl());
+        jsonObject.put(ArangoVocabulary.NEXUS_RELATIVE_URL_WITH_REV, vertex.getQualifiedIndexingMessage().getOriginalMessage().getInstanceReference().getFullId(true));
+        jsonObject.put(ArangoVocabulary.PERMISSION_GROUP, vertex.getInstanceReference().getNexusSchema().getOrganization());
         for (JsonPath steps : blackList) {
             removePathFromMap(jsonObject, steps);
         }

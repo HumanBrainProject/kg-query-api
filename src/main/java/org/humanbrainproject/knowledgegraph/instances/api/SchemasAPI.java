@@ -4,7 +4,7 @@ import io.swagger.annotations.Api;
 import org.apache.commons.configuration.ConversionException;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.SubSpace;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
-import org.humanbrainproject.knowledgegraph.instances.boundary.Instances;
+import org.humanbrainproject.knowledgegraph.instances.boundary.Schemas;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,7 +18,7 @@ import javax.ws.rs.core.MediaType;
 public class SchemasAPI {
 
     @Autowired
-    Instances instances;
+    Schemas schemas;
 
     @PutMapping(value = "/{org}/{domain}/{schema}/{version}", consumes = { MediaType.APPLICATION_JSON})
     public ResponseEntity<Void> createSimpleSchema(@PathVariable("org") String org, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("version") String version, @RequestParam(value = "subSpace", required = false) String subSpace ){
@@ -33,7 +33,7 @@ public class SchemasAPI {
                     throw new ConversionException("Could not convert subspace");
                 }
             }
-            instances.createSimpleSchema(schemaReference);
+            schemas.createSimpleSchema(schemaReference);
             return ResponseEntity.ok().build();
         } catch (ConversionException e){
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();

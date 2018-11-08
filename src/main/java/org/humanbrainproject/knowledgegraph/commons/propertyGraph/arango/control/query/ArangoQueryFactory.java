@@ -6,6 +6,7 @@ import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfigura
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoConnection;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
+import org.humanbrainproject.knowledgegraph.commons.vocabulary.ArangoVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.SchemaOrgVocabulary;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
@@ -26,7 +27,7 @@ public class ArangoQueryFactory {
     NexusConfiguration configuration;
 
     public String queryForIdsWithProperty(String propertyName, String propertyValue, Set<ArangoCollectionReference> collectionsToCheck) {
-        return queryForValueWithProperty(propertyName, propertyValue,collectionsToCheck, "_id");
+        return queryForValueWithProperty(propertyName, propertyValue,collectionsToCheck, ArangoVocabulary.ID);
     }
 
     public String queryForValueWithProperty(String propertyName, String propertyValue, Set<ArangoCollectionReference> collectionsToCheck, String lookupProperty) {
@@ -59,8 +60,7 @@ public class ArangoQueryFactory {
     }
 
     public String queryInDepthGraph(Set<ArangoCollectionReference> edgeCollections, ArangoDocumentReference startDocument, Integer step, ArangoConnection driver) {
-        Set<ArangoCollectionReference> collectionLabels = driver != null ? driver.filterExistingCollectionLabels(edgeCollections) : edgeCollections;
-        String names = String.join("`, `", collectionLabels.stream().map(ArangoCollectionReference::getName).collect(Collectors.toSet()));
+        String names = String.join("`, `", driver.getEdgesCollectionNames().stream().map(ArangoCollectionReference::getName).collect(Collectors.toSet()));
         String outbound = String.format("" +
                 "FOR v, e, p IN 1..%s OUTBOUND \"%s\" `%s` \n" +
                 "FILTER v.`_permissionGroup` IN whitelist_organizations \n " +
@@ -117,7 +117,7 @@ public class ArangoQueryFactory {
         valueMap.put("releaseInstanceProperty", HBPVocabulary.RELEASE_INSTANCE);
         valueMap.put("releaseRevisionProperty", HBPVocabulary.RELEASE_REVISION);
         valueMap.put("nexusBaseForInstances", configuration.getNexusBase(NexusConfiguration.ResourceType.DATA));
-        valueMap.put("originalId", "_originalId");
+        valueMap.put("originalId", ArangoVocabulary.NEXUS_RELATIVE_URL_WITH_REV);
         valueMap.put("releasedValue", ReleaseStatus.RELEASED.name());
         valueMap.put("changedValue", ReleaseStatus.HAS_CHANGED.name());
         valueMap.put("notReleasedValue", ReleaseStatus.NOT_RELEASED.name());

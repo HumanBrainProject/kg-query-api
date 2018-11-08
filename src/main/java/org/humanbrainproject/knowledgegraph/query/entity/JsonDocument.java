@@ -2,10 +2,20 @@ package org.humanbrainproject.knowledgegraph.query.entity;
 
 import com.github.jsonldjava.core.JsonLdConsts;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
+import org.humanbrainproject.knowledgegraph.commons.vocabulary.NexusVocabulary;
+import org.humanbrainproject.knowledgegraph.commons.vocabulary.SchemaOrgVocabulary;
+import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 
 import java.util.*;
 
 public class JsonDocument extends LinkedHashMap<String, Object>{
+
+    public JsonDocument(Map<? extends String, ?> map) {
+        super(map);
+    }
+
+    public JsonDocument() {
+    }
 
     public void addReference(String propertyName, String url){
         Map<String, String> reference = new HashMap<>();
@@ -19,6 +29,33 @@ public class JsonDocument extends LinkedHashMap<String, Object>{
 
     public void addType(String type){
         addToProperty(JsonLdConsts.TYPE, type);
+    }
+
+    public String getPrimaryIdentifier(){
+        if(this.containsKey(SchemaOrgVocabulary.IDENTIFIER)){
+            Object identifier = get(SchemaOrgVocabulary.IDENTIFIER);
+            if(identifier instanceof List && !((List)identifier).isEmpty()){
+                for (Object o : ((List) identifier)) {
+                    if(o instanceof String){
+                        return (String)o;
+                    }
+                }
+            }
+            else if(identifier instanceof String){
+                return (String) identifier;
+            }
+        }
+        return null;
+    }
+
+
+    public NexusInstanceReference getReference(){
+        if (this.containsKey(JsonLdConsts.ID)) {
+            NexusInstanceReference fromUrl = NexusInstanceReference.createFromUrl((String) get(JsonLdConsts.ID));
+            fromUrl.setRevision((Integer) get(NexusVocabulary.REVISION_ALIAS));
+            return fromUrl;
+        }
+        return null;
     }
 
 

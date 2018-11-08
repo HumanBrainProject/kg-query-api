@@ -53,7 +53,7 @@ public class NexusInstanceReference {
     }
 
     public String getFullId(boolean withRevision) {
-        return String.format("%s%s", getRelativeUrl().getUrl(), !withRevision || getRevision()==null ? "" : String.format("?rev=%d", getRevision()));
+        return String.format("%s%s", getRelativeUrl().getUrl(), !withRevision ? "" : String.format("?rev=%d", getRevision() != null ? getRevision() : 1));
     }
 
     public NexusRelativeUrl getRelativeUrl() {
