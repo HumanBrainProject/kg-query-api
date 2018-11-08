@@ -1,4 +1,4 @@
-package org.humanbrainproject.knowledgegraph.commons.nexus.control;
+package org.humanbrainproject.knowledgegraph.commons.authorization.control;
 
 import org.humanbrainproject.knowledgegraph.commons.authorization.entity.OidcAccessToken;
 import org.springframework.http.HttpHeaders;
@@ -9,6 +9,7 @@ import org.springframework.http.client.ClientHttpResponse;
 
 import javax.ws.rs.core.MediaType;
 import java.io.IOException;
+import java.util.Collections;
 
 public class OidcHeaderInterceptor implements ClientHttpRequestInterceptor {
 
@@ -27,6 +28,7 @@ public class OidcHeaderInterceptor implements ClientHttpRequestInterceptor {
     @Override
     public ClientHttpResponse intercept(HttpRequest httpRequest, byte[] bytes, ClientHttpRequestExecution clientHttpRequestExecution) throws IOException {
         httpRequest.getHeaders().set(HttpHeaders.CONTENT_TYPE, contentType);
+        httpRequest.getHeaders().setAccept(Collections.singletonList(org.springframework.http.MediaType.parseMediaType("application/ld+json")));
         if (this.token != null) {
             httpRequest.getHeaders().set(HttpHeaders.AUTHORIZATION, token.getBearerToken());
         }

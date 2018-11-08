@@ -153,7 +153,7 @@ public class FullIndexingTest {
     @Test
     public void createAndEdit() throws IOException {
         create();
-        Map<String, Object> editorPayload = new LinkedHashMap<>();
+        JsonDocument editorPayload= new JsonDocument();
         editorPayload.put(SchemaOrgVocabulary.NAMESPACE+"foo", "editbar");
         editorPayload.put(SchemaOrgVocabulary.NAMESPACE+"bar", "editfoo");
         Map<String, String> reference = new LinkedHashMap<>();
@@ -170,7 +170,7 @@ public class FullIndexingTest {
     @Test
     public void createEditReleaseInferred() throws IOException {
         create();
-        Map<String, Object> editorPayload = new LinkedHashMap<>();
+        JsonDocument editorPayload= new JsonDocument();
         editorPayload.put(SchemaOrgVocabulary.NAMESPACE+"foo", "editbar");
         editorPayload.put(SchemaOrgVocabulary.NAMESPACE+"bar", "editfoo");
         Map<String, String> reference = new LinkedHashMap<>();

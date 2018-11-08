@@ -65,8 +65,6 @@ public class InstancesAPI {
             return ResponseEntity.ok().build();
         }
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-
-
     }
 
 

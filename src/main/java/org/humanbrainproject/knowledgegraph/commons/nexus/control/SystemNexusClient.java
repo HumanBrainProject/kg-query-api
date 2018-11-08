@@ -1,6 +1,7 @@
 package org.humanbrainproject.knowledgegraph.commons.nexus.control;
 
 
+import org.humanbrainproject.knowledgegraph.commons.authorization.control.SystemOidcHeaderInterceptor;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusRelativeUrl;
@@ -37,31 +38,31 @@ public class SystemNexusClient {
     InstanceController instanceController;
 
     public List<JsonDocument> find(NexusSchemaReference reference, String fieldName, String fieldValue) {
-        return nexusClient.find(reference, fieldName, fieldValue, systemOidc.getToken());
+        return nexusClient.find(reference, fieldName, fieldValue, systemOidc);
     }
 
     public JsonDocument get(NexusRelativeUrl relativeUrl) {
-        return nexusClient.get(relativeUrl, systemOidc.getToken());
+        return nexusClient.get(relativeUrl, systemOidc);
     }
 
     public JsonDocument put(NexusRelativeUrl relativeUrl, Integer revision, Map payload){
-        return nexusClient.put(relativeUrl, revision, payload, systemOidc.getToken());
+        return nexusClient.put(relativeUrl, revision, payload, systemOidc);
     }
 
     public JsonDocument post(NexusRelativeUrl relativeUrl, Integer revision, Map payload)  {
-        return nexusClient.post(relativeUrl, revision, payload, systemOidc.getToken());
+        return nexusClient.post(relativeUrl, revision, payload, systemOidc);
     }
 
     public JsonDocument patch(NexusRelativeUrl relativeUrl, Integer revision, Map payload) {
-        return nexusClient.patch(relativeUrl, revision, payload, systemOidc.getToken());
+        return nexusClient.patch(relativeUrl, revision, payload, systemOidc);
     }
 
     public final String getPayload(NexusInstanceReference nexusInstanceReference) {
-        return nexusClient.get(nexusInstanceReference.getRelativeUrl(), systemOidc.getToken(), String.class);
+        return nexusClient.get(nexusInstanceReference.getRelativeUrl(), systemOidc, String.class);
     }
 
     public NexusInstanceReference createOrUpdateInstance(NexusInstanceReference nexusInstanceReference, Map<String, Object> payload) {
-        return instanceController.createInstanceByNexusId(nexusInstanceReference.getNexusSchema(), nexusInstanceReference.getId(), nexusInstanceReference.getRevision(), payload, systemOidc.getToken());
+        return instanceController.createInstanceByNexusId(nexusInstanceReference.getNexusSchema(), nexusInstanceReference.getId(), nexusInstanceReference.getRevision(), payload, systemOidc);
     }
 
 }

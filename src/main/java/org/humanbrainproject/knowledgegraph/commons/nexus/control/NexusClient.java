@@ -1,6 +1,7 @@
 package org.humanbrainproject.knowledgegraph.commons.nexus.control;
 
 
+import org.humanbrainproject.knowledgegraph.commons.authorization.control.OidcHeaderInterceptor;
 import org.humanbrainproject.knowledgegraph.commons.authorization.entity.OidcAccessToken;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusRelativeUrl;
@@ -9,7 +10,11 @@ import org.humanbrainproject.knowledgegraph.query.entity.JsonDocument;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.*;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
@@ -36,37 +41,36 @@ public class NexusClient {
 
     protected Logger logger = LoggerFactory.getLogger(NexusClient.class);
 
-
     public Set<String> getAllOrganizations(OidcAccessToken authorizationToken) {
         List<JsonDocument> list = list(new NexusRelativeUrl(NexusConfiguration.ResourceType.ORGANIZATION, "&size=100"), authorizationToken, true);
         return list.stream().map(org -> org.get("resultId").toString()).collect(Collectors.toSet());
     }
 
-
-    private HttpHeaders createHeaders(OidcAccessToken oidcAccessToken) {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.setAccept(Collections.singletonList(MediaType.parseMediaType("application/ld+json")));
-        if (oidcAccessToken != null) {
-            headers.set(HttpHeaders.AUTHORIZATION, oidcAccessToken.getBearerToken());
-        }
-        return headers;
+    public JsonDocument put(NexusRelativeUrl url, Integer revision, Map payload, OidcAccessToken oidc) {
+        return put(url, revision, payload, new OidcHeaderInterceptor(oidc));
     }
 
-    public JsonDocument put(NexusRelativeUrl url, Integer revision, Map payload, OidcAccessToken oidcAccessToken) {
-        ResponseEntity<Map> result = new RestTemplate().exchange(String.format("%s%s", configuration.getEndpoint(url), revision != null ? String.format("%srev=%d", !url.getUrl().contains("?") ? "?" : "&", revision) : ""), HttpMethod.PUT, new HttpEntity<>(payload, createHeaders(oidcAccessToken)), Map.class);
+    public JsonDocument put(NexusRelativeUrl url, Integer revision, Map payload, ClientHttpRequestInterceptor oidc) {
+        RestTemplate template = new RestTemplate();
+        template.setInterceptors(Collections.singletonList(oidc));
+        ResponseEntity<Map> result = template.exchange(String.format("%s%s", configuration.getEndpoint(url), revision != null ? String.format("%srev=%d", !url.getUrl().contains("?") ? "?" : "&", revision) : ""), HttpMethod.PUT, new HttpEntity<>(payload), Map.class);
         if (result.getStatusCode().is2xxSuccessful() && result.getBody() != null) {
             return new JsonDocument(result.getBody());
         }
         return null;
     }
 
+
     public boolean delete(NexusRelativeUrl url, Integer revision, OidcAccessToken oidcAccessToken) {
+        return delete(url, revision, new OidcHeaderInterceptor(oidcAccessToken));
+    }
+
+    public boolean delete(NexusRelativeUrl url, Integer revision, ClientHttpRequestInterceptor oidc) {
         try {
-            ResponseEntity<Map> result = new RestTemplate().exchange(String.format("%s%s", configuration.getEndpoint(url), revision != null ? String.format("%srev=%d", !url.getUrl().contains("?") ? "?" : "&", revision) : ""), HttpMethod.DELETE, new HttpEntity<>(createHeaders(oidcAccessToken)), Map.class);
-            if (result.getStatusCode().is2xxSuccessful() && result.getBody() != null) {
-                return true;
-            }
+            RestTemplate template = new RestTemplate();
+            template.setInterceptors(Collections.singletonList(oidc));
+            template.delete(String.format("%s%s", configuration.getEndpoint(url), revision != null ? String.format("%srev=%d", !url.getUrl().contains("?") ? "?" : "&", revision) : ""));
+            return true;
         } catch (HttpClientErrorException e) {
             if (e.getStatusCode() == HttpStatus.CONFLICT) {
                 logger.info("Was not able to remove the instance {} due to a conflict. It seems as it is already deprecated", url);
@@ -78,52 +82,78 @@ public class NexusClient {
     }
 
     public JsonDocument post(NexusRelativeUrl url, Integer revision, Map payload, OidcAccessToken oidcAccessToken) {
+        return post(url, revision, payload, new OidcHeaderInterceptor(oidcAccessToken));
+    }
+
+    public JsonDocument post(NexusRelativeUrl url, Integer revision, Map payload, ClientHttpRequestInterceptor oidc) {
         try {
-            ResponseEntity<Map> result = new RestTemplate().exchange(String.format("%s%s", configuration.getEndpoint(url), revision != null ? String.format("%srev=%d", !url.getUrl().contains("?") ? "?" : "&", revision) : ""), HttpMethod.POST, new HttpEntity<>(payload, createHeaders(oidcAccessToken)), Map.class);
+            RestTemplate template = new RestTemplate();
+            template.setInterceptors(Collections.singletonList(oidc));
+            ResponseEntity<Map> result = template.exchange(String.format("%s%s", configuration.getEndpoint(url), revision != null ? String.format("%srev=%d", !url.getUrl().contains("?") ? "?" : "&", revision) : ""), HttpMethod.POST, new HttpEntity<>(payload), Map.class);
             if (result.getStatusCode().is2xxSuccessful() && result.getBody() != null) {
                 return new JsonDocument(result.getBody());
             }
-        } catch(HttpClientErrorException e){
+        } catch (HttpClientErrorException e) {
             logger.error("Was not able to create instance in nexus", e.getResponseBodyAsString());
             throw e;
         }
         return null;
     }
 
+
     public JsonDocument patch(NexusRelativeUrl url, Integer revision, Map payload, OidcAccessToken oidcAccessToken) {
+        return patch(url, revision, payload, new OidcHeaderInterceptor(oidcAccessToken));
+    }
+
+    JsonDocument patch(NexusRelativeUrl url, Integer revision, Map payload, ClientHttpRequestInterceptor oidc) {
         RestTemplate template = new RestTemplate();
+        template.setInterceptors(Collections.singletonList(oidc));
         template.setRequestFactory(new HttpComponentsClientHttpRequestFactory());
-        ResponseEntity<Map> result = template.exchange(String.format("%s%s", configuration.getEndpoint(url), revision != null ? String.format("%srev=%d", !url.getUrl().contains("?") ? "?" : "&", revision) : ""), HttpMethod.PATCH, new HttpEntity<>(payload, createHeaders(oidcAccessToken)), Map.class);
+        ResponseEntity<Map> result = template.exchange(String.format("%s%s", configuration.getEndpoint(url), revision != null ? String.format("%srev=%d", !url.getUrl().contains("?") ? "?" : "&", revision) : ""), HttpMethod.PATCH, new HttpEntity<>(payload), Map.class);
         if (result.getStatusCode().is2xxSuccessful() && result.getBody() != null) {
             return new JsonDocument(result.getBody());
         }
         return null;
     }
 
-
     public List<JsonDocument> find(NexusSchemaReference nexusSchemaReference, String fieldName, String fieldValue, OidcAccessToken oidcAccessToken) {
+        return find(nexusSchemaReference, fieldName, fieldValue, new OidcHeaderInterceptor(oidcAccessToken));
+    }
+
+    List<JsonDocument> find(NexusSchemaReference nexusSchemaReference, String fieldName, String fieldValue, ClientHttpRequestInterceptor oidc) {
         NexusRelativeUrl relativeUrl = new NexusRelativeUrl(NexusConfiguration.ResourceType.DATA, nexusSchemaReference.getRelativeUrl().getUrl());
         relativeUrl.addQueryParameter("fields", "all");
         relativeUrl.addQueryParameter("deprecated", "false");
         relativeUrl.addQueryParameter("filter", String.format("{\"op\":\"eq\",\"path\":\"%s\",\"value\":\"%s\"}", fieldName, fieldValue));
         String url = configuration.getEndpoint(relativeUrl);
-        ResponseEntity<Map> result = new RestTemplate().exchange(url, HttpMethod.GET, new HttpEntity<>(createHeaders(oidcAccessToken)), Map.class);
+        RestTemplate template = new RestTemplate();
+        template.setInterceptors(Collections.singletonList(oidc));
+        ResponseEntity<Map> result = template.getForEntity(url, Map.class);
         if (result.getStatusCode().is2xxSuccessful() && result.getBody() != null && result.getBody().containsKey("results") && result.getBody().get("results") instanceof List) {
-            return (List<JsonDocument>)((List) result.getBody().get("results")).stream().filter(r -> r instanceof Map).map(r -> new JsonDocument((Map)r)).collect(Collectors.toList());
+            return (List<JsonDocument>) ((List) result.getBody().get("results")).stream().filter(r -> r instanceof Map).map(r -> new JsonDocument((Map) r)).collect(Collectors.toList());
         }
         return Collections.emptyList();
     }
 
 
     public JsonDocument get(NexusRelativeUrl url, OidcAccessToken oidcAccessToken) {
-        Map map = get(url, oidcAccessToken, Map.class);
-        return map!=null ? new JsonDocument(map) : null;
+        return get(url, new OidcHeaderInterceptor(oidcAccessToken));
     }
 
+    JsonDocument get(NexusRelativeUrl url, ClientHttpRequestInterceptor oidc) {
+        Map map = get(url, oidc, Map.class);
+        return map != null ? new JsonDocument(map) : null;
+    }
 
     public <T> T get(NexusRelativeUrl url, OidcAccessToken oidcAccessToken, Class<T> resultClass) {
+        return get(url, new OidcHeaderInterceptor(oidcAccessToken), resultClass);
+    }
+
+    <T> T get(NexusRelativeUrl url, ClientHttpRequestInterceptor oidc, Class<T> resultClass) {
         try {
-            ResponseEntity<T> result = new RestTemplate().exchange(configuration.getEndpoint(url), HttpMethod.GET, new HttpEntity<>(createHeaders(oidcAccessToken)), resultClass);
+            RestTemplate template = new RestTemplate();
+            template.setInterceptors(Collections.singletonList(oidc));
+            ResponseEntity<T> result = template.getForEntity(configuration.getEndpoint(url), resultClass);
             if (result.getStatusCode().is2xxSuccessful() && result.getBody() != null) {
                 return result.getBody();
             }
@@ -136,16 +166,22 @@ public class NexusClient {
         return null;
     }
 
+
     public List<JsonDocument> list(NexusRelativeUrl relativeUrl, OidcAccessToken oidcAccessToken, boolean followPages) {
-        ResponseEntity<Map> result = new RestTemplate().exchange(configuration.getEndpoint(relativeUrl), HttpMethod.GET, new HttpEntity<>(createHeaders(oidcAccessToken)), Map.class);
+        return list(relativeUrl, new OidcHeaderInterceptor(oidcAccessToken), followPages);
+    }
+
+    List<JsonDocument> list(NexusRelativeUrl relativeUrl, ClientHttpRequestInterceptor oidc, boolean followPages) {
+        RestTemplate template = new RestTemplate();
+        ResponseEntity<Map> result = template.getForEntity(configuration.getEndpoint(relativeUrl), Map.class);
         if (result.getStatusCode().is2xxSuccessful() && result.getBody() != null && result.getBody().containsKey("results") && result.getBody().get("results") instanceof List) {
-            List<JsonDocument> results = (List<JsonDocument>) ((List) result.getBody().get("results")).stream().map(r -> new JsonDocument((Map)r)).collect(Collectors.toList());
+            List<JsonDocument> results = (List<JsonDocument>) ((List) result.getBody().get("results")).stream().map(r -> new JsonDocument((Map) r)).collect(Collectors.toList());
             if (followPages) {
                 Object links = result.getBody().get("links");
                 if (links instanceof Map) {
                     Object next = ((Map) links).get("next");
                     if (next instanceof String) {
-                        List<JsonDocument> nextPage = list(new NexusRelativeUrl(relativeUrl.getResourceType(), (String) next), oidcAccessToken, true);
+                        List<JsonDocument> nextPage = list(new NexusRelativeUrl(relativeUrl.getResourceType(), (String) next), oidc, true);
                         results.addAll(nextPage);
                     }
                 }

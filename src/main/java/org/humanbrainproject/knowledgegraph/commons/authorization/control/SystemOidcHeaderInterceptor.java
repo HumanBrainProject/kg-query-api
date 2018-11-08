@@ -1,6 +1,5 @@
-package org.humanbrainproject.knowledgegraph.commons.nexus.control;
+package org.humanbrainproject.knowledgegraph.commons.authorization.control;
 
-import org.humanbrainproject.knowledgegraph.commons.authorization.control.OidcClient;
 import org.humanbrainproject.knowledgegraph.commons.authorization.entity.OidcAccessToken;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpRequest;
@@ -12,6 +11,7 @@ import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.util.Collections;
 
 @Component
 public class SystemOidcHeaderInterceptor implements ClientHttpRequestInterceptor {
@@ -39,6 +39,7 @@ public class SystemOidcHeaderInterceptor implements ClientHttpRequestInterceptor
     public ClientHttpResponse intercept(HttpRequest httpRequest, byte[] bytes, ClientHttpRequestExecution clientHttpRequestExecution) throws IOException {
         setAuthTokenToRequest(httpRequest);
         httpRequest.getHeaders().setContentType(MediaType.APPLICATION_JSON);
+        httpRequest.getHeaders().setAccept(Collections.singletonList(org.springframework.http.MediaType.parseMediaType("application/ld+json")));
         ClientHttpResponse response = clientHttpRequestExecution.execute(httpRequest, bytes);
         if (response.getStatusCode() == HttpStatus.UNAUTHORIZED) {
             //The token seems to have timed out - let's try to refresh it and reexecute the request

@@ -66,6 +66,9 @@ public class ArangoRepository extends VertexRepository<ArangoConnection, ArangoD
     }
 
     public NexusInstanceReference findBySchemaOrgIdentifier(ArangoCollectionReference collectionReference, String value){
+        if(!databaseFactory.getDefaultDB().getOrCreateDB().collection(collectionReference.getName()).exists()){
+            return null;
+        }
         String query = queryFactory.queryForValueWithProperty(SchemaOrgVocabulary.IDENTIFIER, value, Collections.singleton(collectionReference), ArangoVocabulary.NEXUS_RELATIVE_URL_WITH_REV);
         List<List> result = query == null ? new ArrayList<>() : databaseFactory.getDefaultDB().getOrCreateDB().query(query, null, new AqlQueryOptions(), List.class).asListRemaining();
         if (result.size() == 1) {

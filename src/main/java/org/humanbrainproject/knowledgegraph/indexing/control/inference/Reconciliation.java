@@ -78,7 +78,7 @@ public class Reconciliation implements InferenceStrategy, InitializingBean {
                 originalVertex = indexingProvider.getVertexStructureById(originalId);
             }
             if (originalVertex != null) {
-                List<Vertex> relativeStructures = relativeInstances.stream().filter(r -> r!=null && r.equals(message.getOriginalMessage().getInstanceReference())).map(relativeInstance -> indexingProvider.getVertexStructureById(relativeInstance)).collect(Collectors.toList());
+                List<Vertex> relativeStructures = relativeInstances.stream().filter(r -> r != null && r.equals(message.getOriginalMessage().getInstanceReference())).map(relativeInstance -> indexingProvider.getVertexStructureById(relativeInstance)).collect(Collectors.toList());
                 if (!isOriginal) {
                     //Add the new message as part of the relative structure
                     relativeStructures.add(messageProcessor.createVertexStructure(message));
@@ -92,15 +92,14 @@ public class Reconciliation implements InferenceStrategy, InitializingBean {
     }
 
 
-    private NexusInstanceReference getInstanceReferenceForInferred(NexusInstanceReference original, Set<NexusInstanceReference> inferredInstances){
-        if(inferredInstances!=null && !inferredInstances.isEmpty()){
+    private NexusInstanceReference getInstanceReferenceForInferred(NexusInstanceReference original, Set<NexusInstanceReference> inferredInstances) {
+        if (inferredInstances != null && !inferredInstances.isEmpty()) {
             if (inferredInstances.size() == 1) {
                 return inferredInstances.iterator().next();
             } else {
                 throw new InferenceException(String.format("Multiple inferred entities for the original entity %s", original.getFullId(true)));
             }
-        }
-        else{
+        } else {
             //There is no inferred instance yet - so we create a new one.
             return new NexusInstanceReference(original.getNexusSchema(), null).toSubSpace(SubSpace.INFERRED);
         }
@@ -119,8 +118,8 @@ public class Reconciliation implements InferenceStrategy, InitializingBean {
         return messageProcessor.createVertexStructure(messageProcessor.qualify(indexingMessage));
     }
 
-    private Property mergeProperty(String currentProperty, Set<? extends Vertex> vertices){
-        if(!HBPVocabulary.INFERENCE_EXTENDS.equals(currentProperty)) {
+    private Property mergeProperty(String currentProperty, Set<? extends Vertex> vertices) {
+        if (!HBPVocabulary.INFERENCE_EXTENDS.equals(currentProperty)) {
 
             List<Vertex> verticesWithProperty = vertices.stream().filter(v -> v.getQualifiedIndexingMessage().getQualifiedMap().get(currentProperty) != null).collect(Collectors.toList());
             Object result = null;
@@ -149,10 +148,10 @@ public class Reconciliation implements InferenceStrategy, InitializingBean {
         Set<String> handledKeys = new HashSet<>();
         for (Vertex vertex : vertices) {
             for (Object k : vertex.getQualifiedIndexingMessage().getQualifiedMap().keySet()) {
-                String key = (String)k;
-                if(!handledKeys.contains(key)) {
+                String key = (String) k;
+                if (!handledKeys.contains(key)) {
                     Property property = mergeProperty(key, vertices);
-                    if(property!=null) {
+                    if (property != null) {
                         newDocument.put(key, property.getValue());
                         if (property.getAlternatives() != null) {
                             property.getAlternatives().forEach(p -> newDocument.addAlternative(key, p));
@@ -176,16 +175,16 @@ public class Reconciliation implements InferenceStrategy, InitializingBean {
         }
     }
 
-    private LocalDateTime getIndexedAt(Vertex vertex){
+    private LocalDateTime getIndexedAt(Vertex vertex) {
         Object indexedAt = vertex.getQualifiedIndexingMessage().getQualifiedMap().get(HBPVocabulary.PROVENANCE_INDEXED_IN_ARANGO_AT);
-        if(indexedAt!=null){
-            return LocalDateTime.from(DateTimeFormatter.ISO_INSTANT.parse(indexedAt.toString()));
+        if (indexedAt != null) {
+            return LocalDateTime.parse("2018-11-08T07:15:11.289Z", DateTimeFormatter.ISO_ZONED_DATE_TIME);
         }
         return null;
     }
 
 
-    private boolean overrides(Vertex potentialOverride, Vertex currentVertex, Object potentialValue, Object currentValue, Map<Object, Integer> valueCount){
+    private boolean overrides(Vertex potentialOverride, Vertex currentVertex, Object potentialValue, Object currentValue, Map<Object, Integer> valueCount) {
         int i = compareVertexPower(potentialOverride, currentVertex);
         Integer count = valueCount.get(potentialValue);
         if (count == null) {
@@ -203,15 +202,14 @@ public class Reconciliation implements InferenceStrategy, InitializingBean {
                 overrides = true;
             } else if (counts.intValue() == countsOfCurrentResult.intValue()) {
                 LocalDateTime indexedAt = getIndexedAt(potentialOverride);
-                if(currentVertex!=null){
-                    if(indexedAt != null){
+                if (currentVertex != null) {
+                    if (indexedAt != null) {
                         LocalDateTime originIndexedAt = getIndexedAt(currentVertex);
-                        if(originIndexedAt==null || indexedAt.isAfter(originIndexedAt)){
+                        if (originIndexedAt == null || indexedAt.isAfter(originIndexedAt)) {
                             overrides = true;
                         }
                     }
-                }
-                else{
+                } else {
                     overrides = true;
                 }
             }

@@ -4,9 +4,11 @@ import org.humanbrainproject.knowledgegraph.commons.authorization.entity.OidcAcc
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonLdStandardization;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoConnection;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoDatabaseFactory;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoRepository;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.SubSpace;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.humanbrainproject.knowledgegraph.indexing.control.MessageProcessor;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
@@ -44,28 +46,35 @@ public class Instances {
 
 
     public JsonDocument getInstance(NexusInstanceReference instanceReference) {
-        return arangoRepository.getInstance(ArangoDocumentReference.fromNexusInstance(instanceReference), databaseFactory.getInferredDB());
+        NexusInstanceReference originalId = arangoRepository.findOriginalId(instanceReference);
+        return getInstance(originalId, databaseFactory.getInferredDB());
     }
 
 
-    public NexusInstanceReference createNewInstance(NexusSchemaReference nexusSchemaReference, OidcAccessToken oidcAccessToken){
+    private JsonDocument getInstance(NexusInstanceReference instanceReference, ArangoConnection connection) {
+        return arangoRepository.getInstance(ArangoDocumentReference.fromNexusInstance(instanceReference), connection);
+    }
+
+
+    public NexusInstanceReference createNewInstance(NexusSchemaReference nexusSchemaReference, OidcAccessToken oidcAccessToken) {
         return instanceController.createNewEmptyInstance(nexusSchemaReference, oidcAccessToken);
     }
 
     public NexusInstanceReference updateInstance(NexusInstanceReference instanceReference, String payload, Client client, String clientIdExtension, OidcAccessToken oidcAccessToken) {
-        JsonDocument instance = getInstance(instanceReference);
+        NexusInstanceReference originalId = arangoRepository.findOriginalId(instanceReference);
+        JsonDocument instance = getInstance(originalId, databaseFactory.getDefaultDB());
         if (instance == null) {
             return null;
         }
         NexusSchemaReference nexusSchema = instanceReference.getNexusSchema();
+        SubSpace subSpace = client != null ? client.getSubSpace() : SubSpace.MAIN;
         JsonDocument document = new JsonDocument(jsonTransformer.parseToMap(payload));
         String primaryIdentifier = instance.getPrimaryIdentifier();
-        if (client != null) {
-            document.addReference(HBPVocabulary.INFERENCE_EXTENDS, nexusConfiguration.getAbsoluteUrl(instanceReference));
-            nexusSchema.toSubSpace(client.getSubSpace());
-        }
         if (primaryIdentifier == null) {
             throw new RuntimeException(String.format("Found instance without identifier: %s", instanceReference.getRelativeUrl()));
+        }
+        if (clientIdExtension != null || (subSpace != originalId.getSubspace())) {
+            document.addReference(HBPVocabulary.INFERENCE_EXTENDS, nexusConfiguration.getAbsoluteUrl(originalId));
         }
         if (clientIdExtension != null) {
             primaryIdentifier += clientIdExtension;

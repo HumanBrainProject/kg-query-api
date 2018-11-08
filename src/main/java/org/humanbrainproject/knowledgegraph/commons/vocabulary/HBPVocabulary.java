@@ -7,6 +7,7 @@ public class HBPVocabulary {
 
     public static final String GRAPH_QUERY = NAMESPACE+"graphQuery/";
 
+
     // FOR PROVENANCE
     private static final String PROVENANCE = NAMESPACE+"provenance/";
     public static final String PROVENANCE_MODIFIED_AT = PROVENANCE + "modifiedAt";
