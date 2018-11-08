@@ -122,6 +122,10 @@ public class SchemaController {
         }
     }
 
+    public List<NexusSchemaReference> getAllSchemas(String organization, OidcAccessToken oidcAccessToken){
+        return nexusClient.listSchemasByOrganization(organization, oidcAccessToken, true);
+    }
+
 
 
 }

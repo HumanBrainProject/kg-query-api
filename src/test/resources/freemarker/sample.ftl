@@ -2,32 +2,32 @@
 [
 <#list results as el>
   {
-    "title": <@value el "http://schema.hbp.eu/dataset/search/title"/>,
-    "weightPreFixation": <@value el "http://schema.hbp.eu/dataset/search/weightPreFixation"/>,
-    "parcellationAtlas": <@value el "http://schema.hbp.eu/dataset/search/parcellationAtlas"/>,
-    "parcellationRegion": <@value el "http://schema.hbp.eu/dataset/search/parcellationRegion"/>,
-    "viewer": <@link el "http://schema.hbp.eu/dataset/search/brainViewer" "." {"text": "Show "+get_value(el "http://schema.hbp.eu/dataset/search/title")+" in brainviewer"}/>,
-    "methods":  <@value el "http://schema.hbp.eu/dataset/search/methods"/>,
-    "files": <@fileDownload el "http://schema.hbp.eu/dataset/search/files" "http://schema.hbp.eu/dataset/search/absolutePath" "http://schema.hbp.eu/dataset/search/postFix"/>,
-    "subject": <@for el "http://schema.hbp.eu/dataset/search/subjects" ; subject>
+    "title": <@value el "https://schema.hbp.eu/dataset/search/title"/>,
+    "weightPreFixation": <@value el "https://schema.hbp.eu/dataset/search/weightPreFixation"/>,
+    "parcellationAtlas": <@value el "https://schema.hbp.eu/dataset/search/parcellationAtlas"/>,
+    "parcellationRegion": <@value el "https://schema.hbp.eu/dataset/search/parcellationRegion"/>,
+    "viewer": <@link el "https://schema.hbp.eu/dataset/search/brainViewer" "." {"text": "Show "+get_value(el "https://schema.hbp.eu/dataset/search/title")+" in brainviewer"}/>,
+    "methods":  <@value el "https://schema.hbp.eu/dataset/search/methods"/>,
+    "files": <@fileDownload el "https://schema.hbp.eu/dataset/search/files" "https://schema.hbp.eu/dataset/search/absolutePath" "https://schema.hbp.eu/dataset/search/postFix"/>,
+    "subject": <@for el "https://schema.hbp.eu/dataset/search/subjects" ; subject>
         {
-    <@meta el "http://schema.hbp.eu/dataset/search/subjects"/>
+    <@meta el "https://schema.hbp.eu/dataset/search/subjects"/>
             "children": {
-                "genotype": <@value subject "http://schema.hbp.eu/dataset/search/genotype"/>,
-                "weight": <@value subject "http://schema.hbp.eu/dataset/search/weight"/>,
-                "age": <@value subject "http://schema.hbp.eu/dataset/search/age"/>,
-                "sex": <@value subject "http://schema.hbp.eu/dataset/search/sex"/>,
-                "subject_name": <@direct_ref "Subject" subject "http://schema.hbp.eu/dataset/search/identifier" "http://schema.hbp.eu/dataset/search/postFix" "http://schema.hbp.eu/dataset/search/uuid"/>,
-                "strain": <@value subject "http://schema.hbp.eu/dataset/search/strain"/>,
-                "species": <@ref "Species" subject "http://schema.hbp.eu/dataset/search/species" "http://schema.hbp.eu/dataset/search/identifier" "http://schema.hbp.eu/dataset/search/postFix" "http://schema.hbp.eu/dataset/search/uuid"/>
+                "genotype": <@value subject "https://schema.hbp.eu/dataset/search/genotype"/>,
+                "weight": <@value subject "https://schema.hbp.eu/dataset/search/weight"/>,
+                "age": <@value subject "https://schema.hbp.eu/dataset/search/age"/>,
+                "sex": <@value subject "https://schema.hbp.eu/dataset/search/sex"/>,
+                "subject_name": <@direct_ref "Subject" subject "https://schema.hbp.eu/dataset/search/identifier" "https://schema.hbp.eu/dataset/search/postFix" "https://schema.hbp.eu/dataset/search/uuid"/>,
+                "strain": <@value subject "https://schema.hbp.eu/dataset/search/strain"/>,
+                "species": <@ref "Species" subject "https://schema.hbp.eu/dataset/search/species" "https://schema.hbp.eu/dataset/search/identifier" "https://schema.hbp.eu/dataset/search/postFix" "https://schema.hbp.eu/dataset/search/uuid"/>
             }
         }</@for>,
-        "datasets":<@for el "http://schema.hbp.eu/dataset/search/datasets" ; datasetGrp>
+        "datasets":<@for el "https://schema.hbp.eu/dataset/search/datasets" ; datasetGrp>
         {
-    <@meta el "http://schema.hbp.eu/dataset/search/datasets"/>
+    <@meta el "https://schema.hbp.eu/dataset/search/datasets"/>
             "children": {
-                "component": <@value datasetGrp "http://schema.hbp.eu/dataset/search/componentName"/>,
-                "postFix": <@ref "Dataset" datasetGrp "http://schema.hbp.eu/dataset/search/instances" "http://schema.hbp.eu/dataset/search/identifier" "http://schema.hbp.eu/dataset/search/postFix" "http://schema.hbp.eu/dataset/search/uuid"/>
+                "component": <@value datasetGrp "https://schema.hbp.eu/dataset/search/componentName"/>,
+                "postFix": <@ref "Dataset" datasetGrp "https://schema.hbp.eu/dataset/search/instances" "https://schema.hbp.eu/dataset/search/identifier" "https://schema.hbp.eu/dataset/search/postFix" "https://schema.hbp.eu/dataset/search/uuid"/>
             }
         }
 </@for>

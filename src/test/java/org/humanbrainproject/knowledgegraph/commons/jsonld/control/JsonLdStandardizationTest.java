@@ -68,9 +68,9 @@ public class JsonLdStandardizationTest {
                 "  \"https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/self\": {\n" +
                 "    \"@id\": \"https://nexus-dev.humanbrainproject.org/v0/data/neuralactivity/experiment/patchedcell/v0.1.0/49ce2d7b-0527-46c3-83ac-d443918394b7\"\n" +
                 "  },\n" +
-                "  \"http://schema.hbp.eu/internal#rev\": 2,\n" +
-                "  \"http://schema.hbp.eu/internal#embedded\": true,\n" +
-                "  \"@id\": \"http://schema.hbp.eu/neuralactivity/experiment/patchedcell/v0.1.0#links#49ce2d7b-0527-46c3-83ac-d443918394b7--1\",\n" +
+                "  \"https://schema.hbp.eu/internal#rev\": 2,\n" +
+                "  \"https://schema.hbp.eu/internal#embedded\": true,\n" +
+                "  \"@id\": \"https://schema.hbp.eu/neuralactivity/experiment/patchedcell/v0.1.0#links#49ce2d7b-0527-46c3-83ac-d443918394b7--1\",\n" +
                 "  \"https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/outgoing\": {\n" +
                 "    \"@id\": \"https://nexus-dev.humanbrainproject.org/v0/data/neuralactivity/experiment/patchedcell/v0.1.0/49ce2d7b-0527-46c3-83ac-d443918394b7/outgoing\"\n" +
                 "  },\n" +

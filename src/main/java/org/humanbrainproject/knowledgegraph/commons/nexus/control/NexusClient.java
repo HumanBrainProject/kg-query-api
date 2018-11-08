@@ -169,13 +169,19 @@ public class NexusClient {
         return null;
     }
 
-    public List<JsonDocument> list(NexusSchemaReference schemaReference, OidcAccessToken oidcAccessToken, boolean followPages){
-        return list(new NexusRelativeUrl(NexusConfiguration.ResourceType.DATA, schemaReference.getRelativeUrl().getUrl()), oidcAccessToken, followPages);
-    }
-
 
     public List<JsonDocument> list(NexusRelativeUrl relativeUrl, OidcAccessToken oidcAccessToken, boolean followPages) {
         return list(relativeUrl, new OidcHeaderInterceptor(oidcAccessToken), followPages);
+    }
+
+    public List<JsonDocument> list(NexusSchemaReference schemaReference, OidcAccessToken oidcAccessToken, boolean followPages){
+        return list(new NexusRelativeUrl(NexusConfiguration.ResourceType.DATA, schemaReference.getRelativeUrl().getUrl()), new OidcHeaderInterceptor(oidcAccessToken), followPages);
+    }
+
+    public List<NexusSchemaReference> listSchemasByOrganization(String organization, OidcAccessToken oidc, boolean followPages) {
+        NexusRelativeUrl relativeUrl = new NexusRelativeUrl(NexusConfiguration.ResourceType.SCHEMA, organization);
+        List<JsonDocument> list = list(relativeUrl, oidc, followPages);
+        return list.stream().map(d -> NexusSchemaReference.createFromUrl((String) d.get("resultId"))).collect(Collectors.toList());
     }
 
     List<JsonDocument> list(NexusRelativeUrl relativeUrl, ClientHttpRequestInterceptor oidc, boolean followPages) {

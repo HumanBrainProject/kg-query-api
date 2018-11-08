@@ -159,7 +159,7 @@ public class ArangoQueryFactory {
         return String.format(
                 "FOR doc IN `%s` \n" +
                         "%s " +
-                        "SORT doc.`http://schema.org/name`, doc.`http://hbp.eu/minds#title`, doc.`http://hbp.eu/minds#alias` \n" +
+                        "SORT doc.`http://schema.org/name`, doc.`https://schema.hbp.eu/minds/title`, doc.`https://schema.hbp.eu/minds/alias` \n" +
                         "%s " +
                         "    RETURN doc", collection.getName(), search, limit);
     }
@@ -187,12 +187,12 @@ public class ArangoQueryFactory {
         }
         return String.format("" +
                 "FOR doc IN `kg-core-bookmark-v0_0_1`\n" +
-                    "FILTER CONTAINS(doc.`http://hbp.eu/kgeditor/bookmarkList`.`@id`, \"%s\")\n" +
+                    "FILTER CONTAINS(doc.`https://schema.hbp.eu/kgeditor/bookmarkList`.`@id`, \"%s\")\n" +
                     "LET instances = (\n" +
-                        "FOR i IN 1..1 OUTBOUND doc `hbp_eu-kgeditor-bookmarkInstanceLink`\n" +
+                        "FOR i IN 1..1 OUTBOUND doc `schema_hbp_eu-kgeditor-bookmarkInstanceLink`\n" +
                         "   FILTER i != null AND i.`@id` != null" +
                         "   %s" +
-                        "   SORT i.`http://schema.org/name`, i.`http://hbp.eu/minds#title`, i.`http://hbp.eu/minds#alias` \n" +
+                        "   SORT i.`http://schema.org/name`, i.`https://schema.hbp.eu/minds/title`, i.`https://schema.hbp.eu/minds/alias` \n" +
                         "   %s" +
                         "   RETURN {" +
                         "     \"id\": i.`_relativeUrl`,\n" +

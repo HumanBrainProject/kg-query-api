@@ -49,7 +49,7 @@ public class JsonLdStandardization {
      * Takes the given json element and adds a @context with the default namespace as @vocab. This is e.g. required if the input is a JSON-only file.
      *
      * @param input            - a json payload already parsed by {@link JsonUtils}
-     * @param defaultNamespace - a default namespace such as "http://schema.hbp.eu/foo"
+     * @param defaultNamespace - a default namespace such as "https://schema.hbp.eu/foo"
      * @return
      */
     @SuppressWarnings("unchecked")

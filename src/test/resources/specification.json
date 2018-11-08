@@ -3,12 +3,12 @@
   "https://schema.hbp.eu/graphQuery/fields": [
     {
       "https://schema.hbp.eu/graphQuery/fieldname": {
-        "@id": "http://schema.hbp.eu/search_ui/license"
+        "@id": "https://schema.hbp.eu/search_ui/license"
       },
       "https://schema.hbp.eu/graphQuery/fields": [
         {
           "https://schema.hbp.eu/graphQuery/fieldname": {
-            "@id": "http://schema.hbp.eu/search_ui/url"
+            "@id": "https://schema.hbp.eu/search_ui/url"
           },
           "https://schema.hbp.eu/graphQuery/relative_path": {
             "@id": "http://schema.org/url"
@@ -16,7 +16,7 @@
         },
         {
           "https://schema.hbp.eu/graphQuery/fieldname": {
-            "@id": "http://schema.hbp.eu/search_ui/name"
+            "@id": "https://schema.hbp.eu/search_ui/name"
           },
           "https://schema.hbp.eu/graphQuery/relative_path": {
             "@id": "http://schema.org/name"
@@ -24,7 +24,7 @@
         }
       ],
       "https://schema.hbp.eu/graphQuery/relative_path": {
-        "@id": "http://hbp.eu/minds#license_info"
+        "@id": "https://schema.hbp.eu/minds/license_info"
       }
     },
     {
@@ -34,7 +34,7 @@
     },
     {
       "https://schema.hbp.eu/graphQuery/fieldname": {
-        "@id": "http://schema.hbp.eu/search_ui/title"
+        "@id": "https://schema.hbp.eu/search_ui/title"
       },
       "https://schema.hbp.eu/graphQuery/relative_path": {
         "@id": "http://schema.org/name"
@@ -42,20 +42,20 @@
     },
     {
       "https://schema.hbp.eu/graphQuery/fieldname": {
-        "@id": "http://schema.hbp.eu/search_ui/contributors"
+        "@id": "https://schema.hbp.eu/search_ui/contributors"
       },
       "https://schema.hbp.eu/graphQuery/fields": [
         {
           "https://schema.hbp.eu/graphQuery/fieldname": {
-            "@id": "http://schema.hbp.eu/search_ui/name"
+            "@id": "https://schema.hbp.eu/search_ui/name"
           },
           "https://schema.hbp.eu/graphQuery/relative_path": {
-            "@id": "http://hbp.eu/minds#shortName"
+            "@id": "https://schema.hbp.eu/minds/shortName"
           }
         },
         {
           "https://schema.hbp.eu/graphQuery/fieldname": {
-            "@id": "http://schema.hbp.eu/search_ui/uuid"
+            "@id": "https://schema.hbp.eu/search_ui/uuid"
           },
           "https://schema.hbp.eu/graphQuery/relative_path": {
             "@id": "https://nexus-dev.humanbrainproject.org/vocabs/nexus/core/terms/v0.1.0/uuid"
@@ -63,7 +63,7 @@
         },
         {
           "https://schema.hbp.eu/graphQuery/fieldname": {
-            "@id": "http://schema.hbp.eu/search_ui/identifier"
+            "@id": "https://schema.hbp.eu/search_ui/identifier"
           },
           "https://schema.hbp.eu/graphQuery/relative_path": {
             "@id": "http://schema.org/identifier"
@@ -71,25 +71,25 @@
         }
       ],
       "https://schema.hbp.eu/graphQuery/relative_path": {
-        "@id": "http://hbp.eu/minds#contributors"
+        "@id": "https://schema.hbp.eu/minds/contributors"
       }
     },
     {
       "https://schema.hbp.eu/graphQuery/fieldname": {
-        "@id": "http://schema.hbp.eu/search_ui/neuroglancer"
+        "@id": "https://schema.hbp.eu/search_ui/neuroglancer"
       },
       "https://schema.hbp.eu/graphQuery/fields": [
         {
           "https://schema.hbp.eu/graphQuery/fieldname": {
-            "@id": "http://schema.hbp.eu/search_ui/url"
+            "@id": "https://schema.hbp.eu/search_ui/url"
           },
           "https://schema.hbp.eu/graphQuery/relative_path": {
-            "@id": "http://hbp.eu/minds#postfix"
+            "@id": "https://schema.hbp.eu/minds/postfix"
           }
         },
         {
           "https://schema.hbp.eu/graphQuery/fieldname": {
-            "@id": "http://schema.hbp.eu/search_ui/name"
+            "@id": "https://schema.hbp.eu/search_ui/name"
           },
           "https://schema.hbp.eu/graphQuery/relative_path": {
             "@id": "http://schema.org/name"
@@ -97,44 +97,44 @@
         }
       ],
       "https://schema.hbp.eu/graphQuery/relative_path": {
-        "@id": "http://hbp.eu/minds#reference",
+        "@id": "https://schema.hbp.eu/minds/reference",
         "https://schema.hbp.eu/graphQuery/reverse": true
       }
     },
     {
       "https://schema.hbp.eu/graphQuery/fieldname": {
-        "@id": "http://schema.hbp.eu/search_ui/doi"
+        "@id": "https://schema.hbp.eu/search_ui/doi"
       },
       "https://schema.hbp.eu/graphQuery/fields": [
         {
           "https://schema.hbp.eu/graphQuery/fieldname": {
-            "@id": "http://schema.hbp.eu/search_ui/doi"
+            "@id": "https://schema.hbp.eu/search_ui/doi"
           },
           "https://schema.hbp.eu/graphQuery/relative_path": {
-            "@id": "http://hbp.eu/minds#doi"
+            "@id": "https://schema.hbp.eu/minds/doi"
           }
         },
         {
           "https://schema.hbp.eu/graphQuery/fieldname": {
-            "@id": "http://schema.hbp.eu/search_ui/citation"
+            "@id": "https://schema.hbp.eu/search_ui/citation"
           },
           "https://schema.hbp.eu/graphQuery/relative_path": {
-            "@id": "http://hbp.eu/minds#citation"
+            "@id": "https://schema.hbp.eu/minds/citation"
           }
         }
       ],
       "https://schema.hbp.eu/graphQuery/relative_path": {
-        "@id": "http://hbp.eu/minds#doireference",
+        "@id": "https://schema.hbp.eu/minds/doireference",
         "https://schema.hbp.eu/graphQuery/reverse": true
       }
     },
     {
       "https://schema.hbp.eu/graphQuery/fieldname": {
-        "@id": "http://schema.hbp.eu/search_ui/component"
+        "@id": "https://schema.hbp.eu/search_ui/component"
       },
       "https://schema.hbp.eu/graphQuery/relative_path": [
         {
-          "@id": "http://hbp.eu/minds#component"
+          "@id": "https://schema.hbp.eu/minds/component"
         },
         {
           "@id": "http://schema.org/name"
@@ -143,7 +143,7 @@
     },
     {
       "https://schema.hbp.eu/graphQuery/fieldname": {
-        "@id": "http://schema.hbp.eu/search_ui/description"
+        "@id": "https://schema.hbp.eu/search_ui/description"
       },
       "https://schema.hbp.eu/graphQuery/relative_path": {
         "@id": "http://schema.org/description"
@@ -151,11 +151,11 @@
     },
     {
       "https://schema.hbp.eu/graphQuery/fieldname": {
-        "@id": "http://schema.hbp.eu/search_ui/parcellationAtlas"
+        "@id": "https://schema.hbp.eu/search_ui/parcellationAtlas"
       },
       "https://schema.hbp.eu/graphQuery/relative_path": [
         {
-          "@id": "http://hbp.eu/minds#parcellationAtlas"
+          "@id": "https://schema.hbp.eu/minds/parcellationAtlas"
         },
         {
           "@id": "http://schema.org/name"
@@ -164,11 +164,11 @@
     },
     {
       "https://schema.hbp.eu/graphQuery/fieldname": {
-        "@id": "http://schema.hbp.eu/search_ui/parcellationRegion"
+        "@id": "https://schema.hbp.eu/search_ui/parcellationRegion"
       },
       "https://schema.hbp.eu/graphQuery/relative_path": [
         {
-          "@id": "http://hbp.eu/minds#parcellationRegion"
+          "@id": "https://schema.hbp.eu/minds/parcellationRegion"
         },
         {
           "@id": "http://schema.org/name"
@@ -177,42 +177,42 @@
     },
     {
       "https://schema.hbp.eu/graphQuery/fieldname": {
-        "@id": "http://schema.hbp.eu/search_ui/publications"
+        "@id": "https://schema.hbp.eu/search_ui/publications"
       },
       "https://schema.hbp.eu/graphQuery/fields": [
         {
           "https://schema.hbp.eu/graphQuery/fieldname": {
-            "@id": "http://schema.hbp.eu/search_ui/citation"
+            "@id": "https://schema.hbp.eu/search_ui/citation"
           },
           "https://schema.hbp.eu/graphQuery/relative_path": {
-            "@id": "http://hbp.eu/minds#cite"
+            "@id": "https://schema.hbp.eu/minds/cite"
           }
         },
         {
           "https://schema.hbp.eu/graphQuery/fieldname": {
-            "@id": "http://schema.hbp.eu/search_ui/doi"
+            "@id": "https://schema.hbp.eu/search_ui/doi"
           },
           "https://schema.hbp.eu/graphQuery/relative_path": {
-            "@id": "http://hbp.eu/minds#doi"
+            "@id": "https://schema.hbp.eu/minds/doi"
           }
         }
       ],
       "https://schema.hbp.eu/graphQuery/relative_path": {
-        "@id": "http://hbp.eu/minds#publications"
+        "@id": "https://schema.hbp.eu/minds/publications"
       }
     },
     {
       "https://schema.hbp.eu/graphQuery/fieldname": {
-        "@id": "http://schema.hbp.eu/search_ui/activity"
+        "@id": "https://schema.hbp.eu/search_ui/activity"
       },
       "https://schema.hbp.eu/graphQuery/fields": [
         {
           "https://schema.hbp.eu/graphQuery/fieldname": {
-            "@id": "http://schema.hbp.eu/search_ui/preparation"
+            "@id": "https://schema.hbp.eu/search_ui/preparation"
           },
           "https://schema.hbp.eu/graphQuery/relative_path": [
             {
-              "@id": "http://hbp.eu/minds#preparation"
+              "@id": "https://schema.hbp.eu/minds/preparation"
             },
             {
               "@id": "http://schema.org/name"
@@ -221,11 +221,11 @@
         },
         {
           "https://schema.hbp.eu/graphQuery/fieldname": {
-            "@id": "http://schema.hbp.eu/search_ui/methods"
+            "@id": "https://schema.hbp.eu/search_ui/methods"
           },
           "https://schema.hbp.eu/graphQuery/relative_path": [
             {
-              "@id": "http://hbp.eu/minds#methods"
+              "@id": "https://schema.hbp.eu/minds/methods"
             },
             {
               "@id": "http://schema.org/name"
@@ -234,11 +234,11 @@
         },
         {
           "https://schema.hbp.eu/graphQuery/fieldname": {
-            "@id": "http://schema.hbp.eu/search_ui/protocols"
+            "@id": "https://schema.hbp.eu/search_ui/protocols"
           },
           "https://schema.hbp.eu/graphQuery/relative_path": [
             {
-              "@id": "http://hbp.eu/minds#protocols"
+              "@id": "https://schema.hbp.eu/minds/protocols"
             },
             {
               "@id": "http://schema.org/name"
@@ -247,16 +247,16 @@
         }
       ],
       "https://schema.hbp.eu/graphQuery/relative_path": {
-        "@id": "http://hbp.eu/minds#activity"
+        "@id": "https://schema.hbp.eu/minds/activity"
       }
     },
     {
       "https://schema.hbp.eu/graphQuery/fieldname": {
-        "@id": "http://schema.hbp.eu/search_ui/embargo"
+        "@id": "https://schema.hbp.eu/search_ui/embargo"
       },
       "https://schema.hbp.eu/graphQuery/relative_path": [
         {
-          "@id": "http://hbp.eu/minds#embargo_status"
+          "@id": "https://schema.hbp.eu/minds/embargo_status"
         },
         {
           "@id": "http://schema.org/name"
@@ -265,34 +265,34 @@
     },
     {
       "https://schema.hbp.eu/graphQuery/fieldname": {
-        "@id": "http://schema.hbp.eu/search_ui/releasedate"
+        "@id": "https://schema.hbp.eu/search_ui/releasedate"
       },
       "https://schema.hbp.eu/graphQuery/relative_path": {
-        "@id": "http://hbp.eu/minds#release_date"
+        "@id": "https://schema.hbp.eu/minds/release_date"
       }
     },
     {
       "https://schema.hbp.eu/graphQuery/fieldname": {
-        "@id": "http://schema.hbp.eu/search_ui/viewer"
+        "@id": "https://schema.hbp.eu/search_ui/viewer"
       },
       "https://schema.hbp.eu/graphQuery/relative_path": [
         {
-          "@id": "http://hbp.eu/minds#reference",
+          "@id": "https://schema.hbp.eu/minds/reference",
           "https://schema.hbp.eu/graphQuery/reverse": true
         },
         {
-          "@id": "http://hbp.eu/minds#postfix"
+          "@id": "https://schema.hbp.eu/minds/postfix"
         }
       ]
     },
     {
       "https://schema.hbp.eu/graphQuery/fieldname": {
-        "@id": "http://schema.hbp.eu/search_ui/subjects"
+        "@id": "https://schema.hbp.eu/search_ui/subjects"
       },
       "https://schema.hbp.eu/graphQuery/fields": [
         {
           "https://schema.hbp.eu/graphQuery/fieldname": {
-            "@id": "http://schema.hbp.eu/search_ui/name"
+            "@id": "https://schema.hbp.eu/search_ui/name"
           },
           "https://schema.hbp.eu/graphQuery/relative_path": {
             "@id": "http://schema.org/name"
@@ -300,11 +300,11 @@
         },
         {
           "https://schema.hbp.eu/graphQuery/fieldname": {
-            "@id": "http://schema.hbp.eu/search_ui/sex"
+            "@id": "https://schema.hbp.eu/search_ui/sex"
           },
           "https://schema.hbp.eu/graphQuery/relative_path": [
             {
-              "@id": "http://hbp.eu/minds#sex"
+              "@id": "https://schema.hbp.eu/minds/sex"
             },
             {
               "@id": "http://schema.org/name"
@@ -313,27 +313,27 @@
         },
         {
           "https://schema.hbp.eu/graphQuery/fieldname": {
-            "@id": "http://schema.hbp.eu/search_ui/strain"
+            "@id": "https://schema.hbp.eu/search_ui/strain"
           },
           "https://schema.hbp.eu/graphQuery/relative_path": {
-            "@id": "http://hbp.eu/minds#strains"
+            "@id": "https://schema.hbp.eu/minds/strains"
           }
         },
         {
           "https://schema.hbp.eu/graphQuery/fieldname": {
-            "@id": "http://schema.hbp.eu/search_ui/genotype"
+            "@id": "https://schema.hbp.eu/search_ui/genotype"
           },
           "https://schema.hbp.eu/graphQuery/relative_path": {
-            "@id": "http://hbp.eu/minds#genotype"
+            "@id": "https://schema.hbp.eu/minds/genotype"
           }
         },
         {
           "https://schema.hbp.eu/graphQuery/fieldname": {
-            "@id": "http://schema.hbp.eu/search_ui/experimentmethod"
+            "@id": "https://schema.hbp.eu/search_ui/experimentmethod"
           },
           "https://schema.hbp.eu/graphQuery/relative_path": [
             {
-              "@id": "http://hbp.eu/minds#experimentmethod"
+              "@id": "https://schema.hbp.eu/minds/experimentmethod"
             },
             {
               "@id": "http://schema.org/name"
@@ -342,12 +342,12 @@
         },
         {
           "https://schema.hbp.eu/graphQuery/fieldname": {
-            "@id": "http://schema.hbp.eu/search_ui/samples"
+            "@id": "https://schema.hbp.eu/search_ui/samples"
           },
           "https://schema.hbp.eu/graphQuery/fields": [
             {
               "https://schema.hbp.eu/graphQuery/fieldname": {
-                "@id": "http://schema.hbp.eu/search_ui/name"
+                "@id": "https://schema.hbp.eu/search_ui/name"
               },
               "https://schema.hbp.eu/graphQuery/relative_path": {
                 "@id": "http://schema.org/name"
@@ -355,7 +355,7 @@
             },
             {
               "https://schema.hbp.eu/graphQuery/fieldname": {
-                "@id": "http://schema.hbp.eu/search_ui/uuid"
+                "@id": "https://schema.hbp.eu/search_ui/uuid"
               },
               "https://schema.hbp.eu/graphQuery/relative_path": {
                 "@id": "https://nexus-dev.humanbrainproject.org/vocabs/nexus/core/terms/v0.1.0/uuid"
@@ -363,7 +363,7 @@
             },
             {
               "https://schema.hbp.eu/graphQuery/fieldname": {
-                "@id": "http://schema.hbp.eu/search_ui/identifier"
+                "@id": "https://schema.hbp.eu/search_ui/identifier"
               },
               "https://schema.hbp.eu/graphQuery/relative_path": {
                 "@id": "http://schema.org/identifier"
@@ -371,11 +371,11 @@
             },
             {
               "https://schema.hbp.eu/graphQuery/fieldname": {
-                "@id": "http://schema.hbp.eu/search_ui/method"
+                "@id": "https://schema.hbp.eu/search_ui/method"
               },
               "https://schema.hbp.eu/graphQuery/relative_path": [
                 {
-                  "@id": "http://hbp.eu/minds#methods"
+                  "@id": "https://schema.hbp.eu/minds/methods"
                 },
                 {
                   "@id": "http://schema.org/name"
@@ -384,27 +384,27 @@
             }
           ],
           "https://schema.hbp.eu/graphQuery/relative_path": {
-            "@id": "http://hbp.eu/minds#samples"
+            "@id": "https://schema.hbp.eu/minds/samples"
           }
         }
       ],
       "https://schema.hbp.eu/graphQuery/relative_path": [
         {
-          "@id": "http://hbp.eu/minds#specimen_group"
+          "@id": "https://schema.hbp.eu/minds/specimen_group"
         },
         {
-          "@id": "http://hbp.eu/minds#subjects"
+          "@id": "https://schema.hbp.eu/minds/subjects"
         }
       ]
     },
     {
       "https://schema.hbp.eu/graphQuery/relative_path": {
-        "@id": "http://hbp.eu/minds#external_datalink"
+        "@id": "https://schema.hbp.eu/minds/external_datalink"
       }
     }
   ],
   "https://schema.hbp.eu/graphQuery/root_schema": {
-    "@id": "https://nexus-dev.humanbrainproject.org/v0/schemas/minds/core/dataset/v0.0.4"
+    "@id": "https://nexus-dev.humanbrainproject.org/v0/schemas/minds/core/dataset/v1.0.0"
   },
   "http://schema.org/name": "Dataset"
 }

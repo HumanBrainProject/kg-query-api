@@ -38,8 +38,12 @@ public class NexusConfiguration {
         return String.format("%s/v0/%s", nexusBase, resourceType.urlDeclaration);
     }
 
+    public String getEndpoint(ResourceType resourceType){
+        return String.format("%s/v0/%s", nexusEndpoint, resourceType.urlDeclaration);
+    }
+
     public String getEndpoint(NexusRelativeUrl relativeUrl) {
-        return String.format("%s/v0/%s%s", nexusEndpoint, relativeUrl.getResourceType().urlDeclaration, relativeUrl.getUrl() != null ? String.format("/%s", relativeUrl.getUrl()) : "");
+        return String.format("%s%s", getEndpoint(relativeUrl.getResourceType()), relativeUrl.getUrl() != null ? String.format("/%s", relativeUrl.getUrl()) : "");
     }
 
     public String getAbsoluteUrl(NexusInstanceReference instanceReference) {

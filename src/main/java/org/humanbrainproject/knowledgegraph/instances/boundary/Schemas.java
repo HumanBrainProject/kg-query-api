@@ -7,6 +7,8 @@ import org.humanbrainproject.knowledgegraph.instances.control.SchemaController;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 @Component
 public class Schemas {
 
@@ -23,6 +25,15 @@ public class Schemas {
         for (SubSpace subSpace : SubSpace.values()) {
             NexusSchemaReference subSpaceSchema = nexusSchemaReference.toSubSpace(subSpace);
             schemaController.clearAllInstancesFromSchema(subSpaceSchema, oidcAccessToken);
+        }
+    }
+
+
+    public void createSchemasInNewVersion(String org, String newVersion, OidcAccessToken oidcAccessToken){
+        List<NexusSchemaReference> allSchemas = schemaController.getAllSchemas(org, oidcAccessToken);
+        for (NexusSchemaReference schema : allSchemas) {
+            NexusSchemaReference newReference = new NexusSchemaReference(schema.getOrganization(), schema.getDomain(), schema.getSchema(), newVersion);
+            createSimpleSchema(newReference);
         }
     }
 

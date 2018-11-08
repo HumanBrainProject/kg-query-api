@@ -8,14 +8,14 @@ public class SemanticsToHumanTranslatorTest {
 
     @Test
     public void translateTypeWithHashToHumanReadableLabel() {
-        String humanReadable = new SemanticsToHumanTranslator().translateSemanticValueToHumanReadableLabel("http://hbp.eu/minds#Dataset");
+        String humanReadable = new SemanticsToHumanTranslator().translateSemanticValueToHumanReadableLabel("https://schema.hbp.eu/minds/Dataset");
 
         Assert.assertEquals("Dataset", humanReadable);
     }
 
     @Test
     public void translateTypeWithSlashToHumanReadableLabel() {
-        String humanReadable = new SemanticsToHumanTranslator().translateSemanticValueToHumanReadableLabel("http://schema.hbp.eu/minds/Dataset");
+        String humanReadable = new SemanticsToHumanTranslator().translateSemanticValueToHumanReadableLabel("https://schema.hbp.eu/minds/Dataset");
 
         Assert.assertEquals("Dataset", humanReadable);
     }

@@ -89,7 +89,7 @@ public class NexusSchemaReference {
     }
 
     public String createUniqueNamespace() {
-        return String.format("http://schema.hbp.eu/%s/%s/%s/%s#", organization, domain, schema, schemaVersion);
+        return String.format("https://schema.hbp.eu/%s/%s/%s/%s#", organization, domain, schema, schemaVersion);
 
     }
 

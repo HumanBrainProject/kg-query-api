@@ -9,7 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 public abstract class VertexRepository<Connection extends DatabaseConnection<?>, InternalDocumentReference> {
 
-    public static final String UNRESOLVED_LINKS = "http://schema.hbp.eu/propertygraph/unresolved";
+    public static final String UNRESOLVED_LINKS = "https://schema.hbp.eu/propertygraph/unresolved";
 
     @Autowired
     NexusConfiguration nexusConfiguration;

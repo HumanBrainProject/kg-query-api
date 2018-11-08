@@ -20,8 +20,8 @@
 
 <#macro value el>
 	"value": {
-	<#if el["http://schema.hbp.eu/search_ui/type"]?has_content>
-		<#local type = el["http://schema.hbp.eu/search_ui/type"]/>
+	<#if el["https://schema.hbp.eu/search_ui/type"]?has_content>
+		<#local type = el["https://schema.hbp.eu/search_ui/type"]/>
 	<#else>
 		<#local type = "text"/>
 	</#if>

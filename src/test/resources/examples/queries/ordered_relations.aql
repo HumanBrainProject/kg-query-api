@@ -2,12 +2,12 @@ LET whitelist_organizations=["minds","brainviewer","cscs","datacite","licenses",
 FOR root_doc IN `minds-core-dataset-v0_0_4`
 FILTER root_doc.`_permissionGroup` IN whitelist_organizations
 
-LET schema_hbp_eu_search_ui_contributors =  ( FOR schema_hbp_eu_search_ui_contributors_doc, e IN 1..1 OUTBOUND root_doc `rel-hbp_eu-minds-contributors` FILTER schema_hbp_eu_search_ui_contributors_doc.`http://schema.hbp.eu/internal#permissionGroup` IN whitelist_organizations
+LET schema_hbp_eu_search_ui_contributors =  ( FOR schema_hbp_eu_search_ui_contributors_doc, e IN 1..1 OUTBOUND root_doc `rel-hbp_eu-minds-contributors` FILTER schema_hbp_eu_search_ui_contributors_doc.`https://schema.hbp.eu/internal#permissionGroup` IN whitelist_organizations
 SORT e.orderNumber ASC
 RETURN DISTINCT {
-"http://schema.hbp.eu/search_ui/postFix": schema_hbp_eu_search_ui_contributors_doc.`http://hbp.eu/minds#shortName`,
-"http://schema.hbp.eu/search_ui/uuid": schema_hbp_eu_search_ui_contributors_doc.`https://nexus-dev.humanbrainproject.org/vocabs/nexus/core/terms/v0.1.0/uuid`,
-"http://schema.hbp.eu/search_ui/identifier": schema_hbp_eu_search_ui_contributors_doc.`http://schema.org/identifier`
+"https://schema.hbp.eu/search_ui/postFix": schema_hbp_eu_search_ui_contributors_doc.`https://schema.hbp.eu/minds/shortName`,
+"https://schema.hbp.eu/search_ui/uuid": schema_hbp_eu_search_ui_contributors_doc.`https://nexus-dev.humanbrainproject.org/vocabs/nexus/core/terms/v0.1.0/uuid`,
+"https://schema.hbp.eu/search_ui/identifier": schema_hbp_eu_search_ui_contributors_doc.`http://schema.org/identifier`
 })
 
 FILTER root_doc.`_permissionGroup` IN whitelist_organizations
@@ -22,5 +22,5 @@ RETURN DISTINCT {
 "http://schema.org/identifier": root_doc.`http://schema.org/identifier`,
 
 "http://schema.org/postFix": root_doc.`http://schema.org/postFix`,
-"http://schema.hbp.eu/search_ui/contributors": schema_hbp_eu_search_ui_contributors
+"https://schema.hbp.eu/search_ui/contributors": schema_hbp_eu_search_ui_contributors
 }

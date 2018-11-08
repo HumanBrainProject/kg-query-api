@@ -7,7 +7,7 @@ FOR doc IN `minds-core-dataset-v0_0_4`
     )
     LET contributors = (FOR contributors_doc, e IN 1..1 OUTBOUND doc `rel-hbp_eu-minds-contributors` SORT e.orderNumber ASC
         RETURN {
-            "postFix": contributors_doc.`http://hbp.eu/minds#shortName`,
+            "postFix": contributors_doc.`https://schema.hbp.eu/minds/shortName`,
             "uuid": contributors_doc.`https://nexus-dev.humanbrainproject.org/vocabs/nexus/core/terms/v0.1.0/uuid`,
             "identifier": contributors_doc.`http://schema.org/identifier`
         }
@@ -21,14 +21,14 @@ FOR doc IN `minds-core-dataset-v0_0_4`
         RETURN parcellation_region_doc.`http://schema.org/postFix`)
     LET publications = (FOR publications_doc IN 1..1 OUTBOUND doc `rel-hbp_eu-minds-publications`
         RETURN {
-            "citation": publications_doc.`http://hbp.eu/minds#cite`,
-            "doi": publications_doc.`http://hbp.eu/minds#doi`
+            "citation": publications_doc.`https://schema.hbp.eu/minds/cite`,
+            "doi": publications_doc.`https://schema.hbp.eu/minds/doi`
         })
 
     LET doireference = (FOR doi_reference_doc IN 1..1 INBOUND doc `rel-hbp_eu-minds-doireference`
         RETURN {
-            "citation": doi_reference_doc.`http://hbp.eu/minds#citation`,
-            "doi": doi_reference_doc.`http://hbp.eu/minds#doi`
+            "citation": doi_reference_doc.`https://schema.hbp.eu/minds/citation`,
+            "doi": doi_reference_doc.`https://schema.hbp.eu/minds/doi`
         })
     LET activity = (FOR activity_doc IN 1..1 OUTBOUND doc `rel-hbp_eu-minds-activity`
         LET preparation = (FOR preparation_doc IN 1..1 OUTBOUND activity_doc `rel-hbp_eu-minds-preparation`
@@ -53,7 +53,7 @@ FOR doc IN `minds-core-dataset-v0_0_4`
     LET neuroglancer = (FOR neuroglancer_doc IN 1..1 INBOUND doc `rel-hbp_eu-minds-reference`
         RETURN {
             "postFix": neuroglancer_doc.`http://schema.org/postFix`,
-            "url": neuroglancer_doc.`http://hbp.eu/minds#postfix`
+            "url": neuroglancer_doc.`https://schema.hbp.eu/minds/postfix`
             }
         )
     LET subjects = (FOR subjects_doc IN 2..2 OUTBOUND doc `rel-hbp_eu-minds-specimen_group`, `rel-hbp_eu-minds-subjects`
@@ -71,7 +71,7 @@ FOR doc IN `minds-core-dataset-v0_0_4`
             LET files = (FOR files_doc IN 2..2 INBOUND doc `rel-hbp_eu-minds-associated_entity`, OUTBOUND `rel-hbp_eu-minds-file`
                 RETURN {
                     "postFix": files_doc.`http://schema.org/postFix`,
-                    "absolute_path": files_doc.`http://hbp.eu/minds#absolute_path`
+                    "absolute_path": files_doc.`https://schema.hbp.eu/minds/absolute_path`
                 }
             )
             RETURN {
@@ -95,8 +95,8 @@ FOR doc IN `minds-core-dataset-v0_0_4`
         RETURN {
             "postFix": subjects_doc.`http://schema.org/postFix`,
             "sex": sex,
-            "strain": subjects_doc.`http://hbp.eu/minds#strains`,
-            "genotype": subjects_doc.`http://hbp.eu/minds#genotype`,
+            "strain": subjects_doc.`https://schema.hbp.eu/minds/strains`,
+            "genotype": subjects_doc.`https://schema.hbp.eu/minds/genotype`,
           //  "experimentmethod": experimentmethod,
             "samples": samples,
             "species": species
@@ -107,7 +107,7 @@ FOR doc IN `minds-core-dataset-v0_0_4`
     LET files = (FOR files_doc IN 2..2 INBOUND doc `rel-hbp_eu-minds-associated_entity`, OUTBOUND `rel-hbp_eu-minds-file`
             RETURN {
                 "postFix": files_doc.`http://schema.org/postFix`,
-                "absolute_path": files_doc.`http://hbp.eu/minds#absolute_path`
+                "absolute_path": files_doc.`https://schema.hbp.eu/minds/absolute_path`
             }
         )
 
@@ -125,8 +125,8 @@ FOR doc IN `minds-core-dataset-v0_0_4`
         "embargo": embargo,
         "description": doc.`http://schema.org/description`,
         "subjects": subjects,
-        "external_datalink": doc.`http://hbp.eu/minds#external_datalink`,
-        "releasedate": doc.`http://hbp.eu/minds#release_date`,
+        "external_datalink": doc.`https://schema.hbp.eu/minds/external_datalink`,
+        "releasedate": doc.`https://schema.hbp.eu/minds/release_date`,
         "neuroglancer": neuroglancer,
         "files": files
     }
