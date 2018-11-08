@@ -5,7 +5,7 @@ import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransform
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.query.ArangoSpecificationQuery;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.EdgeX;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Edge;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.JsonPath;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Step;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Vertex;
@@ -36,7 +36,7 @@ public class ArangoDocumentConverter {
         return path;
     }
 
-    public String createJsonFromEdge(ArangoDocumentReference targetDocument, Vertex vertex, EdgeX edge, Set<JsonPath> blackList) {
+    public String createJsonFromEdge(ArangoDocumentReference targetDocument, Vertex vertex, Edge edge, Set<JsonPath> blackList) {
         Map<String, Object> map = new HashMap<>();
         map.put("_id", targetDocument.getId());
         map.put("_key", targetDocument.getKey());
@@ -60,6 +60,10 @@ public class ArangoDocumentConverter {
         jsonObject.put(JsonLdConsts.ID, configuration.getAbsoluteUrl(vertex.getInstanceReference()));
         jsonObject.put("_id", reference.getId());
         jsonObject.put("_key", reference.getKey());
+        Integer revision = vertex.getQualifiedIndexingMessage().getOriginalMessage().getInstanceReference().getRevision();
+        jsonObject.put("_nexusRev", revision);
+        jsonObject.put("_relativeUrl", vertex.getInstanceReference().getRelativeUrl().getUrl());
+        jsonObject.put("_nexusRelativeUrl", vertex.getQualifiedIndexingMessage().getOriginalMessage().getInstanceReference().getRelativeUrl().getUrl());
         jsonObject.put("_originalId", vertex.getQualifiedIndexingMessage().getOriginalMessage().getInstanceReference().getFullId(true));
         jsonObject.put(ArangoSpecificationQuery.PERMISSION_GROUP, vertex.getInstanceReference().getNexusSchema().getOrganization());
         for (JsonPath steps : blackList) {

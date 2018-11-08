@@ -2,14 +2,14 @@ package org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity;
 
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 
-public class EdgeX implements VertexOrEdge{
+public class Edge implements VertexOrEdge{
 
 
     private final JsonPath path;
     private NexusInstanceReference reference;
     private Vertex vertex;
 
-    public EdgeX(Vertex vertex, JsonPath path, NexusInstanceReference reference) {
+    public Edge(Vertex vertex, JsonPath path, NexusInstanceReference reference) {
         this.path = path;
         this.reference = reference;
         this.vertex = vertex;

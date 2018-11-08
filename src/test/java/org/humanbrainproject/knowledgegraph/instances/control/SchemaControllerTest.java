@@ -1,4 +1,4 @@
-package org.humanbrainproject.knowledgegraph.nexusExt.control;
+package org.humanbrainproject.knowledgegraph.instances.control;
 
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
 import org.humanbrainproject.knowledgegraph.testFactory.TestObjectFactory;

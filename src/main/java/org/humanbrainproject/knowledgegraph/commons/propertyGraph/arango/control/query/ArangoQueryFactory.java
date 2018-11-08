@@ -26,12 +26,16 @@ public class ArangoQueryFactory {
     NexusConfiguration configuration;
 
     public String queryForIdsWithProperty(String propertyName, String propertyValue, Set<ArangoCollectionReference> collectionsToCheck) {
+        return queryForValueWithProperty(propertyName, propertyValue,collectionsToCheck, "_id");
+    }
+
+    public String queryForValueWithProperty(String propertyName, String propertyValue, Set<ArangoCollectionReference> collectionsToCheck, String lookupProperty) {
         if (collectionsToCheck != null && !collectionsToCheck.isEmpty()) {
             StringBuilder sb = new StringBuilder();
             for (ArangoCollectionReference arangoCollectionReference : collectionsToCheck) {
-                sb.append(String.format("LET `%s` = (FOR v IN `%s` FILTER v.`%s` == \"%s\" RETURN v._id)\n", arangoCollectionReference.getName(), arangoCollectionReference.getName(), propertyName, propertyValue));
+                sb.append(String.format("LET `%s` = (FOR v IN `%s` FILTER v.`%s` == \"%s\" RETURN v.`%s`)\n", arangoCollectionReference.getName(), arangoCollectionReference.getName(), propertyName, propertyValue, lookupProperty));
             }
-            sb.append(String.format("RETURN UNIQUE(UNION(`%s`))", String.join("`, `", collectionsToCheck.stream().map(ArangoCollectionReference::getName).collect(Collectors.toSet()))));
+            sb.append(String.format("RETURN UNIQUE(%s(`%s`))", collectionsToCheck.size()>1 ? "UNION" : "", String.join("`, `", collectionsToCheck.stream().map(ArangoCollectionReference::getName).collect(Collectors.toSet()))));
             return sb.toString();
         }
         return null;
@@ -84,7 +88,6 @@ public class ArangoQueryFactory {
         return String.format("FOR vertex IN 1..1 INBOUND DOCUMENT(\"%s\") `%s` RETURN vertex._originalId", document.getId(), linkReference.getName());
     }
 
-
     public String queryOutboundRelationsForDocument(ArangoDocumentReference document, Set<ArangoCollectionReference> edgeCollections) {
         return String.format("FOR rel, edge IN 1..1 OUTBOUND DOCUMENT(\"%s\") `%s` RETURN edge._id\n", document.getId(), String.join("`, `", edgeCollections.stream().map(ArangoCollectionReference::getName).collect(Collectors.toSet())));
     }
@@ -92,15 +95,6 @@ public class ArangoQueryFactory {
     public String queryReleaseGraph(Set<ArangoCollectionReference> edgeCollections, ArangoDocumentReference rootInstance, Integer maxDepth) {
         String names = String.join("`, `", edgeCollections.stream().map(ArangoCollectionReference::getName).collect(Collectors.toSet()));
         return childrenStatus(rootInstance, null, 0, maxDepth, names);
-    }
-
-
-    private String createIndent(int level) {
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < level; i++) {
-            sb.append("   ");
-        }
-        return sb.toString();
     }
 
     private String childrenStatus(ArangoDocumentReference rootInstance, String startingVertex, Integer level, Integer maxDepth, String collectionLabels) {
@@ -134,6 +128,7 @@ public class ArangoQueryFactory {
             query += indent + "LET ${name}_doc = DOCUMENT(\"${startId}\")\n ";
         } else {
             query += indent + "FOR ${name}_doc, ${name}_edge IN 1..1 OUTBOUND ${doc} `${collections}`\n " +
+                    indent + "FILTER ${name}_doc != NULL" +
                     indent + "SORT ${name}_doc.`" + JsonLdConsts.TYPE + "`, ${name}_doc.`${schemaOrgName}`\n";
         }
         query += indent + "LET ${name}_release = (FOR ${name}_status_doc IN 1..1 INBOUND ${name}_doc `${releaseInstanceRelation}`\n" +
@@ -145,7 +140,7 @@ public class ArangoQueryFactory {
         if (level == 0) {
             query += indent + "RETURN MERGE({\"status\": ${name}_status, \"children\": ${name}_children, \"rev\": ${name}_doc.`${revision}` }, ${name}_doc)";
         } else {
-            query += indent + "RETURN MERGE({\"status\": ${name}_status, \"children\": ${name}_children, \"linkType\": ${name}_edge._id, \"rev\": ${name}_doc.`${revision}`}, ${name}_doc)\n";
+            query += indent + "RETURN MERGE({\"status\": ${name}_status, \"children\": ${name}_children, \"linkType\": ${name}_edge._name, \"rev\": ${name}_doc.`${revision}`}, ${name}_doc)\n";
         }
         return StringSubstitutor.replace(query, valueMap);
 
@@ -169,35 +164,16 @@ public class ArangoQueryFactory {
                         "    RETURN doc", collection.getName(), search, limit);
     }
 
-    public String getOriginalIdOfDocumentWithChildren(ArangoDocumentReference documentReference, ArangoConnection connection) {
-        StringBuilder queryBuilder = new StringBuilder();
-        queryBuilder.append(String.format("LET doc = DOCUMENT(\"%s\")\n", documentReference.getId()));
-        Set<ArangoCollectionReference> edgesCollectionNames = connection.getEdgesCollectionNames();
-        if (!edgesCollectionNames.isEmpty()) {
-            String names = String.join("`, `", edgesCollectionNames.stream().map(ArangoCollectionReference::getName).collect(Collectors.toSet()));
-            queryBuilder.append(String.format("LET children = (FOR child IN 1..6 OUTBOUND doc `%s` return child._originalId ) \n", names));
-        } else {
-            queryBuilder.append("LET children = [] \n");
+
+
+    private String createIndent(int level) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < level; i++) {
+            sb.append("   ");
         }
-        queryBuilder.append("RETURN {\"root\": doc._originalId, \"children\": children}");
-        return queryBuilder.toString();
+        return sb.toString();
     }
 
-    public String getInstance(ArangoDocumentReference ref) {
-        return String.format(
-                "LET doc = DOCUMENT(\"%s\") \n" +
-                        "RETURN doc",
-                ref.getId()
-        );
-    }
-
-
-    public String getOriginalIds(ArangoCollectionReference collectionReference, Set<String> keys, ArangoConnection connection) {
-        return String.format("FOR doc IN `%s`\n" +
-                "FILTER doc._key IN [\"%s\"]\n" +
-                "RETURN doc._originalId\n" +
-                "\n", collectionReference.getName(), String.join("\", \"", keys));
-    }
 
     public String getBookmarks(NexusInstanceReference doc, Integer from, Integer size, String searchTerm){
         String search = "";

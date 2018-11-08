@@ -11,20 +11,21 @@ import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.control.DatabaseTransaction;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.EdgeX;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Edge;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Vertex;
 import org.humanbrainproject.knowledgegraph.indexing.entity.DeleteTodoItem;
 import org.humanbrainproject.knowledgegraph.indexing.entity.InsertOrUpdateInPrimaryStoreTodoItem;
 import org.humanbrainproject.knowledgegraph.indexing.entity.InsertTodoItem;
 import org.humanbrainproject.knowledgegraph.indexing.entity.TodoList;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
-import org.humanbrainproject.knowledgegraph.nexusExt.control.InstanceController;
+import org.humanbrainproject.knowledgegraph.instances.control.InstanceController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 
 @Component
@@ -79,7 +80,7 @@ public class NexusArangoTransaction implements DatabaseTransaction {
                 if (vertexJson != null) {
                     repository.insertDocument(reference, vertexJson, CollectionType.DOCUMENT, database);
                 }
-                for (EdgeX edge : vertex.getEdges()) {
+                for (Edge edge : vertex.getEdges()) {
                     ArangoDocumentReference document = ArangoDocumentReference.fromEdge(edge);
                     String jsonFromEdge = arangoDocumentConverter.createJsonFromEdge(document, vertex, edge, insertItem.getBlacklist());
                     repository.insertDocument(document, jsonFromEdge, CollectionType.EDGES, database);
@@ -95,7 +96,7 @@ public class NexusArangoTransaction implements DatabaseTransaction {
         List<InsertOrUpdateInPrimaryStoreTodoItem> insertOrUpdateInPrimaryStoreItems = todoList.getInsertOrUpdateInPrimaryStoreTodoItems();
         for (InsertOrUpdateInPrimaryStoreTodoItem insertOrUpdateInPrimaryStoreItem : insertOrUpdateInPrimaryStoreItems) {
             Vertex vertex = insertOrUpdateInPrimaryStoreItem.getVertex();
-            NexusInstanceReference newReference = nexusClient.createOrUpdateInstance(vertex.getInstanceReference().setRevision(null), vertex.getQualifiedIndexingMessage().getQualifiedMap());
+            NexusInstanceReference newReference = nexusClient.createOrUpdateInstance(vertex.getInstanceReference().setRevision(null), new LinkedHashMap<>(vertex.getQualifiedIndexingMessage().getQualifiedMap()));
             vertex.setInstanceReference(newReference);
         }
     }

@@ -4,7 +4,7 @@ import com.github.jsonldjava.core.JsonLdConsts;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonLdStandardization;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.EdgeX;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Edge;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.JsonPath;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Vertex;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Step;
@@ -40,6 +40,7 @@ public class MessageProcessor {
         jsonLdStandardization.ensureContext(map, message.getInstanceReference().createUniqueNamespace());
         map = jsonLdStandardization.fullyQualify(map);
         map = jsonLdStandardization.filterKeysByVocabBlacklists(map);
+        map = jsonLdStandardization.flattenLists(map, null, null);
         map.put(HBPVocabulary.PROVENANCE_INDEXED_IN_ARANGO_AT, ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_INSTANT));
         map.put(HBPVocabulary.PROVENANCE_LAST_MODIFICATION_USER_ID, message.getUserId());
         map.put(HBPVocabulary.PROVENANCE_MODIFIED_AT, message.getTimestamp());
@@ -74,7 +75,7 @@ public class MessageProcessor {
                 Object value = ((Map) map).get(key);
                 NexusInstanceReference internalReference = getInternalReference(value);
                 if (internalReference != null) {
-                    vertex.getEdges().add(new EdgeX(vertex, new JsonPath(currentPath), internalReference));
+                    vertex.getEdges().add(new Edge(vertex, new JsonPath(currentPath), internalReference));
                 } else {
                     findEdges(vertex, currentPath, ((Map) map).get(key), null);
                 }

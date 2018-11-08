@@ -17,6 +17,11 @@ public class JsonTransformer {
     public Map parseToMap(String json) {
         return gson.fromJson(json, Map.class);
     }
+
+    public String normalize(String json){
+       return getMapAsJson(parseToMap(json));
+    }
+
 //
 //    Object resolveProperty(Object property) {
 //        if(property instanceof JsonLdProperty){

@@ -5,7 +5,7 @@ import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransform
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusRelativeUrl;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
-import org.humanbrainproject.knowledgegraph.nexusExt.control.InstanceController;
+import org.humanbrainproject.knowledgegraph.instances.control.InstanceController;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 

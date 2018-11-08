@@ -60,20 +60,20 @@ public class NexusClient {
         return null;
     }
 
-    public Map delete(NexusRelativeUrl url, Integer revision, OidcAccessToken oidcAccessToken) {
+    public boolean delete(NexusRelativeUrl url, Integer revision, OidcAccessToken oidcAccessToken) {
         try {
             ResponseEntity<Map> result = new RestTemplate().exchange(String.format("%s%s", configuration.getEndpoint(url), revision != null ? String.format("%srev=%d", !url.getUrl().contains("?") ? "?" : "&", revision) : ""), HttpMethod.DELETE, new HttpEntity<>(createHeaders(oidcAccessToken)), Map.class);
             if (result.getStatusCode().is2xxSuccessful() && result.getBody() != null) {
-                return result.getBody();
+                return true;
             }
         } catch (HttpClientErrorException e) {
             if (e.getStatusCode() == HttpStatus.CONFLICT) {
                 logger.info("Was not able to remove the instance {} due to a conflict. It seems as it is already deprecated", url);
-                return null;
+                return false;
             }
 
         }
-        return null;
+        return false;
     }
 
     public Map post(NexusRelativeUrl url, Integer revision, Map payload, OidcAccessToken oidcAccessToken) {

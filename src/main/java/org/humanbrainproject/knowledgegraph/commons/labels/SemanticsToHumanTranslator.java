@@ -6,6 +6,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.util.Arrays;
+import java.util.Objects;
+
 @Component
 public class SemanticsToHumanTranslator {
 
@@ -18,12 +21,22 @@ public class SemanticsToHumanTranslator {
         if(value ==null){
             value = components.getPathSegments().get(components.getPathSegments().size()-1);
         }
-        return StringUtils.join(StringUtils.splitByCharacterTypeCamelCase(value), ' ');
+        return normalize(value);
+    }
+
+    private String normalize(String value) {
+        value = value.replaceAll("_", " ");
+        String[] array = StringUtils.splitByCharacterTypeCamelCase(value);
+        array = Arrays.stream(array).filter(Objects::nonNull).filter(s -> !s.trim().isEmpty()).map(s -> s.trim().toLowerCase()).toArray(String[]::new);
+        if(array.length>0){
+            array[0] = StringUtils.capitalize(array[0]);
+        }
+        return StringUtils.join(array, ' ');
     }
 
     public String translateArangoCollectionName(ArangoCollectionReference reference){
         String[] split = reference.getName().split("-");
-        return split[split.length-1];
+        return normalize(split[split.length-1]);
     }
 
 

@@ -14,8 +14,8 @@ import org.humanbrainproject.knowledgegraph.indexing.entity.IndexingMessage;
 import org.humanbrainproject.knowledgegraph.indexing.entity.InsertOrUpdateInPrimaryStoreTodoItem;
 import org.humanbrainproject.knowledgegraph.indexing.entity.TodoList;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
-import org.humanbrainproject.knowledgegraph.nexusExt.control.InstanceController;
-import org.humanbrainproject.knowledgegraph.nexusExt.control.NexusReleasingController;
+import org.humanbrainproject.knowledgegraph.instances.control.InstanceController;
+import org.humanbrainproject.knowledgegraph.instances.control.NexusReleasingController;
 import org.humanbrainproject.knowledgegraph.query.entity.JsonDocument;
 import org.humanbrainproject.knowledgegraph.testFactory.TestObjectFactory;
 import org.junit.Ignore;
@@ -83,7 +83,7 @@ public class FullIndexingTest {
     public void createWithEditor() throws IOException {
         JsonDocument document =  new JsonDocument();
         document.put(SchemaOrgVocabulary.NAMESPACE+"foo", "bar");
-        instance = nexusInstanceController.createInstanceByIdentifier(TestObjectFactory.fooEditorInstanceReference().getNexusSchema(), "helloWorldFromEditor2", document, oidcClient.getAuthorizationToken());
+        instance = nexusInstanceController.createInstanceByIdentifier(TestObjectFactory.fooEditorInstanceReference().getNexusSchema(), "helloWorldFromEditor3", document, oidcClient.getAuthorizationToken());
 
         //This trigger is typically done by Nexus itself - we're simulating the behavior.
         IndexingMessage indexingMessage = new IndexingMessage(instance, new Gson().toJson(document), "2018-10-31", "Foo");

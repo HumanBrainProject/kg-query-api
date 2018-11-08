@@ -1,21 +1,27 @@
-package org.humanbrainproject.knowledgegraph.nexusExt.control;
+package org.humanbrainproject.knowledgegraph.instances.control;
 
 import com.github.jsonldjava.core.JsonLdConsts;
 import org.humanbrainproject.knowledgegraph.commons.authorization.entity.OidcAccessToken;
+import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusClient;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.SystemNexusClient;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoRepository;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
+import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.NexusVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.SchemaOrgVocabulary;
+import org.humanbrainproject.knowledgegraph.indexing.boundary.GraphIndexing;
+import org.humanbrainproject.knowledgegraph.indexing.entity.IndexingMessage;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusRelativeUrl;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Map;
 
 @Component
 public class InstanceController {
@@ -29,15 +35,18 @@ public class InstanceController {
     @Autowired
     SchemaController schemaController;
 
+    @Autowired
+    GraphIndexing graphIndexing;
 
-    public Set<NexusInstanceReference> getByIdentifier(NexusSchemaReference schema, String identifier) {
-        List<Map> maps = systemNexusClient.find(schema, SchemaOrgVocabulary.IDENTIFIER, identifier);
-        return maps.stream().filter(m -> m.containsKey("resultId")).map(m -> {
-            NexusInstanceReference reference = NexusInstanceReference.createFromUrl((String) m.get("resultId"));
-            reference.setRevision((Integer)((Map)m.get("source")).get(NexusVocabulary.REVISION_ALIAS));
-            return reference;
+    @Autowired
+    JsonTransformer jsonTransformer;
 
-        }).collect(Collectors.toSet());
+    @Autowired
+    ArangoRepository arangoRepository;
+
+
+    private NexusInstanceReference getByIdentifier(NexusSchemaReference schema, String identifier) {
+        return arangoRepository.findBySchemaOrgIdentifier(ArangoCollectionReference.fromNexusSchemaReference(schema), identifier);
     }
 
     public NexusInstanceReference createInstanceByIdentifier(NexusSchemaReference schemaReference, String identifier, Map<String, Object> payload, OidcAccessToken oidcAccessToken) {
@@ -51,18 +60,20 @@ public class InstanceController {
         else if(!o.equals(identifier)){
             payload.put(SchemaOrgVocabulary.IDENTIFIER, Arrays.asList(o, identifier));
         }
-        Set<NexusInstanceReference> existingInstances = getByIdentifier(schemaReference, identifier);
-        if (existingInstances.isEmpty()) {
+        NexusInstanceReference byIdentifier = getByIdentifier(schemaReference, identifier);
+        if (byIdentifier==null) {
             return createInstanceByNexusId(schemaReference, null, null, payload, oidcAccessToken);
-        } else if (existingInstances.size() == 1) {
-            NexusInstanceReference foundReference = existingInstances.iterator().next();
-            return createInstanceByNexusId(foundReference.getNexusSchema(), foundReference.getId(), foundReference.getRevision(), payload, oidcAccessToken);
-        }
-        else{
-            throw new RuntimeException("Multiple instances with the same identifier in the same schema");
+        } else {
+            return createInstanceByNexusId(byIdentifier.getNexusSchema(), byIdentifier.getId(), byIdentifier.getRevision(), payload, oidcAccessToken);
         }
     }
 
+    public void deprecateInstanceByNexusId(NexusInstanceReference instanceReference, OidcAccessToken oidcAccessToken){
+        boolean delete = nexusClient.delete(instanceReference.getRelativeUrl(), instanceReference.getRevision() != null ? instanceReference.getRevision() : 1, oidcAccessToken);
+        if(delete){
+            immediateDeprecation(instanceReference);
+        }
+    }
 
     public NexusInstanceReference createInstanceByNexusId(NexusSchemaReference nexusSchemaReference, String id, Integer revision, Map<String, Object> payload, OidcAccessToken oidcAccessToken)  {
         schemaController.createSchema(nexusSchemaReference);
@@ -78,6 +89,7 @@ public class InstanceController {
             payload.put(JsonLdConsts.TYPE, Arrays.asList(type, targetClass));
         }
         NexusInstanceReference nexusInstanceReference = new NexusInstanceReference(nexusSchemaReference, id);
+        NexusInstanceReference newInstanceReference = null;
         if (revision == null) {
             Map map = systemNexusClient.get(nexusInstanceReference.getRelativeUrl());
             if (map == null) {
@@ -85,23 +97,39 @@ public class InstanceController {
                 if (post != null && post.containsKey(JsonLdConsts.ID)) {
                     NexusInstanceReference fromUrl = NexusInstanceReference.createFromUrl((String) post.get(JsonLdConsts.ID));
                     fromUrl.setRevision((Integer) post.get(NexusVocabulary.REVISION_ALIAS));
-                    return fromUrl;
+                    newInstanceReference = fromUrl;
                 }
-                return null;
+                else {
+                    newInstanceReference = null;
+                }
             } else {
                 Map put = nexusClient.put(nexusInstanceReference.getRelativeUrl(), (Integer) map.get(NexusVocabulary.REVISION_ALIAS), payload, oidcAccessToken);
                 if (put.containsKey(NexusVocabulary.REVISION_ALIAS)) {
                     nexusInstanceReference.setRevision((Integer) put.get(NexusVocabulary.REVISION_ALIAS));
                 }
-                return nexusInstanceReference;
+                newInstanceReference = nexusInstanceReference;
             }
         } else {
             Map put = nexusClient.put(nexusInstanceReference.getRelativeUrl(), revision, payload, oidcAccessToken);
             if (put.containsKey(NexusVocabulary.REVISION_ALIAS)) {
                 nexusInstanceReference.setRevision((Integer) put.get(NexusVocabulary.REVISION_ALIAS));
             }
-            return nexusInstanceReference;
+            newInstanceReference = nexusInstanceReference;
         }
+        if(newInstanceReference!=null) {
+            immediateIndexing(payload, newInstanceReference);
+        }
+        return newInstanceReference;
+    }
+
+    private void immediateDeprecation(NexusInstanceReference newInstanceReference) {
+        graphIndexing.delete(newInstanceReference);
+    }
+
+    private void immediateIndexing(Map<String, Object> payload, NexusInstanceReference newInstanceReference) {
+        payload.put(HBPVocabulary.PROVENANCE_IMMEDIATE_INDEX, true);
+        IndexingMessage indexingMessage = new IndexingMessage(newInstanceReference, jsonTransformer.getMapAsJson(payload), null, null);
+        graphIndexing.insert(indexingMessage);
     }
 
 }

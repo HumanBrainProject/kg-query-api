@@ -8,7 +8,7 @@ import java.util.List;
 
 public class Vertex implements VertexOrEdge {
 
-    private final List<EdgeX> edges;
+    private final List<Edge> edges;
 
     private final QualifiedIndexingMessage qualifiedIndexingMessage;
 
@@ -32,7 +32,7 @@ public class Vertex implements VertexOrEdge {
         return instanceReference;
     }
 
-    public List<EdgeX> getEdges() {
+    public List<Edge> getEdges() {
         return edges;
     }
 

@@ -1,4 +1,4 @@
-package org.humanbrainproject.knowledgegraph.nexusExt.control;
+package org.humanbrainproject.knowledgegraph.instances.control;
 
 import org.humanbrainproject.knowledgegraph.commons.authorization.control.OidcClient;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
