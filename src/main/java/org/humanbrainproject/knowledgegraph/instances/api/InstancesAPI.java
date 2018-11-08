@@ -19,8 +19,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 @RestController
-@RequestMapping(value = "/instances", produces = MediaType.APPLICATION_JSON)
-@Api(value = "/instances", description = "The API for managing instances")
+@RequestMapping(value = "/api/instances", produces = MediaType.APPLICATION_JSON)
+@Api(value = "/api/instances", description = "The API for managing instances")
 public class InstancesAPI {
 
     @Autowired
