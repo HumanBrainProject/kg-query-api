@@ -36,4 +36,8 @@ public class ArangoGraph {
     public List<Map> getInstance(ArangoDocumentReference instanceReference){
         return arangoRepository.getInstance(instanceReference, databaseFactory.getInferredDB());
     }
+
+    public Map getBookmarks(NexusInstanceReference instanceRef,Integer from, Integer size, String searchTerm ){
+        return arangoRepository.getBookmarks(instanceRef, from, size, searchTerm ,databaseFactory.getInferredDB());
+    }
 }

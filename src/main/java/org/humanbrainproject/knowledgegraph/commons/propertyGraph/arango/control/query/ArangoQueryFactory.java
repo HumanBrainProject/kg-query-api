@@ -8,6 +8,7 @@ import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.SchemaOrgVocabulary;
+import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.releasing.entity.ReleaseStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -196,5 +197,37 @@ public class ArangoQueryFactory {
                 "FILTER doc._key IN [\"%s\"]\n" +
                 "RETURN doc._originalId\n" +
                 "\n", collectionReference.getName(), String.join("\", \"", keys));
+    }
+
+    public String getBookmarks(NexusInstanceReference doc, Integer from, Integer size, String searchTerm){
+        String search = "";
+        if (searchTerm != null && !searchTerm.isEmpty()) {
+            searchTerm = searchTerm.toLowerCase();
+            search = String.format("FILTER LIKE (LOWER(i.`http://schema.org/name`), \"%%%s%%\")\n", searchTerm);
+        }
+        String limit = "";
+        if (from != null && size != null) {
+            limit = String.format("LIMIT %s, %s \n", from.toString(), size.toString());
+        }
+        return String.format("" +
+                "FOR doc IN `kg-core-bookmark-v0_0_1`\n" +
+                    "FILTER CONTAINS(doc.`http://hbp.eu/kgeditor/bookmarkList`.`@id`, \"%s\")\n" +
+                    "LET instances = (\n" +
+                        "FOR i IN 1..1 OUTBOUND doc `hbp_eu-kgeditor-bookmarkInstanceLink`\n" +
+                        "   FILTER i != null AND i.`@id` != null" +
+                        "   %s" +
+                        "   SORT i.`http://schema.org/name`, i.`http://hbp.eu/minds#title`, i.`http://hbp.eu/minds#alias` \n" +
+                        "   %s" +
+                        "   RETURN {" +
+                        "     \"id\": i.`@id`,\n" +
+                        "     \"name\": i.`http://schema.org/name`,\n" +
+                        "     \"description\": i.`http://schema.org/description`\n" +
+                        "   }\n" +
+                        ")\n" +
+                        "FILTER instances != null AND COUNT(instances) > 0\n" +
+                "RETURN FIRST(instances)"
+
+                , doc.getFullId(false), search, limit
+        );
     }
 }

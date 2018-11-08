@@ -475,5 +475,26 @@ public class ArangoRepository extends VertexRepository<ArangoConnection, ArangoD
         return q.asListRemaining();
     }
 
-
+    public Map getBookmarks(NexusInstanceReference document, Integer from, Integer size, String
+            searchTerm, ArangoConnection driver) {
+        ArangoDatabase db = driver.getOrCreateDB();
+        String query = queryFactory.getBookmarks(document, from, size, searchTerm);
+        AqlQueryOptions options = new AqlQueryOptions().count(true).fullCount(true);
+        Map m = new HashMap();
+        try {
+            ArangoCursor<Map> q = db.query(query, null, options, Map.class);
+            m.put("count", q.getCount());
+            m.put("fullCount", q.getStats().getFullCount());
+            m.put("data", q.asListRemaining());
+        } catch (ArangoDBException e) {
+            if (e.getResponseCode() == 404) {
+                m.put("count", 0);
+                m.put("fullCount", 0);
+                m.put("data", new ArrayList<Map>());
+            } else {
+                throw e;
+            }
+        }
+        return m;
+    }
 }
