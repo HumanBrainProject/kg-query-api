@@ -195,7 +195,7 @@ public class ArangoQueryFactory {
                         "   SORT i.`http://schema.org/name`, i.`http://hbp.eu/minds#title`, i.`http://hbp.eu/minds#alias` \n" +
                         "   %s" +
                         "   RETURN {" +
-                        "     \"id\": i.`@id`,\n" +
+                        "     \"id\": i.`_relativeUrl`,\n" +
                         "     \"name\": i.`http://schema.org/name`,\n" +
                         "     \"description\": i.`http://schema.org/description`\n" +
                         "   }\n" +
