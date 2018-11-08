@@ -11,7 +11,7 @@ import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.util.Collections;
+import java.util.Arrays;
 
 @Component
 public class SystemOidcHeaderInterceptor implements ClientHttpRequestInterceptor {
@@ -39,7 +39,7 @@ public class SystemOidcHeaderInterceptor implements ClientHttpRequestInterceptor
     public ClientHttpResponse intercept(HttpRequest httpRequest, byte[] bytes, ClientHttpRequestExecution clientHttpRequestExecution) throws IOException {
         setAuthTokenToRequest(httpRequest);
         httpRequest.getHeaders().setContentType(MediaType.APPLICATION_JSON);
-        httpRequest.getHeaders().setAccept(Collections.singletonList(org.springframework.http.MediaType.parseMediaType("application/ld+json")));
+        httpRequest.getHeaders().setAccept(Arrays.asList(MediaType.APPLICATION_JSON, MediaType.parseMediaType("application/ld+json")));
         ClientHttpResponse response = clientHttpRequestExecution.execute(httpRequest, bytes);
         if (response.getStatusCode() == HttpStatus.UNAUTHORIZED) {
             //The token seems to have timed out - let's try to refresh it and reexecute the request

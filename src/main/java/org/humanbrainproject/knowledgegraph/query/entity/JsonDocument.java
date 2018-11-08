@@ -48,6 +48,13 @@ public class JsonDocument extends LinkedHashMap<String, Object>{
         return null;
     }
 
+    public Integer getNexusRevision(){
+        if(this.containsKey(NexusVocabulary.REVISION_ALIAS)){
+            return (Integer)get(NexusVocabulary.REVISION_ALIAS);
+        }
+        return null;
+    }
+
 
     public NexusInstanceReference getReference(){
         if (this.containsKey(JsonLdConsts.ID)) {

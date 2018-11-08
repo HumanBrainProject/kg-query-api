@@ -68,6 +68,7 @@ public class Instances {
         }
         NexusSchemaReference nexusSchema = instanceReference.getNexusSchema();
         SubSpace subSpace = client != null ? client.getSubSpace() : SubSpace.MAIN;
+        nexusSchema = nexusSchema.toSubSpace(subSpace);
         JsonDocument document = new JsonDocument(jsonTransformer.parseToMap(payload));
         String primaryIdentifier = instance.getPrimaryIdentifier();
         if (primaryIdentifier == null) {

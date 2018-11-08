@@ -76,6 +76,9 @@ public class NexusClient {
                 logger.info("Was not able to remove the instance {} due to a conflict. It seems as it is already deprecated", url);
                 return false;
             }
+            else{
+                logger.error("Was not able to delete the instance", e);
+            }
 
         }
         return false;
@@ -166,14 +169,23 @@ public class NexusClient {
         return null;
     }
 
+    public List<JsonDocument> list(NexusSchemaReference schemaReference, OidcAccessToken oidcAccessToken, boolean followPages){
+        return list(new NexusRelativeUrl(NexusConfiguration.ResourceType.DATA, schemaReference.getRelativeUrl().getUrl()), oidcAccessToken, followPages);
+    }
+
 
     public List<JsonDocument> list(NexusRelativeUrl relativeUrl, OidcAccessToken oidcAccessToken, boolean followPages) {
         return list(relativeUrl, new OidcHeaderInterceptor(oidcAccessToken), followPages);
     }
 
     List<JsonDocument> list(NexusRelativeUrl relativeUrl, ClientHttpRequestInterceptor oidc, boolean followPages) {
+        return list(configuration.getEndpoint(relativeUrl)+"?deprecated=false", oidc, followPages);
+    }
+
+    private List<JsonDocument> list(String url, ClientHttpRequestInterceptor oidc, boolean followPages) {
         RestTemplate template = new RestTemplate();
-        ResponseEntity<Map> result = template.getForEntity(configuration.getEndpoint(relativeUrl), Map.class);
+        template.setInterceptors(Collections.singletonList(oidc));
+        ResponseEntity<Map> result = template.getForEntity(url, Map.class);
         if (result.getStatusCode().is2xxSuccessful() && result.getBody() != null && result.getBody().containsKey("results") && result.getBody().get("results") instanceof List) {
             List<JsonDocument> results = (List<JsonDocument>) ((List) result.getBody().get("results")).stream().map(r -> new JsonDocument((Map) r)).collect(Collectors.toList());
             if (followPages) {
@@ -181,7 +193,7 @@ public class NexusClient {
                 if (links instanceof Map) {
                     Object next = ((Map) links).get("next");
                     if (next instanceof String) {
-                        List<JsonDocument> nextPage = list(new NexusRelativeUrl(relativeUrl.getResourceType(), (String) next), oidc, true);
+                        List<JsonDocument> nextPage = list((String)next, oidc, true);
                         results.addAll(nextPage);
                     }
                 }
@@ -190,6 +202,8 @@ public class NexusClient {
         }
         return Collections.emptyList();
     }
+
+
 
 
 }

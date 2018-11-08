@@ -3,11 +3,15 @@ package org.humanbrainproject.knowledgegraph.instances.control;
 import com.github.jsonldjava.core.JsonLdConsts;
 import com.google.gson.Gson;
 import org.apache.commons.lang3.StringUtils;
+import org.humanbrainproject.knowledgegraph.commons.authorization.entity.OidcAccessToken;
+import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusClient;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.SystemNexusClient;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.*;
+import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusRelativeUrl;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
+import org.humanbrainproject.knowledgegraph.query.entity.JsonDocument;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
@@ -19,13 +23,17 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 @Component
 public class SchemaController {
 
     @Autowired
-    SystemNexusClient nexusClient;
+    NexusClient nexusClient;
+
+    @Autowired
+    SystemNexusClient systemNexusClient;
 
     @Value("classpath:nexusExt/defaultContext.json")
     private Resource defaultContext;
@@ -46,23 +54,23 @@ public class SchemaController {
 
 
     public void createSchema(NexusSchemaReference nexusSchemaReference, Map schemaPayload) {
-        Map schema = nexusClient.get(nexusSchemaReference.getRelativeUrl());
+        Map schema = systemNexusClient.get(nexusSchemaReference.getRelativeUrl());
         if (schema == null) {
-            if (nexusClient.get(nexusSchemaReference.getRelativeUrlForOrganization()) == null) {
-                nexusClient.put(nexusSchemaReference.getRelativeUrlForOrganization(), null, new LinkedHashMap());
+            if (systemNexusClient.get(nexusSchemaReference.getRelativeUrlForOrganization()) == null) {
+                systemNexusClient.put(nexusSchemaReference.getRelativeUrlForOrganization(), null, new LinkedHashMap());
             }
-            if (nexusClient.get(nexusSchemaReference.getRelativeUrlForDomain()) == null) {
+            if (systemNexusClient.get(nexusSchemaReference.getRelativeUrlForDomain()) == null) {
                 Map<String, String> payload = new LinkedHashMap<>();
                 payload.put("description", String.format("The domain %s for organization %s", nexusSchemaReference.getDomain(), nexusSchemaReference.getOrganization()));
-                nexusClient.put(nexusSchemaReference.getRelativeUrlForDomain(), null, payload);
+                systemNexusClient.put(nexusSchemaReference.getRelativeUrlForDomain(), null, payload);
             }
-            nexusClient.put(nexusSchemaReference.getRelativeUrl(), null, schemaPayload);
+            systemNexusClient.put(nexusSchemaReference.getRelativeUrl(), null, schemaPayload);
             publishSchema(nexusSchemaReference, 1);
         } else {
             Boolean published = (Boolean) schema.get(NexusVocabulary.PUBLISHED_ALIAS);
             if (!published) {
                 Integer revision = (Integer) schema.get(NexusVocabulary.REVISION_ALIAS);
-                nexusClient.put(nexusSchemaReference.getRelativeUrl(), revision, schemaPayload);
+                systemNexusClient.put(nexusSchemaReference.getRelativeUrl(), revision, schemaPayload);
                 publishSchema(nexusSchemaReference, revision + 1);
             }
         }
@@ -72,7 +80,7 @@ public class SchemaController {
     private void publishSchema(NexusSchemaReference nexusSchemaReference, Integer revision) {
         Map<String, Boolean> payload = new LinkedHashMap<>();
         payload.put("published", true);
-        nexusClient.patch(new NexusRelativeUrl(NexusConfiguration.ResourceType.SCHEMA, String.format("%s/config", nexusSchemaReference.getRelativeUrl().getUrl())), revision, payload);
+        systemNexusClient.patch(new NexusRelativeUrl(NexusConfiguration.ResourceType.SCHEMA, String.format("%s/config", nexusSchemaReference.getRelativeUrl().getUrl())), revision, payload);
     }
 
     public void createSchema(NexusSchemaReference nexusSchemaReference) {
@@ -104,6 +112,16 @@ public class SchemaController {
         return schema;
 
     }
+
+    public void clearAllInstancesFromSchema(NexusSchemaReference schema, OidcAccessToken oidcAccessToken){
+        List<JsonDocument> documents = nexusClient.list(schema, oidcAccessToken, true);
+        for (JsonDocument document : documents) {
+            NexusInstanceReference instanceReference = NexusInstanceReference.createFromUrl((String)document.get("resultId"));
+            JsonDocument doc = nexusClient.get(instanceReference.getRelativeUrl(), oidcAccessToken);
+            nexusClient.delete(instanceReference.getRelativeUrl(), doc.getNexusRevision(), oidcAccessToken);
+        }
+    }
+
 
 
 }
