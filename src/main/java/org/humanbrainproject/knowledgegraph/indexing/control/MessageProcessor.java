@@ -52,9 +52,9 @@ public class MessageProcessor {
     /**
      * Takes a jsonLdPayload (fully qualified) and transforms it into a vertex including subvertices (for embedded instances) and their outgoing edges and prepared properties.
      */
-    public Vertex createVertexStructure(QualifiedIndexingMessage qualifiedNexusIndexingMessage){
+    public Vertex createVertexStructure(QualifiedIndexingMessage qualifiedNexusIndexingMessage) {
         Vertex targetVertex = new Vertex(qualifiedNexusIndexingMessage);
-        findEdges(targetVertex, new Stack<>(), qualifiedNexusIndexingMessage.getQualifiedMap(), null);
+        findEdges(targetVertex, new Stack<>(), qualifiedNexusIndexingMessage.getQualifiedMap());
         return targetVertex;
     }
 
@@ -69,31 +69,31 @@ public class MessageProcessor {
         return null;
     }
 
-    void findEdges(Vertex vertex, Stack<Step> path, Object map, Integer orderNumber) {
+    void findEdges(Vertex vertex, Stack<Step> path, Object map) {
         if (map instanceof Map) {
             for (Object key : ((Map) map).keySet()) {
-                Stack<Step> currentPath = new Stack<>();
-                currentPath.addAll(path);
-                currentPath.push(new Step((String)key, orderNumber != null ? orderNumber : 0));
                 Object value = ((Map) map).get(key);
-                if(value!=null) {
+                if (value != null) {
                     if (!(value instanceof Collection)) {
                         value = Arrays.asList(value);
                     }
+                    int counter = 0;
                     for (Object o : ((Collection) value)) {
                         NexusInstanceReference internalReference = getInternalReference(o);
+                        Stack<Step> currentPath = new Stack<>();
+                        currentPath.addAll(path);
                         if (internalReference != null) {
+                            currentPath.push(new Step((String) key, counter++));
                             vertex.getEdges().add(new Edge(vertex, new JsonPath(currentPath), internalReference));
                         } else {
-                            findEdges(vertex, currentPath, ((Map) map).get(key), null);
+                            findEdges(vertex, currentPath, ((Map) map).get(key));
                         }
                     }
                 }
             }
         } else if (map instanceof Collection) {
-            int counter = 0;
             for (Object o : ((Collection) map)) {
-                findEdges(vertex, path, o, counter++);
+                findEdges(vertex, path, o);
             }
         }
     }
