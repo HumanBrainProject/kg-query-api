@@ -14,10 +14,13 @@ import org.humanbrainproject.knowledgegraph.indexing.control.MessageProcessor;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
 import org.humanbrainproject.knowledgegraph.instances.control.InstanceController;
+import org.humanbrainproject.knowledgegraph.instances.control.SchemaController;
 import org.humanbrainproject.knowledgegraph.instances.entity.Client;
 import org.humanbrainproject.knowledgegraph.query.entity.JsonDocument;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 @Component
 public class Instances {
@@ -44,6 +47,9 @@ public class Instances {
     @Autowired
     NexusConfiguration nexusConfiguration;
 
+    @Autowired
+    SchemaController schemaController;
+
 
     public JsonDocument getInstance(NexusInstanceReference instanceReference) {
         NexusInstanceReference originalId = arangoRepository.findOriginalId(instanceReference);
@@ -56,8 +62,8 @@ public class Instances {
     }
 
 
-    public NexusInstanceReference createNewInstance(NexusSchemaReference nexusSchemaReference, OidcAccessToken oidcAccessToken) {
-        return instanceController.createNewEmptyInstance(nexusSchemaReference, oidcAccessToken);
+    public NexusInstanceReference createNewInstance(NexusSchemaReference nexusSchemaReference, String payload, OidcAccessToken oidcAccessToken) {
+        return instanceController.createNewInstance(nexusSchemaReference, jsonTransformer.parseToMap(payload), oidcAccessToken);
     }
 
     public NexusInstanceReference updateInstance(NexusInstanceReference instanceReference, String payload, Client client, String clientIdExtension, OidcAccessToken oidcAccessToken) {
@@ -87,6 +93,17 @@ public class Instances {
         NexusInstanceReference originalId = arangoRepository.findOriginalId(nexusInstanceReference);
         //We only deprecate the original id - this way, the reconciled instance should disappear.
         return instanceController.deprecateInstanceByNexusId(originalId, oidcAccessToken);
+    }
+
+    public void cloneInstancesFromSchema(NexusSchemaReference originalSchema, String newVersion, OidcAccessToken oidcAccessToken){
+        List<NexusInstanceReference> allInstancesForSchema = instanceController.getAllInstancesForSchema(originalSchema, oidcAccessToken);
+        for (NexusInstanceReference instanceReference : allInstancesForSchema) {
+            JsonDocument fromNexusById = instanceController.getFromNexusById(instanceReference, oidcAccessToken);
+            //Ensure the right type
+            fromNexusById.addType(schemaController.getTargetClass(originalSchema));
+            NexusSchemaReference schemaReference = new NexusSchemaReference(originalSchema.getOrganization(), originalSchema.getDomain(), originalSchema.getSchema(), newVersion);
+            instanceController.createInstanceByIdentifier(schemaReference, fromNexusById.getPrimaryIdentifier(), fromNexusById, oidcAccessToken);
+        }
     }
 
 

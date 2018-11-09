@@ -57,7 +57,9 @@ public class SchemaController {
         Map schema = systemNexusClient.get(nexusSchemaReference.getRelativeUrl());
         if (schema == null) {
             if (systemNexusClient.get(nexusSchemaReference.getRelativeUrlForOrganization()) == null) {
-                systemNexusClient.put(nexusSchemaReference.getRelativeUrlForOrganization(), null, new LinkedHashMap());
+                LinkedHashMap<String, String> payload = new LinkedHashMap();
+                payload.put(SchemaOrgVocabulary.NAME, nexusSchemaReference.getOrganization());
+                systemNexusClient.put(nexusSchemaReference.getRelativeUrlForOrganization(), null, payload);
             }
             if (systemNexusClient.get(nexusSchemaReference.getRelativeUrlForDomain()) == null) {
                 Map<String, String> payload = new LinkedHashMap<>();
@@ -91,7 +93,7 @@ public class SchemaController {
         return String.format("%s%s/", HBPVocabulary.NAMESPACE, schemaReference.getOrganization());
     }
 
-    String getTargetClass(NexusSchemaReference schemaReference){
+    public String getTargetClass(NexusSchemaReference schemaReference){
         return String.format("%s%s", getOrganization(schemaReference), StringUtils.capitalize(schemaReference.getSchema()));
     }
 

@@ -37,8 +37,8 @@ public class InstancesAPI {
     }
 
     @PostMapping(value = "/{org}/{domain}/{schema}/{version}")
-    public ResponseEntity<Map> createNewInstanceForSchema(@PathVariable("org") String org, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("version") String version, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken) {
-        NexusInstanceReference reference = instances.createNewInstance(new NexusSchemaReference(org, domain, schema, version), new OidcAccessToken().setToken(authorizationToken));
+    public ResponseEntity<Map> createNewInstanceForSchema(@RequestBody(required = false) String payload, @PathVariable("org") String org, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("version") String version, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken) {
+        NexusInstanceReference reference = instances.createNewInstance(new NexusSchemaReference(org, domain, schema, version), payload, new OidcAccessToken().setToken(authorizationToken));
         if (reference != null) {
             Map<String, String> result = new HashMap<>();
             result.put("relativeUrl", reference.getRelativeUrl().getUrl());
@@ -61,10 +61,20 @@ public class InstancesAPI {
 
     @DeleteMapping(value = "/{org}/{domain}/{schema}/{version}/{id}")
     public ResponseEntity<Void> deleteInstance(@PathVariable("org") String org, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("version") String version, @PathVariable("id") String id, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken) {
-        if (instances.removeInstance(new NexusInstanceReference(org, domain, schema, version, id), new OidcAccessToken().setToken(authorizationToken))){
+        if (instances.removeInstance(new NexusInstanceReference(org, domain, schema, version, id), new OidcAccessToken().setToken(authorizationToken))) {
             return ResponseEntity.ok().build();
         }
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+    }
+
+    /**
+     * @deprecated Warning: the method currently doesn't redirect links - so it's not yet that useful.
+     */
+    @Deprecated
+    @PutMapping(value = "/{org}/{domain}/{schema}/{oldVersion}/clone/{newVersion}")
+    public ResponseEntity<Void> cloneInstancesFromSchema(@PathVariable("org") String org, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("oldVersion") String oldVersion, @PathVariable("newVersion") String newVersion, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken) {
+        instances.cloneInstancesFromSchema(new NexusSchemaReference(org, domain, schema, oldVersion), newVersion, new OidcAccessToken().setToken(authorizationToken));
+        return ResponseEntity.ok().build();
     }
 
 

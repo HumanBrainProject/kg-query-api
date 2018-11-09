@@ -65,5 +65,8 @@ public class SystemNexusClient {
         return instanceController.createInstanceByNexusId(nexusInstanceReference.getNexusSchema(), nexusInstanceReference.getId(), nexusInstanceReference.getRevision(), payload, systemOidc);
     }
 
+    public List<JsonDocument> list(NexusSchemaReference schemaReference, boolean followPages){
+        return nexusClient.list(new NexusRelativeUrl(NexusConfiguration.ResourceType.DATA, schemaReference.getRelativeUrl().getUrl()), systemOidc, followPages);
+    }
 
 }

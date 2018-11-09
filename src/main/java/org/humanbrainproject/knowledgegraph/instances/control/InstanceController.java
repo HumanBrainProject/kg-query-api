@@ -22,9 +22,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.stereotype.Component;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Component
 public class InstanceController {
@@ -54,6 +53,11 @@ public class InstanceController {
         return arangoRepository.findBySchemaOrgIdentifier(ArangoCollectionReference.fromNexusSchemaReference(schema), identifier);
     }
 
+    public JsonDocument getFromNexusById(NexusInstanceReference instanceReference, OidcAccessToken oidcAccessToken){
+        return nexusClient.get(instanceReference.getRelativeUrl(), oidcAccessToken);
+    }
+
+
     public NexusInstanceReference createInstanceByIdentifier(NexusSchemaReference schemaReference, String identifier, JsonDocument payload, OidcAccessToken oidcAccessToken) {
         payload.addToProperty(SchemaOrgVocabulary.IDENTIFIER, identifier);
         NexusInstanceReference byIdentifier = getByIdentifier(schemaReference, identifier);
@@ -72,9 +76,15 @@ public class InstanceController {
         return delete;
     }
 
-    public NexusInstanceReference createNewEmptyInstance(NexusSchemaReference nexusSchemaReference, OidcAccessToken oidcAccessToken){
+    public NexusInstanceReference createNewInstance(NexusSchemaReference nexusSchemaReference, Map originalPayload, OidcAccessToken oidcAccessToken){
         schemaController.createSchema(nexusSchemaReference);
-        JsonDocument payload = new JsonDocument();
+        JsonDocument payload;
+        if(originalPayload!=null) {
+            payload = new JsonDocument(originalPayload);
+        }
+        else{
+            payload = new JsonDocument();
+        }
         payload.addType(schemaController.getTargetClass(nexusSchemaReference));
         payload.addToProperty(SchemaOrgVocabulary.IDENTIFIER, "");
         JsonDocument response = nexusClient.post(new NexusRelativeUrl(NexusConfiguration.ResourceType.DATA, nexusSchemaReference.getRelativeUrl().getUrl()), null, payload, oidcAccessToken);
@@ -148,5 +158,15 @@ public class InstanceController {
         IndexingMessage indexingMessage = new IndexingMessage(newInstanceReference, jsonTransformer.getMapAsJson(payload), null, null);
         graphIndexing.insert(indexingMessage);
     }
+
+    public List<NexusInstanceReference> getAllInstancesForSchema(NexusSchemaReference nexusSchemaReference, OidcAccessToken oidcAccessToken){
+        List<JsonDocument> list = nexusClient.list(nexusSchemaReference, oidcAccessToken, true);
+        if(list!=null) {
+            return list.stream().map(d -> d.get("resultId")).filter(o -> o instanceof String).map(o -> NexusInstanceReference.createFromUrl((String) o)).collect(Collectors.toList());
+        }
+        return Collections.emptyList();
+
+    }
+
 
 }
