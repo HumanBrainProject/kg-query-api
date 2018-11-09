@@ -3,7 +3,6 @@ package org.humanbrainproject.knowledgegraph.indexing.entity.knownSemantics;
 import com.github.jsonldjava.core.JsonLdConsts;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
-import org.humanbrainproject.knowledgegraph.indexing.entity.KnownSemantic;
 import org.humanbrainproject.knowledgegraph.indexing.entity.QualifiedIndexingMessage;
 
 import java.util.Map;

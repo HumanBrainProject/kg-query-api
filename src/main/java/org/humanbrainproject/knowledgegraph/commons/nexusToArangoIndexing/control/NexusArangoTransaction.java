@@ -17,6 +17,7 @@ import org.humanbrainproject.knowledgegraph.indexing.entity.DeleteTodoItem;
 import org.humanbrainproject.knowledgegraph.indexing.entity.InsertOrUpdateInPrimaryStoreTodoItem;
 import org.humanbrainproject.knowledgegraph.indexing.entity.InsertTodoItem;
 import org.humanbrainproject.knowledgegraph.indexing.entity.TodoList;
+import org.humanbrainproject.knowledgegraph.indexing.entity.knownSemantics.LinkingInstance;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.instances.control.InstanceController;
 import org.slf4j.Logger;
@@ -71,22 +72,32 @@ public class NexusArangoTransaction implements DatabaseTransaction {
                 ArangoDatabase database = databaseConnection.getOrCreateDB();
                 Vertex vertex = insertItem.getVertex();
                 ArangoDocumentReference reference = ArangoDocumentReference.fromNexusInstance(vertex.getInstanceReference());
-
-                //Remove already existing instances
-                repository.deleteOutgoingRelations(reference, databaseConnection);
-                repository.deleteDocument(reference, database);
-
-                String vertexJson = arangoDocumentConverter.createJsonFromVertex(reference, vertex, insertItem.getBlacklist());
-                if (vertexJson != null) {
-                    repository.insertDocument(reference, vertexJson, CollectionType.DOCUMENT, database);
+                LinkingInstance linkingInstance = new LinkingInstance(vertex.getQualifiedIndexingMessage());
+                if(linkingInstance.isInstance()) {
+                    ArangoDocumentReference documentReference = ArangoDocumentReference.fromNexusInstance(vertex.getInstanceReference());
+                    repository.deleteDocument(documentReference, database);
+                    if(linkingInstance.getFrom()!=null && linkingInstance.getTo()!=null) {
+                        String jsonFromLinkingInstance = arangoDocumentConverter.createJsonFromLinkingInstance(documentReference, linkingInstance.getFrom(), linkingInstance.getTo(), vertex.getInstanceReference());
+                        repository.insertDocument(documentReference, jsonFromLinkingInstance, CollectionType.EDGES, database);
+                    }
                 }
-                for (Edge edge : vertex.getEdges()) {
-                    ArangoDocumentReference document = ArangoDocumentReference.fromEdge(edge);
-                    String jsonFromEdge = arangoDocumentConverter.createJsonFromEdge(document, vertex, edge, insertItem.getBlacklist());
-                    repository.insertDocument(document, jsonFromEdge, CollectionType.EDGES, database);
-                    ArangoCollectionReference collection = ArangoCollectionReference.fromNexusSchemaReference(edge.getReference().getNexusSchema());
-                    if(!database.collection(collection.getName()).exists()) {
-                        database.createCollection(collection.getName(), new CollectionCreateOptions().type(CollectionType.DOCUMENT));
+                else {
+                    //Remove already existing instances
+                    repository.deleteOutgoingRelations(reference, databaseConnection);
+                    repository.deleteDocument(reference, database);
+
+                    String vertexJson = arangoDocumentConverter.createJsonFromVertex(reference, vertex, insertItem.getBlacklist());
+                    if (vertexJson != null) {
+                        repository.insertDocument(reference, vertexJson, CollectionType.DOCUMENT, database);
+                    }
+                    for (Edge edge : vertex.getEdges()) {
+                        ArangoDocumentReference document = ArangoDocumentReference.fromEdge(edge);
+                        String jsonFromEdge = arangoDocumentConverter.createJsonFromEdge(document, vertex, edge, insertItem.getBlacklist());
+                        repository.insertDocument(document, jsonFromEdge, CollectionType.EDGES, database);
+                        ArangoCollectionReference collection = ArangoCollectionReference.fromNexusSchemaReference(edge.getReference().getNexusSchema());
+                        if (!database.collection(collection.getName()).exists()) {
+                            database.createCollection(collection.getName(), new CollectionCreateOptions().type(CollectionType.DOCUMENT));
+                        }
                     }
                 }
             }

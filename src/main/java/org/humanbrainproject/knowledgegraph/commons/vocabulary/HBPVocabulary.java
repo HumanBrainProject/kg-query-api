@@ -7,6 +7,11 @@ public class HBPVocabulary {
     public static final String GRAPH_QUERY = NAMESPACE+"graphQuery/";
     public static final String RELATIVE_URL_OF_INTERNAL_LINK = NAMESPACE+"relativeUrl";
 
+    // FOR LINKING
+    public static final String LINKING_INSTANCE_TYPE = NAMESPACE+"LinkingInstance";
+    public static final String LINKING_INSTANCE_FROM = LINKING_INSTANCE_TYPE.toLowerCase()+"/from";
+    public static final String LINKING_INSTANCE_TO = LINKING_INSTANCE_TYPE.toLowerCase()+"/to";
+
 
     // FOR PROVENANCE
     private static final String PROVENANCE = NAMESPACE+"provenance/";

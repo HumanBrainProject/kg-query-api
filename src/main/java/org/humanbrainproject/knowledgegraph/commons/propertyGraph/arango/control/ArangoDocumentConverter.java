@@ -9,6 +9,7 @@ import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.JsonPat
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Step;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Vertex;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.ArangoVocabulary;
+import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -34,6 +35,20 @@ public class ArangoDocumentConverter {
             path.put(ArangoVocabulary.NEXT, buildPath(remaining.get(0), remaining.subList(1, remaining.size())));
         }
         return path;
+    }
+
+    public String createJsonFromLinkingInstance(ArangoDocumentReference targetDocument, NexusInstanceReference from, NexusInstanceReference to, NexusInstanceReference mainObject){
+        Map<String, Object> map = new HashMap<>();
+        map.put(ArangoVocabulary.ID, targetDocument.getId());
+        map.put(ArangoVocabulary.KEY, targetDocument.getKey());
+        map.put(ArangoVocabulary.FROM, ArangoDocumentReference.fromNexusInstance(from).getId());
+        map.put(ArangoVocabulary.TO, ArangoDocumentReference.fromNexusInstance(to).getId());
+        map.put(ArangoVocabulary.NAME, mainObject.getNexusSchema().getRelativeUrl().getUrl());
+        //This is a loop - it can happen (e.g. for reconciled instances - so we should ensure this never reaches the database).
+        if (map.get(ArangoVocabulary.FROM).equals(map.get(ArangoVocabulary.TO))) {
+            return null;
+        }
+        return jsonTransformer.getMapAsJson(map);
     }
 
     public String createJsonFromEdge(ArangoDocumentReference targetDocument, Vertex vertex, Edge edge, Set<JsonPath> blackList) {

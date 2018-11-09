@@ -1,6 +1,7 @@
-package org.humanbrainproject.knowledgegraph.indexing.entity;
+package org.humanbrainproject.knowledgegraph.indexing.entity.knownSemantics;
 
 import com.github.jsonldjava.core.JsonLdConsts;
+import org.humanbrainproject.knowledgegraph.indexing.entity.QualifiedIndexingMessage;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 
 import java.util.Collections;

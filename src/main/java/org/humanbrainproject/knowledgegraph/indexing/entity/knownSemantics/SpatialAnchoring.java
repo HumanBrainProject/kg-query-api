@@ -1,6 +1,5 @@
 package org.humanbrainproject.knowledgegraph.indexing.entity.knownSemantics;
 
-import org.humanbrainproject.knowledgegraph.indexing.entity.KnownSemantic;
 import org.humanbrainproject.knowledgegraph.indexing.entity.QualifiedIndexingMessage;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 
