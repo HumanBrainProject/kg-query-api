@@ -36,6 +36,13 @@ public class Edge implements VertexOrEdge{
         return sb.toString();
     }
 
+    //FIXME: This is not the proper way of handling the order number since it doesn't support multi-level nesting
+    public Integer getLastOrderNumber(){
+        if(path.isEmpty()){
+            return null;
+        }
+        return path.get(path.size()-1).getOrderNumber();
+    }
 
     public String getName(){
         if(path.isEmpty()){

@@ -59,6 +59,7 @@ public class ArangoDocumentConverter {
         map.put(ArangoVocabulary.TO, ArangoDocumentReference.fromNexusInstance(edge.getReference()).getId());
         map.put(ArangoVocabulary.PATH, buildPath(null, edge.getPath()));
         map.put(ArangoVocabulary.NAME, edge.getName());
+        map.put(ArangoVocabulary.ORDER_NUMBER, edge.getLastOrderNumber());
         //This is a loop - it can happen (e.g. for reconciled instances - so we should ensure this never reaches the database).
         if (map.get(ArangoVocabulary.FROM).equals(map.get(ArangoVocabulary.TO))) {
             return null;

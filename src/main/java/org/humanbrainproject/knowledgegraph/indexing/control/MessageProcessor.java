@@ -93,7 +93,7 @@ public class MessageProcessor {
         } else if (map instanceof Collection) {
             int counter = 0;
             for (Object o : ((Collection) map)) {
-                findEdges(vertex, path, o, counter);
+                findEdges(vertex, path, o, counter++);
             }
         }
     }
