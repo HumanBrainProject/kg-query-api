@@ -63,6 +63,7 @@ public class ArangoDocumentConverter {
         jsonObject.put(ArangoVocabulary.RELATIVE_URL, vertex.getInstanceReference().getRelativeUrl().getUrl());
         Integer revision = vertex.getQualifiedIndexingMessage().getOriginalMessage().getInstanceReference().getRevision();
         jsonObject.put(ArangoVocabulary.NEXUS_REV, revision);
+        jsonObject.put(ArangoVocabulary.NEXUS_UUID, vertex.getQualifiedIndexingMessage().getOriginalMessage().getInstanceReference().getId());
         jsonObject.put(ArangoVocabulary.NEXUS_RELATIVE_URL, vertex.getQualifiedIndexingMessage().getOriginalMessage().getInstanceReference().getRelativeUrl().getUrl());
         jsonObject.put(ArangoVocabulary.NEXUS_RELATIVE_URL_WITH_REV, vertex.getQualifiedIndexingMessage().getOriginalMessage().getInstanceReference().getFullId(true));
         jsonObject.put(ArangoVocabulary.PERMISSION_GROUP, vertex.getInstanceReference().getNexusSchema().getOrganization());

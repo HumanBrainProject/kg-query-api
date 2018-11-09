@@ -122,12 +122,12 @@
     </#if>
 </#macro>
 
-<#macro ref target instance propertyName identifierPropertyName labelPropertyName uuidPropertyName>
+<#macro ref target instance propertyName identifierPropertyName labelPropertyName>
     <#local instances = _value(instance propertyName)>
     <@value instance propertyName/>
 </#macro>
 
-<#macro direct_ref target instance identifierPropertyName labelPropertyName uuidPropertyName>
+<#macro direct_ref target instance identifierPropertyName labelPropertyName>
     <@value instance labelPropertyName/>
 </#macro>
 

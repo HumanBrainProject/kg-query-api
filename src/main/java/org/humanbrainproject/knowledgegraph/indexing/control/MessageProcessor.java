@@ -6,8 +6,8 @@ import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransform
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Edge;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.JsonPath;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Vertex;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Step;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Vertex;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.humanbrainproject.knowledgegraph.indexing.entity.IndexingMessage;
 import org.humanbrainproject.knowledgegraph.indexing.entity.QualifiedIndexingMessage;
@@ -18,6 +18,7 @@ import org.springframework.stereotype.Component;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Stack;
@@ -68,18 +69,25 @@ public class MessageProcessor {
         return null;
     }
 
-    private void findEdges(Vertex vertex, Stack<Step> path, Object map, Integer orderNumber) {
+    void findEdges(Vertex vertex, Stack<Step> path, Object map, Integer orderNumber) {
         if (map instanceof Map) {
             for (Object key : ((Map) map).keySet()) {
                 Stack<Step> currentPath = new Stack<>();
                 currentPath.addAll(path);
                 currentPath.push(new Step((String)key, orderNumber != null ? orderNumber : 0));
                 Object value = ((Map) map).get(key);
-                NexusInstanceReference internalReference = getInternalReference(value);
-                if (internalReference != null) {
-                    vertex.getEdges().add(new Edge(vertex, new JsonPath(currentPath), internalReference));
-                } else {
-                    findEdges(vertex, currentPath, ((Map) map).get(key), null);
+                if(value!=null) {
+                    if (!(value instanceof Collection)) {
+                        value = Arrays.asList(value);
+                    }
+                    for (Object o : ((Collection) value)) {
+                        NexusInstanceReference internalReference = getInternalReference(o);
+                        if (internalReference != null) {
+                            vertex.getEdges().add(new Edge(vertex, new JsonPath(currentPath), internalReference));
+                        } else {
+                            findEdges(vertex, currentPath, ((Map) map).get(key), null);
+                        }
+                    }
                 }
             }
         } else if (map instanceof Collection) {

@@ -23,6 +23,7 @@ public class ArangoVocabulary {
 
     //Backreference to Nexus
     public static final String NEXUS_REV ="_nexusRev";
+    public static final String NEXUS_UUID = "_nexusUUID";
     public static final String NEXUS_RELATIVE_URL = "_nexusRelativeUrl";
     public static final String NEXUS_RELATIVE_URL_WITH_REV = "_nexusRelativeUrlWithRev";
 
