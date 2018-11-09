@@ -32,7 +32,7 @@ public class MessageProcessorTest {
         QualifiedIndexingMessage qualifiedIndexingMessage = new QualifiedIndexingMessage(new IndexingMessage(TestObjectFactory.fooInstanceReference(), payload, null, null), json.parseToMap(payload));
         Vertex vertexStructure = messageProcessor.createVertexStructure(qualifiedIndexingMessage);
         Assert.assertEquals(1, vertexStructure.getEdges().size());
-        Assert.assertEquals("foo/core/bar/v0.0.1/xy", vertexStructure.getEdges().get(0).getReference().getRelativeUrl());
+        Assert.assertEquals("foo/core/bar/v0.0.1/xy", vertexStructure.getEdges().get(0).getReference().getRelativeUrl().getUrl());
     }
 
     @Test
