@@ -257,10 +257,10 @@ public class ArangoRepository extends VertexRepository<ArangoConnection, ArangoD
                         throw dbexception;
                     }
                 } else {
-                    logger.warn("Was not able to delete {} because the document does not exist. Skip.", document.getId());
+                    logger.debug("Was not able to delete {} because the document does not exist. Skip.", document.getId());
                 }
             } else {
-                logger.warn("Tried to delete {} although the collection doesn't exist. Skip.", document.getId());
+                logger.debug("Tried to delete {} although the collection doesn't exist. Skip.", document.getId());
             }
         } else {
             logger.error("Was not able to delete document due to missing id");
