@@ -187,9 +187,9 @@ public class ArangoQueryFactory {
         }
         return String.format("" +
                 "FOR doc IN `hbpkg-core-bookmark-v0_0_1`\n" +
-                    "FILTER CONTAINS(doc.`https://schema.hbp.eu/kgeditor/bookmarkList`.`https://schema.hbp.eu/relativeUrl`, \"%s\")\n" +
+                    "FILTER CONTAINS(doc.`https://schema.hbp.eu/hbpkg/bookmarkList`.`https://schema.hbp.eu/relativeUrl`, \"%s\")\n" +
                     "LET instances = (\n" +
-                        "FOR i IN 1..1 OUTBOUND doc `schema_hbp_eu-kgeditor-bookmarkInstanceLink`\n" +
+                        "FOR i IN 1..1 OUTBOUND doc `schema_hbp_eu-hbpkg-bookmarkInstanceLink`\n" +
                         "   FILTER i != null AND i.`@id` != null" +
                         "   %s" +
                         "   SORT i.`http://schema.org/name`, i.`https://schema.hbp.eu/minds/title`, i.`https://schema.hbp.eu/minds/alias` \n" +
