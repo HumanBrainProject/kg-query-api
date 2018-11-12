@@ -36,7 +36,7 @@ public class SpecificationInterpreterTest {
 
     @Test
     public void readSpecification() throws JSONException {
-        Specification specification = interpreter.readSpecification(testSpecification);
+        Specification specification = interpreter.readSpecification(testSpecification, null);
         assertEquals("https://nexus-dev.humanbrainproject.org/v0/schemas/minds/core/dataset/v1.0.0", specification.rootSchema);
         assertEquals(17, specification.fields.size());
     }
@@ -44,7 +44,7 @@ public class SpecificationInterpreterTest {
     @Test
     @Ignore("This test requires a backend and is for manual testing only")
     public void readSpecificationAndCreateQuery() throws JSONException {
-        Specification specification = interpreter.readSpecification(testSpecification);
+        Specification specification = interpreter.readSpecification(testSpecification, null);
         query.queryForSpecification(specification, Collections.EMPTY_SET, new QueryParameters(null, null), null);
     }
 }

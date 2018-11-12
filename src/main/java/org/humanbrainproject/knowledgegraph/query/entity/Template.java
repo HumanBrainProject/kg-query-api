@@ -1,32 +1,42 @@
 package org.humanbrainproject.knowledgegraph.query.entity;
 
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoNamingHelper;
+import org.humanbrainproject.knowledgegraph.commons.vocabulary.ArangoVocabulary;
+
 public class Template {
+
 
     private String key;
     private String templateContent;
     private String library;
 
-    public String getLibrary() {
-        return library;
+    public Template() {
     }
 
-    public void setLibrary(String library) {
+    public Template(StoredQueryReference storedQueryReference, String templateId, String templateContent, String library) {
+        this.key = new StoredTemplateReference(storedQueryReference, templateId).getName();
+        this.templateContent = templateContent;
         this.library = library;
+    }
+
+    public String getLibrary() {
+        return library;
     }
 
     public String getKey() {
         return key;
     }
 
-    public void setKey(String key) {
-        this.key = key;
-    }
-
     public String getTemplateContent() {
         return templateContent;
     }
 
-    public void setTemplateContent(String templateContent) {
-        this.templateContent = templateContent;
+    public JsonDocument asJsonDocument(){
+        JsonDocument doc = new JsonDocument();
+        doc.put(ArangoVocabulary.KEY, ArangoNamingHelper.createCompatibleId(this.key));
+        doc.put("templateContent", this.templateContent);
+        doc.put("library", this.library);
+        return doc;
     }
+
 }

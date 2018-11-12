@@ -2,7 +2,6 @@ package org.humanbrainproject.knowledgegraph.query.boundary;
 
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoDatabaseFactory;
 import org.humanbrainproject.knowledgegraph.query.control.FreemarkerTemplating;
-import org.humanbrainproject.knowledgegraph.query.entity.StoredQueryReference;
 import org.humanbrainproject.knowledgegraph.query.entity.StoredTemplateReference;
 import org.humanbrainproject.knowledgegraph.query.entity.Template;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,16 +20,13 @@ public class Templating {
         templating.saveTemplate(template, databaseFactory.getInternalDB());
     }
 
-    public void saveLibrary(Template template){
-        templating.saveLibrary(template, databaseFactory.getInternalDB());
+    public void saveLibrary(String library, String libraryId){
+        templating.saveLibrary(library, libraryId, databaseFactory.getInternalDB());
     }
 
-    public Template getTemplateById(StoredQueryReference storedQueryReference, StoredTemplateReference storedTemplateReference) {
-        return templating.getTemplateById(getTemplateQueryId(storedQueryReference, storedTemplateReference), databaseFactory.getInternalDB());
+    public Template getTemplateById(StoredTemplateReference storedTemplateReference) {
+        return templating.getTemplateById(storedTemplateReference, databaseFactory.getInternalDB());
     }
 
-    private String getTemplateQueryId(StoredQueryReference queryReference, StoredTemplateReference templateReference){
-        return String.format("%s_%s", queryReference.getName(), templateReference.getName());
-    }
 
 }

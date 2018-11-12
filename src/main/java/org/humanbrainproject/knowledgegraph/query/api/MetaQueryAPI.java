@@ -28,7 +28,7 @@ public class MetaQueryAPI {
         try {
             QueryParameters parameters = new QueryParameters(null, null);
             parameters.authorization().setToken(authorizationToken);
-            return ResponseEntity.ok(query.metaQueryBySpecification(payload, parameters));
+            return ResponseEntity.ok(query.metaQueryBySpecification(payload, parameters, null));
         } catch (HttpClientErrorException e) {
             return ResponseEntity.status(e.getStatusCode()).build();
         }
@@ -58,22 +58,5 @@ public class MetaQueryAPI {
             return ResponseEntity.status(e.getStatusCode()).build();
         }
     }
-
-    @GetMapping(value = "/{queryId}/template/{templateId}")
-    public ResponseEntity<QueryResult> executeMetaQueryBasedOnTemplate(@PathVariable("queryId") String queryId, @PathVariable("templateId") String templateId, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization) throws Exception {
-        Template template = templating.getTemplateById(new StoredQueryReference(queryId), new StoredTemplateReference(templateId));
-        return applyFreemarkerTemplateToMetaApi(template.getTemplateContent(), queryId, authorization);
-    }
-
-
-    @PostMapping(value = "/{queryId}/template/{templateId}", consumes = {MediaType.TEXT_PLAIN})
-    public ResponseEntity<QueryResult> applyFreemarkerOnMetaQueryBasedOnTemplate(@RequestBody String freemarkerTemplate, @PathVariable("queryId") String queryId, @PathVariable("templateId") String templateId, @RequestParam(value = "originalData", required = false) boolean originalData, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken) throws Exception {
-        Template metaTemplate = templating.getTemplateById(new StoredQueryReference(queryId), new StoredTemplateReference(templateId));
-        QueryParameters parameters = new QueryParameters(null, null);
-        parameters.authorization().setToken(authorizationToken);
-        QueryResult result = query.applyFreemarkerOnMetaQueryBasedOnTemplate(metaTemplate.getTemplateContent(), freemarkerTemplate, new StoredQueryReference(queryId), parameters);
-        return ResponseEntity.ok(RestUtils.toJsonResultIfPossible(result));
-    }
-
 
 }

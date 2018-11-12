@@ -1,6 +1,8 @@
 package org.humanbrainproject.knowledgegraph.query.control;
 
 import com.github.jsonldjava.core.JsonLdConsts;
+import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
+import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
 import org.humanbrainproject.knowledgegraph.query.entity.GraphQueryKeys;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.SchemaOrgVocabulary;
 import org.humanbrainproject.knowledgegraph.query.entity.SpecField;
@@ -8,6 +10,7 @@ import org.humanbrainproject.knowledgegraph.query.entity.SpecTraverse;
 import org.humanbrainproject.knowledgegraph.query.entity.Specification;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.configurationprocessor.json.JSONArray;
 import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.boot.configurationprocessor.json.JSONObject;
@@ -20,9 +23,12 @@ import java.util.List;
 @Component
 public class SpecificationInterpreter {
 
+    @Autowired
+    NexusConfiguration nexusConfiguration;
+
     protected Logger logger = LoggerFactory.getLogger(SpecificationInterpreter.class);
 
-    public Specification readSpecification(String json) throws JSONException {
+    public Specification readSpecification(String json, NexusSchemaReference nexusSchemaReference) throws JSONException {
         JSONObject jsonObject = new JSONObject(json);
         String originalContext = null;
         if (jsonObject.has(JsonLdConsts.CONTEXT)) {
@@ -33,7 +39,10 @@ public class SpecificationInterpreter {
             name = jsonObject.getString(SchemaOrgVocabulary.NAME);
         }
         String rootSchema = null;
-        if (jsonObject.has(GraphQueryKeys.GRAPH_QUERY_ROOT_SCHEMA.getFieldName())) {
+        if(nexusSchemaReference!=null){
+            rootSchema = nexusConfiguration.getAbsoluteUrl(nexusSchemaReference);
+        }
+        else if (jsonObject.has(GraphQueryKeys.GRAPH_QUERY_ROOT_SCHEMA.getFieldName())) {
             rootSchema = jsonObject.getJSONObject(GraphQueryKeys.GRAPH_QUERY_ROOT_SCHEMA.getFieldName()).getString(JsonLdConsts.ID);
         }
         List<SpecField> specFields = null;

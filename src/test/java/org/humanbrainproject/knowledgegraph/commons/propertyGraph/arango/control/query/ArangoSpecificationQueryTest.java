@@ -29,7 +29,7 @@ public class ArangoSpecificationQueryTest {
         String specification = IOUtils.toString(this.getClass().getResourceAsStream("/apiSpec/sample.json"), "UTF-8");
         String collectionLabels = IOUtils.toString(this.getClass().getResourceAsStream("/collectionLabels.json"), "UTF-8");
         Gson gson = new Gson();
-        this.testSpecification = new SpecificationInterpreter().readSpecification(specification);
+        this.testSpecification = new SpecificationInterpreter().readSpecification(specification, null);
         query = new ArangoSpecificationQuery();
         query.databaseFactory = Mockito.mock(ArangoDatabaseFactory.class);
         ArangoConnection mockConnection = Mockito.mock(ArangoConnection.class);

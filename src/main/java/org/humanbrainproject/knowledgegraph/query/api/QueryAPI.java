@@ -4,6 +4,7 @@ import io.swagger.annotations.Api;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.exceptions.RootCollectionNotFoundException;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
+import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
 import org.humanbrainproject.knowledgegraph.query.boundary.ArangoQuery;
 import org.humanbrainproject.knowledgegraph.query.boundary.Templating;
 import org.humanbrainproject.knowledgegraph.query.entity.*;
@@ -45,6 +46,8 @@ public class QueryAPI {
     @Autowired
     Templating templating;
 
+
+    @Deprecated
     @PostMapping(consumes = {MediaType.APPLICATION_JSON, RestAPIConstants.APPLICATION_LD_JSON})
     public ResponseEntity<QueryResult> queryPropertyGraphBySpecification(@RequestBody String payload, @RequestParam(value = VOCAB, required = false) String vocab, @RequestParam(value = SIZE, required = false) Integer size, @RequestParam(value = START, required = false) Integer start, @RequestParam(value= ORGS, required = false) String organizations, @RequestParam(value= DATABASE_SCOPE, required = false) DatabaseScope databaseScope, @RequestParam(value=SEARCH, required = false) String searchTerm, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken, @ApiIgnore @RequestParam Map<String,String> allRequestParams) throws Exception {
         try {
@@ -56,7 +59,7 @@ public class QueryAPI {
             parameters.filter().setQueryString(searchTerm);
             parameters.resultTransformation().setVocab(vocab);
             parameters.authorization().setToken(authorizationToken);
-            return ResponseEntity.ok(query.queryPropertyGraphBySpecification(payload, parameters, null));
+            return ResponseEntity.ok(query.queryPropertyGraphBySpecification(payload, null, parameters, null));
         } catch (RootCollectionNotFoundException e){
             return ResponseEntity.notFound().build();
         } catch (HttpClientErrorException e) {
@@ -64,18 +67,37 @@ public class QueryAPI {
         }
     }
 
-    @PostMapping(value="/{org}/{domain}/{schema}/{version}/{instanceId}", consumes = {MediaType.APPLICATION_JSON, RestAPIConstants.APPLICATION_LD_JSON})
-    public ResponseEntity<Map> queryPropertyGraphBySpecificationWithId(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(INSTANCE_ID) String instanceId , @RequestBody String payload, @RequestParam(value = SIZE, required = false) Integer size, @RequestParam(value = START, required = false) Integer start, @RequestParam(value= RESTRICT_TO_ORGANIZATIONS, required = false) String restrictToOrganizations, @RequestParam(value= SEARCH, required = false) String searchTerm, @RequestParam(value= DATABASE_SCOPE, required = false) DatabaseScope databaseScope, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization) throws Exception {
+
+    @PostMapping(value="/{org}/{domain}/{schema}/{version}/instances", consumes = {MediaType.APPLICATION_JSON, RestAPIConstants.APPLICATION_LD_JSON})
+    public ResponseEntity<QueryResult> queryPropertyGraphBySpecification(@RequestBody String payload, @PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @RequestParam(value = VOCAB, required = false) String vocab, @RequestParam(value = SIZE, required = false) Integer size, @RequestParam(value = START, required = false) Integer start, @RequestParam(value= ORGS, required = false) String organizations, @RequestParam(value= DATABASE_SCOPE, required = false) DatabaseScope databaseScope, @RequestParam(value=SEARCH, required = false) String searchTerm, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken, @ApiIgnore @RequestParam Map<String,String> allRequestParams) throws Exception {
+        try {
+            NexusSchemaReference schemaReference = new NexusSchemaReference(org, domain, schema, version);
+            QueryParameters parameters = new QueryParameters(databaseScope, allRequestParams);
+            parameters.pagination().setStart(start).setSize(size);
+            if(organizations!=null) {
+                parameters.filter().restrictToOrganizations(organizations.split(","));
+            }
+            parameters.filter().setQueryString(searchTerm);
+            parameters.resultTransformation().setVocab(vocab);
+            parameters.authorization().setToken(authorizationToken);
+            return ResponseEntity.ok(query.queryPropertyGraphBySpecification(payload, schemaReference, parameters, null));
+        } catch (RootCollectionNotFoundException e){
+            return ResponseEntity.notFound().build();
+        } catch (HttpClientErrorException e) {
+            return ResponseEntity.status(e.getStatusCode()).build();
+        }
+    }
+
+    @PostMapping(value="/{org}/{domain}/{schema}/{version}/instances/{instanceId}", consumes = {MediaType.APPLICATION_JSON, RestAPIConstants.APPLICATION_LD_JSON})
+    public ResponseEntity<Map> queryPropertyGraphBySpecificationWithId(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(INSTANCE_ID) String instanceId , @RequestBody String payload, @RequestParam(value= RESTRICT_TO_ORGANIZATIONS, required = false) String restrictToOrganizations, @RequestParam(value= DATABASE_SCOPE, required = false) DatabaseScope databaseScope, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization) throws Exception {
         try {
             NexusInstanceReference instanceReference = new NexusInstanceReference(org, domain, schema, version, instanceId);
             QueryParameters parameters = new QueryParameters(databaseScope, null);
-            parameters.pagination().setSize(size).setStart(start);
             if(restrictToOrganizations!=null) {
                 parameters.filter().restrictToOrganizations(restrictToOrganizations.split(","));
             }
-            parameters.filter().setQueryString(searchTerm);
             parameters.authorization().setToken(authorization);
-            QueryResult<List<Map>> result = query.queryPropertyGraphBySpecification(payload, parameters, ArangoDocumentReference.fromNexusInstance(instanceReference));
+            QueryResult<List<Map>> result = query.queryPropertyGraphBySpecification(payload, instanceReference.getNexusSchema(), parameters, ArangoDocumentReference.fromNexusInstance(instanceReference));
             if(result.getResults().size() >= 1){
                 return ResponseEntity.ok(result.getResults().get(0));
             }else{
@@ -88,10 +110,11 @@ public class QueryAPI {
         }
     }
 
-    @GetMapping("/{queryId}")
-    public ResponseEntity<QueryResult> executeStoredQuery(@PathVariable(QUERY_ID) String queryId, @RequestParam(value = SIZE, required = false) Integer size, @RequestParam(value = START, required = false) Integer start, @RequestParam(value=RESTRICT_TO_ORGANIZATIONS, required = false) String restrictToOrganizations, @RequestParam(value=DATABASE_SCOPE, required = false) DatabaseScope databaseScope, @RequestParam(value=SEARCH, required = false) String searchTerm, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization) throws Exception {
+    @GetMapping("/{org}/{domain}/{schema}/{version}/{queryId}/instances")
+    public ResponseEntity<QueryResult> executeStoredQuery(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(QUERY_ID) String queryId, @RequestParam(value = SIZE, required = false) Integer size, @RequestParam(value = START, required = false) Integer start, @RequestParam(value=RESTRICT_TO_ORGANIZATIONS, required = false) String restrictToOrganizations, @RequestParam(value=DATABASE_SCOPE, required = false) DatabaseScope databaseScope, @RequestParam(value=SEARCH, required = false) String searchTerm, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization) throws Exception {
         try {
-            StoredQueryReference storedQueryReference = new StoredQueryReference(queryId);
+            NexusSchemaReference schemaReference = new NexusSchemaReference(org, domain, schema, version);
+            StoredQueryReference storedQueryReference = new StoredQueryReference(schemaReference, queryId);
             QueryParameters parameters = new QueryParameters(databaseScope, null);
             parameters.pagination().setSize(size).setStart(start);
             if(restrictToOrganizations!=null) {
@@ -107,8 +130,9 @@ public class QueryAPI {
         }
     }
 
-    @GetMapping("/{queryId}/{org}/{domain}/{schema}/{version}/{instanceId}")
-    public ResponseEntity<Map> executeStoredQuery(@PathVariable(QUERY_ID) String queryId, @PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(INSTANCE_ID) String instanceId, @RequestParam(value = SIZE, required = false) Integer size, @RequestParam(value = START, required = false) Integer start, @RequestParam(value=SEARCH, required = false) String searchTerm, @RequestParam(value=RESTRICT_TO_ORGANIZATIONS, required = false) String restrictToOrganizations, @RequestParam(value=DATABASE_SCOPE, required = false) DatabaseScope databaseScope, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization) throws Exception {
+
+    @GetMapping("/{org}/{domain}/{schema}/{version}/{queryId}/instances/{instanceId}")
+    public ResponseEntity<Map> executeStoredQueryForInstance(@PathVariable(QUERY_ID) String queryId, @PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(INSTANCE_ID) String instanceId, @RequestParam(value = SIZE, required = false) Integer size, @RequestParam(value = START, required = false) Integer start, @RequestParam(value=SEARCH, required = false) String searchTerm, @RequestParam(value=RESTRICT_TO_ORGANIZATIONS, required = false) String restrictToOrganizations, @RequestParam(value=DATABASE_SCOPE, required = false) DatabaseScope databaseScope, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization) throws Exception {
         try {
 
             NexusInstanceReference nexusInstanceReference = new NexusInstanceReference(org, domain, schema, version, instanceId);
@@ -134,52 +158,30 @@ public class QueryAPI {
         }
     }
 
-    @PutMapping(value="/{queryId}", consumes = {MediaType.APPLICATION_JSON, RestAPIConstants.APPLICATION_LD_JSON})
-    public ResponseEntity<Void> saveSpecificationToDB(@RequestBody String payload, @PathVariable(QUERY_ID) String id, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization) throws Exception {
+    @PutMapping(value="/{org}/{domain}/{schema}/{version}/{queryId}", consumes = {MediaType.APPLICATION_JSON, RestAPIConstants.APPLICATION_LD_JSON})
+    public ResponseEntity<Void> saveSpecificationToDB(@RequestBody String payload, @PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(QUERY_ID) String id, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization) throws Exception {
         try {
+            NexusSchemaReference nexusSchemaReference = new NexusSchemaReference(org, domain, schema, version);
             //TODO ensure authorization
-            query.storeSpecificationInDb(payload, id);
+            query.storeSpecificationInDb(payload, nexusSchemaReference, id);
             return null;
         } catch (HttpClientErrorException e) {
             return ResponseEntity.status(e.getStatusCode()).build();
         }
     }
 
-    @PostMapping(value = "/{queryId}/template", consumes = {MediaType.TEXT_PLAIN})
-    public ResponseEntity<QueryResult> applyFreemarkerTemplateToApi(@RequestBody String templatePayload, @PathVariable(QUERY_ID) String queryId,  @RequestParam(value = SIZE, required = false) Integer size, @RequestParam(value = START, required = false) Integer start, @RequestParam(value= "lib", required = false) String library, @RequestParam(value=SEARCH, required = false) String searchTerm,  @RequestParam(value=RESTRICT_TO_ORGANIZATIONS, required = false) String restrictToOrganizations, @RequestParam(value=DATABASE_SCOPE, required = false) DatabaseScope databaseScope, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization, @ApiIgnore @RequestParam Map<String,String> allRequestParams) throws Exception {
-        try {
-            StoredQueryReference storedQueryReference = new StoredQueryReference(queryId);
-            QueryParameters parameters = new QueryParameters(databaseScope, null);
-            parameters.pagination().setSize(size).setStart(start);
-            if(restrictToOrganizations!=null) {
-                parameters.filter().restrictToOrganizations(restrictToOrganizations.split(","));
-            }
-            parameters.context().setLibrary(new StoredLibraryReference(library));
-            parameters.filter().setQueryString(searchTerm);
-            parameters.authorization().setToken(authorization);
-            QueryResult<String> result = query.queryPropertyGraphByStoredSpecificationAndFreemarkerTemplate(storedQueryReference, templatePayload, parameters);
-            return ResponseEntity.ok(RestUtils.toJsonResultIfPossible(result));
-        } catch (RootCollectionNotFoundException e){
-            return ResponseEntity.notFound().build();
-        } catch (HttpClientErrorException e) {
-            return ResponseEntity.status(e.getStatusCode()).build();
-        }
-    }
-        
 
-    @PostMapping(value = "/{queryId}/{org}/{domain}/{schema}/{version}/{instanceId}/template", consumes = {MediaType.TEXT_PLAIN})
-    public ResponseEntity<Map> applyFreemarkerTemplateToApiWithId(@RequestBody String template, @PathVariable(QUERY_ID) String queryId, @PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(INSTANCE_ID) String instanceId,  @RequestParam(value = SIZE, required = false) Integer size, @RequestParam(value = START, required = false) Integer start, @RequestParam(value= "lib", required = false) String library,  @RequestParam(value=SEARCH, required = false) String searchTerm, @RequestParam(value=RESTRICT_TO_ORGANIZATIONS, required = false) String restrictToOrganizations, @RequestParam(value=DATABASE_SCOPE, required = false) DatabaseScope databaseScope,  @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization, @ApiIgnore @RequestParam Map<String,String> allRequestParams) throws Exception {
+    @PostMapping(value = "/{org}/{domain}/{schema}/{version}/{queryId}/instances/{instanceId}/templates")
+    public ResponseEntity<Map> applyFreemarkerTemplateToApiWithId(@RequestBody String template, @PathVariable(QUERY_ID) String queryId, @PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(INSTANCE_ID) String instanceId,  @RequestParam(value= "lib", required = false) String library,  @RequestParam(value=RESTRICT_TO_ORGANIZATIONS, required = false) String restrictToOrganizations, @RequestParam(value=DATABASE_SCOPE, required = false) DatabaseScope databaseScope,  @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization, @ApiIgnore @RequestParam Map<String,String> allRequestParams) throws Exception {
         try {
             StoredQueryReference storedQueryReference = new StoredQueryReference(queryId);
 
             NexusInstanceReference nexusInstanceReference = new NexusInstanceReference(org, domain, schema, version, instanceId);
             QueryParameters parameters = new QueryParameters(databaseScope, null);
-            parameters.pagination().setSize(size).setStart(start);
             if(restrictToOrganizations!=null) {
                 parameters.filter().restrictToOrganizations(restrictToOrganizations.split(","));
             }
             parameters.context().setLibrary(new StoredLibraryReference(library));
-            parameters.filter().setQueryString(searchTerm);
             parameters.authorization().setToken(authorization);
             Map result = query.queryPropertyGraphByStoredSpecificationAndFreemarkerTemplateWithId(storedQueryReference, template, parameters, nexusInstanceReference);
             return ResponseEntity.ok(result);
@@ -190,33 +192,45 @@ public class QueryAPI {
         }
     }
 
-    @PutMapping(value = "/{queryId}/template/{templateId}", consumes = {MediaType.TEXT_PLAIN})
-    public ResponseEntity<Void> saveFreemarkerTemplate(@RequestBody String template, @PathVariable(QUERY_ID) String queryId, @PathVariable(TEMPLATE_ID) String templateId, @RequestParam(value= "lib", required=false) String library) {
-        Template t = new Template();
-        t.setTemplateContent(template);
-        t.setLibrary(library==null ? templateId : library);
-        t.setKey(String.format("%s_%s", queryId, templateId));
+
+    @PutMapping(value = "/{org}/{domain}/{schema}/{version}/{queryId}/templates/{templateId}")
+    public ResponseEntity<Void> saveFreemarkerTemplate(@RequestBody String template, @PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(QUERY_ID) String queryId, @PathVariable(TEMPLATE_ID) String templateId, @RequestParam(value= "lib", required=false) String library) {
+        NexusSchemaReference schemaReference = new NexusSchemaReference(org, domain, schema, version);
+        Template t = new Template(new StoredQueryReference(schemaReference, queryId), templateId, template, library==null ? templateId : library);
         templating.saveTemplate(t);
         return null;
     }
 
 
-    @GetMapping(value = "/{queryId}/template/{templateId}")
-    public ResponseEntity<QueryResult> executeQueryBasedOnTemplate(@PathVariable(QUERY_ID) String queryId, @PathVariable(TEMPLATE_ID) String templateId, @RequestParam(value = SIZE, required = false) Integer size, @RequestParam(value = START, required = false) Integer start, @RequestParam(value=SEARCH, required = false) String searchTerm, @RequestParam(value=RESTRICT_TO_ORGANIZATIONS, required = false) String restrictToOrganizations, @RequestParam(value=DATABASE_SCOPE, required = false) DatabaseScope databaseScope, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization, @ApiIgnore @RequestParam Map<String,String> allRequestParams) throws Exception {
-        StoredTemplateReference templateReference = new StoredTemplateReference(templateId);
-        StoredQueryReference storedQueryReference = new StoredQueryReference(queryId);
-        Template template = templating.getTemplateById(storedQueryReference, templateReference);
-        return applyFreemarkerTemplateToApi(template.getTemplateContent(), queryId, size, start, template.getLibrary(), searchTerm, restrictToOrganizations, databaseScope, authorization, allRequestParams);
+    @GetMapping(value = "/{org}/{domain}/{schema}/{version}/{queryId}/templates/{templateId}/instances")
+    public ResponseEntity<QueryResult> executeStoredQueryWithTemplate(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(QUERY_ID) String queryId, @PathVariable(TEMPLATE_ID) String templateId, @RequestParam(value = SIZE, required = false) Integer size, @RequestParam(value = START, required = false) Integer start, @RequestParam(value=SEARCH, required = false) String searchTerm, @RequestParam(value=DATABASE_SCOPE, required = false) DatabaseScope databaseScope, @RequestParam(value=RESTRICT_TO_ORGANIZATIONS, required = false) String restrictToOrganizations, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization, @ApiIgnore @RequestParam Map<String,String> allRequestParams) throws Exception {
+        NexusSchemaReference schemaReference = new NexusSchemaReference(org, domain, schema, version);
+        StoredTemplateReference templateReference = new StoredTemplateReference(new StoredQueryReference(schemaReference, queryId),templateId);
+        Template template = templating.getTemplateById(templateReference);
+        QueryParameters parameters = new QueryParameters(databaseScope, null);
+        parameters.pagination().setSize(size).setStart(start);
+        if(restrictToOrganizations!=null) {
+            parameters.filter().restrictToOrganizations(restrictToOrganizations.split(","));
+        }
+        parameters.filter().setQueryString(searchTerm);
+        parameters.authorization().setToken(authorization);
+        return ResponseEntity.ok(query.queryPropertyGraphByStoredSpecificationAndFreemarkerTemplate(templateReference.getQueryReference(), template.getTemplateContent(), template.getLibrary() != null ? new StoredLibraryReference(template.getLibrary()) : null, parameters));
     }
 
-    @GetMapping(value = "/{queryId}/{org}/{domain}/{schema}/{version}/{instanceId}/template/{templateId}")
-    public ResponseEntity<Map> executeQueryBasedOnTemplateWithId(@PathVariable(QUERY_ID) String queryId,@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(INSTANCE_ID) String instanceId, @PathVariable(TEMPLATE_ID) String templateId, @RequestParam(value = SIZE, required = false) Integer size, @RequestParam(value = START, required = false) Integer start,@RequestParam(value=SEARCH, required = false) String searchTerm, @RequestParam(value=DATABASE_SCOPE, required = false) DatabaseScope databaseScope,  @RequestParam(value=RESTRICT_TO_ORGANIZATIONS, required = false) String restrictToOrganizations, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization, @ApiIgnore @RequestParam Map<String,String> allRequestParams) throws Exception {
-        StoredTemplateReference templateReference = new StoredTemplateReference(templateId);
-        StoredQueryReference storedQueryReference = new StoredQueryReference(queryId);
-        Template template = templating.getTemplateById(storedQueryReference, templateReference);
-        return applyFreemarkerTemplateToApiWithId(template.getTemplateContent(), queryId, org, domain, schema, version, instanceId, size, start, template.getLibrary(), searchTerm, restrictToOrganizations, databaseScope, authorization, allRequestParams);
+    @GetMapping(value = "/{org}/{domain}/{schema}/{version}/{queryId}/templates/{templateId}/instances/{instanceId}")
+    public ResponseEntity<Map> executeStoredQueryWithTemplate(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(QUERY_ID) String queryId, @PathVariable(TEMPLATE_ID) String templateId, @PathVariable(INSTANCE_ID) String instanceId, @RequestParam(value=DATABASE_SCOPE, required = false) DatabaseScope databaseScope, @RequestParam(value=RESTRICT_TO_ORGANIZATIONS, required = false) String restrictToOrganizations, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization, @ApiIgnore @RequestParam Map<String,String> allRequestParams) throws Exception {
+        NexusSchemaReference schemaReference = new NexusSchemaReference(org, domain, schema, version);
+        StoredTemplateReference templateReference = new StoredTemplateReference(new StoredQueryReference(schemaReference, queryId), templateId);
+        Template template = templating.getTemplateById(templateReference);
+        return applyFreemarkerTemplateToApiWithId(template.getTemplateContent(), queryId, org, domain, schema, version, instanceId, template.getLibrary(), restrictToOrganizations, databaseScope, authorization, allRequestParams);
     }
 
+
+    @PutMapping(value = "/libraries/{libraryId}")
+    public ResponseEntity<Void> saveFreemarkerLibrary(@RequestBody String library, @PathVariable("libraryId") String libraryId) throws Exception {
+        templating.saveLibrary(library, libraryId);
+        return null;
+    }
 
 
 }

@@ -3,6 +3,7 @@ package org.humanbrainproject.knowledgegraph.commons.jsonld.control;
 import com.google.gson.Gson;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Map;
 
 @Component
@@ -16,6 +17,10 @@ public class JsonTransformer {
 
     public Map parseToMap(String json) {
         return gson.fromJson(json, Map.class);
+    }
+
+    public List<Map> parseToListOfMaps(String json){
+        return gson.fromJson(json, List.class);
     }
 
     public String normalize(String json){

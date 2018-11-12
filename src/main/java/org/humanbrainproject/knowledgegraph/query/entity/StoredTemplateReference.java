@@ -2,13 +2,19 @@ package org.humanbrainproject.knowledgegraph.query.entity;
 
 public class StoredTemplateReference {
 
+    private final StoredQueryReference queryReference;
     private final String name;
 
-    public StoredTemplateReference(String name) {
-        this.name = name;
+    public StoredTemplateReference(StoredQueryReference queryReference, String templateId) {
+        this.queryReference = queryReference;
+        this.name = this.queryReference.getName()+"/"+templateId;
+    }
+
+    public StoredQueryReference getQueryReference(){
+        return this.queryReference;
     }
 
     public String getName() {
-        return name;
+        return this.name;
     }
 }
