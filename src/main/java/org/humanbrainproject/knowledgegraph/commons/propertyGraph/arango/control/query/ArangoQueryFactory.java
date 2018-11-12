@@ -186,8 +186,8 @@ public class ArangoQueryFactory {
             limit = String.format("LIMIT %s, %s \n", from.toString(), size.toString());
         }
         return String.format("" +
-                "FOR doc IN `kg-core-bookmark-v0_0_1`\n" +
-                    "FILTER CONTAINS(doc.`https://schema.hbp.eu/kgeditor/bookmarkList`.`@id`, \"%s\")\n" +
+                "FOR doc IN `hbpkg-core-bookmark-v0_0_1`\n" +
+                    "FILTER CONTAINS(doc.`https://schema.hbp.eu/kgeditor/bookmarkList`.`https://schema.hbp.eu/relativeUrl`, \"%s\")\n" +
                     "LET instances = (\n" +
                         "FOR i IN 1..1 OUTBOUND doc `schema_hbp_eu-kgeditor-bookmarkInstanceLink`\n" +
                         "   FILTER i != null AND i.`@id` != null" +
