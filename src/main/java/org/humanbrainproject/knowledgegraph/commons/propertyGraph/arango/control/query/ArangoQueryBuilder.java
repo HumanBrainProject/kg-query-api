@@ -32,9 +32,9 @@ public class ArangoQueryBuilder extends AbstractArangoQueryBuilder {
 
     @Override
     public void addTraversalFieldRequiredFilter(ArangoAlias alias) {
-        sb.append(String.format("\n%s AND %s != null", getIndentation(), alias.getOriginalName()));
-        sb.append(String.format("\n%s AND %s != \"\"", getIndentation(), alias.getOriginalName()));
-        sb.append(String.format("\n%s AND %s != []", getIndentation(), alias.getOriginalName()));
+        sb.append(String.format("\n%s AND %s != null", getIndentation(), alias.getArangoName()));
+        sb.append(String.format("\n%s AND %s != \"\"", getIndentation(), alias.getArangoName()));
+        sb.append(String.format("\n%s AND %s != []", getIndentation(), alias.getArangoName()));
     }
 
     @Override
