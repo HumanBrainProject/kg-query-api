@@ -120,7 +120,7 @@ public abstract class AbstractArangoQueryBuilder {
     public abstract AbstractArangoQueryBuilder addRoot(ArangoCollectionReference rootCollection) throws JSONException;
 
     public void addOrganizationFilter() {
-        sb.append(String.format(" FILTER %s_%s.`%s` IN %s ", currentAlias.getName(), DOC_POSTFIX, permissionGroupFieldName.getName(), WHITELIST_ORGANIZATIONS_PLACEHOLDER));
+        sb.append(String.format(" FILTER %s_%s.`%s` IN %s ", currentAlias.getArangoName(), DOC_POSTFIX, permissionGroupFieldName.getArangoName(), WHITELIST_ORGANIZATIONS_PLACEHOLDER));
     }
 
     public abstract void addLimit();

@@ -27,12 +27,12 @@ public class ArangoMetaQueryBuilder extends AbstractArangoQueryBuilder {
     }
 
     protected void createCol(ArangoAlias field, ArangoAlias targetField, int numberOfTraversals, boolean reverse, ArangoCollectionReference relationCollection, boolean hasGroup, boolean ensureOrder) {
-        sb.append(String.format("      LET %s_col = ( FOR %s_%s IN %s_%s.`%s`\n", targetField.getName(), targetField.getName(), DOC_POSTFIX, previousAlias.size()>0 ? previousAlias.peek().getName() : ROOT_ALIAS.getName(), DOC_POSTFIX, GraphQueryKeys.GRAPH_QUERY_FIELDS.getFieldName()));
-        sb.append(String.format("          FILTER %s_%s.`%s`.`@id`== \"%s\"\n", targetField.getName(), DOC_POSTFIX, GraphQueryKeys.GRAPH_QUERY_FIELDNAME.getFieldName(), currentField.fieldName));
-        sb.append(String.format("          LET %s_att = MERGE(\n", targetField.getName()));
-        sb.append(String.format("               FOR attr IN ATTRIBUTES(%s_%s)\n", targetField.getName(), DOC_POSTFIX));
+        sb.append(String.format("      LET %s_col = ( FOR %s_%s IN %s_%s.`%s`\n", targetField.getArangoName(), targetField.getArangoName(), DOC_POSTFIX, previousAlias.size()>0 ? previousAlias.peek().getArangoName() : ROOT_ALIAS.getArangoName(), DOC_POSTFIX, GraphQueryKeys.GRAPH_QUERY_FIELDS.getFieldName()));
+        sb.append(String.format("          FILTER %s_%s.`%s`.`@id`== \"%s\"\n", targetField.getArangoName(), DOC_POSTFIX, GraphQueryKeys.GRAPH_QUERY_FIELDNAME.getFieldName(), currentField.fieldName));
+        sb.append(String.format("          LET %s_att = MERGE(\n", targetField.getArangoName()));
+        sb.append(String.format("               FOR attr IN ATTRIBUTES(%s_%s)\n", targetField.getArangoName(), DOC_POSTFIX));
         sb.append("               FILTER attr NOT IN internal_fields\n");
-        sb.append(String.format("               RETURN {[attr]: %s_%s[attr]}\n", targetField.getName(), DOC_POSTFIX));
+        sb.append(String.format("               RETURN {[attr]: %s_%s[attr]}\n", targetField.getArangoName(), DOC_POSTFIX));
         sb.append("               )\n");
     }
 
@@ -57,18 +57,18 @@ public class ArangoMetaQueryBuilder extends AbstractArangoQueryBuilder {
     @Override
     protected void doStartReturnStructure(boolean simple) {
         if (!isRoot()) {
-            sb.append(String.format("LET %s_result = FLATTEN([%s_att\n", currentAlias.getName(), currentAlias.getName()));
+            sb.append(String.format("LET %s_result = FLATTEN([%s_att\n", currentAlias.getArangoName(), currentAlias.getArangoName()));
         } else {
-            sb.append(String.format("LET %s_result = FLATTEN([%s_col\n", ROOT_ALIAS.getName(), currentAlias.getName()));
+            sb.append(String.format("LET %s_result = FLATTEN([%s_col\n", ROOT_ALIAS.getArangoName(), currentAlias.getArangoName()));
         }
     }
 
     @Override
     public void endReturnStructure() {
         if (!isRoot()) {
-            sb.append(String.format("])\n          RETURN { \"%s\": MERGE(%s_result)}\n", currentField.fieldName, currentAlias.getName()));
+            sb.append(String.format("])\n          RETURN { \"%s\": MERGE(%s_result)}\n", currentField.fieldName, currentAlias.getArangoName()));
         } else {
-            sb.append(String.format("])\nRETURN MERGE(%s_result)", currentAlias.getName()));
+            sb.append(String.format("])\nRETURN MERGE(%s_result)", currentAlias.getArangoName()));
         }
     }
 
@@ -79,7 +79,7 @@ public class ArangoMetaQueryBuilder extends AbstractArangoQueryBuilder {
 
     @Override
     public void buildGrouping(String groupedInstancesLabel, List<ArangoAlias> groupingFields, List<ArangoAlias> nonGroupingFields) {
-        sb.append(String.format("LET %s_grp = { \"%s\": MERGE(FLATTEN([(FOR  grp IN %s_col\n", currentAlias.getName(), currentField.fieldName, currentAlias.getName()));
+        sb.append(String.format("LET %s_grp = { \"%s\": MERGE(FLATTEN([(FOR  grp IN %s_col\n", currentAlias.getArangoName(), currentField.fieldName, currentAlias.getArangoName()));
         sb.append("COLLECT ");
         List<String> groupings = groupingFields.stream().map(f -> String.format("`%s` = grp.`%s`.`%s`", f, currentField.fieldName, f)).collect(Collectors.toList());
         sb.append(String.join(", ", groupings));
@@ -95,7 +95,7 @@ public class ArangoMetaQueryBuilder extends AbstractArangoQueryBuilder {
         sb.append(String.format(",\n \"%s\": instances\n", groupedInstancesLabel));
         sb.append("} ),\n");
 
-        sb.append(String.format(" (FOR el IN %s_col\n", currentAlias.getName()));
+        sb.append(String.format(" (FOR el IN %s_col\n", currentAlias.getArangoName()));
         sb.append(String.format(" LET filtered = MERGE(FOR att IN ATTRIBUTES(el.`%s`)\n", currentField.fieldName));
         List<String> allgrouped = Stream.concat(groupingFields.stream(), nonGroupingFields.stream()).map(s-> String.format("\"%s\"", s)).collect(Collectors.toList());
         sb.append("        FILTER att NOT IN [");
@@ -109,18 +109,18 @@ public class ArangoMetaQueryBuilder extends AbstractArangoQueryBuilder {
     @Override
     public ArangoMetaQueryBuilder addRoot(ArangoCollectionReference rootCollection) throws JSONException {
         if (specification.getSpecificationId() == null) {
-            sb.append(String.format("LET %s_%s = %s\n", ROOT_ALIAS.getName(), DOC_POSTFIX, specification.originalDocument));
+            sb.append(String.format("LET %s_%s = %s\n", ROOT_ALIAS.getArangoName(), DOC_POSTFIX, specification.originalDocument));
         } else {
-            sb.append(String.format("LET %s_%s = DOCUMENT(\"%s/%s\")\n", ROOT_ALIAS.getName(), DOC_POSTFIX, ArangoQuery.SPECIFICATION_QUERIES, specification.getSpecificationId()));
+            sb.append(String.format("LET %s_%s = DOCUMENT(\"%s/%s\")\n", ROOT_ALIAS.getArangoName(), DOC_POSTFIX, ArangoQuery.SPECIFICATION_QUERIES, specification.getSpecificationId()));
         }
         addOrganizationFilter();
 
         sb.append(String.format("\n\nLET internal_fields = [%s]\n\n", createInternalFieldFilter()));
 
 
-        sb.append(String.format("\n\nLET %s_col = {\"%s\": MERGE(FOR attr IN ATTRIBUTES(%s_%s, true) ", ROOT_ALIAS.getName(), GraphQueryKeys.GRAPH_QUERY_SPECIFICATION.getFieldName(), ROOT_ALIAS.getName(), DOC_POSTFIX));
+        sb.append(String.format("\n\nLET %s_col = {\"%s\": MERGE(FOR attr IN ATTRIBUTES(%s_%s, true) ", ROOT_ALIAS.getArangoName(), GraphQueryKeys.GRAPH_QUERY_SPECIFICATION.getFieldName(), ROOT_ALIAS.getArangoName(), DOC_POSTFIX));
         sb.append(String.format("  FILTER attr NOT IN [\"%s\"] && attr NOT IN internal_fields \n", JsonLdConsts.CONTEXT));
-        sb.append(String.format("RETURN {[attr]: %s_%s[attr]} )}\n\n", ROOT_ALIAS.getName(), DOC_POSTFIX));
+        sb.append(String.format("RETURN {[attr]: %s_%s[attr]} )}\n\n", ROOT_ALIAS.getArangoName(), DOC_POSTFIX));
         return this;
     }
 
@@ -136,7 +136,7 @@ public class ArangoMetaQueryBuilder extends AbstractArangoQueryBuilder {
 
     @Override
     public void addTraversalResultField(String targetName, ArangoAlias alias) {
-        sb.append(String.format(",\n %s_%s", alias.getName(), currentField.hasNestedGrouping() ? "grp" : "col"));
+        sb.append(String.format(",\n %s_%s", alias.getArangoName(), currentField.hasNestedGrouping() ? "grp" : "col"));
     }
 
     @Override
@@ -151,7 +151,7 @@ public class ArangoMetaQueryBuilder extends AbstractArangoQueryBuilder {
 
     @Override
     public void addComplexLeafResultField(String targetName, ArangoAlias leafField) {
-        sb.append(String.format(",\n[{\"%s\": MERGE( FOR `%s_%s` IN %s_%s.`%s`\n", currentField.fieldName, currentField.fieldName, DOC_POSTFIX, currentAlias.getName(), DOC_POSTFIX, GraphQueryKeys.GRAPH_QUERY_FIELDS.getFieldName()));
+        sb.append(String.format(",\n[{\"%s\": MERGE( FOR `%s_%s` IN %s_%s.`%s`\n", currentField.fieldName, currentField.fieldName, DOC_POSTFIX, currentAlias.getArangoName(), DOC_POSTFIX, GraphQueryKeys.GRAPH_QUERY_FIELDS.getFieldName()));
         sb.append(String.format("          FILTER `%s_%s`.`%s`.`@id`== \"%s\"\n", currentField.fieldName, DOC_POSTFIX, GraphQueryKeys.GRAPH_QUERY_FIELDNAME.getFieldName(), currentField.fieldName));
         sb.append("          RETURN MERGE(\n");
         sb.append(String.format("               FOR attr IN ATTRIBUTES(`%s_%s`)\n", currentField.fieldName, DOC_POSTFIX));
@@ -169,7 +169,7 @@ public class ArangoMetaQueryBuilder extends AbstractArangoQueryBuilder {
     }
 
     private void doAddSimpleLeafResultField(ArangoAlias leafField, ArangoAlias alias) {
-        sb.append(String.format("RETURN {\"%s\": %s_att}\n", leafField.getName(), alias.getName()));
+        sb.append(String.format("RETURN {\"%s\": %s_att}\n", leafField.getArangoName(), alias.getArangoName()));
     }
 
     @Override
