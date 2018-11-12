@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * The system nexus client makes use of its technical user account and therefore has typically more rights than the user
@@ -36,6 +37,10 @@ public class SystemNexusClient {
 
     @Autowired
     InstanceController instanceController;
+
+    public Set<NexusSchemaReference> getAllSchemas(){
+        return nexusClient.getAllSchemas(systemOidc);
+    }
 
     public List<JsonDocument> find(NexusSchemaReference reference, String fieldName, String fieldValue) {
         return nexusClient.find(reference, fieldName, fieldValue, systemOidc);

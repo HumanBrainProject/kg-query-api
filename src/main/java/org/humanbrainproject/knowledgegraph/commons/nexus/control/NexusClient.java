@@ -46,6 +46,11 @@ public class NexusClient {
         return list.stream().map(org -> org.get("resultId").toString()).collect(Collectors.toSet());
     }
 
+    public Set<NexusSchemaReference> getAllSchemas(ClientHttpRequestInterceptor oidc) {
+        List<JsonDocument> schemas = list(new NexusRelativeUrl(NexusConfiguration.ResourceType.SCHEMA, ""), oidc, true);
+        return schemas.stream().map(schema -> NexusSchemaReference.createFromUrl(schema.get("resultId").toString())).collect(Collectors.toSet());
+    }
+
     public JsonDocument put(NexusRelativeUrl url, Integer revision, Map payload, OidcAccessToken oidc) {
         return put(url, revision, payload, new OidcHeaderInterceptor(oidc));
     }

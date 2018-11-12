@@ -1,11 +1,13 @@
 package org.humanbrainproject.knowledgegraph.commons.nexusToArangoIndexing.control;
 
+import com.arangodb.ArangoCollection;
 import com.arangodb.ArangoDatabase;
 import com.arangodb.entity.CollectionType;
 import com.arangodb.model.CollectionCreateOptions;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.SystemNexusClient;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoConnection;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoDatabaseFactory;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoDocumentConverter;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoRepository;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
@@ -13,13 +15,16 @@ import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.control.DatabaseTransaction;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Edge;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Vertex;
+import org.humanbrainproject.knowledgegraph.commons.vocabulary.ArangoVocabulary;
 import org.humanbrainproject.knowledgegraph.indexing.entity.DeleteTodoItem;
 import org.humanbrainproject.knowledgegraph.indexing.entity.InsertOrUpdateInPrimaryStoreTodoItem;
 import org.humanbrainproject.knowledgegraph.indexing.entity.InsertTodoItem;
 import org.humanbrainproject.knowledgegraph.indexing.entity.TodoList;
 import org.humanbrainproject.knowledgegraph.indexing.entity.knownSemantics.LinkingInstance;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
+import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
 import org.humanbrainproject.knowledgegraph.instances.control.InstanceController;
+import org.humanbrainproject.knowledgegraph.query.entity.JsonDocument;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,7 +53,31 @@ public class NexusArangoTransaction implements DatabaseTransaction {
     @Autowired
     InstanceController instanceController;
 
+    @Autowired
+    ArangoDatabaseFactory databaseFactory;
+
     protected Logger logger = LoggerFactory.getLogger(NexusArangoTransaction.class);
+
+
+    void createTypeLookup(NexusSchemaReference nexusSchemaReference){
+        ArangoDatabase internalDB = databaseFactory.getInternalDB().getOrCreateDB();
+        ArangoCollection collection = internalDB.collection(ArangoVocabulary.LOOKUP_COLLECTION);
+        if(!collection.exists()){
+            internalDB.createCollection(ArangoVocabulary.LOOKUP_COLLECTION);
+           collection = internalDB.collection(ArangoVocabulary.LOOKUP_COLLECTION);
+        }
+        ArangoCollectionReference collectionReference = ArangoCollectionReference.fromNexusSchemaReference(nexusSchemaReference);
+        JsonDocument jsonDocument = new JsonDocument();
+        jsonDocument.put(ArangoVocabulary.LOOKUP_SCHEMAS, nexusSchemaReference.getRelativeUrl().getUrl());
+        jsonDocument.put(ArangoVocabulary.KEY, collectionReference.getName());
+        if(collection.documentExists(collectionReference.getName())){
+            collection.updateDocument(collectionReference.getName(), jsonDocument);
+        }
+        else{
+            collection.insertDocument(jsonDocument);
+        }
+
+    }
 
     @Override
     public void execute(TodoList todoList) {
@@ -67,6 +96,7 @@ public class NexusArangoTransaction implements DatabaseTransaction {
         //then add new instances
         List<InsertTodoItem> insertItems = todoList.getInsertTodoItems();
         for (InsertTodoItem insertItem : insertItems) {
+            createTypeLookup(insertItem.getVertex().getInstanceReference().getNexusSchema());
             ArangoConnection databaseConnection = insertItem.getDatabaseConnection(ArangoConnection.class);
             if(databaseConnection!=null) {
                 ArangoDatabase database = databaseConnection.getOrCreateDB();

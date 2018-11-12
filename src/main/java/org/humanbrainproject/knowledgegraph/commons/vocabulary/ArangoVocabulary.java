@@ -27,6 +27,11 @@ public class ArangoVocabulary {
     public static final String NEXUS_RELATIVE_URL = "_nexusRelativeUrl";
     public static final String NEXUS_RELATIVE_URL_WITH_REV = "_nexusRelativeUrlWithRev";
 
+
+    //Lookup
+    public static final String LOOKUP_COLLECTION = "lookup";
+    public static final String LOOKUP_SCHEMAS = "lookup_schemas";
+
     //TODO change value and re-index
     //public static final String NEXUS_RELATIVE_URL_WITH_REV = "_originalId";
 
