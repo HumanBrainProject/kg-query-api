@@ -54,7 +54,7 @@ public class MessageProcessor {
      */
     public Vertex createVertexStructure(QualifiedIndexingMessage qualifiedNexusIndexingMessage) {
         Vertex targetVertex = new Vertex(qualifiedNexusIndexingMessage);
-        findEdges(targetVertex, new Stack<>(), qualifiedNexusIndexingMessage.getQualifiedMap());
+        findEdges(targetVertex, new Stack<>(), qualifiedNexusIndexingMessage.getQualifiedMap(), 0);
         return targetVertex;
     }
 
@@ -69,7 +69,7 @@ public class MessageProcessor {
         return null;
     }
 
-    void findEdges(Vertex vertex, Stack<Step> path, Object map) {
+    void findEdges(Vertex vertex, Stack<Step> path, Object map, int globalEdgesCounter) {
         if (map instanceof Map) {
             for (Object key : ((Map) map).keySet()) {
                 Object value = ((Map) map).get(key);
@@ -77,23 +77,22 @@ public class MessageProcessor {
                     if (!(value instanceof Collection)) {
                         value = Arrays.asList(value);
                     }
-                    int counter = 0;
                     for (Object o : ((Collection) value)) {
                         NexusInstanceReference internalReference = getInternalReference(o);
                         Stack<Step> currentPath = new Stack<>();
                         currentPath.addAll(path);
                         if (internalReference != null) {
-                            currentPath.push(new Step((String) key, counter++));
+                            currentPath.push(new Step((String) key, globalEdgesCounter++));
                             vertex.getEdges().add(new Edge(vertex, new JsonPath(currentPath), internalReference));
                         } else {
-                            findEdges(vertex, currentPath, ((Map) map).get(key));
+                            findEdges(vertex, currentPath, ((Map) map).get(key), globalEdgesCounter);
                         }
                     }
                 }
             }
         } else if (map instanceof Collection) {
             for (Object o : ((Collection) map)) {
-                findEdges(vertex, path, o);
+                findEdges(vertex, path, o, globalEdgesCounter);
             }
         }
     }
