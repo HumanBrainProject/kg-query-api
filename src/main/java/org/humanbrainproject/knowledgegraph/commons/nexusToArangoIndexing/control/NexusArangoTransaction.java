@@ -96,7 +96,7 @@ public class NexusArangoTransaction implements DatabaseTransaction {
         //then add new instances
         List<InsertTodoItem> insertItems = todoList.getInsertTodoItems();
         for (InsertTodoItem insertItem : insertItems) {
-            createTypeLookup(insertItem.getVertex().getInstanceReference().getNexusSchema());
+            //createTypeLookup(insertItem.getVertex().getInstanceReference().getNexusSchema());
             ArangoConnection databaseConnection = insertItem.getDatabaseConnection(ArangoConnection.class);
             if(databaseConnection!=null) {
                 ArangoDatabase database = databaseConnection.getOrCreateDB();
