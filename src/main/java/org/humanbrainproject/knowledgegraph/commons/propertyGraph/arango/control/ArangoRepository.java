@@ -95,13 +95,27 @@ public class ArangoRepository extends VertexRepository<ArangoConnection, ArangoD
         ArangoDocumentReference arangoDocumentReference = ArangoDocumentReference.fromNexusInstance(reference);
         Map byKey = getByKey(arangoDocumentReference, Map.class, databaseFactory.getDefaultDB());
         if (byKey != null) {
+            Object rev = byKey.get(ArangoVocabulary.NEXUS_REV);
+            if(rev!=null) {
+                reference.setRevision(Integer.parseInt(rev.toString()));
+            }
             Object originalParent = byKey.get(HBPVocabulary.INFERENCE_EXTENDS);
             if (originalParent == null) {
                 originalParent = byKey.get(HBPVocabulary.INFERENCE_OF);
             }
             if (originalParent instanceof Map) {
                 String id = (String) ((Map) originalParent).get(JsonLdConsts.ID);
-                return NexusInstanceReference.createFromUrl(id);
+                NexusInstanceReference originalReference = NexusInstanceReference.createFromUrl(id);
+                if(originalReference!=null) {
+                    Map originalObject = getByKey(ArangoDocumentReference.fromNexusInstance(originalReference), Map.class, databaseFactory.getDefaultDB());
+                    if (originalObject != null) {
+                        Object originalRev = originalObject.get(ArangoVocabulary.NEXUS_REV);
+                        if (originalRev != null) {
+                            originalReference.setRevision(Integer.parseInt(originalRev.toString()));
+                        }
+                    }
+                    return originalReference;
+                }
             }
         }
         return reference;
