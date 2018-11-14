@@ -20,4 +20,7 @@ public class StatisticsAPI {
     public Map<String, Object> getStatistics(){
         return statistics.getStructure();
     }
+
+
+
 }

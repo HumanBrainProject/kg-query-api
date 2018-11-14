@@ -15,6 +15,7 @@ public class NexusSchemaReference {
 
     private final static String VERSION_DECLARATION = "v\\d*\\.\\d*\\.\\d*";
 
+
     public static NexusSchemaReference createFromUrl(String url) {
         if (url != null && url.matches(".*" + VERSION_DECLARATION + ".*")) {
             String relativePath = url.replaceAll(".*/(?=.*/.*/.*/" + VERSION_DECLARATION + ")", "");

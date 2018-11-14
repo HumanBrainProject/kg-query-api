@@ -2,6 +2,7 @@ package org.humanbrainproject.knowledgegraph.commons.labels;
 
 import org.apache.commons.lang.StringUtils;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
+import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -11,6 +12,10 @@ import java.util.Objects;
 
 @Component
 public class SemanticsToHumanTranslator {
+
+    public String translateNexusSchemaReference(NexusSchemaReference nexusSchemaReference){
+        return normalize(nexusSchemaReference.getSchema());
+    }
 
     public String translateSemanticValueToHumanReadableLabel(String semantic) {
         if (semantic == null) {

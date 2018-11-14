@@ -4,11 +4,18 @@ public class StoredLibraryReference {
 
     private final String name;
 
-    public StoredLibraryReference(String name) {
+    private final LibraryCollection libraryCollection;
+
+    public StoredLibraryReference(String name, LibraryCollection libraryCollection) {
         this.name = name;
+        this.libraryCollection = libraryCollection;
     }
 
     public String getName() {
         return name;
+    }
+
+    public LibraryCollection getLibraryCollection() {
+        return libraryCollection;
     }
 }

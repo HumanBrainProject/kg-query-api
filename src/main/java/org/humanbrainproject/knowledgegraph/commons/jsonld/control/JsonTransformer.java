@@ -16,7 +16,17 @@ public class JsonTransformer {
     }
 
     public Map parseToMap(String json) {
-        return gson.fromJson(json, Map.class);
+        Object o = gson.fromJson(json, Object.class);
+        if(o instanceof Map){
+            return (Map)o;
+        }
+        else if(o instanceof List && ((List)o).isEmpty()){
+            Object firstElement = ((List) o).get(0);
+            if(firstElement instanceof Map){
+                return (Map)firstElement;
+            }
+        }
+        return null;
     }
 
     public List<Map> parseToListOfMaps(String json){

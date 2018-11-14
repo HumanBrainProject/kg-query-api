@@ -38,8 +38,8 @@ public class SystemNexusClient {
     @Autowired
     InstanceController instanceController;
 
-    public Set<NexusSchemaReference> getAllSchemas(){
-        return nexusClient.getAllSchemas(systemOidc);
+    public Set<NexusSchemaReference> getAllSchemas(String org, String domain){
+        return nexusClient.getAllSchemas(org, domain, systemOidc);
     }
 
     public List<JsonDocument> find(NexusSchemaReference reference, String fieldName, String fieldValue) {

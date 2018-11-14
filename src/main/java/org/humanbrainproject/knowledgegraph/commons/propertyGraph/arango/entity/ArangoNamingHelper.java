@@ -4,7 +4,9 @@ import org.springframework.util.DigestUtils;
 
 public class ArangoNamingHelper {
 
+
     public static final int MAX_CHARACTERS = 60;
+
 
     static String replaceSpecialCharacters(String value) {
         return value != null ? value.replaceAll("\\.", "_").replaceAll("[^a-zA-Z0-9\\-_]", "-") : null;

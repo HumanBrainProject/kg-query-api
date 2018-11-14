@@ -1,9 +1,9 @@
 package org.humanbrainproject.knowledgegraph.query.boundary;
 
+import com.arangodb.ArangoCollection;
 import com.arangodb.entity.CollectionType;
 import com.github.jsonldjava.core.JsonLdConsts;
 import com.github.jsonldjava.utils.JsonUtils;
-import com.google.gson.Gson;
 import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationController;
 import org.humanbrainproject.knowledgegraph.commons.authorization.entity.OidcAccessToken;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonLdStandardization;
@@ -14,7 +14,6 @@ import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.query.ArangoSpecificationQuery;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoNamingHelper;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.ArangoVocabulary;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
@@ -28,16 +27,13 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Component
 public class ArangoQuery {
 
     public static final ArangoCollectionReference SPECIFICATION_QUERIES = new ArangoCollectionReference("specification_queries");
 
-    public static final ArangoCollectionReference SPECIFICATION_TEMPLATES = new ArangoCollectionReference("specification_templates");
-
-    private static final Gson GSON = new Gson();
-    public static final StoredLibraryReference META_LIBRARY = new StoredLibraryReference("meta");
 
     @Autowired
     ArangoDatabaseFactory databaseFactory;
@@ -105,14 +101,26 @@ public class ArangoQuery {
         return result;
     }
 
-    public QueryResult<List<Map>> metaQueryPropertyGraphByStoredSpecification(StoredQueryReference storedQueryReference, QueryParameters parameters) throws IOException, JSONException {
-        String payload = arangoRepository.getByKey(new ArangoDocumentReference(SPECIFICATION_QUERIES, storedQueryReference.getName()), String.class, databaseFactory.getInternalDB());
-        return metaQueryBySpecification(payload, parameters, null);
+    public boolean doesQueryExist(StoredQueryReference storedQueryReference){
+        ArangoDocumentReference documentReference = new ArangoDocumentReference(SPECIFICATION_QUERIES, storedQueryReference.getName());
+        ArangoCollection collection = databaseFactory.getInternalDB().getOrCreateDB().collection(documentReference.getCollection().getName());
+        if(collection.exists()){
+            return collection.documentExists(documentReference.getKey());
+        }
+        return false;
+    }
+
+    public <T> T getQueryPayload(StoredQueryReference queryReference, Class<T> clazz){
+        return arangoRepository.getByKey(new ArangoDocumentReference(SPECIFICATION_QUERIES, queryReference.getName()), clazz, databaseFactory.getInternalDB());
+    }
+
+
+    public QueryResult<List<Map>> metaQueryPropertyGraphByStoredSpecification(StoredQueryReference queryReference, QueryParameters parameters) throws IOException, JSONException {
+        return metaQueryBySpecification(getQueryPayload(queryReference, String.class), parameters, null);
     }
 
     public QueryResult<List<Map>> queryPropertyGraphByStoredSpecification(StoredQueryReference queryReference, QueryParameters parameters, ArangoDocumentReference documentReference) throws IOException, JSONException {
-        String payload = arangoRepository.getByKey(new ArangoDocumentReference(SPECIFICATION_QUERIES,  ArangoNamingHelper.createCompatibleId(queryReference.getName())), String.class, databaseFactory.getInternalDB());
-        return queryPropertyGraphBySpecification(payload, null, parameters, documentReference);
+        return queryPropertyGraphBySpecification(getQueryPayload(queryReference, String.class), null, parameters, documentReference);
     }
 
     public void storeSpecificationInDb(String specification, NexusSchemaReference schemaReference,  String id) throws JSONException {
@@ -123,7 +131,7 @@ public class ArangoQuery {
             rootSchema.put(JsonLdConsts.ID, nexusConfiguration.getAbsoluteUrl(schemaReference));
             jsonObject.put(GraphQueryKeys.GRAPH_QUERY_ROOT_SCHEMA.getFieldName(), rootSchema);
         }
-        id = ArangoNamingHelper.createCompatibleId(storedQueryReference.getName());
+        id = storedQueryReference.getName();
         jsonObject.put(ArangoVocabulary.KEY, id);
         jsonObject.put(ArangoVocabulary.ID, id);
         ArangoDocumentReference document = new ArangoDocumentReference(SPECIFICATION_QUERIES, id);
@@ -153,11 +161,11 @@ public class ArangoQuery {
     }
 
 
-
-    public QueryResult<Map> metaQueryPropertyGraphByStoredSpecificationAndFreemarkerTemplate(StoredQueryReference queryReference, String template, QueryParameters parameters) throws IOException, JSONException {
+    public QueryResult<Map> metaQueryPropertyGraphByStoredSpecificationAndFreemarkerTemplate(StoredQueryReference queryReference, Template template, StoredLibraryReference library, QueryParameters parameters) throws IOException, JSONException {
         QueryResult<List<Map>> queryResult = metaQueryPropertyGraphByStoredSpecification(queryReference, parameters);
-        String result = freemarkerTemplating.applyTemplate(template, queryResult, META_LIBRARY, databaseFactory.getInternalDB());
-        return createResult(queryResult, jsonTransformer.parseToMap(result), parameters.context().isReturnOriginalJson());
+        String result = freemarkerTemplating.applyTemplate(template.getTemplateContent(), queryResult, library, databaseFactory.getInternalDB());
+        Map map = jsonTransformer.parseToMap(result);
+        return createResult(queryResult, map, parameters.context().isReturnOriginalJson());
     }
 
     private <T> QueryResult<T> createResult(QueryResult<List<Map>> queryResult, T result, boolean addOriginalSource){
@@ -173,11 +181,11 @@ public class ArangoQuery {
         return r;
     }
 
-    public QueryResult applyFreemarkerOnMetaQueryBasedOnTemplate(String metaTemplate, String targetTemplate, StoredQueryReference queryReference, QueryParameters parameters) throws IOException, JSONException {
-        QueryResult<List<Map>> queryResult = metaQueryPropertyGraphByStoredSpecification(queryReference, parameters);
-        String meta = freemarkerTemplating.applyTemplate(metaTemplate, queryResult, META_LIBRARY, databaseFactory.getInternalDB());
-        QueryResult metaQueryResult = createResult(queryResult, GSON.fromJson(meta, List.class), parameters.context().isReturnOriginalJson());
-        String finalPayload = freemarkerTemplating.applyTemplate(targetTemplate, metaQueryResult, null, databaseFactory.getInternalDB());
-        return createResult(queryResult, finalPayload, parameters.context().isReturnOriginalJson());
+
+    public Set<String> getAllQueryKeys(){
+        return arangoRepository.getAll(SPECIFICATION_QUERIES, Map.class, databaseFactory.getInternalDB()).stream().map(q -> (String)q.get(ArangoVocabulary.KEY)).collect(Collectors.toSet());
     }
+
+
+
 }

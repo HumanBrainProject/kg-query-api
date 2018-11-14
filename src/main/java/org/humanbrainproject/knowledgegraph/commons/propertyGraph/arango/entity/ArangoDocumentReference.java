@@ -1,5 +1,6 @@
 package org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity;
 
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoToNexusLookupMap;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Edge;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.SubSpace;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
@@ -41,6 +42,7 @@ public class ArangoDocumentReference {
             nexusSchema = nexusSchema.toSubSpace(subSpace);
         }
         ArangoCollectionReference collection = ArangoCollectionReference.fromNexusSchemaReference(nexusSchema);
+        ArangoToNexusLookupMap.addToSchemaReferenceMap(collection, nexusSchema);
         return new ArangoDocumentReference(collection, path.getId());
     }
 

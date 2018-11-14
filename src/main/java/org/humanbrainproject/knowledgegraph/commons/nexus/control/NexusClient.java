@@ -42,12 +42,20 @@ public class NexusClient {
     protected Logger logger = LoggerFactory.getLogger(NexusClient.class);
 
     public Set<String> getAllOrganizations(OidcAccessToken authorizationToken) {
-        List<JsonDocument> list = list(new NexusRelativeUrl(NexusConfiguration.ResourceType.ORGANIZATION, "&size=100"), authorizationToken, true);
+        List<JsonDocument> list = list(new NexusRelativeUrl(NexusConfiguration.ResourceType.ORGANIZATION, "?size=100"), authorizationToken, true);
         return list.stream().map(org -> org.get("resultId").toString()).collect(Collectors.toSet());
     }
 
-    public Set<NexusSchemaReference> getAllSchemas(ClientHttpRequestInterceptor oidc) {
-        List<JsonDocument> schemas = list(new NexusRelativeUrl(NexusConfiguration.ResourceType.SCHEMA, ""), oidc, true);
+    public Set<NexusSchemaReference> getAllSchemas(String org, String domain, ClientHttpRequestInterceptor oidc) {
+        String relativePath = "";
+        if(org!=null){
+            relativePath = "/"+org;
+        }
+        if(domain!=null){
+            relativePath = relativePath+"/"+domain;
+        }
+
+        List<JsonDocument> schemas = list(new NexusRelativeUrl(NexusConfiguration.ResourceType.SCHEMA, relativePath+"?size=100"), oidc, true);
         return schemas.stream().map(schema -> NexusSchemaReference.createFromUrl(schema.get("resultId").toString())).collect(Collectors.toSet());
     }
 
@@ -195,7 +203,7 @@ public class NexusClient {
     }
 
     List<JsonDocument> list(NexusRelativeUrl relativeUrl, ClientHttpRequestInterceptor oidc, boolean followPages) {
-        return list(configuration.getEndpoint(relativeUrl)+"?deprecated=false", oidc, followPages);
+        return list(configuration.getEndpoint(relativeUrl)+(relativeUrl.getUrl().contains("?") ? "&" : "?")+"deprecated=false", oidc, followPages);
     }
 
     private List<JsonDocument> list(String url, ClientHttpRequestInterceptor oidc, boolean followPages) {

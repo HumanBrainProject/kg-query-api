@@ -2,6 +2,7 @@ package org.humanbrainproject.knowledgegraph.query.boundary;
 
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoDatabaseFactory;
 import org.humanbrainproject.knowledgegraph.query.control.FreemarkerTemplating;
+import org.humanbrainproject.knowledgegraph.query.entity.LibraryCollection;
 import org.humanbrainproject.knowledgegraph.query.entity.StoredTemplateReference;
 import org.humanbrainproject.knowledgegraph.query.entity.Template;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,8 +21,8 @@ public class Templating {
         templating.saveTemplate(template, databaseFactory.getInternalDB());
     }
 
-    public void saveLibrary(String library, String libraryId){
-        templating.saveLibrary(library, libraryId, databaseFactory.getInternalDB());
+    public void saveLibrary(String library, String libraryId, LibraryCollection libraryCollection){
+        templating.saveLibrary(library, libraryId, libraryCollection, databaseFactory.getInternalDB());
     }
 
     public Template getTemplateById(StoredTemplateReference storedTemplateReference) {

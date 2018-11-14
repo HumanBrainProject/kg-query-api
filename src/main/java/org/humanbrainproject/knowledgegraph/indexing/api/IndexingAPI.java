@@ -59,6 +59,7 @@ public class IndexingAPI {
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch(Exception e){
             logger.error(String.format("UPD: Was not able to update the instance %s with the payload %s", path.getRelativeUrl(), payload), e);
+            e.printStackTrace();
             throw new RuntimeException(e);
         }
     }
