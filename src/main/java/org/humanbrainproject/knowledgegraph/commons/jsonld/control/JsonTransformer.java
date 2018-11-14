@@ -20,7 +20,7 @@ public class JsonTransformer {
         if(o instanceof Map){
             return (Map)o;
         }
-        else if(o instanceof List && ((List)o).isEmpty()){
+        else if(o instanceof List && !((List)o).isEmpty()){
             Object firstElement = ((List) o).get(0);
             if(firstElement instanceof Map){
                 return (Map)firstElement;
