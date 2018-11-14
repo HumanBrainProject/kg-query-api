@@ -9,6 +9,7 @@ import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.JsonPat
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Step;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Vertex;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.ArangoVocabulary;
+import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -76,7 +77,7 @@ public class ArangoDocumentConverter {
         jsonObject.put(JsonLdConsts.ID, configuration.getAbsoluteUrl(vertex.getInstanceReference()));
         jsonObject.put(ArangoVocabulary.ID, reference.getId());
         jsonObject.put(ArangoVocabulary.KEY, reference.getKey());
-        jsonObject.put(ArangoVocabulary.RELATIVE_URL, vertex.getInstanceReference().getRelativeUrl().getUrl());
+        jsonObject.put(HBPVocabulary.RELATIVE_URL_OF_INTERNAL_LINK, vertex.getInstanceReference().getRelativeUrl().getUrl());
         Integer revision = vertex.getQualifiedIndexingMessage().getOriginalMessage().getInstanceReference().getRevision();
         jsonObject.put(ArangoVocabulary.NEXUS_REV, revision);
         jsonObject.put(ArangoVocabulary.NEXUS_UUID, vertex.getQualifiedIndexingMessage().getOriginalMessage().getInstanceReference().getId());

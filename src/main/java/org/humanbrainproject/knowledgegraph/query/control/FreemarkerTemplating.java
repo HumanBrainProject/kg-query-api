@@ -59,7 +59,7 @@ public class FreemarkerTemplating {
         ArangoDatabase db = connection.getOrCreateDB();
         ArangoCollection library = db.collection(libraryCollection.getCollectionName());
         if(library.exists() && library.documentExists(libraryId)){
-            return (String)library.getDocument(libraryId, Map.class).get(libraryCollection);
+            return (String)library.getDocument(libraryId, Map.class).get(libraryCollection.getCollectionName());
         }
         return null;
     }

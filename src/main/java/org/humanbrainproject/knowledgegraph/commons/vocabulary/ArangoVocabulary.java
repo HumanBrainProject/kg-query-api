@@ -8,7 +8,6 @@ public class ArangoVocabulary {
     public static final String REV = "_rev";
 
     //General custom
-    public static final String RELATIVE_URL = "_relativeUrl";
     public static final String NAME = "_name";
     public static final String PERMISSION_GROUP = "_permissionGroup";
 

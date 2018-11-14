@@ -6,7 +6,7 @@ import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoNamingHelper;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.exceptions.RootCollectionNotFoundException;
-import org.humanbrainproject.knowledgegraph.commons.vocabulary.ArangoVocabulary;
+import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
 import org.humanbrainproject.knowledgegraph.query.boundary.ArangoQuery;
@@ -65,7 +65,7 @@ public class QueryAPI {
                 s -> {
                     NexusSchemaReference nexusSchema = lookupMap.getNexusSchema(new ArangoCollectionReference(s));
                     JsonDocument jsonDocument = new JsonDocument();
-                    jsonDocument.put(ArangoVocabulary.RELATIVE_URL, nexusSchema.getRelativeUrl().getUrl());
+                    jsonDocument.put(HBPVocabulary.RELATIVE_URL_OF_INTERNAL_LINK, nexusSchema.getRelativeUrl().getUrl());
                     return jsonDocument;
                 }).collect(Collectors.toList());
         return ResponseEntity.ok(collect);
