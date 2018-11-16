@@ -31,6 +31,9 @@ public class ArangoVocabulary {
     public static final String LOOKUP_COLLECTION = "lookup";
     public static final String LOOKUP_SCHEMAS = "lookup_schemas";
 
+
+    public static final String LIBRARY = "library";
+
     //TODO change value and re-index
     //public static final String NEXUS_RELATIVE_URL_WITH_REV = "_originalId";
 

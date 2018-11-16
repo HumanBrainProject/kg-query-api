@@ -144,9 +144,9 @@ public class ArangoQuery {
         }
     }
 
-    public QueryResult<List<Map>> queryPropertyGraphByStoredSpecificationAndFreemarkerTemplate(StoredQueryReference queryReference, String templatePayload, StoredLibraryReference library, QueryParameters parameters) throws IOException, JSONException {
+    public QueryResult<List<Map>> queryPropertyGraphByStoredSpecificationAndFreemarkerTemplate(StoredQueryReference queryReference, String templatePayload, QueryParameters parameters) throws IOException, JSONException {
         QueryResult<List<Map>> queryResult = queryPropertyGraphByStoredSpecification(queryReference, parameters, null);
-        String result = freemarkerTemplating.applyTemplate(templatePayload, queryResult, library, databaseFactory.getInternalDB());
+        String result = freemarkerTemplating.applyTemplate(templatePayload, queryResult, parameters.context().getLibrary(), databaseFactory.getInternalDB());
         return createResult(queryResult, jsonTransformer.parseToListOfMaps(result), parameters.context().isReturnOriginalJson());
     }
 
@@ -161,9 +161,9 @@ public class ArangoQuery {
     }
 
 
-    public QueryResult<Map> metaQueryPropertyGraphByStoredSpecificationAndFreemarkerTemplate(StoredQueryReference queryReference, Template template, StoredLibraryReference library, QueryParameters parameters) throws IOException, JSONException {
+    public QueryResult<Map> metaQueryPropertyGraphByStoredSpecificationAndFreemarkerTemplate(StoredQueryReference queryReference, Template template, QueryParameters parameters) throws IOException, JSONException {
         QueryResult<List<Map>> queryResult = metaQueryPropertyGraphByStoredSpecification(queryReference, parameters);
-        String result = freemarkerTemplating.applyTemplate(template.getTemplateContent(), queryResult, library, databaseFactory.getInternalDB());
+        String result = freemarkerTemplating.applyTemplate(template.getTemplateContent(), queryResult, parameters.context().getLibrary(), databaseFactory.getInternalDB());
         Map map = jsonTransformer.parseToMap(result);
         return createResult(queryResult, map, parameters.context().isReturnOriginalJson());
     }

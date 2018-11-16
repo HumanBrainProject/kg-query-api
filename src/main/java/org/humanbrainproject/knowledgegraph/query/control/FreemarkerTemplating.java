@@ -11,7 +11,6 @@ import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoNamingHelper;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.ArangoVocabulary;
-import org.humanbrainproject.knowledgegraph.query.entity.LibraryCollection;
 import org.humanbrainproject.knowledgegraph.query.entity.QueryResult;
 import org.humanbrainproject.knowledgegraph.query.entity.StoredLibraryReference;
 import org.humanbrainproject.knowledgegraph.query.entity.StoredTemplateReference;
@@ -23,9 +22,6 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
-import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.*;
 
 @Component
@@ -40,26 +36,22 @@ public class FreemarkerTemplating {
 
     private Gson gson = new Gson();
 
-    private String getTemplateContent(String name) throws URISyntaxException, IOException {
-        return new String(Files.readAllBytes(Paths.get(getClass().getResource(String.format("/freemarker/%s.ftl", name)).toURI())));
-    }
-
     public void saveTemplate(org.humanbrainproject.knowledgegraph.query.entity.Template template, ArangoConnection driver){
         saveFreemarker(gson.toJson(template.asJsonDocument()), template.getKey(), TEMPLATES, driver);
     }
 
-    public void saveLibrary(String library, String libraryId, LibraryCollection collection, ArangoConnection driver){
+    public void saveLibrary(String library, String libraryId, String template, ArangoConnection driver){
         Map<String, String> lib = new HashMap<>();
-        lib.put(collection.getCollectionName(), library);
-        lib.put(ArangoVocabulary.KEY, libraryId);
-        saveFreemarker(gson.toJson(lib), libraryId, collection.asArangoCollectionReference(), driver);
+        lib.put(ArangoVocabulary.LIBRARY, library);
+        lib.put(ArangoVocabulary.KEY, template);
+        saveFreemarker(gson.toJson(lib), template, new ArangoCollectionReference(ArangoNamingHelper.createCompatibleId("libraries-"+libraryId)), driver);
     }
 
-    public String getLibraryById(String libraryId, LibraryCollection libraryCollection, ArangoConnection connection){
+    public String getLibraryById(String libraryId, String template, ArangoConnection connection){
         ArangoDatabase db = connection.getOrCreateDB();
-        ArangoCollection library = db.collection(libraryCollection.getCollectionName());
-        if(library.exists() && library.documentExists(libraryId)){
-            return (String)library.getDocument(libraryId, Map.class).get(libraryCollection.getCollectionName());
+        ArangoCollection library = db.collection(ArangoNamingHelper.createCompatibleId("libraries-"+libraryId));
+        if(library.exists() && library.documentExists(template)){
+            return (String)library.getDocument(template, Map.class).get(ArangoVocabulary.LIBRARY);
         }
         return null;
     }
@@ -87,12 +79,11 @@ public class FreemarkerTemplating {
 
 
     public String applyTemplate(String template, QueryResult<List<Map>> queryResult, StoredLibraryReference library, ArangoConnection driver) {
-        String libraryById = library!=null && library.getName()!=null ? getLibraryById(library.getName(), library.getLibraryCollection(), driver) : null;
-        return applyTemplate(template, queryResult, libraryById, repository.getAll(library.getLibraryCollection().asArangoCollectionReference(), org.humanbrainproject.knowledgegraph.query.entity.Template.class, driver));
+        String libraryById = library!=null && library.getName()!=null ? getLibraryById(library.getName(), library.getTemplate(), driver) : null;
+        return applyTemplate(template, queryResult, libraryById);
     }
 
-    String applyTemplate(String template, QueryResult<List<Map>> queryResult, String libraryContent, List<org.humanbrainproject.knowledgegraph.query.entity.Template> libraries) {
-        //queryResult.getResults().forEach(this::replaceSpecialCharacters);
+    String applyTemplate(String template, QueryResult<List<Map>> queryResult, String libraryContent) {
         String finalTemplate;
         if(libraryContent!=null){
             finalTemplate = String.format("%s\n\n%s", libraryContent, template);

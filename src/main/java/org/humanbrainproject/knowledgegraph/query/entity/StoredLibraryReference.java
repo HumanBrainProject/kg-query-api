@@ -4,18 +4,18 @@ public class StoredLibraryReference {
 
     private final String name;
 
-    private final LibraryCollection libraryCollection;
+    private final String template;
 
-    public StoredLibraryReference(String name, LibraryCollection libraryCollection) {
+    public StoredLibraryReference(String name, String template) {
         this.name = name;
-        this.libraryCollection = libraryCollection;
+        this.template = template;
     }
 
     public String getName() {
         return name;
     }
 
-    public LibraryCollection getLibraryCollection() {
-        return libraryCollection;
+    public String getTemplate() {
+        return template;
     }
 }

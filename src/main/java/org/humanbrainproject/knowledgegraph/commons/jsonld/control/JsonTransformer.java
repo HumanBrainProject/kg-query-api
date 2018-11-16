@@ -34,7 +34,7 @@ public class JsonTransformer {
     }
 
     public String normalize(String json){
-       return getMapAsJson(parseToMap(json));
+        return gson.toJson(gson.fromJson(json, Object.class));
     }
 
 //
