@@ -123,7 +123,7 @@ public class ArangoQueryBuilder extends AbstractArangoQueryBuilder {
 
     @Override
     public void ensureOrder() {
-        sb.append(String.format("\n%s SORT e.orderNumber ASC\n", getIndentation()));
+        sb.append(String.format("\n%s SORT e._orderNumber ASC\n", getIndentation()));
     }
 
     @Override

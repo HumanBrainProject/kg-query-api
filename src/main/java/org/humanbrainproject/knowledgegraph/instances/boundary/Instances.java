@@ -78,7 +78,7 @@ public class Instances {
         JsonDocument document = new JsonDocument(jsonTransformer.parseToMap(payload));
         String primaryIdentifier = instance.getPrimaryIdentifier();
         if (primaryIdentifier == null) {
-            throw new RuntimeException(String.format("Found instance without identifier: %s", instanceReference.getRelativeUrl()));
+            throw new RuntimeException(String.format("Found instance without identifier: %s", instanceReference.getRelativeUrl().getUrl()));
         }
         if (clientIdExtension != null || (subSpace != originalId.getSubspace())) {
             document.addReference(HBPVocabulary.INFERENCE_EXTENDS, nexusConfiguration.getAbsoluteUrl(originalId));

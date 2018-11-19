@@ -116,11 +116,11 @@ public class ArangoQuery {
 
 
     public QueryResult<List<Map>> metaQueryPropertyGraphByStoredSpecification(StoredQueryReference queryReference, QueryParameters parameters) throws IOException, JSONException {
-        return metaQueryBySpecification(getQueryPayload(queryReference, String.class), parameters, null);
+        return metaQueryBySpecification(getQueryPayload(queryReference, String.class), parameters, queryReference.getSchemaReference());
     }
 
     public QueryResult<List<Map>> queryPropertyGraphByStoredSpecification(StoredQueryReference queryReference, QueryParameters parameters, ArangoDocumentReference documentReference) throws IOException, JSONException {
-        return queryPropertyGraphBySpecification(getQueryPayload(queryReference, String.class), null, parameters, documentReference);
+        return queryPropertyGraphBySpecification(getQueryPayload(queryReference, String.class), queryReference.getSchemaReference(), parameters, documentReference);
     }
 
     public void storeSpecificationInDb(String specification, NexusSchemaReference schemaReference,  String id) throws JSONException {
@@ -154,7 +154,8 @@ public class ArangoQuery {
         QueryResult<List<Map>> queryResult = queryPropertyGraphByStoredSpecification(queryReference, parameters, ArangoDocumentReference.fromNexusInstance(instance));
         if(instance != null){
             if(queryResult.getResults().size() >= 1){
-              return queryResult.getResults().get(0);
+              String result = freemarkerTemplating.applyTemplate(templatePayload, queryResult, parameters.context().getLibrary(), databaseFactory.getInternalDB());
+              return jsonTransformer.parseToMap(result);
             }
         }
         return null;

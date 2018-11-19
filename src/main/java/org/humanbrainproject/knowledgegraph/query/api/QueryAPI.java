@@ -176,7 +176,7 @@ public class QueryAPI {
         try {
 
             NexusInstanceReference nexusInstanceReference = new NexusInstanceReference(org, domain, schema, version, instanceId);
-            StoredQueryReference storedQueryReference = new StoredQueryReference(queryId);
+            StoredQueryReference storedQueryReference = new StoredQueryReference(nexusInstanceReference.getNexusSchema(), queryId);
             QueryParameters parameters = new QueryParameters(databaseScope, null);
             parameters.pagination().setSize(size).setStart(start);
             if (restrictToOrganizations != null) {
@@ -250,9 +250,8 @@ public class QueryAPI {
     @PostMapping(value = "/{org}/{domain}/{schema}/{version}/{queryId}/instances/{instanceId}/templates")
     public ResponseEntity<Map> applyFreemarkerTemplateToApiWithId(@RequestBody String template, @PathVariable(QUERY_ID) String queryId, @PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(INSTANCE_ID) String instanceId, @RequestParam(value = RESTRICT_TO_ORGANIZATIONS, required = false) String restrictToOrganizations, @RequestParam(value = DATABASE_SCOPE, required = false) DatabaseScope databaseScope, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization, @ApiIgnore @RequestParam Map<String, String> allRequestParams) throws Exception {
         try {
-            StoredQueryReference storedQueryReference = new StoredQueryReference(queryId);
-
             NexusInstanceReference nexusInstanceReference = new NexusInstanceReference(org, domain, schema, version, instanceId);
+            StoredQueryReference storedQueryReference = new StoredQueryReference(nexusInstanceReference.getNexusSchema(), queryId);
             QueryParameters parameters = new QueryParameters(databaseScope, null);
             if (restrictToOrganizations != null) {
                 parameters.filter().restrictToOrganizations(restrictToOrganizations.split(","));
@@ -302,10 +301,18 @@ public class QueryAPI {
 
     @GetMapping(value = "/{org}/{domain}/{schema}/{version}/{queryId}/templates/{templateId}/instances/{instanceId}")
     public ResponseEntity<Map> executeStoredQueryWithTemplate(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(QUERY_ID) String queryId, @PathVariable(TEMPLATE_ID) String templateId, @PathVariable(INSTANCE_ID) String instanceId, @RequestParam(value = DATABASE_SCOPE, required = false) DatabaseScope databaseScope, @RequestParam(value = RESTRICT_TO_ORGANIZATIONS, required = false) String restrictToOrganizations, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization, @ApiIgnore @RequestParam Map<String, String> allRequestParams) throws Exception {
-        NexusSchemaReference schemaReference = new NexusSchemaReference(org, domain, schema, version);
-        StoredTemplateReference templateReference = new StoredTemplateReference(new StoredQueryReference(schemaReference, queryId), templateId);
+        NexusInstanceReference nexusInstanceReference = new NexusInstanceReference(org, domain, schema, version, instanceId);
+        StoredTemplateReference templateReference = new StoredTemplateReference(new StoredQueryReference(nexusInstanceReference.getNexusSchema(), queryId), templateId);
         Template template = templating.getTemplateById(templateReference);
-        return applyFreemarkerTemplateToApiWithId(template.getTemplateContent(), queryId, org, domain, schema, version, instanceId, restrictToOrganizations, databaseScope, authorization, allRequestParams);
+        StoredQueryReference storedQueryReference = new StoredQueryReference(nexusInstanceReference.getNexusSchema(), queryId);
+        QueryParameters parameters = new QueryParameters(databaseScope, null);
+        if (restrictToOrganizations != null) {
+            parameters.filter().restrictToOrganizations(restrictToOrganizations.split(","));
+        }
+        parameters.context().setLibrary(new StoredLibraryReference("instances", templateId));
+        parameters.authorization().setToken(authorization);
+        Map result = query.queryPropertyGraphByStoredSpecificationAndFreemarkerTemplateWithId(storedQueryReference, template.getTemplateContent(), parameters, nexusInstanceReference);
+        return ResponseEntity.ok(result);
     }
 
 

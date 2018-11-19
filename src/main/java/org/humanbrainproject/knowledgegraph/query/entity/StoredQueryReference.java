@@ -13,9 +13,6 @@ public class StoredQueryReference {
         this.name = schemaReference!=null && schemaReference.getRelativeUrl()!=null ? ArangoNamingHelper.createCompatibleId(schemaReference.getRelativeUrl().getUrl())+"-"+ArangoNamingHelper.createCompatibleId(name) : ArangoNamingHelper.createCompatibleId(name);
     }
 
-    public StoredQueryReference(String name) {
-        this(null, name);
-    }
 
     public NexusSchemaReference getSchemaReference() {
         return schemaReference;

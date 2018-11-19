@@ -56,22 +56,24 @@ public class JsonLdStandardization {
      */
     @SuppressWarnings("unchecked")
     public Map ensureContext(Map input, String defaultNamespace) {
-        List context = collectContextElements(input.get(JsonLdConsts.CONTEXT));
-        boolean hasVocab = false;
-        for (Object contextElement : context) {
-            if (contextElement instanceof Map) {
-                if (((Map) contextElement).containsKey(JsonLdConsts.VOCAB)) {
-                    hasVocab = true;
-                    break;
+        if(input!=null) {
+            List context = collectContextElements(input.get(JsonLdConsts.CONTEXT));
+            boolean hasVocab = false;
+            for (Object contextElement : context) {
+                if (contextElement instanceof Map) {
+                    if (((Map) contextElement).containsKey(JsonLdConsts.VOCAB)) {
+                        hasVocab = true;
+                        break;
+                    }
                 }
             }
+            if (!hasVocab) {
+                Map vocab = new LinkedHashMap();
+                vocab.put(JsonLdConsts.VOCAB, defaultNamespace);
+                context.add(vocab);
+            }
+            input.put(JsonLdConsts.CONTEXT, context);
         }
-        if (!hasVocab) {
-            Map vocab = new LinkedHashMap();
-            vocab.put(JsonLdConsts.VOCAB, defaultNamespace);
-            context.add(vocab);
-        }
-        input.put(JsonLdConsts.CONTEXT, context);
         return input;
     }
 

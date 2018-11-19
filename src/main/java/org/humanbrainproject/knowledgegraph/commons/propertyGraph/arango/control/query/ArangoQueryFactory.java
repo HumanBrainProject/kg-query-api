@@ -85,7 +85,7 @@ public class ArangoQueryFactory {
     }
 
     public String queryOriginalIdForLink(ArangoDocumentReference document, ArangoCollectionReference linkReference) {
-        return String.format("FOR vertex IN 1..1 INBOUND DOCUMENT(\"%s\") `%s` RETURN vertex._originalId", document.getId(), linkReference.getName());
+        return String.format("FOR vertex IN 1..1 INBOUND DOCUMENT(\"%s\") `%s` RETURN vertex._nexusRelativeUrl", document.getId(), linkReference.getName());
     }
 
     public String queryOutboundRelationsForDocument(ArangoDocumentReference document, Set<ArangoCollectionReference> edgeCollections) {
@@ -195,7 +195,7 @@ public class ArangoQueryFactory {
                         "   SORT i.`http://schema.org/name`, i.`https://schema.hbp.eu/minds/title`, i.`https://schema.hbp.eu/minds/alias` \n" +
                         "   %s" +
                         "   RETURN {" +
-                        "     \"id\": i.`_relativeUrl`,\n" +
+                        "     \"id\": i.`https://schema.hbp.eu/relativeUrl`,\n" +
                         "     \"name\": i.`http://schema.org/name`,\n" +
                         "     \"description\": i.`http://schema.org/description`\n" +
                         "   }\n" +
