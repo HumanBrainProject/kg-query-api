@@ -1,6 +1,7 @@
 package org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control;
 
 import com.github.jsonldjava.core.JsonLdConsts;
+import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonLdStandardization;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
@@ -25,6 +26,8 @@ public class ArangoDocumentConverter {
     @Autowired
     NexusConfiguration configuration;
 
+    @Autowired
+    JsonLdStandardization standardization;
 
     private Map<String, Object> buildPath(Step step, List<Step> remaining) {
         Map<String, Object> path = new LinkedHashMap<>();
@@ -87,6 +90,7 @@ public class ArangoDocumentConverter {
         for (JsonPath steps : blackList) {
             removePathFromMap(jsonObject, steps);
         }
+        jsonObject = standardization.extendInternalReferencesWithRelativeUrl(jsonObject, null);
         return jsonTransformer.getMapAsJson(jsonObject);
     }
 

@@ -56,7 +56,7 @@ public class JsonLdStandardization {
      */
     @SuppressWarnings("unchecked")
     public Map ensureContext(Map input, String defaultNamespace) {
-        if(input!=null) {
+        if (input != null) {
             List context = collectContextElements(input.get(JsonLdConsts.CONTEXT));
             boolean hasVocab = false;
             for (Object contextElement : context) {
@@ -129,10 +129,9 @@ public class JsonLdStandardization {
                     }
                     ((Map) input).put(HBPVocabulary.RELATIVE_URL_OF_INTERNAL_LINK, fromUrl.getRelativeUrl().getUrl());
                 }
-            } else {
-                for (Object o : ((Map) input).keySet()) {
-                    extendInternalReferencesWithRelativeUrl(((Map) input).get(o), transformer);
-                }
+            }
+            for (Object o : ((Map) input).keySet()) {
+                extendInternalReferencesWithRelativeUrl(((Map) input).get(o), transformer);
             }
         }
         return input;

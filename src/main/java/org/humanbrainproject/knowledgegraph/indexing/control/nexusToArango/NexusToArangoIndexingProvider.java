@@ -67,7 +67,7 @@ public class NexusToArangoIndexingProvider {
         }
         newVertex.setInstanceReference(originalId);
         newVertex.toSubSpace(SubSpace.MAIN);
-        jsonLdStandardization.extendInternalReferencesWithRelativeUrl(newVertex.getQualifiedIndexingMessage().getQualifiedMap(), toOriginalIdMap::get);
+        //jsonLdStandardization.extendInternalReferencesWithRelativeUrl(newVertex.getQualifiedIndexingMessage().getQualifiedMap(), toOriginalIdMap::get);
         return newVertex;
     }
 
