@@ -93,6 +93,7 @@ public class InstanceController {
             //We're replacing the previously set identifier with the id we got from Nexus.
             payload.put(SchemaOrgVocabulary.IDENTIFIER, idFromNexus.getId());
             nexusClient.put(idFromNexus.getRelativeUrl(), idFromNexus.getRevision(), payload, oidcAccessToken);
+            immediateIndexing(payload, idFromNexus);
             return idFromNexus;
         }
         return null;

@@ -78,7 +78,7 @@ public class Reconciliation implements InferenceStrategy, InitializingBean {
                 originalVertex = indexingProvider.getVertexStructureById(originalId);
             }
             if (originalVertex != null) {
-                List<Vertex> relativeStructures = relativeInstances.stream().filter(r -> r != null && r.equals(message.getOriginalMessage().getInstanceReference())).map(relativeInstance -> indexingProvider.getVertexStructureById(relativeInstance)).collect(Collectors.toList());
+                List<Vertex> relativeStructures = relativeInstances.stream().filter(r -> r != null && !r.getRelativeUrl().equals(message.getOriginalMessage().getInstanceReference().getRelativeUrl())).map(relativeInstance -> indexingProvider.getVertexStructureById(relativeInstance)).collect(Collectors.toList());
                 if (!isOriginal) {
                     //Add the new message as part of the relative structure
                     relativeStructures.add(messageProcessor.createVertexStructure(message));
