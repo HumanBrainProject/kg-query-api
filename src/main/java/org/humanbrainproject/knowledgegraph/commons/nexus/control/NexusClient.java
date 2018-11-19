@@ -16,10 +16,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -40,6 +42,14 @@ public class NexusClient {
     JsonTransformer jsonTransformer;
 
     protected Logger logger = LoggerFactory.getLogger(NexusClient.class);
+
+    private RestTemplate createRestTemplate(ClientHttpRequestInterceptor oidc){
+        RestTemplate template = new RestTemplate();
+        template.setInterceptors(Collections.singletonList(oidc));
+        template.getMessageConverters().add(0, new StringHttpMessageConverter(StandardCharsets.UTF_8));
+        return template;
+    }
+
 
     public Set<String> getAllOrganizations(OidcAccessToken authorizationToken) {
         List<JsonDocument> list = list(new NexusRelativeUrl(NexusConfiguration.ResourceType.ORGANIZATION, "?size=100"), authorizationToken, true);
@@ -64,14 +74,15 @@ public class NexusClient {
     }
 
     public JsonDocument put(NexusRelativeUrl url, Integer revision, Map payload, ClientHttpRequestInterceptor oidc) {
-        RestTemplate template = new RestTemplate();
-        template.setInterceptors(Collections.singletonList(oidc));
-        ResponseEntity<Map> result = template.exchange(String.format("%s%s", configuration.getEndpoint(url), revision != null ? String.format("%srev=%d", !url.getUrl().contains("?") ? "?" : "&", revision) : ""), HttpMethod.PUT, new HttpEntity<>(payload), Map.class);
+        ResponseEntity<Map> result = createRestTemplate(oidc).exchange(String.format("%s%s", configuration.getEndpoint(url), revision != null ? String.format("%srev=%d", !url.getUrl().contains("?") ? "?" : "&", revision) : ""), HttpMethod.PUT, new HttpEntity<>(payload), Map.class);
         if (result.getStatusCode().is2xxSuccessful() && result.getBody() != null) {
             return new JsonDocument(result.getBody());
         }
         return null;
     }
+
+
+
 
 
     public boolean delete(NexusRelativeUrl url, Integer revision, OidcAccessToken oidcAccessToken) {
@@ -80,9 +91,7 @@ public class NexusClient {
 
     public boolean delete(NexusRelativeUrl url, Integer revision, ClientHttpRequestInterceptor oidc) {
         try {
-            RestTemplate template = new RestTemplate();
-            template.setInterceptors(Collections.singletonList(oidc));
-            template.delete(String.format("%s%s", configuration.getEndpoint(url), revision != null ? String.format("%srev=%d", !url.getUrl().contains("?") ? "?" : "&", revision) : ""));
+            createRestTemplate(oidc).delete(String.format("%s%s", configuration.getEndpoint(url), revision != null ? String.format("%srev=%d", !url.getUrl().contains("?") ? "?" : "&", revision) : ""));
             return true;
         } catch (HttpClientErrorException e) {
             if (e.getStatusCode() == HttpStatus.CONFLICT) {
@@ -103,9 +112,7 @@ public class NexusClient {
 
     public JsonDocument post(NexusRelativeUrl url, Integer revision, Map payload, ClientHttpRequestInterceptor oidc) {
         try {
-            RestTemplate template = new RestTemplate();
-            template.setInterceptors(Collections.singletonList(oidc));
-            ResponseEntity<Map> result = template.exchange(String.format("%s%s", configuration.getEndpoint(url), revision != null ? String.format("%srev=%d", !url.getUrl().contains("?") ? "?" : "&", revision) : ""), HttpMethod.POST, new HttpEntity<>(payload), Map.class);
+            ResponseEntity<Map> result = createRestTemplate(oidc).exchange(String.format("%s%s", configuration.getEndpoint(url), revision != null ? String.format("%srev=%d", !url.getUrl().contains("?") ? "?" : "&", revision) : ""), HttpMethod.POST, new HttpEntity<>(payload), Map.class);
             if (result.getStatusCode().is2xxSuccessful() && result.getBody() != null) {
                 return new JsonDocument(result.getBody());
             }
@@ -122,8 +129,7 @@ public class NexusClient {
     }
 
     JsonDocument patch(NexusRelativeUrl url, Integer revision, Map payload, ClientHttpRequestInterceptor oidc) {
-        RestTemplate template = new RestTemplate();
-        template.setInterceptors(Collections.singletonList(oidc));
+        RestTemplate template = createRestTemplate(oidc);
         template.setRequestFactory(new HttpComponentsClientHttpRequestFactory());
         ResponseEntity<Map> result = template.exchange(String.format("%s%s", configuration.getEndpoint(url), revision != null ? String.format("%srev=%d", !url.getUrl().contains("?") ? "?" : "&", revision) : ""), HttpMethod.PATCH, new HttpEntity<>(payload), Map.class);
         if (result.getStatusCode().is2xxSuccessful() && result.getBody() != null) {
@@ -142,9 +148,7 @@ public class NexusClient {
         relativeUrl.addQueryParameter("deprecated", "false");
         relativeUrl.addQueryParameter("filter", String.format("{\"op\":\"eq\",\"path\":\"%s\",\"value\":\"%s\"}", fieldName, fieldValue));
         String url = configuration.getEndpoint(relativeUrl);
-        RestTemplate template = new RestTemplate();
-        template.setInterceptors(Collections.singletonList(oidc));
-        ResponseEntity<Map> result = template.getForEntity(url, Map.class);
+        ResponseEntity<Map> result = createRestTemplate(oidc).getForEntity(url, Map.class);
         if (result.getStatusCode().is2xxSuccessful() && result.getBody() != null && result.getBody().containsKey("results") && result.getBody().get("results") instanceof List) {
             return (List<JsonDocument>) ((List) result.getBody().get("results")).stream().filter(r -> r instanceof Map).map(r -> new JsonDocument((Map) r)).collect(Collectors.toList());
         }
@@ -167,9 +171,7 @@ public class NexusClient {
 
     <T> T get(NexusRelativeUrl url, ClientHttpRequestInterceptor oidc, Class<T> resultClass) {
         try {
-            RestTemplate template = new RestTemplate();
-            template.setInterceptors(Collections.singletonList(oidc));
-            ResponseEntity<T> result = template.getForEntity(configuration.getEndpoint(url), resultClass);
+            ResponseEntity<T> result = createRestTemplate(oidc).getForEntity(configuration.getEndpoint(url), resultClass);
             if (result.getStatusCode().is2xxSuccessful() && result.getBody() != null) {
                 return result.getBody();
             }
@@ -207,9 +209,7 @@ public class NexusClient {
     }
 
     private List<JsonDocument> list(String url, ClientHttpRequestInterceptor oidc, boolean followPages) {
-        RestTemplate template = new RestTemplate();
-        template.setInterceptors(Collections.singletonList(oidc));
-        ResponseEntity<Map> result = template.getForEntity(url, Map.class);
+        ResponseEntity<Map> result = createRestTemplate(oidc).getForEntity(url, Map.class);
         if (result.getStatusCode().is2xxSuccessful() && result.getBody() != null && result.getBody().containsKey("results") && result.getBody().get("results") instanceof List) {
             List<JsonDocument> results = (List<JsonDocument>) ((List) result.getBody().get("results")).stream().map(r -> new JsonDocument((Map) r)).collect(Collectors.toList());
             if (followPages) {

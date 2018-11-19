@@ -11,7 +11,9 @@ import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Collections;
 
 @Component
 public class SystemOidcHeaderInterceptor implements ClientHttpRequestInterceptor {
@@ -38,6 +40,7 @@ public class SystemOidcHeaderInterceptor implements ClientHttpRequestInterceptor
     @Override
     public ClientHttpResponse intercept(HttpRequest httpRequest, byte[] bytes, ClientHttpRequestExecution clientHttpRequestExecution) throws IOException {
         setAuthTokenToRequest(httpRequest);
+        httpRequest.getHeaders().setAcceptCharset(Collections.singletonList(StandardCharsets.UTF_8));
         httpRequest.getHeaders().setContentType(MediaType.APPLICATION_JSON);
         httpRequest.getHeaders().setAccept(Arrays.asList(MediaType.APPLICATION_JSON, MediaType.parseMediaType("application/ld+json")));
         ClientHttpResponse response = clientHttpRequestExecution.execute(httpRequest, bytes);
