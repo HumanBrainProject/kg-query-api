@@ -26,8 +26,20 @@ public class GraphAPI {
     @Autowired
     Instances instances;
 
+    /**
+     * @deprecated Use /instances api instead
+     * @param org
+     * @param domain
+     * @param schema
+     * @param version
+     * @param id
+     * @param step
+     * @return
+     * @throws Exception
+     */
+    @Deprecated
     @GetMapping(value = "/graph/{org}/{domain}/{schema}/{version}/{id}", consumes = { MediaType.WILDCARD})
-    public ResponseEntity<List<Map>> getGraph(@PathVariable("org") String org, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("version") String version, @PathVariable("id") String id, @RequestParam(value= "step", required = false, defaultValue = "2") Integer step) throws Exception{
+    public ResponseEntity<Map> getGraph(@PathVariable("org") String org, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("version") String version, @PathVariable("id") String id, @RequestParam(value= "step", required = false, defaultValue = "2") Integer step) throws Exception{
         try{
             NexusInstanceReference instanceReference = new NexusInstanceReference(org, domain, schema, version, id);
             //TODO Validate step value

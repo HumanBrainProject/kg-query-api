@@ -7,6 +7,7 @@ import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceR
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
 import org.humanbrainproject.knowledgegraph.instances.boundary.Instances;
 import org.humanbrainproject.knowledgegraph.instances.entity.Client;
+import org.humanbrainproject.knowledgegraph.query.boundary.ArangoGraph;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -25,6 +26,9 @@ public class InstancesAPI {
 
     @Autowired
     Instances instances;
+
+    @Autowired
+    ArangoGraph graph;
 
     @GetMapping(value = "/{org}/{domain}/{schema}/{version}/{id}")
     public ResponseEntity<Map> getInstance(@PathVariable("org") String org, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("version") String version, @PathVariable("id") String id) throws Exception {
@@ -75,6 +79,18 @@ public class InstancesAPI {
     public ResponseEntity<Void> cloneInstancesFromSchema(@PathVariable("org") String org, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("oldVersion") String oldVersion, @PathVariable("newVersion") String newVersion, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken) {
         instances.cloneInstancesFromSchema(new NexusSchemaReference(org, domain, schema, oldVersion), newVersion, new OidcAccessToken().setToken(authorizationToken));
         return ResponseEntity.ok().build();
+    }
+
+
+    @GetMapping(value = "/{org}/{domain}/{schema}/{version}/{id}/graph")
+    public ResponseEntity<Map> getGraph(@PathVariable("org") String org, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("version") String version, @PathVariable("id") String id, @RequestParam(value= "step", required = false, defaultValue = "2") Integer step) throws Exception{
+        try{
+            NexusInstanceReference instanceReference = new NexusInstanceReference(org, domain, schema, version, id);
+            //TODO Validate step value
+            return ResponseEntity.ok(graph.getGraph(instanceReference, step));
+        } catch (HttpClientErrorException e){
+            return ResponseEntity.status(e.getStatusCode()).build();
+        }
     }
 
 
