@@ -10,7 +10,7 @@
         <@direct_value url_string/>
     </@for>,
     "address": <@value el "search:address"/>,
-    "contributions": <@ref "Dataset" el "search:contributions" "search:identifier" "search:name" "search:uuid"/>,
+    "contributions": <@ref "Dataset" el "search:contributions" "search:identifier" "search:postFix" "search:uuid"/>,
     "email": <@value el "search:email"/>
 }<#sep>,
 </#list>

@@ -66,15 +66,15 @@
     <#else>null</#if>
 </#macro>
 
-<#macro ref target instance propertyName identifierPropertyName labelPropertyName uuidPropertyName>
+<#macro ref target instance propertyName identifierPropertyName labelPropertyName>
     <#local instances = _value(instance propertyName)>
     <#if instances?has_content>
-        <@direct_ref target instances identifierPropertyName labelPropertyName uuidPropertyName/>
+        <@direct_ref target instances identifierPropertyName labelPropertyName/>
     <#else>null
     </#if>
 </#macro>
 
-<#macro direct_ref target instance identifierPropertyName labelPropertyName uuidPropertyName>
+<#macro direct_ref target instance identifierPropertyName labelPropertyName>
     <#if target?has_content>
         <#if instance?is_sequence>
             <#local hasValidElements=false/>
@@ -85,7 +85,7 @@
             </#list>
             <#if hasValidElements>
                 <@direct_for instance; i>
-                    <@direct_ref target i identifierPropertyName labelPropertyName uuidPropertyName/>
+                    <@direct_ref target i identifierPropertyName labelPropertyName/>
                 </@direct_for>
             <#else>
                 null
@@ -93,7 +93,6 @@
         <#elseif instance?has_content && instance[identifierPropertyName]?has_content && !instance[identifierPropertyName]?is_hash>
             {
                 "reference": "${target}/${instance[identifierPropertyName]}",
-            <#if instance[uuidPropertyName]?has_content>"uuid": "${instance[uuidPropertyName]}",</#if>
                 "value": "${instance[labelPropertyName]?json_string}"
             }
         <#else>
