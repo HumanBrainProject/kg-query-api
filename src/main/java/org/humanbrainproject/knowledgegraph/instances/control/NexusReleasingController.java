@@ -45,7 +45,7 @@ public class NexusReleasingController {
 
     public Set<NexusInstanceReference> unrelease(NexusInstanceReference instanceReference, OidcAccessToken oidcAccessToken) {
         //Find release instance
-        Set<NexusInstanceReference> releases = nexusToArangoIndexingProvider.findInstancesWithLinkTo(HBPVocabulary.RELEASE_INSTANCE, instanceReference);
+        Set<NexusInstanceReference> releases = nexusToArangoIndexingProvider.findInstancesWithLinkTo(HBPVocabulary.RELEASE_INSTANCE, instanceReference, oidcAccessToken);
         for (NexusInstanceReference nexusInstanceReference : releases) {
             instanceController.deprecateInstanceByNexusId(nexusInstanceReference, oidcAccessToken);
         }

@@ -9,5 +9,6 @@ public class SchemaOrgVocabulary {
     public static final String NAME = NAMESPACE+"name";
 
     public static final String IDENTIFIER = NAMESPACE+"identifier";
+    public static final String DESCRIPTION = NAMESPACE+"description";
 
 }

@@ -1,5 +1,6 @@
 package org.humanbrainproject.knowledgegraph.indexing.control.basic;
 
+import org.humanbrainproject.knowledgegraph.commons.authorization.entity.OidcAccessToken;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Vertex;
 import org.humanbrainproject.knowledgegraph.indexing.control.IndexingController;
 import org.humanbrainproject.knowledgegraph.indexing.control.MessageProcessor;
@@ -20,7 +21,7 @@ public class BasicIndexingController implements IndexingController {
 
 
     @Override
-    public TodoList insert(QualifiedIndexingMessage message, TodoList todoList){
+    public TodoList insert(QualifiedIndexingMessage message, TodoList todoList, OidcAccessToken oidcAccessToken){
         Vertex vertex = messageProcessor.createVertexStructure(message);
         InsertTodoItem insertTodoItem = new InsertTodoItem(vertex, indexingProvider.getConnection(TargetDatabase.DEFAULT));
         todoList.addTodoItem(insertTodoItem);
@@ -28,20 +29,20 @@ public class BasicIndexingController implements IndexingController {
     }
 
     @Override
-    public TodoList update(QualifiedIndexingMessage message, TodoList todoList){
+    public TodoList update(QualifiedIndexingMessage message, TodoList todoList, OidcAccessToken oidcAccessToken){
         //TODO transfer information about creation / previous authors to new message?
-        insert(message, todoList);
+        insert(message, todoList, oidcAccessToken);
         return todoList;
     }
 
     @Override
-    public TodoList delete(NexusInstanceReference reference, TodoList todoList) {
+    public TodoList delete(NexusInstanceReference reference, TodoList todoList, OidcAccessToken oidcAccessToken) {
         todoList.addTodoItem(new DeleteTodoItem(reference,  indexingProvider.getConnection(TargetDatabase.DEFAULT)));
         return todoList;
     }
 
     @Override
-    public void clear() {
+    public void clear(OidcAccessToken oidcAccessToken) {
         indexingProvider.getConnection(TargetDatabase.DEFAULT).clearData();
     }
 }

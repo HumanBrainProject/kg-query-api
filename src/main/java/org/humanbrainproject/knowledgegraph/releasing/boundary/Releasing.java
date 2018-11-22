@@ -22,7 +22,7 @@ public class Releasing {
     NexusReleasingController nexusReleasingController;
 
     public void release(NexusInstanceReference instanceReference, OidcAccessToken accessToken){
-        NexusInstanceReference nexusInstanceFromInferredArangoEntry = releaseControl.findNexusInstanceFromInferredArangoEntry(ArangoDocumentReference.fromNexusInstance(instanceReference));
+        NexusInstanceReference nexusInstanceFromInferredArangoEntry = releaseControl.findNexusInstanceFromInferredArangoEntry(ArangoDocumentReference.fromNexusInstance(instanceReference), accessToken);
         nexusReleasingController.release(nexusInstanceFromInferredArangoEntry, nexusInstanceFromInferredArangoEntry.getRevision(), accessToken);
     }
 
@@ -30,12 +30,12 @@ public class Releasing {
         nexusReleasingController.unrelease(instanceReference, accessToken);
     }
 
-    public ReleaseStatusResponse getReleaseStatus(NexusInstanceReference instanceReference){
-        return releaseControl.getReleaseStatus(instanceReference);
+    public ReleaseStatusResponse getReleaseStatus(NexusInstanceReference instanceReference, OidcAccessToken accessToken){
+        return releaseControl.getReleaseStatus(instanceReference, accessToken);
     }
 
-    public Map<String, Object> getReleaseGraph(NexusInstanceReference instanceReference){
-        return releaseControl.getReleaseGraph(instanceReference, Optional.empty());
+    public Map<String, Object> getReleaseGraph(NexusInstanceReference instanceReference, OidcAccessToken accessToken){
+        return releaseControl.getReleaseGraph(instanceReference, Optional.empty(), accessToken);
     }
 
 }

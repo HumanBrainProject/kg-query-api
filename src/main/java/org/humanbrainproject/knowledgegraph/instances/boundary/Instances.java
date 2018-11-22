@@ -51,14 +51,14 @@ public class Instances {
     SchemaController schemaController;
 
 
-    public JsonDocument getInstance(NexusInstanceReference instanceReference) {
-        NexusInstanceReference originalId = arangoRepository.findOriginalId(instanceReference);
-        return getInstance(originalId, databaseFactory.getInferredDB());
+    public JsonDocument getInstance(NexusInstanceReference instanceReference, OidcAccessToken oidcAccessToken) {
+        NexusInstanceReference originalId = arangoRepository.findOriginalId(instanceReference, oidcAccessToken);
+        return getInstance(originalId, databaseFactory.getInferredDB(), oidcAccessToken);
     }
 
 
-    private JsonDocument getInstance(NexusInstanceReference instanceReference, ArangoConnection connection) {
-        return arangoRepository.getInstance(ArangoDocumentReference.fromNexusInstance(instanceReference), connection);
+    private JsonDocument getInstance(NexusInstanceReference instanceReference, ArangoConnection connection, OidcAccessToken oidcAccessToken) {
+        return arangoRepository.getInstance(ArangoDocumentReference.fromNexusInstance(instanceReference), connection, oidcAccessToken);
     }
 
 
@@ -67,8 +67,8 @@ public class Instances {
     }
 
     public NexusInstanceReference updateInstance(NexusInstanceReference instanceReference, String payload, Client client, String clientIdExtension, OidcAccessToken oidcAccessToken) {
-        NexusInstanceReference originalId = arangoRepository.findOriginalId(instanceReference);
-        JsonDocument instance = getInstance(originalId, databaseFactory.getDefaultDB());
+        NexusInstanceReference originalId = arangoRepository.findOriginalId(instanceReference, oidcAccessToken);
+        JsonDocument instance = getInstance(originalId, databaseFactory.getDefaultDB(), oidcAccessToken);
         if (instance == null) {
             return null;
         }
@@ -90,7 +90,7 @@ public class Instances {
     }
 
     public boolean removeInstance(NexusInstanceReference nexusInstanceReference, OidcAccessToken oidcAccessToken) {
-        NexusInstanceReference originalId = arangoRepository.findOriginalId(nexusInstanceReference);
+        NexusInstanceReference originalId = arangoRepository.findOriginalId(nexusInstanceReference, oidcAccessToken);
         //We only deprecate the original id - this way, the reconciled instance should disappear.
         return instanceController.deprecateInstanceByNexusId(originalId, oidcAccessToken);
     }

@@ -17,8 +17,6 @@ public class TestObjectFactory {
         return instance;
     }
 
-
-
     public static NexusInstanceReference fooInstanceReference(){
         return new NexusInstanceReference("foo", "bar", "foobar", "v0.0.1", "barfoo");
     }

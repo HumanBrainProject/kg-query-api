@@ -6,7 +6,6 @@ import org.springframework.http.HttpRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.ClientHttpRequestExecution;
-import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.stereotype.Component;
 
@@ -16,18 +15,15 @@ import java.util.Arrays;
 import java.util.Collections;
 
 @Component
-public class SystemOidcHeaderInterceptor implements ClientHttpRequestInterceptor {
+public class SystemOidcHeaderInterceptor implements TokenBasedClientHttpRequestInterceptor {
 
     @Autowired
-    OidcClient client;
+    SystemOidcClient client;
 
-    private OidcAccessToken currentToken = null;
 
+    @Override
     public OidcAccessToken getToken() {
-        if (currentToken == null) {
-            currentToken = client.getAuthorizationToken();
-        }
-        return currentToken;
+        return client.getAuthorizationToken();
     }
 
     private void setAuthTokenToRequest(HttpRequest request) {
@@ -46,7 +42,7 @@ public class SystemOidcHeaderInterceptor implements ClientHttpRequestInterceptor
         ClientHttpResponse response = clientHttpRequestExecution.execute(httpRequest, bytes);
         if (response.getStatusCode() == HttpStatus.UNAUTHORIZED) {
             //The token seems to have timed out - let's try to refresh it and reexecute the request
-            currentToken = null;
+            client.refreshToken();
             setAuthTokenToRequest(httpRequest);
             response = clientHttpRequestExecution.execute(httpRequest, bytes);
         }

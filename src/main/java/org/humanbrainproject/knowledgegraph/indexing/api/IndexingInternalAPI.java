@@ -3,6 +3,7 @@ package org.humanbrainproject.knowledgegraph.indexing.api;
 import com.github.jsonldjava.core.JsonLdError;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import org.humanbrainproject.knowledgegraph.commons.InternalApi;
 import org.humanbrainproject.knowledgegraph.indexing.boundary.GraphIndexing;
 import org.humanbrainproject.knowledgegraph.indexing.entity.IndexingMessage;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
@@ -15,14 +16,17 @@ import org.springframework.web.bind.annotation.*;
 import javax.ws.rs.core.MediaType;
 
 @RestController
-@RequestMapping(value = "/indexing")
-@Api(value="/indexing", description = "The indexing api to upload JSON-LD to the arango database")
-public class IndexingAPI {
+@RequestMapping(value = "/internal/indexing")
+@InternalApi
+@Api(value="/internal/indexing", description = "The indexing api to upload JSON-LD to the arango database")
+public class IndexingInternalAPI {
 
     @Autowired
     GraphIndexing indexer;
 
-    private Logger logger = LoggerFactory.getLogger(IndexingAPI.class);
+    @Autowired
+
+    private Logger logger = LoggerFactory.getLogger(IndexingInternalAPI.class);
 
     @ApiOperation("Creates a new instance")
     @PostMapping(value="/{organization}/{domain}/{schema}/{schemaversion}/{id}", consumes = {MediaType.APPLICATION_JSON, "application/ld+json"}, produces = MediaType.APPLICATION_JSON)

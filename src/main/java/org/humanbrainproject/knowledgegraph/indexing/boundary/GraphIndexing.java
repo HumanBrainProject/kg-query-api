@@ -1,5 +1,6 @@
 package org.humanbrainproject.knowledgegraph.indexing.boundary;
 
+import org.humanbrainproject.knowledgegraph.commons.authorization.control.SystemOidcClient;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.control.DatabaseTransaction;
 import org.humanbrainproject.knowledgegraph.indexing.control.IndexingController;
 import org.humanbrainproject.knowledgegraph.indexing.control.MessageProcessor;
@@ -36,6 +37,9 @@ public class GraphIndexing {
     @Autowired
     DatabaseTransaction transaction;
 
+    @Autowired
+    SystemOidcClient oidcClient;
+
 
     private Logger logger = LoggerFactory.getLogger(GraphIndexing.class);
 
@@ -52,7 +56,7 @@ public class GraphIndexing {
         //Gather execution plan
         TodoList todoList = new TodoList();
         for (IndexingController indexingController : getIndexingControllers()) {
-            indexingController.insert(qualifiedSpec, todoList);
+            indexingController.insert(qualifiedSpec, todoList, oidcClient.getAuthorizationToken());
         }
 
         //Execute
@@ -67,7 +71,7 @@ public class GraphIndexing {
         //Gather execution plan
         TodoList todoList = new TodoList();
         for (IndexingController indexingController : getIndexingControllers()) {
-            indexingController.update(qualifiedSpec, todoList);
+            indexingController.update(qualifiedSpec, todoList, oidcClient.getAuthorizationToken());
         }
 
         //Execute
@@ -77,11 +81,10 @@ public class GraphIndexing {
 
 
     public TodoList delete(NexusInstanceReference reference){
-
         //Gather execution plan
         TodoList todoList = new TodoList();
         for (IndexingController indexingController : getIndexingControllers()) {
-            indexingController.delete(reference, todoList);
+            indexingController.delete(reference, todoList, oidcClient.getAuthorizationToken());
         }
         //Execute
         transaction.execute(todoList);
@@ -90,7 +93,7 @@ public class GraphIndexing {
 
     public void clearGraph() {
         for (IndexingController indexingController : getIndexingControllers()) {
-            indexingController.clear();
+            indexingController.clear(oidcClient.getAuthorizationToken());
         }
     }
 

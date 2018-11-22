@@ -2,6 +2,7 @@ package org.humanbrainproject.knowledgegraph.instances.control;
 
 import com.github.jsonldjava.core.JsonLdConsts;
 import org.humanbrainproject.knowledgegraph.commons.authorization.control.OidcHeaderInterceptor;
+import org.humanbrainproject.knowledgegraph.commons.authorization.control.TokenBasedClientHttpRequestInterceptor;
 import org.humanbrainproject.knowledgegraph.commons.authorization.entity.OidcAccessToken;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusClient;
@@ -19,7 +20,6 @@ import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusRelativeU
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
 import org.humanbrainproject.knowledgegraph.query.entity.JsonDocument;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -49,8 +49,8 @@ public class InstanceController {
 
 
 
-    private NexusInstanceReference getByIdentifier(NexusSchemaReference schema, String identifier) {
-        return arangoRepository.findBySchemaOrgIdentifier(ArangoCollectionReference.fromNexusSchemaReference(schema), identifier);
+    private NexusInstanceReference getByIdentifier(NexusSchemaReference schema, String identifier, OidcAccessToken oidcAccessToken) {
+        return arangoRepository.findBySchemaOrgIdentifier(ArangoCollectionReference.fromNexusSchemaReference(schema), identifier, oidcAccessToken);
     }
 
     public JsonDocument getFromNexusById(NexusInstanceReference instanceReference, OidcAccessToken oidcAccessToken){
@@ -60,7 +60,7 @@ public class InstanceController {
 
     public NexusInstanceReference createInstanceByIdentifier(NexusSchemaReference schemaReference, String identifier, JsonDocument payload, OidcAccessToken oidcAccessToken) {
         payload.addToProperty(SchemaOrgVocabulary.IDENTIFIER, identifier);
-        NexusInstanceReference byIdentifier = getByIdentifier(schemaReference, identifier);
+        NexusInstanceReference byIdentifier = getByIdentifier(schemaReference, identifier, oidcAccessToken);
         if (byIdentifier==null) {
             return createInstanceByNexusId(schemaReference, null, null, payload, oidcAccessToken);
         } else {
@@ -103,7 +103,7 @@ public class InstanceController {
         return createInstanceByNexusId(nexusSchemaReference, id, revision, payload, new OidcHeaderInterceptor(oidcAccessToken));
     }
 
-    public NexusInstanceReference createInstanceByNexusId(NexusSchemaReference nexusSchemaReference, String id, Integer revision, Map<String, Object> payload, ClientHttpRequestInterceptor oidc)  {
+    public NexusInstanceReference createInstanceByNexusId(NexusSchemaReference nexusSchemaReference, String id, Integer revision, Map<String, Object> payload, TokenBasedClientHttpRequestInterceptor oidc)  {
         schemaController.createSchema(nexusSchemaReference);
         Object type = payload.get(JsonLdConsts.TYPE);
         String targetClass = schemaController.getTargetClass(nexusSchemaReference);

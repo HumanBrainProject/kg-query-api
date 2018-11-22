@@ -56,6 +56,7 @@ public class ArangoConnection implements DatabaseConnection<ArangoDatabase>{
         return getOrCreateDB().getCollections().stream().map(r -> new ArangoCollectionReference(r.getName())).collect(Collectors.toSet());
     }
 
+
     public Set<ArangoCollectionReference> filterExistingCollectionLabels(Set<ArangoCollectionReference> collections){
         Set<ArangoCollectionReference> existingCollectionLabels = getCollections();
         return collections.stream().filter(existingCollectionLabels::contains).collect(Collectors.toSet());
