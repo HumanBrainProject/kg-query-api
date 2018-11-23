@@ -36,7 +36,7 @@ public class ArangoQueryFactory {
         q.addDocumentFilter(new TrustedAqlValue("doc"));
         q.addLine("FOR v, e IN 1..1 OUTBOUND doc ${edges}");
         q.addDocumentFilter(new TrustedAqlValue("v"));
-        q.addLine("RETURN v." + ArangoVocabulary.ID);
+        q.addLine("RETURN e." + ArangoVocabulary.ID);
         return q.build().getValue();
     }
 
@@ -211,6 +211,7 @@ public class ArangoQueryFactory {
         query.setParameter("filterProperty", SchemaOrgVocabulary.NAME);
 
         query.addLine("FOR doc IN `${collection}`");
+        query.addDocumentFilter(new TrustedAqlValue("doc"));
         query.addLine("FILTER doc != NULL");
         query.addLine("FILTER doc._permissionGroup IN "+query.WHITELIST_ALIAS);
         if (hasSearchTerm) {
