@@ -31,8 +31,10 @@ public class ArangoQueryFactory {
     public String queryOutboundRelationsForDocument(ArangoDocumentReference document, Set<ArangoCollectionReference> edgeCollections, Set<String> permissionGroupsWithReadAccess) {
         AuthorizedArangoQuery q = new AuthorizedArangoQuery(permissionGroupsWithReadAccess);
         q.setParameter("documentId", document.getId());
-        q.setTrustedParameter("edge", q.listCollections(',', edgeCollections.stream().map(ArangoCollectionReference::getName).collect(Collectors.toSet())));
-        q.addLine("FOR v, e IN 1..1 OUTBOUND DOCUMENT(\"${documentId}\") `${edge}`");
+        q.setTrustedParameter("edges", q.listCollections(',', edgeCollections.stream().map(ArangoCollectionReference::getName).collect(Collectors.toSet())));
+        q.addLine("LET doc = DOCUMENT(\"${documentId}\")");
+        q.addDocumentFilter(new TrustedAqlValue("doc"));
+        q.addLine("FOR v, e IN 1..1 OUTBOUND doc ${edges}");
         q.addDocumentFilter(new TrustedAqlValue("v"));
         q.addLine("RETURN v." + ArangoVocabulary.ID);
         return q.build().getValue();
@@ -42,7 +44,9 @@ public class ArangoQueryFactory {
         AuthorizedArangoQuery q = new AuthorizedArangoQuery(permissionGroupsWithReadAccess);
         q.setParameter("documentId", document.getId());
         q.setParameter("edge", linkReference.getName());
-        q.addLine("FOR v IN 1..1 INBOUND DOCUMENT(\"${documentId}\") `${edge}`");
+        q.addLine("LET doc = DOCUMENT(\"${documentId}\") ");
+        q.addDocumentFilter(new TrustedAqlValue("doc"));
+        q.addLine("FOR v IN 1..1 INBOUND doc `${edge}`");
         q.addDocumentFilter(new TrustedAqlValue("v"));
         q.addLine("RETURN v."+ArangoVocabulary.NEXUS_RELATIVE_URL);
 

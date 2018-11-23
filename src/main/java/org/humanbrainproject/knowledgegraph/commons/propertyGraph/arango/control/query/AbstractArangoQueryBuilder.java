@@ -23,6 +23,9 @@ public abstract class AbstractArangoQueryBuilder {
     protected Filter filter;
     protected Specification specification;
     protected ArangoAlias permissionGroupFieldName;
+    protected AuthorizedArangoQuery q;
+
+
     protected StringBuilder sb = new StringBuilder();
     protected Stack<ArangoAlias> previousAlias = new Stack<>();
     protected ArangoAlias currentAlias = ROOT_ALIAS;
@@ -53,6 +56,7 @@ public abstract class AbstractArangoQueryBuilder {
         this.filter = filter;
         this.specification = specification;
         this.permissionGroupFieldName = permissionGroupFieldName;
+        this.q = new AuthorizedArangoQuery(whitelistOrganizations);
         this.whitelistOrganizations = whitelistOrganizations;
         this.documentReference = documentReference;
         this.existingArangoCollections = existingArangoCollections!=null ? Collections.unmodifiableSet(existingArangoCollections) : null;
