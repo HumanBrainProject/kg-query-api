@@ -148,7 +148,7 @@ public class ArangoRepository {
     @AuthorizedAccess
     public Map getDocument(ArangoDocumentReference documentReference, ArangoConnection arangoConnection, Credential credential) {
         Map document = arangoConnection.getOrCreateDB().getDocument(documentReference.getId(), Map.class);
-        if(authorizationController.isReadable(document, credential)){
+        if(document !=null && authorizationController.isReadable(document, credential)){
             return null;
         }
         return document;
