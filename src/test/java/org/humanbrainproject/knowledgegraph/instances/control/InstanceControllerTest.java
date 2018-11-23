@@ -1,6 +1,6 @@
 package org.humanbrainproject.knowledgegraph.instances.control;
 
-import org.humanbrainproject.knowledgegraph.commons.authorization.control.OidcClient;
+import org.humanbrainproject.knowledgegraph.commons.authorization.control.SystemOidcClient;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.SchemaOrgVocabulary;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
@@ -24,7 +24,7 @@ public class InstanceControllerTest {
     InstanceController instanceController;
 
     @Autowired
-    OidcClient oidcClient;
+    SystemOidcClient oidcClient;
 
     @Test
     public void create() throws IOException {

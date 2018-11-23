@@ -2,7 +2,7 @@ package org.humanbrainproject.knowledgegraph.indexing;
 
 import com.github.jsonldjava.core.JsonLdConsts;
 import com.google.gson.Gson;
-import org.humanbrainproject.knowledgegraph.commons.authorization.control.OidcClient;
+import org.humanbrainproject.knowledgegraph.commons.authorization.control.SystemOidcClient;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.SubSpace;
@@ -49,7 +49,7 @@ public class FullIndexingTest {
     NexusReleasingController releaseController;
 
     @Autowired
-    OidcClient oidcClient;
+    SystemOidcClient oidcClient;
 
     @Autowired
     JsonTransformer jsonTransformer;

@@ -19,15 +19,11 @@ import java.util.Collections;
 public class SystemOidcHeaderInterceptor implements ClientHttpRequestInterceptor {
 
     @Autowired
-    OidcClient client;
+    SystemOidcClient client;
 
-    private OidcAccessToken currentToken = null;
 
     public OidcAccessToken getToken() {
-        if (currentToken == null) {
-            currentToken = client.getAuthorizationToken();
-        }
-        return currentToken;
+        return client.getAuthorizationToken();
     }
 
     private void setAuthTokenToRequest(HttpRequest request) {
@@ -46,7 +42,7 @@ public class SystemOidcHeaderInterceptor implements ClientHttpRequestInterceptor
         ClientHttpResponse response = clientHttpRequestExecution.execute(httpRequest, bytes);
         if (response.getStatusCode() == HttpStatus.UNAUTHORIZED) {
             //The token seems to have timed out - let's try to refresh it and reexecute the request
-            currentToken = null;
+            client.refreshToken();
             setAuthTokenToRequest(httpRequest);
             response = clientHttpRequestExecution.execute(httpRequest, bytes);
         }

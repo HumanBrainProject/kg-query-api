@@ -1,6 +1,7 @@
 package org.humanbrainproject.knowledgegraph.query.boundary;
 
 import com.github.jsonldjava.core.JsonLdConsts;
+import org.humanbrainproject.knowledgegraph.commons.authorization.entity.Credential;
 import org.humanbrainproject.knowledgegraph.commons.labels.SemanticsToHumanTranslator;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoDatabaseFactory;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoRepository;
@@ -29,8 +30,8 @@ public class ArangoGraph {
     @Autowired
     SemanticsToHumanTranslator translator;
 
-    public Map getGraph(NexusInstanceReference instance, Integer step) {
-        List<Map> maps = arangoRepository.inDepthGraph(ArangoDocumentReference.fromNexusInstance(instance), step, databaseFactory.getInferredDB());
+    public Map getGraph(NexusInstanceReference instance, Integer step, Credential credential) {
+        List<Map> maps = arangoRepository.inDepthGraph(ArangoDocumentReference.fromNexusInstance(instance), step, databaseFactory.getInferredDB(), credential);
         JsonDocument result = new JsonDocument();
         List<Map<String, Object>> nodesList = new ArrayList<>();
         List<Map<String, Object>> linksList = new ArrayList<>();
@@ -43,7 +44,7 @@ public class ArangoGraph {
             for (Map vertex : vertices) {
                 JsonDocument node = new JsonDocument();
                 String id = (String) vertex.get(HBPVocabulary.RELATIVE_URL_OF_INTERNAL_LINK);
-                if(!documentIds.contains(id)) {
+                if (!documentIds.contains(id)) {
                     arangoToNexusId.put((String) vertex.get(ArangoVocabulary.ID), id);
                     node.put("id", id);
                     Object type = vertex.get(JsonLdConsts.TYPE);
@@ -62,8 +63,8 @@ public class ArangoGraph {
             List<Map> edges = (List<Map>) map.get("edges");
             for (Map edge : edges) {
                 JsonDocument link = new JsonDocument();
-                String id = (String)edge.get(ArangoVocabulary.ID);
-                if(!documentIds.contains(id)) {
+                String id = (String) edge.get(ArangoVocabulary.ID);
+                if (!documentIds.contains(id)) {
                     link.put("id", id);
                     link.put("title", translator.translateSemanticValueToHumanReadableLabel((String) edge.get(ArangoVocabulary.NAME)));
                     link.put("source", arangoToNexusId.get(edge.get(ArangoVocabulary.FROM)));
@@ -76,15 +77,16 @@ public class ArangoGraph {
         return result;
     }
 
-    public List<Map> getGetEditorSpecDocument(ArangoCollectionReference collection) {
-        return arangoRepository.getGetEditorSpecDocument(collection, databaseFactory.getInternalDB());
+    public List<Map> getInternalDocuments(ArangoCollectionReference collection) {
+        //FIXME: This method gives access to all documents inside the internal database and exposes it through the @link{org.humanbrainproject.knowledgegraph.query.api.GraphInternalAPI} this could become a vulnerability in the long term (depending on what is stored inside the internal database)
+        return arangoRepository.getInternalDocuments(collection);
     }
 
-    public Map getInstanceList(NexusSchemaReference schemaReference, Integer from, Integer size, String searchTerm) {
-        return arangoRepository.getInstanceList(ArangoCollectionReference.fromNexusSchemaReference(schemaReference), from, size, searchTerm, databaseFactory.getInferredDB());
+    public Map getInstanceList(NexusSchemaReference schemaReference, Integer from, Integer size, String searchTerm, Credential credential) {
+        return arangoRepository.getInstanceList(ArangoCollectionReference.fromNexusSchemaReference(schemaReference), from, size, searchTerm, databaseFactory.getInferredDB(), credential);
     }
 
-    public Map getBookmarks(NexusInstanceReference instanceRef, Integer from, Integer size, String searchTerm) {
-        return arangoRepository.getBookmarks(instanceRef, from, size, searchTerm, databaseFactory.getInferredDB());
+    public Map getBookmarks(NexusInstanceReference instanceRef, Integer from, Integer size, String searchTerm, Credential credential) {
+        return arangoRepository.getBookmarks(instanceRef, from, size, searchTerm, databaseFactory.getInferredDB(), credential);
     }
 }

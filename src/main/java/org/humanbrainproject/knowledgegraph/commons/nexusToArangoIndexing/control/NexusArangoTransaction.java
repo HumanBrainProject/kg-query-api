@@ -1,14 +1,19 @@
 package org.humanbrainproject.knowledgegraph.commons.nexusToArangoIndexing.control;
 
+import com.arangodb.ArangoCollection;
+import com.arangodb.ArangoCursor;
+import com.arangodb.ArangoDBException;
 import com.arangodb.ArangoDatabase;
+import com.arangodb.entity.CollectionEntity;
 import com.arangodb.entity.CollectionType;
+import com.arangodb.model.AqlQueryOptions;
 import com.arangodb.model.CollectionCreateOptions;
-import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
+import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationController;
+import org.humanbrainproject.knowledgegraph.commons.authorization.control.SystemOidcClient;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.SystemNexusClient;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoConnection;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoDatabaseFactory;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoDocumentConverter;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoRepository;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.query.ArangoQueryFactory;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.control.DatabaseTransaction;
@@ -20,7 +25,6 @@ import org.humanbrainproject.knowledgegraph.indexing.entity.InsertTodoItem;
 import org.humanbrainproject.knowledgegraph.indexing.entity.TodoList;
 import org.humanbrainproject.knowledgegraph.indexing.entity.knownSemantics.LinkingInstance;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
-import org.humanbrainproject.knowledgegraph.instances.control.InstanceController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,22 +39,20 @@ import java.util.List;
 public class NexusArangoTransaction implements DatabaseTransaction {
 
     @Autowired
-    ArangoRepository repository;
-
-    @Autowired
     ArangoDocumentConverter arangoDocumentConverter;
 
     @Autowired
     SystemNexusClient nexusClient;
 
     @Autowired
-    JsonTransformer jsonTransformer;
+    AuthorizationController authorizationController;
 
     @Autowired
-    InstanceController instanceController;
+    SystemOidcClient systemOidcClient;
 
     @Autowired
-    ArangoDatabaseFactory databaseFactory;
+    ArangoQueryFactory queryFactory;
+
 
     protected Logger logger = LoggerFactory.getLogger(NexusArangoTransaction.class);
 
@@ -63,8 +65,8 @@ public class NexusArangoTransaction implements DatabaseTransaction {
             if(databaseConnection!=null) {
                 ArangoDatabase database = databaseConnection.getOrCreateDB();
                 ArangoDocumentReference reference = ArangoDocumentReference.fromNexusInstance(deleteItem.getReference());
-                repository.deleteOutgoingRelations(reference, databaseConnection);
-                repository.deleteDocument(reference, database);
+                deleteOutgoingRelations(reference, databaseConnection);
+                deleteDocument(reference, database);
             }
         }
 
@@ -79,25 +81,25 @@ public class NexusArangoTransaction implements DatabaseTransaction {
                 LinkingInstance linkingInstance = new LinkingInstance(vertex.getQualifiedIndexingMessage());
                 if(linkingInstance.isInstance()) {
                     ArangoDocumentReference documentReference = ArangoDocumentReference.fromNexusInstance(vertex.getInstanceReference());
-                    repository.deleteDocument(documentReference, database);
+                    deleteDocument(documentReference, database);
                     if(linkingInstance.getFrom()!=null && linkingInstance.getTo()!=null) {
                         String jsonFromLinkingInstance = arangoDocumentConverter.createJsonFromLinkingInstance(documentReference, linkingInstance.getFrom(), linkingInstance.getTo(), vertex.getInstanceReference());
-                        repository.insertDocument(documentReference, jsonFromLinkingInstance, CollectionType.EDGES, database);
+                        insertDocument(documentReference, jsonFromLinkingInstance, CollectionType.EDGES, database);
                     }
                 }
                 else {
                     //Remove already existing instances
-                    repository.deleteOutgoingRelations(reference, databaseConnection);
-                    repository.deleteDocument(reference, database);
+                    deleteOutgoingRelations(reference, databaseConnection);
+                    deleteDocument(reference, database);
 
                     String vertexJson = arangoDocumentConverter.createJsonFromVertex(reference, vertex, insertItem.getBlacklist());
                     if (vertexJson != null) {
-                        repository.insertDocument(reference, vertexJson, CollectionType.DOCUMENT, database);
+                        insertDocument(reference, vertexJson, CollectionType.DOCUMENT, database);
                     }
                     for (Edge edge : vertex.getEdges()) {
                         ArangoDocumentReference document = ArangoDocumentReference.fromEdge(edge);
                         String jsonFromEdge = arangoDocumentConverter.createJsonFromEdge(document, vertex, edge, insertItem.getBlacklist());
-                        repository.insertDocument(document, jsonFromEdge, CollectionType.EDGES, database);
+                        insertDocument(document, jsonFromEdge, CollectionType.EDGES, database);
                         ArangoCollectionReference collection = ArangoCollectionReference.fromNexusSchemaReference(edge.getReference().getNexusSchema());
                         if (!database.collection(collection.getName()).exists()) {
                             database.createCollection(collection.getName(), new CollectionCreateOptions().type(CollectionType.DOCUMENT));
@@ -113,6 +115,110 @@ public class NexusArangoTransaction implements DatabaseTransaction {
             Vertex vertex = insertOrUpdateInPrimaryStoreItem.getVertex();
             NexusInstanceReference newReference = nexusClient.createOrUpdateInstance(vertex.getInstanceReference().setRevision(null), new LinkedHashMap<>(vertex.getQualifiedIndexingMessage().getQualifiedMap()));
             vertex.setInstanceReference(newReference);
+        }
+    }
+
+
+    private void insertDocument(ArangoDocumentReference document, String documentPayload, CollectionType
+            collectionType, ArangoDatabase db) {
+        if (document != null && documentPayload != null) {
+            ArangoCollection collection = db.collection(document.getCollection().getName());
+            if (!collection.exists()) {
+                db.createCollection(document.getCollection().getName(), new CollectionCreateOptions().type(collectionType));
+                logger.info("Created collection {} in database {}", document.getCollection().getName(), db.name());
+                collection = db.collection(document.getCollection().getName());
+            }
+            if (collection.documentExists(document.getKey())) {
+                updateDocument(document, documentPayload, collectionType, db);
+            } else {
+                try {
+                    collection.insertDocument(documentPayload);
+                    logger.info("Inserted document: {} in database {}", document.getId(), db.name());
+                } catch (ArangoDBException dbexception) {
+                    logger.error(String.format("Was not able to insert document: %s in database %s", document.getId(), db.name()), dbexception);
+                    throw dbexception;
+                }
+            }
+        }
+    }
+
+
+
+    private void updateDocument(ArangoDocumentReference document, String documentPayload, CollectionType
+            collectionType, ArangoDatabase db) {
+        if (document != null && documentPayload != null) {
+            ArangoCollection collection = db.collection(document.getCollection().getName());
+            if (!collection.exists() || !collection.documentExists(document.getKey())) {
+                insertDocument(document, documentPayload, collectionType, db);
+            } else {
+                try {
+                    collection.updateDocument(document.getKey(), documentPayload);
+                    logger.info("Updated document: {} in database {}", document.getId(), db.name());
+                } catch (ArangoDBException dbexception) {
+                    logger.error(String.format("Was not able to update document: %s in database %s", document.getId(), db.name()), dbexception);
+                    throw dbexception;
+                }
+            }
+        }
+    }
+
+    private void deleteOutgoingRelations(ArangoDocumentReference document, ArangoConnection connection) {
+        if (document != null) {
+            ArangoDatabase db = connection.getOrCreateDB();
+            ArangoCollection collection = db.collection(document.getCollection().getName());
+            if (collection.exists() && collection.getInfo().getType()==CollectionType.DOCUMENT) {
+                if (collection.documentExists(document.getKey())) {
+                    try {
+                        ArangoCursor<String> result = db.query(queryFactory.queryOutboundRelationsForDocument(document, connection.getEdgesCollectionNames(), authorizationController.getReadableOrganizations(systemOidcClient.getAuthorizationToken())), null, new AqlQueryOptions(), String.class);
+                        for (String id : result.asListRemaining()) {
+                            deleteDocument(ArangoDocumentReference.fromId(id), db);
+                        }
+                        logger.info("Deleted document: {} from database {}", document.getId(), db.name());
+                    } catch (ArangoDBException dbexception) {
+                        logger.error(String.format("Was not able to delete document: %s in database %s", document.getId(), db.name()), dbexception);
+                        throw dbexception;
+                    }
+                } else {
+                    logger.debug("Was not able to delete {} because the document does not exist. Skip.", document.getId());
+                }
+            } else {
+                logger.debug("Tried to delete {} although the collection doesn't exist. Skip.", document.getId());
+            }
+        } else {
+            logger.error("Was not able to delete document due to missing id");
+        }
+    }
+
+
+    private void deleteDocument(ArangoDocumentReference document, ArangoDatabase db) {
+        if (document != null) {
+            ArangoCollection collection = db.collection(document.getCollection().getName());
+            if (collection.exists()) {
+                if (collection.documentExists(document.getKey())) {
+                    try {
+                        collection.deleteDocument(document.getKey());
+                        logger.info("Deleted document: {} from database {}", document.getId(), db.name());
+                    } catch (ArangoDBException dbexception) {
+                        logger.error(String.format("Was not able to delete document: %s in database %s", document.getId(), db.name()), dbexception);
+                        throw dbexception;
+                    }
+                } else {
+                    logger.debug("Was not able to delete {} because the document does not exist. Skip.", document.getId());
+                }
+            } else {
+                logger.debug("Tried to delete {} although the collection doesn't exist. Skip.", document.getId());
+            }
+        } else {
+            logger.error("Was not able to delete document due to missing id");
+        }
+    }
+
+    public void clearDatabase(ArangoDatabase db) {
+        for (CollectionEntity collectionEntity : db.getCollections()) {
+            if (!collectionEntity.getName().startsWith("_")) {
+                logger.info("Drop collection {} in db {}", collectionEntity.getName(), db.name());
+                db.collection(collectionEntity.getName()).drop();
+            }
         }
     }
 

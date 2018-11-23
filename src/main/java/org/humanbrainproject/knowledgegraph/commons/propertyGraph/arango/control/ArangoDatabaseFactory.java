@@ -1,5 +1,6 @@
 package org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control;
 
+import org.humanbrainproject.knowledgegraph.commons.authorization.control.SystemOidcClient;
 import org.humanbrainproject.knowledgegraph.query.entity.DatabaseScope;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -29,6 +30,9 @@ public class ArangoDatabaseFactory {
     @Autowired
     ArangoRepository repository;
 
+    @Autowired
+    SystemOidcClient systemOidcClient;
+
 
     public ArangoConnection getReleasedDB() {
         return releasedDB;
@@ -53,16 +57,6 @@ public class ArangoDatabaseFactory {
                 return getInferredDB();
         }
         return null;
-    }
-
-    public void clearGraph() {
-        repository.clearDatabase(getDefaultDB().getOrCreateDB());
-        if (releasedDB != null) {
-            repository.clearDatabase(getReleasedDB().getOrCreateDB());
-        }
-        if(inferredDB !=null){
-            repository.clearDatabase(getInferredDB().getOrCreateDB());
-        }
     }
 
 }

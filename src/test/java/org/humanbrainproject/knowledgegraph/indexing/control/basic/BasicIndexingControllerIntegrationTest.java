@@ -1,5 +1,6 @@
 package org.humanbrainproject.knowledgegraph.indexing.control.basic;
 
+import org.humanbrainproject.knowledgegraph.commons.authorization.entity.OidcAccessToken;
 import org.humanbrainproject.knowledgegraph.indexing.entity.QualifiedIndexingMessage;
 import org.humanbrainproject.knowledgegraph.indexing.entity.TodoList;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
@@ -36,7 +37,7 @@ public class BasicIndexingControllerIntegrationTest {
         fullyQualified.put("http://test/foo", "foo");
         NexusInstanceReference instanceReference = TestObjectFactory.fooInstanceReference();
         QualifiedIndexingMessage qualifiedIndexingMessage = TestObjectFactory.createQualifiedIndexingMessage(instanceReference, fullyQualified);
-        TodoList todoList = controller.insert(qualifiedIndexingMessage, new TodoList());
+        TodoList todoList = controller.insert(qualifiedIndexingMessage, new TodoList(), new OidcAccessToken());
         System.out.println(todoList);
 
     }
@@ -47,7 +48,7 @@ public class BasicIndexingControllerIntegrationTest {
         fullyQualified.put("http://test/foo", "foo");
         NexusInstanceReference instanceReference = new NexusInstanceReference("minds", "core", "dataset", "v0.0.4", "0032bda4-50e3-4dc9-ab87-980de4f526a2");
         QualifiedIndexingMessage qualifiedIndexingMessage = TestObjectFactory.createQualifiedIndexingMessage(instanceReference, fullyQualified);
-        TodoList todoList = controller.update(qualifiedIndexingMessage, new TodoList());
+        TodoList todoList = controller.update(qualifiedIndexingMessage, new TodoList(), new OidcAccessToken());
         System.out.println(todoList);
     }
 

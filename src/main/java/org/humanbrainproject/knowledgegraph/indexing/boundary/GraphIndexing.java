@@ -1,5 +1,7 @@
 package org.humanbrainproject.knowledgegraph.indexing.boundary;
 
+import org.humanbrainproject.knowledgegraph.commons.authorization.control.SystemOidcClient;
+import org.humanbrainproject.knowledgegraph.commons.authorization.entity.InternalMasterKey;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.control.DatabaseTransaction;
 import org.humanbrainproject.knowledgegraph.indexing.control.IndexingController;
 import org.humanbrainproject.knowledgegraph.indexing.control.MessageProcessor;
@@ -10,8 +12,6 @@ import org.humanbrainproject.knowledgegraph.indexing.entity.IndexingMessage;
 import org.humanbrainproject.knowledgegraph.indexing.entity.QualifiedIndexingMessage;
 import org.humanbrainproject.knowledgegraph.indexing.entity.TodoList;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -36,13 +36,14 @@ public class GraphIndexing {
     @Autowired
     DatabaseTransaction transaction;
 
+    @Autowired
+    SystemOidcClient oidcClient;
 
-    private Logger logger = LoggerFactory.getLogger(GraphIndexing.class);
+    InternalMasterKey internalMasterKey = new InternalMasterKey();
+
 
     private List<IndexingController> getIndexingControllers(){
         return Arrays.asList(defaultIndexingController, releasingController, inferenceController);
-        //return Arrays.asList(defaultIndexingController);
-
     }
 
     public TodoList insert(IndexingMessage message){
@@ -52,7 +53,7 @@ public class GraphIndexing {
         //Gather execution plan
         TodoList todoList = new TodoList();
         for (IndexingController indexingController : getIndexingControllers()) {
-            indexingController.insert(qualifiedSpec, todoList);
+            indexingController.insert(qualifiedSpec, todoList, internalMasterKey);
         }
 
         //Execute
@@ -67,7 +68,7 @@ public class GraphIndexing {
         //Gather execution plan
         TodoList todoList = new TodoList();
         for (IndexingController indexingController : getIndexingControllers()) {
-            indexingController.update(qualifiedSpec, todoList);
+            indexingController.update(qualifiedSpec, todoList, internalMasterKey);
         }
 
         //Execute
@@ -77,11 +78,10 @@ public class GraphIndexing {
 
 
     public TodoList delete(NexusInstanceReference reference){
-
         //Gather execution plan
         TodoList todoList = new TodoList();
         for (IndexingController indexingController : getIndexingControllers()) {
-            indexingController.delete(reference, todoList);
+            indexingController.delete(reference, todoList, internalMasterKey);
         }
         //Execute
         transaction.execute(todoList);
@@ -90,7 +90,7 @@ public class GraphIndexing {
 
     public void clearGraph() {
         for (IndexingController indexingController : getIndexingControllers()) {
-            indexingController.clear();
+            indexingController.clear(internalMasterKey);
         }
     }
 

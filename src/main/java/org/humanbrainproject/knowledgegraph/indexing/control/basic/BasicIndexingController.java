@@ -1,5 +1,6 @@
 package org.humanbrainproject.knowledgegraph.indexing.control.basic;
 
+import org.humanbrainproject.knowledgegraph.commons.authorization.entity.Credential;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Vertex;
 import org.humanbrainproject.knowledgegraph.indexing.control.IndexingController;
 import org.humanbrainproject.knowledgegraph.indexing.control.MessageProcessor;
@@ -20,7 +21,7 @@ public class BasicIndexingController implements IndexingController {
 
 
     @Override
-    public TodoList insert(QualifiedIndexingMessage message, TodoList todoList){
+    public TodoList insert(QualifiedIndexingMessage message, TodoList todoList, Credential credential){
         Vertex vertex = messageProcessor.createVertexStructure(message);
         InsertTodoItem insertTodoItem = new InsertTodoItem(vertex, indexingProvider.getConnection(TargetDatabase.DEFAULT));
         todoList.addTodoItem(insertTodoItem);
@@ -28,20 +29,20 @@ public class BasicIndexingController implements IndexingController {
     }
 
     @Override
-    public TodoList update(QualifiedIndexingMessage message, TodoList todoList){
+    public TodoList update(QualifiedIndexingMessage message, TodoList todoList, Credential credential){
         //TODO transfer information about creation / previous authors to new message?
-        insert(message, todoList);
+        insert(message, todoList, credential);
         return todoList;
     }
 
     @Override
-    public TodoList delete(NexusInstanceReference reference, TodoList todoList) {
+    public TodoList delete(NexusInstanceReference reference, TodoList todoList, Credential credential) {
         todoList.addTodoItem(new DeleteTodoItem(reference,  indexingProvider.getConnection(TargetDatabase.DEFAULT)));
         return todoList;
     }
 
     @Override
-    public void clear() {
+    public void clear(Credential credential) {
         indexingProvider.getConnection(TargetDatabase.DEFAULT).clearData();
     }
 }

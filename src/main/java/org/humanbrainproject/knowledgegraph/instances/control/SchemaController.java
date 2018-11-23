@@ -3,7 +3,7 @@ package org.humanbrainproject.knowledgegraph.instances.control;
 import com.github.jsonldjava.core.JsonLdConsts;
 import com.google.gson.Gson;
 import org.apache.commons.lang3.StringUtils;
-import org.humanbrainproject.knowledgegraph.commons.authorization.entity.OidcAccessToken;
+import org.humanbrainproject.knowledgegraph.commons.authorization.entity.Credential;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusClient;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.SystemNexusClient;
@@ -115,17 +115,17 @@ public class SchemaController {
 
     }
 
-    public void clearAllInstancesFromSchema(NexusSchemaReference schema, OidcAccessToken oidcAccessToken){
-        List<JsonDocument> documents = nexusClient.list(schema, oidcAccessToken, true);
+    public void clearAllInstancesFromSchema(NexusSchemaReference schema, Credential credential){
+        List<JsonDocument> documents = nexusClient.list(schema, credential, true);
         for (JsonDocument document : documents) {
             NexusInstanceReference instanceReference = NexusInstanceReference.createFromUrl((String)document.get("resultId"));
-            JsonDocument doc = nexusClient.get(instanceReference.getRelativeUrl(), oidcAccessToken);
-            nexusClient.delete(instanceReference.getRelativeUrl(), doc.getNexusRevision(), oidcAccessToken);
+            JsonDocument doc = nexusClient.get(instanceReference.getRelativeUrl(), credential);
+            nexusClient.delete(instanceReference.getRelativeUrl(), doc.getNexusRevision(), credential);
         }
     }
 
-    public List<NexusSchemaReference> getAllSchemas(String organization, OidcAccessToken oidcAccessToken){
-        return nexusClient.listSchemasByOrganization(organization, oidcAccessToken, true);
+    public List<NexusSchemaReference> getAllSchemas(String organization, Credential credential){
+        return nexusClient.listSchemasByOrganization(organization, credential, true);
     }
 
 

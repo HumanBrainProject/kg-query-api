@@ -1,6 +1,6 @@
 package org.humanbrainproject.knowledgegraph.instances.control;
 
-import org.humanbrainproject.knowledgegraph.commons.authorization.entity.OidcAccessToken;
+import org.humanbrainproject.knowledgegraph.commons.authorization.entity.Credential;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusClient;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
@@ -33,21 +33,21 @@ public class NexusReleasingController {
     @Autowired
     NexusToArangoIndexingProvider nexusToArangoIndexingProvider;
 
-    public IndexingMessage release(NexusInstanceReference instanceReference, Integer revision, OidcAccessToken oidcAccessToken) {
+    public IndexingMessage release(NexusInstanceReference instanceReference, Integer revision, Credential credential) {
         JsonDocument payload = new JsonDocument();
         payload.addReference(HBPVocabulary.RELEASE_INSTANCE, configuration.getAbsoluteUrl(instanceReference));
         payload.put(HBPVocabulary.RELEASE_REVISION, revision);
         payload.addType(HBPVocabulary.RELEASE_TYPE);
         NexusSchemaReference releaseSchema = new NexusSchemaReference(instanceReference.getNexusSchema().getOrganization(), "prov", "release", "v0.0.2");
-        NexusInstanceReference instance = instanceController.createInstanceByIdentifier(releaseSchema, instanceReference.getFullId(false), payload, oidcAccessToken);
+        NexusInstanceReference instance = instanceController.createInstanceByIdentifier(releaseSchema, instanceReference.getFullId(false), payload, credential);
         return new IndexingMessage(instance, jsonTransformer.getMapAsJson(payload), null, null);
     }
 
-    public Set<NexusInstanceReference> unrelease(NexusInstanceReference instanceReference, OidcAccessToken oidcAccessToken) {
+    public Set<NexusInstanceReference> unrelease(NexusInstanceReference instanceReference, Credential credential) {
         //Find release instance
-        Set<NexusInstanceReference> releases = nexusToArangoIndexingProvider.findInstancesWithLinkTo(HBPVocabulary.RELEASE_INSTANCE, instanceReference);
+        Set<NexusInstanceReference> releases = nexusToArangoIndexingProvider.findInstancesWithLinkTo(HBPVocabulary.RELEASE_INSTANCE, instanceReference, credential);
         for (NexusInstanceReference nexusInstanceReference : releases) {
-            instanceController.deprecateInstanceByNexusId(nexusInstanceReference, oidcAccessToken);
+            instanceController.deprecateInstanceByNexusId(nexusInstanceReference, credential);
         }
         return releases;
     }

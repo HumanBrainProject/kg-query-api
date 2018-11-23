@@ -1,5 +1,6 @@
 package org.humanbrainproject.knowledgegraph.indexing.control.nexusToArango;
 
+import org.humanbrainproject.knowledgegraph.commons.authorization.entity.Credential;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonLdStandardization;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.SystemNexusClient;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoConnection;
@@ -51,16 +52,16 @@ public class NexusToArangoIndexingProvider {
         return messageProcessor.createVertexStructure(qualifiedMessage);
     }
 
-    public Set<NexusInstanceReference> findInstancesWithLinkTo(String originalParentProperty, NexusInstanceReference originalId) {
-        return repository.findOriginalIdsWithLinkTo(ArangoDocumentReference.fromNexusInstance(originalId), ArangoCollectionReference.fromFieldName(originalParentProperty), databaseFactory.getDefaultDB());
+    public Set<NexusInstanceReference> findInstancesWithLinkTo(String originalParentProperty, NexusInstanceReference originalId, Credential credential) {
+        return repository.findOriginalIdsWithLinkTo(ArangoDocumentReference.fromNexusInstance(originalId), ArangoCollectionReference.fromFieldName(originalParentProperty), databaseFactory.getDefaultDB(), credential);
     }
 
-    public Vertex mapToOriginalSpace(Vertex vertex, NexusInstanceReference originalId) {
+    public Vertex mapToOriginalSpace(Vertex vertex, NexusInstanceReference originalId, Credential credential) {
         QualifiedIndexingMessage newMessage = new QualifiedIndexingMessage(vertex.getQualifiedIndexingMessage().getOriginalMessage(), new LinkedHashMap(vertex.getQualifiedIndexingMessage().getQualifiedMap()));
         Vertex newVertex = messageProcessor.createVertexStructure(newMessage);
         Map<NexusInstanceReference, NexusInstanceReference> toOriginalIdMap = new HashMap<>();
         for (Edge edge : newVertex.getEdges()) {
-            NexusInstanceReference relatedOriginalId = repository.findOriginalId(edge.getReference());
+            NexusInstanceReference relatedOriginalId = repository.findOriginalId(edge.getReference(), credential);
             relatedOriginalId = relatedOriginalId.toSubSpace(SubSpace.MAIN);
             toOriginalIdMap.put(edge.getReference(), relatedOriginalId);
             edge.setReference(relatedOriginalId);
@@ -72,8 +73,8 @@ public class NexusToArangoIndexingProvider {
     }
 
 
-    public Set<VertexOrEdgeReference> getVertexOrEdgeReferences(NexusInstanceReference nexusInstanceReference, TargetDatabase database) {
-        Set<ArangoDocumentReference> referencesBelongingToInstance = repository.getReferencesBelongingToInstance(nexusInstanceReference, getConnection(database));
+    public Set<VertexOrEdgeReference> getVertexOrEdgeReferences(NexusInstanceReference nexusInstanceReference, TargetDatabase database, Credential credential) {
+        Set<ArangoDocumentReference> referencesBelongingToInstance = repository.getReferencesBelongingToInstance(nexusInstanceReference, getConnection(database), credential);
         referencesBelongingToInstance.add(ArangoDocumentReference.fromNexusInstance(nexusInstanceReference));
         return referencesBelongingToInstance.stream().map(r -> new VertexOrEdgeReference(){
             @Override
@@ -105,11 +106,11 @@ public class NexusToArangoIndexingProvider {
         return systemNexusClient.getPayload(instanceReference);
     }
 
-    public String getPayloadById(NexusInstanceReference instanceReference, TargetDatabase database) {
-        return repository.getPayloadById(ArangoDocumentReference.fromNexusInstance(instanceReference), getConnection(database));
+    public String getPayloadById(NexusInstanceReference instanceReference, TargetDatabase database, Credential credential) {
+        return repository.getPayloadById(ArangoDocumentReference.fromNexusInstance(instanceReference), getConnection(database), credential);
     }
 
-    public NexusInstanceReference findOriginalId(NexusInstanceReference instanceReference){
-        return repository.findOriginalId(instanceReference);
+    public NexusInstanceReference findOriginalId(NexusInstanceReference instanceReference, Credential credential){
+        return repository.findOriginalId(instanceReference, credential);
     }
 }

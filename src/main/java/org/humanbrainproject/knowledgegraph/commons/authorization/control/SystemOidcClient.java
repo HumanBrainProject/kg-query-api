@@ -17,26 +17,28 @@ import java.io.IOException;
 import java.util.Map;
 
 @Component
-public class OidcClient {
+public class SystemOidcClient {
 
     private final String OPENID_HOST_KEY = "openid_host";
     private final String TOKEN_KEY = "token_endpoint";
     private final String RELATIVE_OPENID_CONFIGURATION_URL = ".well-known/openid-configuration";
     private final String ACCESS_TOKEN_KEY = "access_token";
+    private OidcAccessToken currentToken;
+
 
     @Value("${org.humanbrainproject.knowledgegraph.oidc.configFile}")
     String oidcConfigFile;
 
     final Gson gson = new Gson();
 
-    String getTokenUrl(String host) {
+    private String getTokenUrl(String host) {
         RestTemplate template = new RestTemplate();
         String openidconf = template.getForObject(String.format("%s/%s", host, RELATIVE_OPENID_CONFIGURATION_URL), String.class);
         Map map = gson.fromJson(openidconf, Map.class);
         return map.get(TOKEN_KEY).toString();
     }
 
-    Map readConfigFile(){
+    private Map readConfigFile(){
         try (BufferedReader bufferedReader = new BufferedReader(new FileReader(oidcConfigFile))) {
             return gson.fromJson(bufferedReader, Map.class);
         }
@@ -45,7 +47,7 @@ public class OidcClient {
         }
     }
 
-    String getToken(Map map, String tokenUrl){
+    private String getToken(Map map, String tokenUrl){
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
         MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
@@ -60,14 +62,21 @@ public class OidcClient {
         return template.postForObject(tokenUrl, request, String.class);
     }
 
-
-    public OidcAccessToken getAuthorizationToken(){
+    public void refreshToken(){
         Map map = readConfigFile();
         String host = map.get(OPENID_HOST_KEY).toString();
         String tokenUrl = getTokenUrl(host);
         String token = getToken(map, tokenUrl);
         Map tokenResponse = gson.fromJson(token, Map.class);
-        return new OidcAccessToken().setToken(tokenResponse.get(ACCESS_TOKEN_KEY).toString());
+        this.currentToken = new OidcAccessToken().setToken(tokenResponse.get(ACCESS_TOKEN_KEY).toString());
+    }
+
+
+    public OidcAccessToken getAuthorizationToken(){
+        if(currentToken==null) {
+            refreshToken();
+        }
+        return this.currentToken;
     }
 
 }

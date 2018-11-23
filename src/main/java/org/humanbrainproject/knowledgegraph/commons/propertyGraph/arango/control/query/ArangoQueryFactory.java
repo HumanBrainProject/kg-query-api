@@ -1,9 +1,8 @@
 package org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.query;
 
 import com.github.jsonldjava.core.JsonLdConsts;
-import org.apache.commons.text.StringSubstitutor;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoConnection;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.UnauthorizedAccess;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.ArangoVocabulary;
@@ -14,8 +13,6 @@ import org.humanbrainproject.knowledgegraph.releasing.entity.ReleaseStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -26,184 +23,239 @@ public class ArangoQueryFactory {
     @Autowired
     NexusConfiguration configuration;
 
-    public String queryForIdsWithProperty(String propertyName, String propertyValue, Set<ArangoCollectionReference> collectionsToCheck) {
-        return queryForValueWithProperty(propertyName, propertyValue,collectionsToCheck, ArangoVocabulary.ID);
+
+    public String queryForIdsWithProperty(String propertyName, String propertyValue, Set<ArangoCollectionReference> collectionsToCheck, Set<String> permissionGroupsWithReadAccess) {
+        return queryForValueWithProperty(propertyName, propertyValue,collectionsToCheck, ArangoVocabulary.ID, permissionGroupsWithReadAccess);
     }
 
-    public String queryForValueWithProperty(String propertyName, String propertyValue, Set<ArangoCollectionReference> collectionsToCheck, String lookupProperty) {
+    public String queryOutboundRelationsForDocument(ArangoDocumentReference document, Set<ArangoCollectionReference> edgeCollections, Set<String> permissionGroupsWithReadAccess) {
+        AuthorizedArangoQuery q = new AuthorizedArangoQuery(permissionGroupsWithReadAccess);
+        q.setParameter("documentId", document.getId());
+        q.setTrustedParameter("edges", q.listCollections(',', edgeCollections.stream().map(ArangoCollectionReference::getName).collect(Collectors.toSet())));
+        q.addLine("LET doc = DOCUMENT(\"${documentId}\")");
+        q.addDocumentFilter(new TrustedAqlValue("doc"));
+        q.addLine("FOR v, e IN 1..1 OUTBOUND doc ${edges}");
+        q.addDocumentFilter(new TrustedAqlValue("v"));
+        q.addLine("RETURN e." + ArangoVocabulary.ID);
+        return q.build().getValue();
+    }
+
+    public String queryOriginalIdForLink(ArangoDocumentReference document, ArangoCollectionReference linkReference,  Set<String> permissionGroupsWithReadAccess) {
+        AuthorizedArangoQuery q = new AuthorizedArangoQuery(permissionGroupsWithReadAccess);
+        q.setParameter("documentId", document.getId());
+        q.setParameter("edge", linkReference.getName());
+        q.addLine("LET doc = DOCUMENT(\"${documentId}\") ");
+        q.addDocumentFilter(new TrustedAqlValue("doc"));
+        q.addLine("FOR v IN 1..1 INBOUND doc `${edge}`");
+        q.addDocumentFilter(new TrustedAqlValue("v"));
+        q.addLine("RETURN v."+ArangoVocabulary.NEXUS_RELATIVE_URL);
+
+        return q.build().getValue();
+    }
+
+    public String queryForValueWithProperty(String propertyName, String propertyValue, Set<ArangoCollectionReference> collectionsToCheck, String lookupProperty, Set<String> permissionGroupsWithReadAccess) {
         if (collectionsToCheck != null && !collectionsToCheck.isEmpty()) {
-            StringBuilder sb = new StringBuilder();
+            AuthorizedArangoQuery q = new AuthorizedArangoQuery(permissionGroupsWithReadAccess);
+            q.setTrustedParameter("collections", q.listCollections(',', collectionsToCheck.stream().map(ArangoCollectionReference::getName).collect(Collectors.toSet())));
+
             for (ArangoCollectionReference arangoCollectionReference : collectionsToCheck) {
-                sb.append(String.format("LET `%s` = (FOR v IN `%s` FILTER v.`%s` == \"%s\" RETURN v.`%s`)\n", arangoCollectionReference.getName(), arangoCollectionReference.getName(), propertyName, propertyValue, lookupProperty));
+                AuthorizedArangoQuery subquery = new AuthorizedArangoQuery(permissionGroupsWithReadAccess, true);
+                subquery.setParameter("collectionName", arangoCollectionReference.getName());
+                subquery.setParameter("propertyName", propertyName);
+                subquery.setParameter("propertyValue", propertyValue);
+                subquery.setParameter("lookupProperty", lookupProperty);
+
+                subquery.addLine("LET `${collectionName}`= (").indent();
+                subquery.addLine("FOR v IN `${collectionName}`").indent();
+                subquery.addDocumentFilter(new TrustedAqlValue("v"));
+                subquery.addLine("FILTER v.`${propertyName}` == \"${propertyValue}\" RETURN v.`${lookupProperty}`").outdent();
+                subquery.outdent().addLine(")");
+                q.addLine(subquery.build().getValue());
             }
-            sb.append(String.format("RETURN UNIQUE(%s(`%s`))", collectionsToCheck.size()>1 ? "UNION" : "", String.join("`, `", collectionsToCheck.stream().map(ArangoCollectionReference::getName).collect(Collectors.toSet()))));
-            return sb.toString();
+            if(collectionsToCheck.size()>1){
+                q.addLine("RETURN UNIQUE(UNION(${collections}))");
+            }
+            else{
+                q.addLine("RETURN UNIQUE(${collections})");
+            }
+            return q.build().getValue();
         }
         return null;
     }
 
-    public String queryPropertyCount(ArangoCollectionReference collection) {
-        return String.format("LET attributesPerDocument = ( FOR doc IN `%s` RETURN ATTRIBUTES(doc, true) )\n" +
-                "FOR attributeArray IN attributesPerDocument\n" +
-                "    FOR attribute IN attributeArray\n" +
-                "        COLLECT attr = attribute WITH COUNT INTO count\n" +
-                "        SORT count DESC\n" +
-                "        RETURN {attr, count}", collection.getName());
+    public String getAll(ArangoCollectionReference collection, Set<String> permissionGroupsWithReadAccess) {
+        AuthorizedArangoQuery q = new AuthorizedArangoQuery(permissionGroupsWithReadAccess);
+        q.setParameter("collection", collection.getName());
+
+        q.addLine("FOR doc IN `${collection}`").indent();
+        q.addDocumentFilter(new TrustedAqlValue("doc"));
+        q.addLine("RETURN doc");
+
+        return q.build().getValue();
     }
 
-    public String queryArangoNameMappings(ArangoCollectionReference lookupCollection) {
-        return String.format("FOR doc IN `%s` RETURN {\"arango\": doc._key, \"original\": doc.originalName}", lookupCollection.getName());
+    public String queryInDepthGraph(Set<ArangoCollectionReference> edgeCollections, ArangoDocumentReference startDocument, Integer step, Set<String> permissionGroupsWithReadAccess) {
+        AuthorizedArangoQuery q = new AuthorizedArangoQuery(permissionGroupsWithReadAccess);
+
+        TrustedAqlValue edges = q.listCollections(',', edgeCollections.stream().map(ArangoCollectionReference::getName).collect(Collectors.toSet()));
+
+        AuthorizedArangoQuery outboundSubquery = new AuthorizedArangoQuery(permissionGroupsWithReadAccess, true);
+
+        outboundSubquery.setParameter("depth", String.valueOf(step));
+        outboundSubquery.setTrustedParameter("edges", edges);
+
+        outboundSubquery.addLine("FOR v, e, p IN 1..${depth} OUTBOUND doc ${edges}").indent();
+        outboundSubquery.addDocumentFilter(new TrustedAqlValue("v"));
+        outboundSubquery.addLine("RETURN p").outdent();
+
+        AuthorizedArangoQuery inboundSubquery = new AuthorizedArangoQuery(permissionGroupsWithReadAccess, true);
+        inboundSubquery.setTrustedParameter("edges", edges);
+
+        inboundSubquery.addLine("FOR v, e, p IN 1..1 INBOUND doc ${edges}").indent();
+        inboundSubquery.addDocumentFilter(new TrustedAqlValue("v"));
+        inboundSubquery.addLine("RETURN p").outdent();
+
+        q.setParameter("documentId", startDocument.getId());
+        q.setTrustedParameter("outbound", outboundSubquery.build());
+        q.setTrustedParameter("inbound", inboundSubquery.build());
+
+        q.addLine("LET doc = DOCUMENT(\"${documentId}\")");
+        q.addDocumentFilter(new TrustedAqlValue("doc"));
+        q.addLine("FOR path IN UNION_DISTINCT(").indent();
+        q.addLine("(${outbound}), (${inbound})").outdent();
+        q.addLine(")");
+        q.addLine("RETURN path");
+        return q.build().getValue();
     }
 
-    public String getAll(ArangoCollectionReference collection) {
-        return String.format("FOR doc IN `%s` RETURN doc", collection.getName());
+    @UnauthorizedAccess("Currently, this method is only applied to the internal database. Be cautious if sensitive information is going into the internal database and NEVER use it for other databases since this would be a vulnerability")
+    public String getAllInternalDocumentsOfACollection(ArangoCollectionReference collection) {
+        UnauthorizedArangoQuery q = new UnauthorizedArangoQuery();
+        q.setParameter("collection", collection.getName());
+        q.addLine("FOR spec IN `${collection}` RETURN spec");
+        return q.build().getValue();
     }
 
-    public String queryInDepthGraph(Set<ArangoCollectionReference> edgeCollections, ArangoDocumentReference startDocument, Integer step, ArangoConnection driver) {
-        String names = String.join("`, `", driver.getEdgesCollectionNames().stream().map(ArangoCollectionReference::getName).collect(Collectors.toSet()));
-        String outbound = String.format("" +
-                "FOR v, e, p IN 1..%s OUTBOUND \"%s\" `%s` \n" +
-                "FILTER v.`_permissionGroup` IN whitelist_organizations \n " +
-                "        return p", step, startDocument.getId(), names);
-        String inbound = String.format("" +
-                "FOR v, e, p IN 1..1 INBOUND \"%s\" `%s` \n" +
-                "FILTER v.`_permissionGroup` IN whitelist_organizations \n " +
-                "        return p", startDocument.getId(), names);
-        return String.format("" +
-                "LET whitelist_organizations=[\"minds\",\"brainviewer\",\"cscs\",\"datacite\",\"licenses\",\"minds2\",\"neuroglancer\"]" +
-                "FOR path IN UNION_DISTINCT(" +
-                "(%s),(%s)" +
-                ")" +
-                "return path", outbound, inbound);
+
+    public String queryReleaseGraph(Set<ArangoCollectionReference> edgeCollections, ArangoDocumentReference rootInstance, Integer maxDepth, Set<String> permissionGroupsWithReadAccess) {
+        return childrenStatus(rootInstance, null, 0, maxDepth, edgeCollections, permissionGroupsWithReadAccess).getValue();
     }
 
-    public String getGetEditorSpecDocument(ArangoCollectionReference collection) {
-        return String.format(
-                "FOR spec IN `%s`" +
-                        "RETURN spec", collection.getName()
-        );
-    }
-
-    public String queryOriginalIdForLink(ArangoDocumentReference document, ArangoCollectionReference linkReference) {
-        return String.format("FOR vertex IN 1..1 INBOUND DOCUMENT(\"%s\") `%s` RETURN vertex._nexusRelativeUrl", document.getId(), linkReference.getName());
-    }
-
-    public String queryOutboundRelationsForDocument(ArangoDocumentReference document, Set<ArangoCollectionReference> edgeCollections) {
-        return String.format("FOR rel, edge IN 1..1 OUTBOUND DOCUMENT(\"%s\") `%s` RETURN edge._id\n", document.getId(), String.join("`, `", edgeCollections.stream().map(ArangoCollectionReference::getName).collect(Collectors.toSet())));
-    }
-
-    public String queryReleaseGraph(Set<ArangoCollectionReference> edgeCollections, ArangoDocumentReference rootInstance, Integer maxDepth) {
-        String names = String.join("`, `", edgeCollections.stream().map(ArangoCollectionReference::getName).collect(Collectors.toSet()));
-        return childrenStatus(rootInstance, null, 0, maxDepth, names);
-    }
-
-    private String childrenStatus(ArangoDocumentReference rootInstance, String startingVertex, Integer level, Integer maxDepth, String collectionLabels) {
+    private TrustedAqlValue childrenStatus(ArangoDocumentReference rootInstance, String startingVertex, Integer level, Integer maxDepth, Set<ArangoCollectionReference> edgeCollections, Set<String> permissionGroupsWithReadAccess) {
+        AuthorizedArangoQuery query = new AuthorizedArangoQuery(permissionGroupsWithReadAccess, level>0);
         String name = "level" + level;
-        String childrenQuery = "[]";
+        TrustedAqlValue childrenQuery = new TrustedAqlValue("[]");
         if (level < maxDepth) {
-            childrenQuery = String.format("(%s)", childrenStatus(rootInstance, name + "_doc", level + 1, maxDepth, collectionLabels));
+            childrenQuery = childrenStatus(rootInstance, name + "_doc", level + 1, maxDepth, edgeCollections, permissionGroupsWithReadAccess);
+        }
+        query.setParameter("name", "level" + level)
+        .setParameter("startId", rootInstance.getId())
+        .setParameter("doc", startingVertex)
+        .setTrustedParameter("collections", query.listCollections(',', edgeCollections.stream().map(ArangoCollectionReference::getName).collect(Collectors.toSet())))
+        .setParameter("releaseInstanceRelation", ArangoCollectionReference.fromFieldName(HBPVocabulary.RELEASE_INSTANCE).getName())
+        .setParameter("releaseState", HBPVocabulary.RELEASE_STATE)
+        .setParameter("revision", HBPVocabulary.PROVENANCE_REVISION)
+        .setTrustedParameter("childrenQuery", childrenQuery)
+        .setParameter("schemaOrgName", SchemaOrgVocabulary.NAME)
+        .setParameter("releaseInstanceProperty", HBPVocabulary.RELEASE_INSTANCE)
+        .setParameter("releaseRevisionProperty", HBPVocabulary.RELEASE_REVISION)
+        .setParameter("nexusBaseForInstances", configuration.getNexusBase(NexusConfiguration.ResourceType.DATA))
+        .setParameter("originalId", ArangoVocabulary.NEXUS_RELATIVE_URL_WITH_REV)
+        .setParameter("releasedValue", ReleaseStatus.RELEASED.name())
+        .setParameter("changedValue", ReleaseStatus.HAS_CHANGED.name())
+        .setParameter("notReleasedValue", ReleaseStatus.NOT_RELEASED.name());
+
+        for(int i=0; i<level; i++){
+            query.indent();
         }
 
-        Map<String, String> valueMap = new HashMap<>();
-        valueMap.put("name", "level" + level);
-        valueMap.put("startId", rootInstance.getId());
-        valueMap.put("doc", startingVertex);
-        valueMap.put("collections", collectionLabels);
-        valueMap.put("releaseInstanceRelation", ArangoCollectionReference.fromFieldName(HBPVocabulary.RELEASE_INSTANCE).getName());
-        valueMap.put("releaseState", HBPVocabulary.RELEASE_STATE);
-        valueMap.put("revision", HBPVocabulary.PROVENANCE_REVISION);
-        valueMap.put("childrenQuery", childrenQuery);
-        valueMap.put("schemaOrgName", SchemaOrgVocabulary.NAME);
-        valueMap.put("releaseInstanceProperty", HBPVocabulary.RELEASE_INSTANCE);
-        valueMap.put("releaseRevisionProperty", HBPVocabulary.RELEASE_REVISION);
-        valueMap.put("nexusBaseForInstances", configuration.getNexusBase(NexusConfiguration.ResourceType.DATA));
-        valueMap.put("originalId", ArangoVocabulary.NEXUS_RELATIVE_URL_WITH_REV);
-        valueMap.put("releasedValue", ReleaseStatus.RELEASED.name());
-        valueMap.put("changedValue", ReleaseStatus.HAS_CHANGED.name());
-        valueMap.put("notReleasedValue", ReleaseStatus.NOT_RELEASED.name());
-
-        String indent = createIndent(level);
-        String query = "";
-        if (level == 0) {
-            query += indent + "LET ${name}_doc = DOCUMENT(\"${startId}\")\n ";
+        if (level==0) {
+            query.addLine("LET ${name}_doc = DOCUMENT(\"${startId}\")");
+            query.addDocumentFilter(new TrustedAqlValue("${name}_doc"));
         } else {
-            query += indent + "FOR ${name}_doc, ${name}_edge IN 1..1 OUTBOUND ${doc} `${collections}`\n " +
-                    indent + "FILTER ${name}_doc != NULL" +
-                    indent + "SORT ${name}_doc.`" + JsonLdConsts.TYPE + "`, ${name}_doc.`${schemaOrgName}`\n";
+            query.addLine("FOR ${name}_doc, ${name}_edge IN 1..1 OUTBOUND ${doc} ${collections}");
+            query.addDocumentFilter(new TrustedAqlValue("${name}_doc"));
+            query.addLine("SORT ${name}_doc.`" + JsonLdConsts.TYPE + "`, ${name}_doc.`${schemaOrgName}`");
         }
-        query += indent + "LET ${name}_release = (FOR ${name}_status_doc IN 1..1 INBOUND ${name}_doc `${releaseInstanceRelation}`\n" +
-                indent + "  LET ${name}_release_instance = SUBSTITUTE(CONCAT(${name}_status_doc.`${releaseInstanceProperty}`.`" + JsonLdConsts.ID + "`, \"?rev=\", ${name}_status_doc.`${releaseRevisionProperty}`), \"${nexusBaseForInstances}/\", \"\")\n" +
-                indent + "  RETURN ${name}_release_instance==${name}_doc.${originalId} ? \"${releasedValue}\" : \"${changedValue}\"\n" +
-                indent + ")\n" +
-                indent + "LET ${name}_status = LENGTH(${name}_release)>0 ? ${name}_release[0] : \"${notReleasedValue}\"\n" +
-                indent + "LET ${name}_children = ${childrenQuery}\n";
-        if (level == 0) {
-            query += indent + "RETURN MERGE({\"status\": ${name}_status, \"children\": ${name}_children, \"rev\": ${name}_doc.`${revision}` }, ${name}_doc)";
+        query.addLine("LET ${name}_release = (FOR ${name}_status_doc IN 1..1 INBOUND ${name}_doc `${releaseInstanceRelation}`");
+        query.indent();
+        query.addLine("LET ${name}_release_instance = SUBSTITUTE(CONCAT(${name}_status_doc.`${releaseInstanceProperty}`.`" + JsonLdConsts.ID + "`, \"?rev=\", ${name}_status_doc.`${releaseRevisionProperty}`), \"${nexusBaseForInstances}/\", \"\")");
+        query.addLine("RETURN ${name}_release_instance==${name}_doc.${originalId} ? \"${releasedValue}\" : \"${changedValue}\"");
+        query.outdent();
+        query.addLine(")");
+        query.addLine("LET ${name}_status = LENGTH(${name}_release)>0 ? ${name}_release[0] : \"${notReleasedValue}\"");
+        query.indent();
+        query.addLine("LET ${name}_children = (");
+        query.addLine("${childrenQuery}");
+        query.addLine(")");
+        query.outdent();
+        if(level==0){
+            query.addLine("RETURN MERGE({\"status\": ${name}_status, \"children\": ${name}_children, \"rev\": ${name}_doc.`${revision}` }, ${name}_doc)");
         } else {
-            query += indent + "RETURN MERGE({\"status\": ${name}_status, \"children\": ${name}_children, \"linkType\": ${name}_edge._name, \"rev\": ${name}_doc.`${revision}`}, ${name}_doc)\n";
+            query.addLine("RETURN MERGE({\"status\": ${name}_status, \"children\": ${name}_children, \"linkType\": ${name}_edge._name, \"rev\": ${name}_doc.`${revision}`}, ${name}_doc)");
         }
-        return StringSubstitutor.replace(query, valueMap);
+        for(int i=0; i<level; i++){
+            query.outdent();
+        }
+        return query.build();
 
     }
 
-    public String getInstanceList(ArangoCollectionReference collection, Integer from, Integer size, String searchTerm) {
-        String search = "";
-        if (searchTerm != null && !searchTerm.isEmpty()) {
-            searchTerm = searchTerm.toLowerCase();
-            search = String.format("FILTER LIKE (LOWER(doc.`http://schema.org/name`), \"%%%s%%\")\n", searchTerm);
+    public String getInstanceList(ArangoCollectionReference collection, Integer from, Integer size, String searchTerm, Set<String> permissionGroupsWithReadAccess) {
+        AuthorizedArangoQuery query = new AuthorizedArangoQuery(permissionGroupsWithReadAccess, false);
+        query.setParameter("collection", collection.getName());
+        query.setParameter("from", from!=null ? from.toString(): null);
+        query.setParameter("size", size!=null ? size.toString(): null);
+        boolean hasSearchTerm = searchTerm != null && !searchTerm.isEmpty();
+        query.setParameter("searchTerm", hasSearchTerm ? searchTerm.toLowerCase() : null);
+        query.setParameter("filterProperty", SchemaOrgVocabulary.NAME);
+
+        query.addLine("FOR doc IN `${collection}`");
+        query.addDocumentFilter(new TrustedAqlValue("doc"));
+        query.addLine("FILTER doc != NULL");
+        query.addLine("FILTER doc._permissionGroup IN "+query.WHITELIST_ALIAS);
+        if (hasSearchTerm) {
+            query.addLine("FILTER LIKE (LOWER(doc.`${filterProperty}`), \"%${searchTerm}%\")");
         }
-        String limit = "";
+        query.addLine("SORT doc.`${filterProperty}`");
         if (from != null && size != null) {
-            limit = String.format("LIMIT %s, %s \n", from.toString(), size.toString());
+            query.addLine("LIMIT ${from}, ${size}");
         }
-        return String.format(
-                "FOR doc IN `%s` \n" +
-                        "%s " +
-                        "SORT doc.`http://schema.org/name`, doc.`https://schema.hbp.eu/minds/title`, doc.`https://schema.hbp.eu/minds/alias` \n" +
-                        "%s " +
-                        "    RETURN doc", collection.getName(), search, limit);
+        query.addLine("RETURN doc");
+        return query.build().getValue();
     }
 
 
+    public String getBookmarks(NexusInstanceReference doc, Integer from, Integer size, String searchTerm, Set<String> permissionGroupsWithReadAccess){
+        AuthorizedArangoQuery q = new AuthorizedArangoQuery(permissionGroupsWithReadAccess);
+        q.setParameter("filterValue", doc.getFullId(false));
+        boolean hasSearchTerm = searchTerm!=null && !searchTerm.trim().isEmpty();
+        q.setParameter("searchTerm", hasSearchTerm ? searchTerm.toLowerCase() : null);
+        q.setParameter("from", from != null ? String.valueOf(from) : null);
+        q.setParameter("size", size != null ? String.valueOf(size) : null);
 
-    private String createIndent(int level) {
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < level; i++) {
-            sb.append("   ");
-        }
-        return sb.toString();
-    }
-
-
-    public String getBookmarks(NexusInstanceReference doc, Integer from, Integer size, String searchTerm){
-        String search = "";
+        q.addLine("FOR doc IN `hbpkg-core-bookmark-v0_0_1`").indent();
+        q.addDocumentFilter(new TrustedAqlValue("doc"));
+        q.addLine("FILTER CONTAINS(doc.`https://schema.hbp.eu/hbpkg/bookmarkList`.`https://schema.hbp.eu/relativeUrl`, \"${filterValue}\")").indent();
+        q.addLine("LET instances = (").indent();
+        q.addLine("FOR i IN 1..1 OUTBOUND doc `schema_hbp_eu-hbpkg-bookmarkInstanceLink`").indent();
+        q.addDocumentFilter(new TrustedAqlValue("i"));
+        q.addLine("FILTER i.`"+JsonLdConsts.ID+"` != NULL");
         if (searchTerm != null && !searchTerm.isEmpty()) {
-            searchTerm = searchTerm.toLowerCase();
-            search = String.format("FILTER LIKE (LOWER(i.`http://schema.org/name`), \"%%%s%%\")\n", searchTerm);
+            q.addLine("FILTER LIKE (LOWER(i.`"+SchemaOrgVocabulary.NAME+"`), \"%${searchTerm}%\")");
         }
-        String limit = "";
+        q.addLine("SORT i.`"+SchemaOrgVocabulary.NAME+"`");
         if (from != null && size != null) {
-            limit = String.format("LIMIT %s, %s \n", from.toString(), size.toString());
+            q.addLine("LIMIT ${from}, ${size}");
         }
-        return String.format("" +
-                "FOR doc IN `hbpkg-core-bookmark-v0_0_1`\n" +
-                    "FILTER CONTAINS(doc.`https://schema.hbp.eu/hbpkg/bookmarkList`.`https://schema.hbp.eu/relativeUrl`, \"%s\")\n" +
-                    "LET instances = (\n" +
-                        "FOR i IN 1..1 OUTBOUND doc `schema_hbp_eu-hbpkg-bookmarkInstanceLink`\n" +
-                        "   FILTER i != null AND i.`@id` != null" +
-                        "   %s" +
-                        "   SORT i.`http://schema.org/name`, i.`https://schema.hbp.eu/minds/title`, i.`https://schema.hbp.eu/minds/alias` \n" +
-                        "   %s" +
-                        "   RETURN {" +
-                        "     \"id\": i.`https://schema.hbp.eu/relativeUrl`,\n" +
-                        "     \"name\": i.`http://schema.org/name`,\n" +
-                        "     \"description\": i.`http://schema.org/description`\n" +
-                        "   }\n" +
-                        ")\n" +
-                        "FILTER instances != null AND COUNT(instances) > 0\n" +
-                "RETURN FIRST(instances)"
-
-                , doc.getFullId(false), search, limit
-        );
+        q.addLine("RETURN {").indent();
+        q.addLine("\"id\": i.`"+HBPVocabulary.RELATIVE_URL_OF_INTERNAL_LINK+"`,");
+        q.addLine("\"name\": i.`"+SchemaOrgVocabulary.NAME+"`,");
+        q.addLine("\"description\": i.`"+SchemaOrgVocabulary.DESCRIPTION+"`");
+        q.addLine("}").outdent();
+        q.addLine(")").outdent();
+        q.addLine("FILTER instances != null AND COUNT(instances) > 0").outdent();
+        q.addLine("RETURN FIRST(instances)");
+        return q.build().getValue();
     }
 }

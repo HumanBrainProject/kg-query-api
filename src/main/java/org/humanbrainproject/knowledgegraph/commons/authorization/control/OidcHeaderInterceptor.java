@@ -18,11 +18,11 @@ public class OidcHeaderInterceptor implements ClientHttpRequestInterceptor {
     private final OidcAccessToken token;
     private final String contentType;
 
-    public OidcHeaderInterceptor(OidcAccessToken token) {
+    OidcHeaderInterceptor(OidcAccessToken token) {
         this(token, MediaType.APPLICATION_JSON);
     }
 
-    public OidcHeaderInterceptor(OidcAccessToken token, String contentType) {
+    private OidcHeaderInterceptor(OidcAccessToken token, String contentType) {
         this.token = token;
         this.contentType = contentType;
     }

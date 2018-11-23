@@ -1,5 +1,7 @@
 package org.humanbrainproject.knowledgegraph;
 
+import com.google.common.base.Predicates;
+import org.humanbrainproject.knowledgegraph.commons.InternalApi;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import springfox.documentation.builders.PathSelectors;
@@ -13,11 +15,26 @@ import springfox.documentation.swagger2.annotations.EnableSwagger2;
 public class SwaggerConfiguration {
 
     @Bean
-    public Docket api() {
+    public Docket publicApi() {
         return new Docket(DocumentationType.SWAGGER_2)
+                .groupName("0_public")
                 .select()
-                .apis(RequestHandlerSelectors.any())
+                .apis(Predicates.not(RequestHandlerSelectors.withClassAnnotation(InternalApi.class)))
                 .paths(PathSelectors.regex("^(?!/error).*"))
                 .build();
     }
+
+
+
+    @Bean
+    public Docket internalApi() {
+        return new Docket(DocumentationType.SWAGGER_2)
+                .groupName("1_internal")
+                .select()
+                .apis(RequestHandlerSelectors.withClassAnnotation(InternalApi.class))
+                .paths(PathSelectors.regex("^(?!/error).*"))
+                        .build();
+    }
+
+
 }

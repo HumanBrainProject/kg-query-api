@@ -1,8 +1,8 @@
 package org.humanbrainproject.knowledgegraph.instances.control;
 
 import com.github.jsonldjava.core.JsonLdConsts;
-import org.humanbrainproject.knowledgegraph.commons.authorization.control.OidcHeaderInterceptor;
-import org.humanbrainproject.knowledgegraph.commons.authorization.entity.OidcAccessToken;
+import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationController;
+import org.humanbrainproject.knowledgegraph.commons.authorization.entity.Credential;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusClient;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
@@ -46,37 +46,39 @@ public class InstanceController {
     @Autowired
     ArangoRepository arangoRepository;
 
+    @Autowired
+    AuthorizationController authorizationController;
 
 
 
-    private NexusInstanceReference getByIdentifier(NexusSchemaReference schema, String identifier) {
-        return arangoRepository.findBySchemaOrgIdentifier(ArangoCollectionReference.fromNexusSchemaReference(schema), identifier);
+    private NexusInstanceReference getByIdentifier(NexusSchemaReference schema, String identifier, Credential credential) {
+        return arangoRepository.findBySchemaOrgIdentifier(ArangoCollectionReference.fromNexusSchemaReference(schema), identifier, credential);
     }
 
-    public JsonDocument getFromNexusById(NexusInstanceReference instanceReference, OidcAccessToken oidcAccessToken){
-        return nexusClient.get(instanceReference.getRelativeUrl(), oidcAccessToken);
+    public JsonDocument getFromNexusById(NexusInstanceReference instanceReference, Credential credential){
+        return nexusClient.get(instanceReference.getRelativeUrl(), credential);
     }
 
 
-    public NexusInstanceReference createInstanceByIdentifier(NexusSchemaReference schemaReference, String identifier, JsonDocument payload, OidcAccessToken oidcAccessToken) {
+    public NexusInstanceReference createInstanceByIdentifier(NexusSchemaReference schemaReference, String identifier, JsonDocument payload, Credential credential) {
         payload.addToProperty(SchemaOrgVocabulary.IDENTIFIER, identifier);
-        NexusInstanceReference byIdentifier = getByIdentifier(schemaReference, identifier);
+        NexusInstanceReference byIdentifier = getByIdentifier(schemaReference, identifier, credential);
         if (byIdentifier==null) {
-            return createInstanceByNexusId(schemaReference, null, null, payload, oidcAccessToken);
+            return createInstanceByNexusId(schemaReference, null, null, payload, credential);
         } else {
-            return createInstanceByNexusId(byIdentifier.getNexusSchema(), byIdentifier.getId(), byIdentifier.getRevision(), payload, oidcAccessToken);
+            return createInstanceByNexusId(byIdentifier.getNexusSchema(), byIdentifier.getId(), byIdentifier.getRevision(), payload, credential);
         }
     }
 
-    public boolean deprecateInstanceByNexusId(NexusInstanceReference instanceReference, OidcAccessToken oidcAccessToken){
-        boolean delete = nexusClient.delete(instanceReference.getRelativeUrl(), instanceReference.getRevision() != null ? instanceReference.getRevision() : 1, oidcAccessToken);
+    public boolean deprecateInstanceByNexusId(NexusInstanceReference instanceReference, Credential credential){
+        boolean delete = nexusClient.delete(instanceReference.getRelativeUrl(), instanceReference.getRevision() != null ? instanceReference.getRevision() : 1, credential);
         if(delete){
             immediateDeprecation(instanceReference);
         }
         return delete;
     }
 
-    public NexusInstanceReference createNewInstance(NexusSchemaReference nexusSchemaReference, Map originalPayload, OidcAccessToken oidcAccessToken){
+    public NexusInstanceReference createNewInstance(NexusSchemaReference nexusSchemaReference, Map originalPayload, Credential credential){
         schemaController.createSchema(nexusSchemaReference);
         JsonDocument payload;
         if(originalPayload!=null) {
@@ -87,20 +89,20 @@ public class InstanceController {
         }
         payload.addType(schemaController.getTargetClass(nexusSchemaReference));
         payload.addToProperty(SchemaOrgVocabulary.IDENTIFIER, "");
-        JsonDocument response = nexusClient.post(new NexusRelativeUrl(NexusConfiguration.ResourceType.DATA, nexusSchemaReference.getRelativeUrl().getUrl()), null, payload, oidcAccessToken);
+        JsonDocument response = nexusClient.post(new NexusRelativeUrl(NexusConfiguration.ResourceType.DATA, nexusSchemaReference.getRelativeUrl().getUrl()), null, payload, credential);
         if(response!=null){
             NexusInstanceReference idFromNexus = response.getReference();
             //We're replacing the previously set identifier with the id we got from Nexus.
             payload.put(SchemaOrgVocabulary.IDENTIFIER, idFromNexus.getId());
-            nexusClient.put(idFromNexus.getRelativeUrl(), idFromNexus.getRevision(), payload, oidcAccessToken);
+            nexusClient.put(idFromNexus.getRelativeUrl(), idFromNexus.getRevision(), payload, credential);
             immediateIndexing(payload, idFromNexus);
             return idFromNexus;
         }
         return null;
     }
 
-    public NexusInstanceReference createInstanceByNexusId(NexusSchemaReference nexusSchemaReference, String id, Integer revision, Map<String, Object> payload, OidcAccessToken oidcAccessToken)  {
-        return createInstanceByNexusId(nexusSchemaReference, id, revision, payload, new OidcHeaderInterceptor(oidcAccessToken));
+    public NexusInstanceReference createInstanceByNexusId(NexusSchemaReference nexusSchemaReference, String id, Integer revision, Map<String, Object> payload, Credential credential)  {
+        return createInstanceByNexusId(nexusSchemaReference, id, revision, payload, authorizationController.getInterceptor(credential));
     }
 
     public NexusInstanceReference createInstanceByNexusId(NexusSchemaReference nexusSchemaReference, String id, Integer revision, Map<String, Object> payload, ClientHttpRequestInterceptor oidc)  {
@@ -160,8 +162,8 @@ public class InstanceController {
         graphIndexing.insert(indexingMessage);
     }
 
-    public List<NexusInstanceReference> getAllInstancesForSchema(NexusSchemaReference nexusSchemaReference, OidcAccessToken oidcAccessToken){
-        List<JsonDocument> list = nexusClient.list(nexusSchemaReference, oidcAccessToken, true);
+    public List<NexusInstanceReference> getAllInstancesForSchema(NexusSchemaReference nexusSchemaReference, Credential credential){
+        List<JsonDocument> list = nexusClient.list(nexusSchemaReference, credential, true);
         if(list!=null) {
             return list.stream().map(d -> d.get("resultId")).filter(o -> o instanceof String).map(o -> NexusInstanceReference.createFromUrl((String) o)).collect(Collectors.toList());
         }
