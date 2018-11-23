@@ -57,7 +57,7 @@ public class UnauthorizedArangoQuery {
     }
 
     private TrustedAqlValue listValuesWithQuote(Character quote, Character separator, Set<String> values) {
-        if(values.size()>0){
+        if(values!=null && values.size()>0){
             return new TrustedAqlValue(quote+String.join(quote + preventAqlInjection(String.valueOf(separator)) + quote, values.stream().map(this::preventAqlInjection).collect(Collectors.toSet()))+quote);
         }
         else{
