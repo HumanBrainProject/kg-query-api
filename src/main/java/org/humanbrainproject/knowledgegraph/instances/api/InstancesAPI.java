@@ -25,15 +25,6 @@ public class InstancesAPI {
     @Autowired
     ArangoGraph graph;
 
-    @GetMapping(value = "/{org}/{domain}/{schema}/{version}/{id}")
-    public ResponseEntity<Map> getInstance(@PathVariable("org") String org, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("version") String version, @PathVariable("id") String id, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken) throws Exception {
-        try {
-            Map instance = instances.getInstance(new NexusInstanceReference(org, domain, schema, version, id), new OidcAccessToken().setToken(authorizationToken));
-            return instance != null ? ResponseEntity.ok(instance) : ResponseEntity.notFound().build();
-        } catch (HttpClientErrorException e) {
-            return ResponseEntity.status(e.getStatusCode()).build();
-        }
-    }
 
     @GetMapping(value = "/{org}/{domain}/{schema}/{version}/{id}/graph")
     public ResponseEntity<Map> getGraph(@PathVariable("org") String org, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("version") String version, @PathVariable("id") String id, @RequestParam(value= "step", required = false, defaultValue = "2") Integer step, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken) throws Exception{
