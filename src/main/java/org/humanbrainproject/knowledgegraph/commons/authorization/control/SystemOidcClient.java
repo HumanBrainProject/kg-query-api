@@ -25,8 +25,6 @@ public class SystemOidcClient {
     private final String ACCESS_TOKEN_KEY = "access_token";
     private OidcAccessToken currentToken;
 
-    public final static OidcAccessToken INTERNAL_MASTER_TOKEN = new OidcAccessToken();
-
 
     @Value("${org.humanbrainproject.knowledgegraph.oidc.configFile}")
     String oidcConfigFile;

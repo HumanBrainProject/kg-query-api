@@ -2,12 +2,9 @@ package org.humanbrainproject.knowledgegraph.commons.authorization.entity;
 
 import java.util.Objects;
 
-public class OidcAccessToken {
+public class OidcAccessToken implements Credential {
 
     private String token;
-
-    public OidcAccessToken() {
-    }
 
     public OidcAccessToken setToken(String token) {
         this.token = token;
@@ -32,7 +29,6 @@ public class OidcAccessToken {
 
     @Override
     public int hashCode() {
-
         return Objects.hash(token);
     }
 }

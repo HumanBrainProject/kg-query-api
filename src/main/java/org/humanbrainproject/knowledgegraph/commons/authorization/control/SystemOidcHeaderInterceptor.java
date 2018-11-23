@@ -6,6 +6,7 @@ import org.springframework.http.HttpRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.ClientHttpRequestExecution;
+import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.stereotype.Component;
 
@@ -15,13 +16,12 @@ import java.util.Arrays;
 import java.util.Collections;
 
 @Component
-public class SystemOidcHeaderInterceptor implements TokenBasedClientHttpRequestInterceptor {
+public class SystemOidcHeaderInterceptor implements ClientHttpRequestInterceptor {
 
     @Autowired
     SystemOidcClient client;
 
 
-    @Override
     public OidcAccessToken getToken() {
         return client.getAuthorizationToken();
     }

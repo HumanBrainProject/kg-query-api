@@ -18,9 +18,9 @@ public class AuthorizedArangoQuery extends UnauthorizedArangoQuery {
     }
 
     @Override
-    public AuthorizedArangoQuery addDocumentFilter(String documentAlias) {
+    public AuthorizedArangoQuery addDocumentFilter(TrustedAqlValue documentAlias) {
         super.addDocumentFilter(documentAlias);
-        addLine("FILTER v._permissionGroup IN "+WHITELIST_ALIAS);
+        addLine("FILTER "+documentAlias.getValue()+"._permissionGroup IN "+WHITELIST_ALIAS);
         return this;
     }
 }

@@ -4,6 +4,7 @@ import org.humanbrainproject.knowledgegraph.commons.authorization.entity.OidcAcc
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpRequest;
 import org.springframework.http.client.ClientHttpRequestExecution;
+import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.http.client.ClientHttpResponse;
 
 import javax.ws.rs.core.MediaType;
@@ -12,23 +13,18 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
 
-public class OidcHeaderInterceptor implements TokenBasedClientHttpRequestInterceptor {
+public class OidcHeaderInterceptor implements ClientHttpRequestInterceptor {
 
     private final OidcAccessToken token;
     private final String contentType;
 
-    public OidcHeaderInterceptor(OidcAccessToken token) {
+    OidcHeaderInterceptor(OidcAccessToken token) {
         this(token, MediaType.APPLICATION_JSON);
     }
 
-    public OidcHeaderInterceptor(OidcAccessToken token, String contentType) {
+    private OidcHeaderInterceptor(OidcAccessToken token, String contentType) {
         this.token = token;
         this.contentType = contentType;
-    }
-
-    @Override
-    public OidcAccessToken getToken() {
-        return token;
     }
 
     @Override

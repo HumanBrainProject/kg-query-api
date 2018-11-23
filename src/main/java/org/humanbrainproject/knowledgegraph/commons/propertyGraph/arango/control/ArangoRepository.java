@@ -8,7 +8,7 @@ import com.arangodb.model.AqlQueryOptions;
 import com.github.jsonldjava.core.JsonLdConsts;
 import org.apache.commons.lang.StringUtils;
 import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationController;
-import org.humanbrainproject.knowledgegraph.commons.authorization.entity.OidcAccessToken;
+import org.humanbrainproject.knowledgegraph.commons.authorization.entity.Credential;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
 import org.humanbrainproject.knowledgegraph.commons.labels.SemanticsToHumanTranslator;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
@@ -67,11 +67,11 @@ public class ArangoRepository {
 
 
     @AuthorizedAccess("Although not sensitive, we would like to return references which are readable by the user only")
-    public NexusInstanceReference findBySchemaOrgIdentifier(ArangoCollectionReference collectionReference, String value, OidcAccessToken oidcAccessToken){
+    public NexusInstanceReference findBySchemaOrgIdentifier(ArangoCollectionReference collectionReference, String value, Credential credential){
         if(!databaseFactory.getDefaultDB().getOrCreateDB().collection(collectionReference.getName()).exists()){
             return null;
         }
-        String query = queryFactory.queryForValueWithProperty(SchemaOrgVocabulary.IDENTIFIER, value, Collections.singleton(collectionReference), ArangoVocabulary.NEXUS_RELATIVE_URL_WITH_REV, authorizationController.getReadableOrganizations(oidcAccessToken));
+        String query = queryFactory.queryForValueWithProperty(SchemaOrgVocabulary.IDENTIFIER, value, Collections.singleton(collectionReference), ArangoVocabulary.NEXUS_RELATIVE_URL_WITH_REV, authorizationController.getReadableOrganizations(credential));
         List<List> result = query == null ? new ArrayList<>() : databaseFactory.getDefaultDB().getOrCreateDB().query(query, null, new AqlQueryOptions(), List.class).asListRemaining();
         if (result.size() == 1) {
             if (result.get(0) != null) {
@@ -93,10 +93,10 @@ public class ArangoRepository {
 
 
     @AuthorizedAccess("Although not sensitive, we would like to return references which are readable by the user only")
-    public Set<NexusInstanceReference> findOriginalIdsWithLinkTo(ArangoDocumentReference instanceReference, ArangoCollectionReference collectionReference, ArangoConnection arangoConnection, OidcAccessToken oidcAccessToken) {
+    public Set<NexusInstanceReference> findOriginalIdsWithLinkTo(ArangoDocumentReference instanceReference, ArangoCollectionReference collectionReference, ArangoConnection arangoConnection, Credential credential) {
         Set<ArangoCollectionReference> collections = arangoConnection.getCollections();
         if (collections.contains(instanceReference.getCollection()) && collections.contains(collectionReference)) {
-            String query = queryFactory.queryOriginalIdForLink(instanceReference, collectionReference, authorizationController.getReadableOrganizations(oidcAccessToken));
+            String query = queryFactory.queryOriginalIdForLink(instanceReference, collectionReference, authorizationController.getReadableOrganizations(credential));
             List<String> ids = arangoConnection.getOrCreateDB().query(query, null, new AqlQueryOptions(), String.class).asListRemaining();
             return ids.stream().filter(Objects::nonNull).map(NexusInstanceReference::createFromUrl).collect(Collectors.toSet());
         }
@@ -104,8 +104,8 @@ public class ArangoRepository {
     }
 
 
-    private <T> T getDocumentByKey(ArangoDocumentReference document, Class<T> clazz, ArangoConnection connection, OidcAccessToken oidcAccessToken) {
-        Map doc = getDocument(document, connection, oidcAccessToken);
+    private <T> T getDocumentByKey(ArangoDocumentReference document, Class<T> clazz, ArangoConnection connection, Credential credential) {
+        Map doc = getDocument(document, connection, credential);
         if(doc!=null){
             if(clazz.isInstance(doc)){
                 return (T)doc;
@@ -115,9 +115,9 @@ public class ArangoRepository {
         return null;
     }
 
-    public NexusInstanceReference findOriginalId(NexusInstanceReference reference, OidcAccessToken oidcAccessToken) {
+    public NexusInstanceReference findOriginalId(NexusInstanceReference reference, Credential credential) {
         ArangoDocumentReference arangoDocumentReference = ArangoDocumentReference.fromNexusInstance(reference);
-        Map byKey = getDocumentByKey(arangoDocumentReference, Map.class, databaseFactory.getDefaultDB(), oidcAccessToken);
+        Map byKey = getDocumentByKey(arangoDocumentReference, Map.class, databaseFactory.getDefaultDB(), credential);
         if (byKey != null) {
             Object rev = byKey.get(ArangoVocabulary.NEXUS_REV);
             if(rev!=null) {
@@ -131,7 +131,7 @@ public class ArangoRepository {
                 String id = (String) ((Map) originalParent).get(JsonLdConsts.ID);
                 NexusInstanceReference originalReference = NexusInstanceReference.createFromUrl(id);
                 if(originalReference!=null) {
-                    Map originalObject = getDocumentByKey(ArangoDocumentReference.fromNexusInstance(originalReference), Map.class, databaseFactory.getDefaultDB(), oidcAccessToken);
+                    Map originalObject = getDocumentByKey(ArangoDocumentReference.fromNexusInstance(originalReference), Map.class, databaseFactory.getDefaultDB(), credential);
                     if (originalObject != null) {
                         Object originalRev = originalObject.get(ArangoVocabulary.NEXUS_REV);
                         if (originalRev != null) {
@@ -146,16 +146,16 @@ public class ArangoRepository {
     }
 
     @AuthorizedAccess
-    public Map getDocument(ArangoDocumentReference documentReference, ArangoConnection arangoConnection, OidcAccessToken oidcAccessToken) {
+    public Map getDocument(ArangoDocumentReference documentReference, ArangoConnection arangoConnection, Credential credential) {
         Map document = arangoConnection.getOrCreateDB().getDocument(documentReference.getId(), Map.class);
-        if(authorizationController.isReadable(document, oidcAccessToken)){
+        if(authorizationController.isReadable(document, credential)){
             return null;
         }
         return document;
     }
 
-    public <T> List<T> getAll(ArangoCollectionReference collection, Class<T> clazz, ArangoConnection driver, OidcAccessToken oidcAccessToken) {
-        String query = queryFactory.getAll(collection, authorizationController.getReadableOrganizations(oidcAccessToken));
+    public <T> List<T> getAll(ArangoCollectionReference collection, Class<T> clazz, ArangoConnection driver, Credential credential) {
+        String query = queryFactory.getAll(collection, authorizationController.getReadableOrganizations(credential));
         try {
             return driver.getOrCreateDB().query(query, null, new AqlQueryOptions(), clazz).asListRemaining();
         } catch (ArangoDBException e) {
@@ -164,22 +164,22 @@ public class ArangoRepository {
         }
     }
 
-    public String getPayloadById(ArangoDocumentReference documentReference, ArangoConnection arangoConnection, OidcAccessToken oidcAccessToken) {
-        return getDocumentByKey(documentReference, String.class, arangoConnection, oidcAccessToken);
+    public String getPayloadById(ArangoDocumentReference documentReference, ArangoConnection arangoConnection, Credential credential) {
+        return getDocumentByKey(documentReference, String.class, arangoConnection, credential);
     }
 
-    public Set<ArangoDocumentReference> getReferencesBelongingToInstance(NexusInstanceReference nexusInstanceReference, ArangoConnection arangoConnection, OidcAccessToken oidcAccessToken) {
+    public Set<ArangoDocumentReference> getReferencesBelongingToInstance(NexusInstanceReference nexusInstanceReference, ArangoConnection arangoConnection, Credential credential) {
         Set<ArangoCollectionReference> collections = new HashSet<>(arangoConnection.getEdgesCollectionNames());
-        String query = queryFactory.queryForIdsWithProperty(ArangoVocabulary.NEXUS_RELATIVE_URL_WITH_REV, nexusInstanceReference.getFullId(true), collections, authorizationController.getReadableOrganizations(oidcAccessToken));
+        String query = queryFactory.queryForIdsWithProperty(ArangoVocabulary.NEXUS_RELATIVE_URL_WITH_REV, nexusInstanceReference.getFullId(true), collections, authorizationController.getReadableOrganizations(credential));
         List<List> result = query == null ? new ArrayList<>() : arangoConnection.getOrCreateDB().query(query, null, new AqlQueryOptions(), List.class).asListRemaining();
         if (result.size() == 1) {
             return ((List<String>) result.get(0)).stream().filter(Objects::nonNull).map(id -> ArangoDocumentReference.fromId(id.toString())).collect(Collectors.toSet());
         }
         return new LinkedHashSet<>();
     }
-    public List<Map> inDepthGraph(ArangoDocumentReference document, Integer step, ArangoConnection connection, OidcAccessToken oidcAccessToken) {
+    public List<Map> inDepthGraph(ArangoDocumentReference document, Integer step, ArangoConnection connection, Credential credential) {
         ArangoDatabase db = connection.getOrCreateDB();
-        String query = queryFactory.queryInDepthGraph(connection.getEdgesCollectionNames(), document, step, authorizationController.getReadableOrganizations(oidcAccessToken));
+        String query = queryFactory.queryInDepthGraph(connection.getEdgesCollectionNames(), document, step, authorizationController.getReadableOrganizations(credential));
         try {
             ArangoCursor<Map> q = db.query(query, null, new AqlQueryOptions(), Map.class);
             return q.asListRemaining();
@@ -240,9 +240,9 @@ public class ArangoRepository {
 
 
     @AuthorizedAccess
-    public Map getReleaseGraph(ArangoDocumentReference document, Optional<Integer> maxDepth, OidcAccessToken oidcAccessToken) {
+    public Map getReleaseGraph(ArangoDocumentReference document, Optional<Integer> maxDepth, Credential credential) {
         ArangoDatabase db = databaseFactory.getInferredDB().getOrCreateDB();
-        String query = queryFactory.queryReleaseGraph(databaseFactory.getInferredDB().getEdgesCollectionNames(), document, maxDepth.orElse(6), authorizationController.getReadableOrganizations(oidcAccessToken));
+        String query = queryFactory.queryReleaseGraph(databaseFactory.getInferredDB().getEdgesCollectionNames(), document, maxDepth.orElse(6), authorizationController.getReadableOrganizations(credential));
         ArangoCursor<Map> q = db.query(query, null, new AqlQueryOptions(), Map.class);
         List<Map> results = q.asListRemaining().stream().filter(Objects::nonNull).collect(Collectors.toList());
         if (results.size() > 1) {
@@ -254,9 +254,9 @@ public class ArangoRepository {
 
 
     @AuthorizedAccess
-    public Map getInstanceList(ArangoCollectionReference collection, Integer from, Integer size, String searchTerm, ArangoConnection driver, OidcAccessToken oidcAccessToken) {
+    public Map getInstanceList(ArangoCollectionReference collection, Integer from, Integer size, String searchTerm, ArangoConnection driver, Credential credential) {
         ArangoDatabase db = driver.getOrCreateDB();
-        String query = queryFactory.getInstanceList(collection, from, size, searchTerm, authorizationController.getReadableOrganizations(oidcAccessToken));
+        String query = queryFactory.getInstanceList(collection, from, size, searchTerm, authorizationController.getReadableOrganizations(credential));
         AqlQueryOptions options = new AqlQueryOptions().count(true).fullCount(true);
         Map m = new HashMap();
         try {
@@ -316,8 +316,8 @@ public class ArangoRepository {
 
 
     @AuthorizedAccess
-    public ReleaseStatusResponse getReleaseStatus(ArangoDocumentReference document, OidcAccessToken oidcAccessToken) {
-        Map releaseGraph = getReleaseGraph(document, Optional.empty(), oidcAccessToken);
+    public ReleaseStatusResponse getReleaseStatus(ArangoDocumentReference document, Credential credential) {
+        Map releaseGraph = getReleaseGraph(document, Optional.empty(), credential);
         if (releaseGraph != null) {
             ReleaseStatusResponse response = new ReleaseStatusResponse();
             response.setRootStatus(ReleaseStatus.valueOf((String) releaseGraph.get("status")));
@@ -329,12 +329,12 @@ public class ArangoRepository {
 
 
     @AuthorizedAccess
-    public JsonDocument getInstance(ArangoDocumentReference instanceReference, ArangoConnection driver, OidcAccessToken oidcAccessToken) {
+    public JsonDocument getInstance(ArangoDocumentReference instanceReference, ArangoConnection driver, Credential credential) {
         ArangoDatabase db = driver.getOrCreateDB();
         ArangoCollection collection = db.collection(instanceReference.getCollection().getName());
         if(collection.exists() && collection.documentExists(instanceReference.getKey())){
             JsonDocument jsonDocument = new JsonDocument(collection.getDocument(instanceReference.getKey(), Map.class));
-            boolean readable = authorizationController.isReadable(jsonDocument, oidcAccessToken);
+            boolean readable = authorizationController.isReadable(jsonDocument, credential);
             if(readable){
                 return jsonDocument;
             }
@@ -346,9 +346,9 @@ public class ArangoRepository {
 
     @AuthorizedAccess
     public Map getBookmarks(NexusInstanceReference document, Integer from, Integer size, String
-            searchTerm, ArangoConnection driver, OidcAccessToken oidcAccessToken) {
+            searchTerm, ArangoConnection driver, Credential credential) {
         ArangoDatabase db = driver.getOrCreateDB();
-        String query = queryFactory.getBookmarks(document, from, size, searchTerm, authorizationController.getReadableOrganizations(oidcAccessToken));
+        String query = queryFactory.getBookmarks(document, from, size, searchTerm, authorizationController.getReadableOrganizations(credential));
         AqlQueryOptions options = new AqlQueryOptions().count(true).fullCount(true);
         Map m = new HashMap();
         try {

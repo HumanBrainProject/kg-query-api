@@ -1,8 +1,8 @@
 package org.humanbrainproject.knowledgegraph.commons.nexus.control;
 
 
-import org.humanbrainproject.knowledgegraph.commons.authorization.control.OidcHeaderInterceptor;
-import org.humanbrainproject.knowledgegraph.commons.authorization.entity.OidcAccessToken;
+import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationController;
+import org.humanbrainproject.knowledgegraph.commons.authorization.entity.Credential;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusRelativeUrl;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
@@ -41,6 +41,10 @@ public class NexusClient {
     @Autowired
     JsonTransformer jsonTransformer;
 
+    @Autowired
+    AuthorizationController authorizationController;
+
+
     protected Logger logger = LoggerFactory.getLogger(NexusClient.class);
 
     private RestTemplate createRestTemplate(ClientHttpRequestInterceptor oidc){
@@ -51,8 +55,8 @@ public class NexusClient {
     }
 
 
-    public Set<String> getAllOrganizations(OidcAccessToken authorizationToken) {
-        List<JsonDocument> list = list(new NexusRelativeUrl(NexusConfiguration.ResourceType.ORGANIZATION, "?size=100"), authorizationToken, true);
+    public Set<String> getAllOrganizations(ClientHttpRequestInterceptor oidc) {
+        List<JsonDocument> list = list(new NexusRelativeUrl(NexusConfiguration.ResourceType.ORGANIZATION, "?size=100"), oidc, true);
         return list.stream().map(org -> org.get("resultId").toString()).collect(Collectors.toSet());
     }
 
@@ -69,8 +73,8 @@ public class NexusClient {
         return schemas.stream().map(schema -> NexusSchemaReference.createFromUrl(schema.get("resultId").toString())).collect(Collectors.toSet());
     }
 
-    public JsonDocument put(NexusRelativeUrl url, Integer revision, Map payload, OidcAccessToken oidc) {
-        return put(url, revision, payload, new OidcHeaderInterceptor(oidc));
+    public JsonDocument put(NexusRelativeUrl url, Integer revision, Map payload, Credential oidc) {
+        return put(url, revision, payload, authorizationController.getInterceptor(oidc));
     }
 
     public JsonDocument put(NexusRelativeUrl url, Integer revision, Map payload, ClientHttpRequestInterceptor oidc) {
@@ -85,8 +89,8 @@ public class NexusClient {
 
 
 
-    public boolean delete(NexusRelativeUrl url, Integer revision, OidcAccessToken oidcAccessToken) {
-        return delete(url, revision, new OidcHeaderInterceptor(oidcAccessToken));
+    public boolean delete(NexusRelativeUrl url, Integer revision, Credential credential) {
+        return delete(url, revision, authorizationController.getInterceptor(credential));
     }
 
     public boolean delete(NexusRelativeUrl url, Integer revision, ClientHttpRequestInterceptor oidc) {
@@ -106,8 +110,8 @@ public class NexusClient {
         return false;
     }
 
-    public JsonDocument post(NexusRelativeUrl url, Integer revision, Map payload, OidcAccessToken oidcAccessToken) {
-        return post(url, revision, payload, new OidcHeaderInterceptor(oidcAccessToken));
+    public JsonDocument post(NexusRelativeUrl url, Integer revision, Map payload, Credential credential) {
+        return post(url, revision, payload, authorizationController.getInterceptor(credential));
     }
 
     public JsonDocument post(NexusRelativeUrl url, Integer revision, Map payload, ClientHttpRequestInterceptor oidc) {
@@ -124,8 +128,8 @@ public class NexusClient {
     }
 
 
-    public JsonDocument patch(NexusRelativeUrl url, Integer revision, Map payload, OidcAccessToken oidcAccessToken) {
-        return patch(url, revision, payload, new OidcHeaderInterceptor(oidcAccessToken));
+    public JsonDocument patch(NexusRelativeUrl url, Integer revision, Map payload, Credential credential) {
+        return patch(url, revision, payload, authorizationController.getInterceptor(credential));
     }
 
     JsonDocument patch(NexusRelativeUrl url, Integer revision, Map payload, ClientHttpRequestInterceptor oidc) {
@@ -138,8 +142,8 @@ public class NexusClient {
         return null;
     }
 
-    public List<JsonDocument> find(NexusSchemaReference nexusSchemaReference, String fieldName, String fieldValue, OidcAccessToken oidcAccessToken) {
-        return find(nexusSchemaReference, fieldName, fieldValue, new OidcHeaderInterceptor(oidcAccessToken));
+    public List<JsonDocument> find(NexusSchemaReference nexusSchemaReference, String fieldName, String fieldValue, Credential credential) {
+        return find(nexusSchemaReference, fieldName, fieldValue, authorizationController.getInterceptor(credential));
     }
 
     List<JsonDocument> find(NexusSchemaReference nexusSchemaReference, String fieldName, String fieldValue, ClientHttpRequestInterceptor oidc) {
@@ -156,8 +160,8 @@ public class NexusClient {
     }
 
 
-    public JsonDocument get(NexusRelativeUrl url, OidcAccessToken oidcAccessToken) {
-        return get(url, new OidcHeaderInterceptor(oidcAccessToken));
+    public JsonDocument get(NexusRelativeUrl url, Credential credential) {
+        return get(url, authorizationController.getInterceptor(credential));
     }
 
     JsonDocument get(NexusRelativeUrl url, ClientHttpRequestInterceptor oidc) {
@@ -165,8 +169,8 @@ public class NexusClient {
         return map != null ? new JsonDocument(map) : null;
     }
 
-    public <T> T get(NexusRelativeUrl url, OidcAccessToken oidcAccessToken, Class<T> resultClass) {
-        return get(url, new OidcHeaderInterceptor(oidcAccessToken), resultClass);
+    public <T> T get(NexusRelativeUrl url, Credential credential, Class<T> resultClass) {
+        return get(url, authorizationController.getInterceptor(credential), resultClass);
     }
 
     <T> T get(NexusRelativeUrl url, ClientHttpRequestInterceptor oidc, Class<T> resultClass) {
@@ -185,12 +189,12 @@ public class NexusClient {
     }
 
 
-    public List<JsonDocument> list(NexusRelativeUrl relativeUrl, OidcAccessToken oidcAccessToken, boolean followPages) {
-        return list(relativeUrl, new OidcHeaderInterceptor(oidcAccessToken), followPages);
+    public List<JsonDocument> list(NexusRelativeUrl relativeUrl, Credential credential, boolean followPages) {
+        return list(relativeUrl, authorizationController.getInterceptor(credential), followPages);
     }
 
-    public List<JsonDocument> list(NexusSchemaReference schemaReference, OidcAccessToken oidcAccessToken, boolean followPages){
-        return list(schemaReference, new OidcHeaderInterceptor(oidcAccessToken), followPages);
+    public List<JsonDocument> list(NexusSchemaReference schemaReference, Credential credential, boolean followPages){
+        return list(schemaReference, authorizationController.getInterceptor(credential), followPages);
     }
 
     List<JsonDocument> list(NexusSchemaReference schemaReference, ClientHttpRequestInterceptor oidc, boolean followPages){
@@ -198,7 +202,7 @@ public class NexusClient {
     }
 
 
-    public List<NexusSchemaReference> listSchemasByOrganization(String organization, OidcAccessToken oidc, boolean followPages) {
+    public List<NexusSchemaReference> listSchemasByOrganization(String organization, Credential oidc, boolean followPages) {
         NexusRelativeUrl relativeUrl = new NexusRelativeUrl(NexusConfiguration.ResourceType.SCHEMA, organization);
         List<JsonDocument> list = list(relativeUrl, oidc, followPages);
         return list.stream().map(d -> NexusSchemaReference.createFromUrl((String) d.get("resultId"))).collect(Collectors.toList());

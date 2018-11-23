@@ -1,6 +1,7 @@
 package org.humanbrainproject.knowledgegraph.releasing.api;
 
 import io.swagger.annotations.Api;
+import org.humanbrainproject.knowledgegraph.commons.authorization.entity.Credential;
 import org.humanbrainproject.knowledgegraph.commons.authorization.entity.OidcAccessToken;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.releasing.boundary.Releasing;
@@ -43,8 +44,8 @@ public class ReleasingAPI {
     public ResponseEntity<List<ReleaseStatusResponse>> getReleaseStatusList(@RequestBody List<String> relativeNexusIds, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization) {
         try{
             if(relativeNexusIds!=null){
-                OidcAccessToken oidcAccessToken = new OidcAccessToken().setToken(authorization);
-                List<ReleaseStatusResponse> collect = relativeNexusIds.stream().map(ref -> releasing.getReleaseStatus(NexusInstanceReference.createFromUrl(ref), oidcAccessToken)).collect(Collectors.toList());
+                Credential credential = new OidcAccessToken().setToken(authorization);
+                List<ReleaseStatusResponse> collect = relativeNexusIds.stream().map(ref -> releasing.getReleaseStatus(NexusInstanceReference.createFromUrl(ref), credential)).collect(Collectors.toList());
                 return ResponseEntity.ok(collect);
             }
             return ResponseEntity.badRequest().build();

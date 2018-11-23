@@ -1,6 +1,6 @@
 package org.humanbrainproject.knowledgegraph.instances.boundary;
 
-import org.humanbrainproject.knowledgegraph.commons.authorization.entity.OidcAccessToken;
+import org.humanbrainproject.knowledgegraph.commons.authorization.entity.Credential;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonLdStandardization;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
@@ -51,24 +51,24 @@ public class Instances {
     SchemaController schemaController;
 
 
-    public JsonDocument getInstance(NexusInstanceReference instanceReference, OidcAccessToken oidcAccessToken) {
-        NexusInstanceReference originalId = arangoRepository.findOriginalId(instanceReference, oidcAccessToken);
-        return getInstance(originalId, databaseFactory.getInferredDB(), oidcAccessToken);
+    public JsonDocument getInstance(NexusInstanceReference instanceReference, Credential credential) {
+        NexusInstanceReference originalId = arangoRepository.findOriginalId(instanceReference, credential);
+        return getInstance(originalId, databaseFactory.getInferredDB(), credential);
     }
 
 
-    private JsonDocument getInstance(NexusInstanceReference instanceReference, ArangoConnection connection, OidcAccessToken oidcAccessToken) {
-        return arangoRepository.getInstance(ArangoDocumentReference.fromNexusInstance(instanceReference), connection, oidcAccessToken);
+    private JsonDocument getInstance(NexusInstanceReference instanceReference, ArangoConnection connection, Credential credential) {
+        return arangoRepository.getInstance(ArangoDocumentReference.fromNexusInstance(instanceReference), connection, credential);
     }
 
 
-    public NexusInstanceReference createNewInstance(NexusSchemaReference nexusSchemaReference, String payload, OidcAccessToken oidcAccessToken) {
-        return instanceController.createNewInstance(nexusSchemaReference, jsonTransformer.parseToMap(payload), oidcAccessToken);
+    public NexusInstanceReference createNewInstance(NexusSchemaReference nexusSchemaReference, String payload, Credential credential) {
+        return instanceController.createNewInstance(nexusSchemaReference, jsonTransformer.parseToMap(payload), credential);
     }
 
-    public NexusInstanceReference updateInstance(NexusInstanceReference instanceReference, String payload, Client client, String clientIdExtension, OidcAccessToken oidcAccessToken) {
-        NexusInstanceReference originalId = arangoRepository.findOriginalId(instanceReference, oidcAccessToken);
-        JsonDocument instance = getInstance(originalId, databaseFactory.getDefaultDB(), oidcAccessToken);
+    public NexusInstanceReference updateInstance(NexusInstanceReference instanceReference, String payload, Client client, String clientIdExtension, Credential credential) {
+        NexusInstanceReference originalId = arangoRepository.findOriginalId(instanceReference, credential);
+        JsonDocument instance = getInstance(originalId, databaseFactory.getDefaultDB(), credential);
         if (instance == null) {
             return null;
         }
@@ -86,23 +86,23 @@ public class Instances {
         if (clientIdExtension != null) {
             primaryIdentifier += clientIdExtension;
         }
-        return instanceController.createInstanceByIdentifier(nexusSchema, primaryIdentifier, document, oidcAccessToken);
+        return instanceController.createInstanceByIdentifier(nexusSchema, primaryIdentifier, document, credential);
     }
 
-    public boolean removeInstance(NexusInstanceReference nexusInstanceReference, OidcAccessToken oidcAccessToken) {
-        NexusInstanceReference originalId = arangoRepository.findOriginalId(nexusInstanceReference, oidcAccessToken);
+    public boolean removeInstance(NexusInstanceReference nexusInstanceReference, Credential credential) {
+        NexusInstanceReference originalId = arangoRepository.findOriginalId(nexusInstanceReference, credential);
         //We only deprecate the original id - this way, the reconciled instance should disappear.
-        return instanceController.deprecateInstanceByNexusId(originalId, oidcAccessToken);
+        return instanceController.deprecateInstanceByNexusId(originalId, credential);
     }
 
-    public void cloneInstancesFromSchema(NexusSchemaReference originalSchema, String newVersion, OidcAccessToken oidcAccessToken){
-        List<NexusInstanceReference> allInstancesForSchema = instanceController.getAllInstancesForSchema(originalSchema, oidcAccessToken);
+    public void cloneInstancesFromSchema(NexusSchemaReference originalSchema, String newVersion, Credential credential){
+        List<NexusInstanceReference> allInstancesForSchema = instanceController.getAllInstancesForSchema(originalSchema, credential);
         for (NexusInstanceReference instanceReference : allInstancesForSchema) {
-            JsonDocument fromNexusById = instanceController.getFromNexusById(instanceReference, oidcAccessToken);
+            JsonDocument fromNexusById = instanceController.getFromNexusById(instanceReference, credential);
             //Ensure the right type
             fromNexusById.addType(schemaController.getTargetClass(originalSchema));
             NexusSchemaReference schemaReference = new NexusSchemaReference(originalSchema.getOrganization(), originalSchema.getDomain(), originalSchema.getSchema(), newVersion);
-            instanceController.createInstanceByIdentifier(schemaReference, fromNexusById.getPrimaryIdentifier(), fromNexusById, oidcAccessToken);
+            instanceController.createInstanceByIdentifier(schemaReference, fromNexusById.getPrimaryIdentifier(), fromNexusById, credential);
         }
     }
 

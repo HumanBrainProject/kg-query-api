@@ -1,7 +1,7 @@
 package org.humanbrainproject.knowledgegraph.indexing.control.inference;
 
 import com.github.jsonldjava.core.JsonLdConsts;
-import org.humanbrainproject.knowledgegraph.commons.authorization.entity.OidcAccessToken;
+import org.humanbrainproject.knowledgegraph.commons.authorization.entity.Credential;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoDatabaseFactory;
@@ -64,13 +64,13 @@ public class Reconciliation implements InferenceStrategy, InitializingBean {
     }
 
     @Override
-    public void infer(QualifiedIndexingMessage message, Set<Vertex> documents, OidcAccessToken oidcAccessToken) {
+    public void infer(QualifiedIndexingMessage message, Set<Vertex> documents, Credential credential) {
         //We collect all instances from the default space
         NexusInstanceReference originalId = message.getOriginalId();
         boolean isOriginal = originalId.equals(message.getOriginalMessage().getInstanceReference());
 
-        Set<NexusInstanceReference> relativeInstances = indexingProvider.findInstancesWithLinkTo(HBPVocabulary.INFERENCE_EXTENDS, originalId, oidcAccessToken);
-        Set<NexusInstanceReference> inferredInstances = indexingProvider.findInstancesWithLinkTo(HBPVocabulary.INFERENCE_OF, originalId, oidcAccessToken);
+        Set<NexusInstanceReference> relativeInstances = indexingProvider.findInstancesWithLinkTo(HBPVocabulary.INFERENCE_EXTENDS, originalId, credential);
+        Set<NexusInstanceReference> inferredInstances = indexingProvider.findInstancesWithLinkTo(HBPVocabulary.INFERENCE_OF, originalId, credential);
         if (!isOriginal || (relativeInstances != null && !relativeInstances.isEmpty())) {
             Vertex originalVertex;
             if (isOriginal) {

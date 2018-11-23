@@ -1,7 +1,7 @@
 package org.humanbrainproject.knowledgegraph.query.boundary;
 
 import com.github.jsonldjava.core.JsonLdConsts;
-import org.humanbrainproject.knowledgegraph.commons.authorization.entity.OidcAccessToken;
+import org.humanbrainproject.knowledgegraph.commons.authorization.entity.Credential;
 import org.humanbrainproject.knowledgegraph.commons.labels.SemanticsToHumanTranslator;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoDatabaseFactory;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoRepository;
@@ -30,8 +30,8 @@ public class ArangoGraph {
     @Autowired
     SemanticsToHumanTranslator translator;
 
-    public Map getGraph(NexusInstanceReference instance, Integer step, OidcAccessToken oidcAccessToken) {
-        List<Map> maps = arangoRepository.inDepthGraph(ArangoDocumentReference.fromNexusInstance(instance), step, databaseFactory.getInferredDB(), oidcAccessToken);
+    public Map getGraph(NexusInstanceReference instance, Integer step, Credential credential) {
+        List<Map> maps = arangoRepository.inDepthGraph(ArangoDocumentReference.fromNexusInstance(instance), step, databaseFactory.getInferredDB(), credential);
         JsonDocument result = new JsonDocument();
         List<Map<String, Object>> nodesList = new ArrayList<>();
         List<Map<String, Object>> linksList = new ArrayList<>();
@@ -82,11 +82,11 @@ public class ArangoGraph {
         return arangoRepository.getInternalDocuments(collection);
     }
 
-    public Map getInstanceList(NexusSchemaReference schemaReference, Integer from, Integer size, String searchTerm, OidcAccessToken oidcAccessToken) {
-        return arangoRepository.getInstanceList(ArangoCollectionReference.fromNexusSchemaReference(schemaReference), from, size, searchTerm, databaseFactory.getInferredDB(), oidcAccessToken);
+    public Map getInstanceList(NexusSchemaReference schemaReference, Integer from, Integer size, String searchTerm, Credential credential) {
+        return arangoRepository.getInstanceList(ArangoCollectionReference.fromNexusSchemaReference(schemaReference), from, size, searchTerm, databaseFactory.getInferredDB(), credential);
     }
 
-    public Map getBookmarks(NexusInstanceReference instanceRef, Integer from, Integer size, String searchTerm, OidcAccessToken oidcAccessToken) {
-        return arangoRepository.getBookmarks(instanceRef, from, size, searchTerm, databaseFactory.getInferredDB(), oidcAccessToken);
+    public Map getBookmarks(NexusInstanceReference instanceRef, Integer from, Integer size, String searchTerm, Credential credential) {
+        return arangoRepository.getBookmarks(instanceRef, from, size, searchTerm, databaseFactory.getInferredDB(), credential);
     }
 }

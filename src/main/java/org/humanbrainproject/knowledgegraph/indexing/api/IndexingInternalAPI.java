@@ -24,8 +24,6 @@ public class IndexingInternalAPI {
     @Autowired
     GraphIndexing indexer;
 
-    @Autowired
-
     private Logger logger = LoggerFactory.getLogger(IndexingInternalAPI.class);
 
     @ApiOperation("Creates a new instance")

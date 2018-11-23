@@ -41,8 +41,8 @@ public class UnauthorizedArangoQuery {
         return this;
     }
 
-    public UnauthorizedArangoQuery addDocumentFilter(String documentAlias){
-        addLine("FILTER "+documentAlias+" != NULL");
+    public UnauthorizedArangoQuery addDocumentFilter(TrustedAqlValue documentAlias){
+        addLine("FILTER "+documentAlias.getValue()+" != NULL");
         return this;
     }
 

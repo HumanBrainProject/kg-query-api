@@ -4,7 +4,7 @@ import com.arangodb.ArangoCollection;
 import com.github.jsonldjava.core.JsonLdConsts;
 import com.github.jsonldjava.utils.JsonUtils;
 import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationController;
-import org.humanbrainproject.knowledgegraph.commons.authorization.entity.OidcAccessToken;
+import org.humanbrainproject.knowledgegraph.commons.authorization.entity.Credential;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonLdStandardization;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
@@ -74,14 +74,14 @@ public class ArangoQuery {
         return specificationQuery.metaSpecification(spec, parameters);
     }
 
-    public QueryResult<List<Map>> queryPropertyGraphBySpecification(String specification, NexusSchemaReference schemaReference,  QueryParameters parameters, ArangoDocumentReference documentReference, OidcAccessToken oidcAccessToken) throws JSONException, IOException {
+    public QueryResult<List<Map>> queryPropertyGraphBySpecification(String specification, NexusSchemaReference schemaReference,  QueryParameters parameters, ArangoDocumentReference documentReference, Credential credential) throws JSONException, IOException {
         Map<String, Object> context = null;
         if (parameters.resultTransformation()!=null && parameters.resultTransformation().getVocab() != null) {
             context = new LinkedHashMap<>();
             context.put(JsonLdConsts.VOCAB, parameters.resultTransformation().getVocab());
         }
         Specification spec = specInterpreter.readSpecification(JsonUtils.toString(standardization.fullyQualify(specification)), schemaReference);
-        QueryResult<List<Map>> result = specificationQuery.queryForSpecification(spec, parameters, documentReference, oidcAccessToken);
+        QueryResult<List<Map>> result = specificationQuery.queryForSpecification(spec, parameters, documentReference, credential);
         if (context != null) {
             result.setResults(standardization.applyContext(result.getResults(), context));
         }
@@ -106,11 +106,11 @@ public class ArangoQuery {
         return metaQueryBySpecification(getQueryPayload(queryReference, String.class), parameters, queryReference.getSchemaReference());
     }
 
-    public QueryResult<List<Map>> queryPropertyGraphByStoredSpecification(StoredQueryReference queryReference, QueryParameters parameters, ArangoDocumentReference documentReference, OidcAccessToken oidcAccessToken) throws IOException, JSONException {
-        return queryPropertyGraphBySpecification(getQueryPayload(queryReference, String.class), queryReference.getSchemaReference(), parameters, documentReference, oidcAccessToken);
+    public QueryResult<List<Map>> queryPropertyGraphByStoredSpecification(StoredQueryReference queryReference, QueryParameters parameters, ArangoDocumentReference documentReference, Credential credential) throws IOException, JSONException {
+        return queryPropertyGraphBySpecification(getQueryPayload(queryReference, String.class), queryReference.getSchemaReference(), parameters, documentReference, credential);
     }
 
-    public void storeSpecificationInDb(String specification, NexusSchemaReference schemaReference,  String id, OidcAccessToken oidcAccessToken) throws JSONException {
+    public void storeSpecificationInDb(String specification, NexusSchemaReference schemaReference,  String id, Credential credential) throws JSONException {
         StoredQueryReference storedQueryReference = new StoredQueryReference(schemaReference, id);
         JSONObject jsonObject = new JSONObject(specification);
         if(schemaReference!=null){
@@ -125,14 +125,14 @@ public class ArangoQuery {
         arangoInternalRepository.insertOrUpdateDocument(document, jsonObject.toString());
     }
 
-    public QueryResult<List<Map>> queryPropertyGraphByStoredSpecificationAndFreemarkerTemplate(StoredQueryReference queryReference, String templatePayload, QueryParameters parameters, OidcAccessToken oidcAccessToken) throws IOException, JSONException {
-        QueryResult<List<Map>> queryResult = queryPropertyGraphByStoredSpecification(queryReference, parameters, null, oidcAccessToken);
+    public QueryResult<List<Map>> queryPropertyGraphByStoredSpecificationAndFreemarkerTemplate(StoredQueryReference queryReference, String templatePayload, QueryParameters parameters, Credential credential) throws IOException, JSONException {
+        QueryResult<List<Map>> queryResult = queryPropertyGraphByStoredSpecification(queryReference, parameters, null, credential);
         String result = freemarkerTemplating.applyTemplate(templatePayload, queryResult, parameters.context().getLibrary(), databaseFactory.getInternalDB());
         return createResult(queryResult, jsonTransformer.parseToListOfMaps(result), parameters.context().isReturnOriginalJson());
     }
 
-    public Map queryPropertyGraphByStoredSpecificationAndFreemarkerTemplateWithId(StoredQueryReference queryReference, String templatePayload, QueryParameters parameters, NexusInstanceReference instance, OidcAccessToken oidcAccessToken) throws IOException, JSONException {
-        QueryResult<List<Map>> queryResult = queryPropertyGraphByStoredSpecification(queryReference, parameters, ArangoDocumentReference.fromNexusInstance(instance), oidcAccessToken);
+    public Map queryPropertyGraphByStoredSpecificationAndFreemarkerTemplateWithId(StoredQueryReference queryReference, String templatePayload, QueryParameters parameters, NexusInstanceReference instance, Credential credential) throws IOException, JSONException {
+        QueryResult<List<Map>> queryResult = queryPropertyGraphByStoredSpecification(queryReference, parameters, ArangoDocumentReference.fromNexusInstance(instance), credential);
         if(instance != null){
             if(queryResult.getResults().size() >= 1){
               String result = freemarkerTemplating.applyTemplate(templatePayload, queryResult, parameters.context().getLibrary(), databaseFactory.getInternalDB());

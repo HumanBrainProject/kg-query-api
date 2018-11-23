@@ -1,6 +1,6 @@
 package org.humanbrainproject.knowledgegraph.releasing.control;
 
-import org.humanbrainproject.knowledgegraph.commons.authorization.entity.OidcAccessToken;
+import org.humanbrainproject.knowledgegraph.commons.authorization.entity.Credential;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoDatabaseFactory;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoRepository;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
@@ -22,8 +22,8 @@ public class ReleaseControl {
     @Autowired
     ArangoDatabaseFactory databaseFactory;
 
-    public NexusInstanceReference findNexusInstanceFromInferredArangoEntry(ArangoDocumentReference arangoDocumentReference, OidcAccessToken oidcAccessToken){
-        Map document = arangoRepository.getDocument(arangoDocumentReference, databaseFactory.getInferredDB(), oidcAccessToken);
+    public NexusInstanceReference findNexusInstanceFromInferredArangoEntry(ArangoDocumentReference arangoDocumentReference, Credential credential){
+        Map document = arangoRepository.getDocument(arangoDocumentReference, databaseFactory.getInferredDB(), credential);
         Object originalId = document.get(ArangoVocabulary.NEXUS_RELATIVE_URL_WITH_REV);
         if(originalId instanceof String){
             return NexusInstanceReference.createFromUrl((String)originalId);
@@ -31,16 +31,16 @@ public class ReleaseControl {
         return null;
     }
 
-    public ReleaseStatusResponse getReleaseStatus(NexusInstanceReference instance, OidcAccessToken oidcAccessToken){
-        ReleaseStatusResponse releaseStatus = arangoRepository.getReleaseStatus(ArangoDocumentReference.fromNexusInstance(instance), oidcAccessToken);
+    public ReleaseStatusResponse getReleaseStatus(NexusInstanceReference instance, Credential credential){
+        ReleaseStatusResponse releaseStatus = arangoRepository.getReleaseStatus(ArangoDocumentReference.fromNexusInstance(instance), credential);
         if(releaseStatus!=null) {
             releaseStatus.setId(instance);
         }
         return releaseStatus;
     }
 
-    public Map getReleaseGraph(NexusInstanceReference instance, Optional<Integer> maxDepthOpt, OidcAccessToken oidcAccessToken) {
-        return arangoRepository.getReleaseGraph(ArangoDocumentReference.fromNexusInstance(instance),  maxDepthOpt, oidcAccessToken);
+    public Map getReleaseGraph(NexusInstanceReference instance, Optional<Integer> maxDepthOpt, Credential credential) {
+        return arangoRepository.getReleaseGraph(ArangoDocumentReference.fromNexusInstance(instance),  maxDepthOpt, credential);
     }
 
 }

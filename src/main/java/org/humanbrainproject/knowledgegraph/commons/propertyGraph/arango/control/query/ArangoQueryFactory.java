@@ -33,7 +33,7 @@ public class ArangoQueryFactory {
         q.setParameter("documentId", document.getId());
         q.setTrustedParameter("edge", q.listCollections(',', edgeCollections.stream().map(ArangoCollectionReference::getName).collect(Collectors.toSet())));
         q.addLine("FOR v, e IN 1..1 OUTBOUND DOCUMENT(\"${documentId}\") `${edge}`");
-        q.addDocumentFilter("v");
+        q.addDocumentFilter(new TrustedAqlValue("v"));
         q.addLine("RETURN v." + ArangoVocabulary.ID);
         return q.build().getValue();
     }
@@ -43,7 +43,7 @@ public class ArangoQueryFactory {
         q.setParameter("documentId", document.getId());
         q.setParameter("edge", linkReference.getName());
         q.addLine("FOR v IN 1..1 INBOUND DOCUMENT(\"${documentId}\") `${edge}`");
-        q.addDocumentFilter("v");
+        q.addDocumentFilter(new TrustedAqlValue("v"));
         q.addLine("RETURN v."+ArangoVocabulary.NEXUS_RELATIVE_URL);
 
         return q.build().getValue();
@@ -63,7 +63,7 @@ public class ArangoQueryFactory {
 
                 subquery.addLine("LET `${collectionName}`= (").indent();
                 subquery.addLine("FOR v IN `${collectionName}`").indent();
-                subquery.addDocumentFilter("v");
+                subquery.addDocumentFilter(new TrustedAqlValue("v"));
                 subquery.addLine("FILTER v.`${propertyName}` == \"${propertyValue}\" RETURN v.`${lookupProperty}`").outdent();
                 subquery.outdent().addLine(")");
                 q.addLine(subquery.build().getValue());
@@ -84,7 +84,7 @@ public class ArangoQueryFactory {
         q.setParameter("collection", collection.getName());
 
         q.addLine("FOR doc IN `${collection}`").indent();
-        q.addDocumentFilter("doc");
+        q.addDocumentFilter(new TrustedAqlValue("doc"));
         q.addLine("RETURN doc");
 
         return q.build().getValue();
@@ -98,25 +98,25 @@ public class ArangoQueryFactory {
         AuthorizedArangoQuery outboundSubquery = new AuthorizedArangoQuery(permissionGroupsWithReadAccess, true);
 
         outboundSubquery.setParameter("depth", String.valueOf(step));
-        outboundSubquery.setParameter("documentId", startDocument.getId());
         outboundSubquery.setTrustedParameter("edges", edges);
 
-        outboundSubquery.addLine("FOR v, e, p IN 1..${depth} OUTBOUND \"${documentId}\" ${edges}").indent();
-        outboundSubquery.addDocumentFilter("v");
+        outboundSubquery.addLine("FOR v, e, p IN 1..${depth} OUTBOUND doc ${edges}").indent();
+        outboundSubquery.addDocumentFilter(new TrustedAqlValue("v"));
         outboundSubquery.addLine("RETURN p").outdent();
 
-
         AuthorizedArangoQuery inboundSubquery = new AuthorizedArangoQuery(permissionGroupsWithReadAccess, true);
-        inboundSubquery.setParameter("documentId", startDocument.getId());
         inboundSubquery.setTrustedParameter("edges", edges);
 
-        inboundSubquery.addLine("FOR v, e, p IN 1..1 INBOUND \"${documentId}\" ${edges}").indent();
-        outboundSubquery.addDocumentFilter("v");
+        inboundSubquery.addLine("FOR v, e, p IN 1..1 INBOUND doc ${edges}").indent();
+        inboundSubquery.addDocumentFilter(new TrustedAqlValue("v"));
         inboundSubquery.addLine("RETURN p").outdent();
 
+        q.setParameter("documentId", startDocument.getId());
         q.setTrustedParameter("outbound", outboundSubquery.build());
         q.setTrustedParameter("inbound", inboundSubquery.build());
 
+        q.addLine("LET doc = DOCUMENT(\"${documentId}\")");
+        q.addDocumentFilter(new TrustedAqlValue("doc"));
         q.addLine("FOR path IN UNION_DISTINCT(").indent();
         q.addLine("(${outbound}), (${inbound})").outdent();
         q.addLine(")");
@@ -167,10 +167,10 @@ public class ArangoQueryFactory {
 
         if (level==0) {
             query.addLine("LET ${name}_doc = DOCUMENT(\"${startId}\")");
+            query.addDocumentFilter(new TrustedAqlValue("${name}_doc"));
         } else {
             query.addLine("FOR ${name}_doc, ${name}_edge IN 1..1 OUTBOUND ${doc} ${collections}");
-            query.addLine("FILTER ${name}_doc != NULL");
-            query.addLine("FILTER ${name}_doc._permissionGroup IN "+query.WHITELIST_ALIAS);
+            query.addDocumentFilter(new TrustedAqlValue("${name}_doc"));
             query.addLine("SORT ${name}_doc.`" + JsonLdConsts.TYPE + "`, ${name}_doc.`${schemaOrgName}`");
         }
         query.addLine("LET ${name}_release = (FOR ${name}_status_doc IN 1..1 INBOUND ${name}_doc `${releaseInstanceRelation}`");
@@ -230,11 +230,11 @@ public class ArangoQueryFactory {
         q.setParameter("size", size != null ? String.valueOf(size) : null);
 
         q.addLine("FOR doc IN `hbpkg-core-bookmark-v0_0_1`").indent();
-        q.addDocumentFilter("doc");
+        q.addDocumentFilter(new TrustedAqlValue("doc"));
         q.addLine("FILTER CONTAINS(doc.`https://schema.hbp.eu/hbpkg/bookmarkList`.`https://schema.hbp.eu/relativeUrl`, \"${filterValue}\")").indent();
         q.addLine("LET instances = (").indent();
         q.addLine("FOR i IN 1..1 OUTBOUND doc `schema_hbp_eu-hbpkg-bookmarkInstanceLink`").indent();
-        q.addDocumentFilter("i");
+        q.addDocumentFilter(new TrustedAqlValue("i"));
         q.addLine("FILTER i.`"+JsonLdConsts.ID+"` != NULL");
         if (searchTerm != null && !searchTerm.isEmpty()) {
             q.addLine("FILTER LIKE (LOWER(i.`"+SchemaOrgVocabulary.NAME+"`), \"%${searchTerm}%\")");

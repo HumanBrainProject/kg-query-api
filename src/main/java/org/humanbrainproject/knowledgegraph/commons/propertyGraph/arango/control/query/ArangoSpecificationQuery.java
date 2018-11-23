@@ -4,7 +4,7 @@ import com.arangodb.ArangoCursor;
 import com.arangodb.model.AqlQueryOptions;
 import org.apache.commons.text.StrSubstitutor;
 import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationController;
-import org.humanbrainproject.knowledgegraph.commons.authorization.entity.OidcAccessToken;
+import org.humanbrainproject.knowledgegraph.commons.authorization.entity.Credential;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoDatabaseFactory;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoAlias;
@@ -44,9 +44,9 @@ public class ArangoSpecificationQuery {
         return result;
     }
 
-    public QueryResult<List<Map>> queryForSpecification(Specification spec, QueryParameters parameters, ArangoDocumentReference documentReference, OidcAccessToken oidcAccessToken) throws JSONException {
+    public QueryResult<List<Map>> queryForSpecification(Specification spec, QueryParameters parameters, ArangoDocumentReference documentReference, Credential credential) throws JSONException {
         QueryResult<List<Map>> result = new QueryResult<>();
-        ArangoQueryBuilder queryBuilder = new ArangoQueryBuilder(spec, parameters.pagination(), parameters.filter(), new ArangoAlias(ArangoVocabulary.PERMISSION_GROUP), authorizationController.getReadableOrganizations(oidcAccessToken, parameters.filter().getRestrictToOrganizations()), documentReference, databaseFactory.getConnection(parameters.databaseScope()).getCollections());
+        ArangoQueryBuilder queryBuilder = new ArangoQueryBuilder(spec, parameters.pagination(), parameters.filter(), new ArangoAlias(ArangoVocabulary.PERMISSION_GROUP), authorizationController.getReadableOrganizations(credential, parameters.filter().getRestrictToOrganizations()), documentReference, databaseFactory.getConnection(parameters.databaseScope()).getCollections());
         String query = createQuery(queryBuilder, parameters);
         AqlQueryOptions options = new AqlQueryOptions();
         if (parameters.pagination().getSize() != null) {

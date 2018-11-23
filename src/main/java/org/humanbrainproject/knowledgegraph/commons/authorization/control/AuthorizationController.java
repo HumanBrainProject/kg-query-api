@@ -2,11 +2,14 @@ package org.humanbrainproject.knowledgegraph.commons.authorization.control;
 
 import org.apache.commons.collections4.map.LRUMap;
 import org.humanbrainproject.knowledgegraph.commons.authorization.entity.AccessRight;
+import org.humanbrainproject.knowledgegraph.commons.authorization.entity.Credential;
+import org.humanbrainproject.knowledgegraph.commons.authorization.entity.InternalMasterKey;
 import org.humanbrainproject.knowledgegraph.commons.authorization.entity.OidcAccessToken;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusClient;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.ArangoVocabulary;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -23,26 +26,40 @@ public class AuthorizationController {
     @Autowired
     NexusConfiguration nexusConfiguration;
 
-    private final LRUMap<OidcAccessToken, Set<AccessRight>> tokenToAccessRights = new LRUMap<>();
+    @Autowired
+    SystemOidcHeaderInterceptor systemOidcHeaderInterceptor;
 
-    public Set<AccessRight> getAccessRights(OidcAccessToken authorizationToken) {
-        if (tokenToAccessRights.containsKey(authorizationToken)) {
-            return tokenToAccessRights.get(authorizationToken);
+    public ClientHttpRequestInterceptor getInterceptor(Credential credential){
+        if(credential instanceof InternalMasterKey){
+            return systemOidcHeaderInterceptor;
         }
-        Set<String> allOrganizations = nexusClient.getAllOrganizations(authorizationToken);
+        else if(credential instanceof OidcAccessToken){
+            return new OidcHeaderInterceptor((OidcAccessToken)credential);
+        }
+        throw new RuntimeException("Unknown credential: "+credential);
+    }
+
+
+    private final LRUMap<Credential, Set<AccessRight>> tokenToAccessRights = new LRUMap<>();
+
+    public Set<AccessRight> getAccessRights(Credential credential) {
+        if (tokenToAccessRights.containsKey(credential)) {
+            return tokenToAccessRights.get(credential);
+        }
+        Set<String> allOrganizations = nexusClient.getAllOrganizations(getInterceptor(credential));
         //TODO right now, we only have the differentiation if a organization is visible or not - we therefore only can tell that there is at least READ access. We should have other means to ensure WRITE access.
         Set<AccessRight> accessRights = allOrganizations.stream().map(org -> new AccessRight(org.replace(nexusConfiguration.getNexusBase(NexusConfiguration.ResourceType.ORGANIZATION)+"/", ""), AccessRight.Permission.READ)).collect(Collectors.toSet());
-        tokenToAccessRights.put(authorizationToken, accessRights);
+        tokenToAccessRights.put(credential, accessRights);
         return accessRights;
     }
 
 
-    public Set<String> getReadableOrganizations(OidcAccessToken authorizationToken){
-        return getReadableOrganizations(authorizationToken, null);
+    public Set<String> getReadableOrganizations(Credential credential){
+        return getReadableOrganizations(credential, null);
     }
 
-    public Set<String> getReadableOrganizations(OidcAccessToken authorizationToken, List<String> whitelistedOrganizations){
-        Set<AccessRight> accessRights = getAccessRights(authorizationToken);
+    public Set<String> getReadableOrganizations(Credential credential, List<String> whitelistedOrganizations){
+        Set<AccessRight> accessRights = getAccessRights(credential);
         Set<String> readableOrganizations = accessRights.stream().map(AccessRight::getPath).collect(Collectors.toSet());
         if(whitelistedOrganizations!=null){
             readableOrganizations.retainAll(whitelistedOrganizations);
@@ -50,9 +67,9 @@ public class AuthorizationController {
         return readableOrganizations;
     }
 
-    public boolean isReadable(Map data, OidcAccessToken oidcAccessToken){
+    public boolean isReadable(Map data, Credential credential){
         if(data.containsKey(ArangoVocabulary.PERMISSION_GROUP) && data.get(ArangoVocabulary.PERMISSION_GROUP) instanceof String){
-            return getReadableOrganizations(oidcAccessToken, null).contains(data.get(ArangoVocabulary.PERMISSION_GROUP));
+            return getReadableOrganizations(credential, null).contains(data.get(ArangoVocabulary.PERMISSION_GROUP));
         }
         return false;
     }

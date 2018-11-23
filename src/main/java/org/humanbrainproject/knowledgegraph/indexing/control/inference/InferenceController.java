@@ -1,6 +1,6 @@
 package org.humanbrainproject.knowledgegraph.indexing.control.inference;
 
-import org.humanbrainproject.knowledgegraph.commons.authorization.entity.OidcAccessToken;
+import org.humanbrainproject.knowledgegraph.commons.authorization.entity.Credential;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.JsonPath;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.SubSpace;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Vertex;
@@ -29,16 +29,16 @@ public class InferenceController implements IndexingController{
     private Set<InferenceStrategy> strategies = Collections.synchronizedSet(new HashSet<>());
 
     @Override
-    public TodoList insert(QualifiedIndexingMessage message, TodoList todoList, OidcAccessToken oidcAccessToken){
+    public TodoList insert(QualifiedIndexingMessage message, TodoList todoList, Credential credential){
         if(message.isOfType(HBPVocabulary.INFERENCE_TYPE)){
-            insertVertexStructure(message, todoList, oidcAccessToken);
+            insertVertexStructure(message, todoList, credential);
         } else {
             Set<Vertex> documents = new HashSet<>();
             for (InferenceStrategy strategy : strategies) {
-                strategy.infer(message, documents, oidcAccessToken);
+                strategy.infer(message, documents, credential);
             }
             if(documents.isEmpty()){
-                insertVertexStructure(message, todoList, oidcAccessToken);
+                insertVertexStructure(message, todoList, credential);
             }
             else{
                 documents.forEach(doc -> {
@@ -49,30 +49,30 @@ public class InferenceController implements IndexingController{
         return todoList;
     }
 
-    private void insertVertexStructure(QualifiedIndexingMessage message, TodoList todoList, OidcAccessToken oidcAccessToken) {
+    private void insertVertexStructure(QualifiedIndexingMessage message, TodoList todoList, Credential credential) {
         Vertex vertexStructure = messageProcessor.createVertexStructure(message);
-        vertexStructure = indexingProvider.mapToOriginalSpace(vertexStructure, message.getOriginalId(), oidcAccessToken);
+        vertexStructure = indexingProvider.mapToOriginalSpace(vertexStructure, message.getOriginalId(), credential);
         InsertTodoItem insertTodoItem = new InsertTodoItem(vertexStructure, indexingProvider.getConnection(TargetDatabase.INFERRED));
         insertTodoItem.getBlacklist().addAll(EDGE_BLACKLIST_FOR_INFERENCE);
         todoList.addTodoItem(insertTodoItem);
     }
 
     @Override
-    public TodoList update(QualifiedIndexingMessage message, TodoList todoList, OidcAccessToken oidcAccessToken) {
+    public TodoList update(QualifiedIndexingMessage message, TodoList todoList, Credential credential) {
         //delete(message.getOriginalMessage().getInstanceReference(), todoList);
-        insert(message, todoList, oidcAccessToken);
+        insert(message, todoList, credential);
         return todoList;
     }
 
     @Override
-    public TodoList delete(NexusInstanceReference reference, TodoList todoList, OidcAccessToken oidcAccessToken) {
-        NexusInstanceReference originalIdInMainSpace = indexingProvider.findOriginalId(reference, oidcAccessToken).toSubSpace(SubSpace.MAIN);
+    public TodoList delete(NexusInstanceReference reference, TodoList todoList, Credential credential) {
+        NexusInstanceReference originalIdInMainSpace = indexingProvider.findOriginalId(reference, credential).toSubSpace(SubSpace.MAIN);
         todoList.addTodoItem(new DeleteTodoItem(originalIdInMainSpace, indexingProvider.getConnection(TargetDatabase.INFERRED)));
         return todoList;
     }
 
     @Override
-    public void clear(OidcAccessToken oidcAccessToken) {
+    public void clear(Credential credential) {
         indexingProvider.getConnection(TargetDatabase.INFERRED).clearData();
     }
 
