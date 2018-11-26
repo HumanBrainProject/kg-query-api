@@ -4,7 +4,9 @@ import com.arangodb.ArangoCollection;
 import com.arangodb.ArangoCursor;
 import com.arangodb.ArangoDBException;
 import com.arangodb.ArangoDatabase;
+import com.arangodb.entity.CollectionType;
 import com.arangodb.model.AqlQueryOptions;
+import com.arangodb.model.CollectionCreateOptions;
 import com.github.jsonldjava.core.JsonLdConsts;
 import org.apache.commons.lang.StringUtils;
 import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationController;
@@ -242,7 +244,13 @@ public class ArangoRepository {
     @AuthorizedAccess
     public Map getReleaseGraph(ArangoDocumentReference document, Optional<Integer> maxDepth, Credential credential) {
         ArangoDatabase db = databaseFactory.getInferredDB().getOrCreateDB();
-        String query = queryFactory.queryReleaseGraph(databaseFactory.getInferredDB().getEdgesCollectionNames(), document, maxDepth.orElse(6), authorizationController.getReadableOrganizations(credential));
+        //Ensure the release-collection exists
+        Set<ArangoCollectionReference> edgesCollectionNames = databaseFactory.getInferredDB().getEdgesCollectionNames();
+        String releaseInstanceEdgeCollection = ArangoCollectionReference.fromFieldName(HBPVocabulary.RELEASE_INSTANCE).getName();
+        if(!db.collection(releaseInstanceEdgeCollection).exists()){
+            db.createCollection(releaseInstanceEdgeCollection, new CollectionCreateOptions().type(CollectionType.EDGES));
+        }
+        String query = queryFactory.queryReleaseGraph(edgesCollectionNames, document, maxDepth.orElse(6), authorizationController.getReadableOrganizations(credential));
         ArangoCursor<Map> q = db.query(query, null, new AqlQueryOptions(), Map.class);
         List<Map> results = q.asListRemaining().stream().filter(Objects::nonNull).collect(Collectors.toList());
         if (results.size() > 1) {
