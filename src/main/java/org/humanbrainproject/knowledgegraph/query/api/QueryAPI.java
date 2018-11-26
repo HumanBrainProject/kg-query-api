@@ -3,6 +3,7 @@ package org.humanbrainproject.knowledgegraph.query.api;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiParam;
 import org.humanbrainproject.knowledgegraph.commons.authorization.entity.OidcAccessToken;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoRepository;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoToNexusLookupMap;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
@@ -57,6 +58,9 @@ public class QueryAPI {
 
     @Autowired
     ArangoToNexusLookupMap lookupMap;
+
+    @Autowired
+    ArangoRepository arangoRepository;
 
 
     @GetMapping("/{queryId}/schemas")
@@ -124,6 +128,7 @@ public class QueryAPI {
                 parameters.filter().restrictToOrganizations(restrictToOrganizations.split(","));
             }
             parameters.authorization().setToken(authorization);
+            instanceReference = arangoRepository.findOriginalId(instanceReference, parameters.authorization());
             QueryResult<List<Map>> result = query.queryPropertyGraphBySpecification(payload, instanceReference.getNexusSchema(), parameters, ArangoDocumentReference.fromNexusInstance(instanceReference), new OidcAccessToken().setToken(authorization));
             if (result.getResults().size() >= 1) {
                 return ResponseEntity.ok(result.getResults().get(0));
