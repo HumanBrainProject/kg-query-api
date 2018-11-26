@@ -53,7 +53,7 @@ public class Instances {
 
     public JsonDocument getInstance(NexusInstanceReference instanceReference, Credential credential) {
         NexusInstanceReference originalId = arangoRepository.findOriginalId(instanceReference, credential);
-        return getInstance(originalId, databaseFactory.getInferredDB(), credential);
+        return getInstance(originalId.toSubSpace(SubSpace.MAIN), databaseFactory.getInferredDB(), credential);
     }
 
 
