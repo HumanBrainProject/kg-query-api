@@ -22,25 +22,27 @@ public class ReleaseControl {
     @Autowired
     ArangoDatabaseFactory databaseFactory;
 
-    public NexusInstanceReference findNexusInstanceFromInferredArangoEntry(ArangoDocumentReference arangoDocumentReference, Credential credential){
+    public NexusInstanceReference findNexusInstanceFromInferredArangoEntry(ArangoDocumentReference arangoDocumentReference, Credential credential) {
         Map document = arangoRepository.getDocument(arangoDocumentReference, databaseFactory.getInferredDB(), credential);
-        Object originalId = document.get(ArangoVocabulary.NEXUS_RELATIVE_URL_WITH_REV);
-        if(originalId instanceof String){
-            return NexusInstanceReference.createFromUrl((String)originalId);
+        if (document != null) {
+            Object originalId = document.get(ArangoVocabulary.NEXUS_RELATIVE_URL_WITH_REV);
+            if (originalId instanceof String) {
+                return NexusInstanceReference.createFromUrl((String) originalId);
+            }
         }
         return null;
     }
 
-    public ReleaseStatusResponse getReleaseStatus(NexusInstanceReference instance, Credential credential){
+    public ReleaseStatusResponse getReleaseStatus(NexusInstanceReference instance, Credential credential) {
         ReleaseStatusResponse releaseStatus = arangoRepository.getReleaseStatus(ArangoDocumentReference.fromNexusInstance(instance), credential);
-        if(releaseStatus!=null) {
+        if (releaseStatus != null) {
             releaseStatus.setId(instance);
         }
         return releaseStatus;
     }
 
     public Map getReleaseGraph(NexusInstanceReference instance, Optional<Integer> maxDepthOpt, Credential credential) {
-        return arangoRepository.getReleaseGraph(ArangoDocumentReference.fromNexusInstance(instance),  maxDepthOpt, credential);
+        return arangoRepository.getReleaseGraph(ArangoDocumentReference.fromNexusInstance(instance), maxDepthOpt, credential);
     }
 
 }

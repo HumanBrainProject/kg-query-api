@@ -151,9 +151,9 @@ public class ArangoRepository {
     public Map getDocument(ArangoDocumentReference documentReference, ArangoConnection arangoConnection, Credential credential) {
         Map document = arangoConnection.getOrCreateDB().getDocument(documentReference.getId(), Map.class);
         if(document !=null && authorizationController.isReadable(document, credential)){
-            return null;
+            return document;
         }
-        return document;
+        return null;
     }
 
     public <T> List<T> getAll(ArangoCollectionReference collection, Class<T> clazz, ArangoConnection driver, Credential credential) {
