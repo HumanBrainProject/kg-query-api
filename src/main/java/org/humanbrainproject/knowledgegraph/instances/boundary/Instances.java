@@ -66,8 +66,7 @@ public class Instances {
         SubSpace subSpace = client != null ? client.getSubSpace() : SubSpace.MAIN;
         nexusSchemaReference = nexusSchemaReference.toSubSpace(subSpace);
         NexusInstanceReference newInstance = instanceController.createNewInstance(nexusSchemaReference, jsonTransformer.parseToMap(payload), credential);
-        NexusSchemaReference mainSchemaReference = newInstance.getNexusSchema().toSubSpace(SubSpace.MAIN);
-        return new NexusInstanceReference(mainSchemaReference, newInstance.getId());
+        return newInstance.toSubSpace(SubSpace.MAIN);
     }
 
     public NexusInstanceReference updateInstance(NexusInstanceReference instanceReference, String payload, Client client, String clientIdExtension, Credential credential) {

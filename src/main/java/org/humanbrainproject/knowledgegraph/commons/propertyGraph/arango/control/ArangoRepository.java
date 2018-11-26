@@ -20,6 +20,7 @@ import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.exceptions.UnexpectedNumberOfResults;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.SubSpace;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.ArangoVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.SchemaOrgVocabulary;
@@ -118,8 +119,13 @@ public class ArangoRepository {
     }
 
     public NexusInstanceReference findOriginalId(NexusInstanceReference reference, Credential credential) {
-        ArangoDocumentReference arangoDocumentReference = ArangoDocumentReference.fromNexusInstance(reference);
-        Map byKey = getDocumentByKey(arangoDocumentReference, Map.class, databaseFactory.getDefaultDB(), credential);
+        Map byKey = null;
+        for (SubSpace subSpace : SubSpace.values()) {
+            if(byKey==null && subSpace!=SubSpace.INFERRED) {
+                ArangoDocumentReference arangoDocumentReferenceInSubSpace = ArangoDocumentReference.fromNexusInstance(reference.toSubSpace(subSpace));
+                byKey = getDocumentByKey(arangoDocumentReferenceInSubSpace, Map.class, databaseFactory.getDefaultDB(), credential);
+            }
+        }
         if (byKey != null) {
             Object rev = byKey.get(ArangoVocabulary.NEXUS_REV);
             if(rev!=null) {
