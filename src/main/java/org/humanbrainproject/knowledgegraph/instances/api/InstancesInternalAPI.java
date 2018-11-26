@@ -33,8 +33,8 @@ public class InstancesInternalAPI {
     ArangoGraph graph;
 
     @PostMapping(value = "/{org}/{domain}/{schema}/{version}")
-    public ResponseEntity<Map> createNewInstanceForSchema(@RequestBody(required = false) String payload, @PathVariable("org") String org, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("version") String version, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken) {
-        NexusInstanceReference reference = instances.createNewInstance(new NexusSchemaReference(org, domain, schema, version), payload, new OidcAccessToken().setToken(authorizationToken));
+    public ResponseEntity<Map> createNewInstanceForSchema(@RequestBody(required = false) String payload, @PathVariable("org") String org, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("version") String version, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken, @RequestHeader(value = "client", required = false) Client client) {
+        NexusInstanceReference reference = instances.createNewInstance(new NexusSchemaReference(org, domain, schema, version), payload, client, new OidcAccessToken().setToken(authorizationToken));
         if (reference != null) {
             Map<String, String> result = new HashMap<>();
             result.put("relativeUrl", reference.getRelativeUrl().getUrl());
