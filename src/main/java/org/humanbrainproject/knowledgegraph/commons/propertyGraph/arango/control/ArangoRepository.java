@@ -121,7 +121,7 @@ public class ArangoRepository {
     public NexusInstanceReference findOriginalId(NexusInstanceReference reference, Credential credential) {
         Map byKey = null;
         for (SubSpace subSpace : SubSpace.values()) {
-            if (byKey == null && subSpace != SubSpace.INFERRED) {
+            if (byKey == null) {
                 ArangoDocumentReference arangoDocumentReferenceInSubSpace = ArangoDocumentReference.fromNexusInstance(reference.toSubSpace(subSpace));
                 byKey = getDocumentByKey(arangoDocumentReferenceInSubSpace, Map.class, databaseFactory.getDefaultDB(), credential);
             }

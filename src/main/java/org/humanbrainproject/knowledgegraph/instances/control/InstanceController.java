@@ -52,7 +52,15 @@ public class InstanceController {
 
 
     private NexusInstanceReference getByIdentifier(NexusSchemaReference schema, String identifier, Credential credential) {
-        return arangoRepository.findBySchemaOrgIdentifier(ArangoCollectionReference.fromNexusSchemaReference(schema), identifier, credential);
+        NexusInstanceReference bySchemaOrgIdentifier = arangoRepository.findBySchemaOrgIdentifier(ArangoCollectionReference.fromNexusSchemaReference(schema), identifier, credential);
+        if(bySchemaOrgIdentifier!=null){
+            JsonDocument fromNexusById = getFromNexusById(bySchemaOrgIdentifier, credential);
+            Object revision = fromNexusById.get(NexusVocabulary.REVISION_ALIAS);
+            if(revision!=null){
+                bySchemaOrgIdentifier.setRevision(Integer.valueOf(revision.toString()));
+            }
+        }
+        return bySchemaOrgIdentifier;
     }
 
     public JsonDocument getFromNexusById(NexusInstanceReference instanceReference, Credential credential){
