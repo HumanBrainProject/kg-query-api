@@ -20,11 +20,7 @@ public class ArangoQueryBuilder extends AbstractArangoQueryBuilder {
 
     @Override
     public void addTraversal(boolean reverse, ArangoCollectionReference relationCollection) {
-        UnauthorizedArangoQuery subQ = new UnauthorizedArangoQuery();
-        subQ.setParameter("reverse", reverse ? "INBOUND" : "OUTBOUND");
-        subQ.setParameter("relation", relationCollection.getName());
-        subQ.addLine(", ${reverse} `${collection}`");
-        q.addLine(subQ.build().getValue());
+        sb.append(String.format(", %s `%s`", reverse ? "INBOUND" : "OUTBOUND", relationCollection.getName()));
     }
 
     @Override
