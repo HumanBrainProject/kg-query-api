@@ -102,9 +102,15 @@ public class InstanceController {
             NexusInstanceReference idFromNexus = response.getReference();
             //We're replacing the previously set identifier with the id we got from Nexus.
             payload.put(SchemaOrgVocabulary.IDENTIFIER, idFromNexus.getId());
-            nexusClient.put(idFromNexus.getRelativeUrl(), idFromNexus.getRevision(), payload, credential);
-            immediateIndexing(payload, idFromNexus);
-            return idFromNexus;
+            JsonDocument result = nexusClient.put(idFromNexus.getRelativeUrl(), idFromNexus.getRevision(), payload, credential);
+            NexusInstanceReference fromUpdate = NexusInstanceReference.createFromUrl((String) result.get(JsonLdConsts.ID));
+            Object rev = result.get(NexusVocabulary.REVISION_ALIAS);
+            if(rev!=null){
+                fromUpdate.setRevision(Integer.valueOf(rev.toString()));
+            }
+
+            immediateIndexing(payload, fromUpdate);
+            return fromUpdate;
         }
         return null;
     }
