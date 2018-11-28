@@ -4,6 +4,8 @@ import org.humanbrainproject.knowledgegraph.commons.authorization.entity.Credent
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusClient;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoRepository;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.humanbrainproject.knowledgegraph.indexing.control.nexusToArango.NexusToArangoIndexingProvider;
 import org.humanbrainproject.knowledgegraph.indexing.entity.IndexingMessage;
@@ -34,6 +36,9 @@ public class NexusReleasingController {
     JsonTransformer jsonTransformer;
 
     @Autowired
+    ArangoRepository arangoRepository;
+
+    @Autowired
     NexusToArangoIndexingProvider nexusToArangoIndexingProvider;
 
     public IndexingMessage release(NexusInstanceReference instanceReference, Integer revision, Credential credential) {
@@ -50,6 +55,8 @@ public class NexusReleasingController {
         //Find release instance
         Set<NexusInstanceReference> releases = nexusToArangoIndexingProvider.findInstancesWithLinkTo(HBPVocabulary.RELEASE_INSTANCE, instanceReference, credential);
         for (NexusInstanceReference nexusInstanceReference : releases) {
+            Integer currentRevision = arangoRepository.getCurrentRevision(ArangoDocumentReference.fromNexusInstance(nexusInstanceReference));
+            nexusInstanceReference.setRevision(currentRevision);
             instanceController.deprecateInstanceByNexusId(nexusInstanceReference, credential);
         }
         return releases;

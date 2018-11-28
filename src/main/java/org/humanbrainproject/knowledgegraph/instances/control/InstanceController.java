@@ -132,7 +132,7 @@ public class InstanceController {
         } else if (!type.equals(targetClass)) {
             payload.put(JsonLdConsts.TYPE, Arrays.asList(type, targetClass));
         }
-        NexusInstanceReference nexusInstanceReference = new NexusInstanceReference(nexusSchemaReference, id);
+        NexusInstanceReference nexusInstanceReference = new NexusInstanceReference(nexusSchemaReference, id).setRevision(revision);
         NexusInstanceReference newInstanceReference = null;
         if (revision == null) {
             Map map = systemNexusClient.get(nexusInstanceReference.getRelativeUrl());

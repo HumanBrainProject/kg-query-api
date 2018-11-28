@@ -1,7 +1,11 @@
 package org.humanbrainproject.knowledgegraph.releasing.boundary;
 
 import org.humanbrainproject.knowledgegraph.commons.authorization.entity.Credential;
+import org.humanbrainproject.knowledgegraph.commons.authorization.entity.InternalMasterKey;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoDatabaseFactory;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoRepository;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
+import org.humanbrainproject.knowledgegraph.commons.vocabulary.ArangoVocabulary;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.instances.control.NexusReleasingController;
 import org.humanbrainproject.knowledgegraph.releasing.control.ReleaseControl;
@@ -21,20 +25,37 @@ public class Releasing {
     @Autowired
     NexusReleasingController nexusReleasingController;
 
-    public void release(NexusInstanceReference instanceReference, Credential accessToken){
+    @Autowired
+    ArangoRepository arangoRepository;
+
+    @Autowired
+    ArangoDatabaseFactory databaseFactory;
+
+
+    public void release(NexusInstanceReference instanceReference, Credential accessToken) {
         NexusInstanceReference nexusInstanceFromInferredArangoEntry = releaseControl.findNexusInstanceFromInferredArangoEntry(ArangoDocumentReference.fromNexusInstance(instanceReference), accessToken);
         nexusReleasingController.release(nexusInstanceFromInferredArangoEntry, nexusInstanceFromInferredArangoEntry.getRevision(), accessToken);
     }
 
-    public void unrelease(NexusInstanceReference instanceReference, Credential accessToken){
-        nexusReleasingController.unrelease(instanceReference, accessToken);
+    public NexusInstanceReference unrelease(NexusInstanceReference instanceReference, Credential accessToken) {
+        //We need the original id because the releasing mechanism needs to point to the real instance to ensure the right revision. We can do that by pointing to the nexus relative url of the inferred instance.
+        Map document = arangoRepository.getDocument(ArangoDocumentReference.fromNexusInstance(instanceReference), databaseFactory.getInferredDB(), new InternalMasterKey());
+        if (document != null) {
+            Object relativeUrl = document.get(ArangoVocabulary.NEXUS_RELATIVE_URL);
+            if (relativeUrl != null) {
+                NexusInstanceReference fromUrl = NexusInstanceReference.createFromUrl((String) relativeUrl);
+                nexusReleasingController.unrelease(fromUrl, accessToken);
+                return fromUrl;
+            }
+        }
+        return null;
     }
 
-    public ReleaseStatusResponse getReleaseStatus(NexusInstanceReference instanceReference, Credential accessToken){
+    public ReleaseStatusResponse getReleaseStatus(NexusInstanceReference instanceReference, Credential accessToken) {
         return releaseControl.getReleaseStatus(instanceReference, accessToken);
     }
 
-    public Map<String, Object> getReleaseGraph(NexusInstanceReference instanceReference, Credential accessToken){
+    public Map<String, Object> getReleaseGraph(NexusInstanceReference instanceReference, Credential accessToken) {
         return releaseControl.getReleaseGraph(instanceReference, Optional.empty(), accessToken);
     }
 

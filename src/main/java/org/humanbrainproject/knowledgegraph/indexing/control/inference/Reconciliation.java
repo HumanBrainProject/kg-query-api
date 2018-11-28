@@ -69,8 +69,9 @@ public class Reconciliation implements InferenceStrategy, InitializingBean {
         NexusInstanceReference originalId = message.getOriginalId();
         boolean isOriginal = originalId.equals(message.getOriginalMessage().getInstanceReference());
 
-        Set<NexusInstanceReference> relativeInstances = indexingProvider.findInstancesWithLinkTo(HBPVocabulary.INFERENCE_EXTENDS, originalId, credential);
-        Set<NexusInstanceReference> inferredInstances = indexingProvider.findInstancesWithLinkTo(HBPVocabulary.INFERENCE_OF, originalId, credential);
+        NexusInstanceReference resolveOriginalId = repository.findOriginalId(originalId, credential);
+        Set<NexusInstanceReference> relativeInstances = indexingProvider.findInstancesWithLinkTo(HBPVocabulary.INFERENCE_EXTENDS, resolveOriginalId, credential);
+        Set<NexusInstanceReference> inferredInstances = indexingProvider.findInstancesWithLinkTo(HBPVocabulary.INFERENCE_OF, resolveOriginalId, credential);
         if (!isOriginal || (relativeInstances != null && !relativeInstances.isEmpty())) {
             Vertex originalVertex;
             if (isOriginal) {
@@ -96,7 +97,7 @@ public class Reconciliation implements InferenceStrategy, InitializingBean {
     private NexusInstanceReference getInstanceReferenceForInferred(NexusInstanceReference original, Set<NexusInstanceReference> inferredInstances) {
         if (inferredInstances != null && !inferredInstances.isEmpty()) {
             if (inferredInstances.size() == 1) {
-                return inferredInstances.iterator().next();
+                return inferredInstances.iterator().next().clone();
             } else {
                 throw new InferenceException(String.format("Multiple inferred entities for the original entity %s", original.getFullId(true)));
             }

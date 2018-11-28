@@ -11,6 +11,7 @@ import com.github.jsonldjava.core.JsonLdConsts;
 import org.apache.commons.lang.StringUtils;
 import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationController;
 import org.humanbrainproject.knowledgegraph.commons.authorization.entity.Credential;
+import org.humanbrainproject.knowledgegraph.commons.authorization.entity.InternalMasterKey;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
 import org.humanbrainproject.knowledgegraph.commons.labels.SemanticsToHumanTranslator;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
@@ -126,10 +127,14 @@ public class ArangoRepository {
                 byKey = getDocumentByKey(arangoDocumentReferenceInSubSpace, Map.class, databaseFactory.getDefaultDB(), credential);
             }
         }
+        NexusInstanceReference result = reference.clone();
         if (byKey != null) {
             Object rev = byKey.get(ArangoVocabulary.NEXUS_REV);
             if (rev != null) {
-                reference.setRevision(Integer.parseInt(rev.toString()));
+                int revision = Integer.parseInt(rev.toString());
+                if(result.getRevision()==null || result.getRevision()<revision) {
+                    result.setRevision(revision);
+                }
             }
             Object originalParent = byKey.get(HBPVocabulary.INFERENCE_EXTENDS);
             if (originalParent == null) {
@@ -143,7 +148,7 @@ public class ArangoRepository {
             else if (byKey.get(JsonLdConsts.ID) != null) {
                 originalReference = NexusInstanceReference.createFromUrl((String) byKey.get(JsonLdConsts.ID));
             }
-            if (originalReference != null) {
+            if (originalReference != null && !reference.isSameInstanceRegardlessOfRevision(originalReference)) {
                 Map originalObject = getDocumentByKey(ArangoDocumentReference.fromNexusInstance(originalReference), Map.class, databaseFactory.getDefaultDB(), credential);
                 if (originalObject != null) {
                     Object originalRev = originalObject.get(ArangoVocabulary.NEXUS_REV);
@@ -151,10 +156,21 @@ public class ArangoRepository {
                         originalReference.setRevision(Integer.parseInt(originalRev.toString()));
                     }
                 }
-                return originalReference;
+                result = originalReference;
             }
         }
-        return reference;
+        return result;
+    }
+
+    public Integer getCurrentRevision(ArangoDocumentReference documentReference){
+        Map document = getDocument(documentReference, databaseFactory.getDefaultDB(), new InternalMasterKey());
+        if(document!=null){
+            Object rev = document.get(ArangoVocabulary.NEXUS_REV);
+            if(rev!=null){
+                return Integer.parseInt(rev.toString());
+            }
+        }
+        return null;
     }
 
     @AuthorizedAccess
