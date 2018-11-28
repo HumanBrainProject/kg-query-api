@@ -83,12 +83,12 @@ public class ArangoQueryFactory {
         return null;
     }
 
-    public String getAll(ArangoCollectionReference collection, Set<String> permissionGroupsWithReadAccess) {
-        AuthorizedArangoQuery q = new AuthorizedArangoQuery(permissionGroupsWithReadAccess);
+    @UnauthorizedAccess("We're returning information about specifications - this is meta information and non-sensitive")
+    public String getAll(ArangoCollectionReference collection) {
+        UnauthorizedArangoQuery q = new UnauthorizedArangoQuery();
         q.setParameter("collection", collection.getName());
 
         q.addLine("FOR doc IN `${collection}`").indent();
-        q.addDocumentFilter(new TrustedAqlValue("doc"));
         q.addLine("RETURN doc");
 
         return q.build().getValue();

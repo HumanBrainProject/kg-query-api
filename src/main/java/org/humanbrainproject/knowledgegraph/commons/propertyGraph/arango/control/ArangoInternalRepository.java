@@ -68,7 +68,7 @@ public class ArangoInternalRepository {
     }
 
     public <T> List<T> getAll(ArangoCollectionReference collection, Class<T> clazz) {
-        String query = queryFactory.getAll(collection, authorizationController.getReadableOrganizations(systemOidcClient.getAuthorizationToken()));
+        String query = queryFactory.getAll(collection);
         try {
             return getDB().query(query, null, new AqlQueryOptions(), clazz).asListRemaining();
         } catch (ArangoDBException e) {

@@ -166,16 +166,6 @@ public class ArangoRepository {
         return null;
     }
 
-    public <T> List<T> getAll(ArangoCollectionReference collection, Class<T> clazz, ArangoConnection driver, Credential credential) {
-        String query = queryFactory.getAll(collection, authorizationController.getReadableOrganizations(credential));
-        try {
-            return driver.getOrCreateDB().query(query, null, new AqlQueryOptions(), clazz).asListRemaining();
-        } catch (ArangoDBException e) {
-            logger.error("Arango query exception - {}", query);
-            throw e;
-        }
-    }
-
     public String getPayloadById(ArangoDocumentReference documentReference, ArangoConnection arangoConnection, Credential credential) {
         return getDocumentByKey(documentReference, String.class, arangoConnection, credential);
     }
