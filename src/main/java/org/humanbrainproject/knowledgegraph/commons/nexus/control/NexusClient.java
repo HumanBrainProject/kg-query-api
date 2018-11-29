@@ -78,11 +78,17 @@ public class NexusClient {
     }
 
     public JsonDocument put(NexusRelativeUrl url, Integer revision, Map payload, ClientHttpRequestInterceptor oidc) {
-        ResponseEntity<Map> result = createRestTemplate(oidc).exchange(String.format("%s%s", configuration.getEndpoint(url), revision != null ? String.format("%srev=%d", !url.getUrl().contains("?") ? "?" : "&", revision) : ""), HttpMethod.PUT, new HttpEntity<>(payload), Map.class);
-        if (result.getStatusCode().is2xxSuccessful() && result.getBody() != null) {
-            return new JsonDocument(result.getBody());
+        try {
+            ResponseEntity<Map> result = createRestTemplate(oidc).exchange(String.format("%s%s", configuration.getEndpoint(url), revision != null ? String.format("%srev=%d", !url.getUrl().contains("?") ? "?" : "&", revision) : ""), HttpMethod.PUT, new HttpEntity<>(payload), Map.class);
+            if (result.getStatusCode().is2xxSuccessful() && result.getBody() != null) {
+                return new JsonDocument(result.getBody());
+            }
+            return null;
         }
-        return null;
+        catch(HttpClientErrorException e){
+            logger.error(e.getMessage(), e);
+            throw e;
+        }
     }
 
 
@@ -99,7 +105,7 @@ public class NexusClient {
             return true;
         } catch (HttpClientErrorException e) {
             if (e.getStatusCode() == HttpStatus.CONFLICT) {
-                logger.info("Was not able to remove the instance {} due to a conflict. It seems as it is already deprecated", url);
+                logger.info("Was not able to remove the instance {} due to a conflict. It seems as it is already deprecated", url.getUrl());
                 return false;
             }
             else{

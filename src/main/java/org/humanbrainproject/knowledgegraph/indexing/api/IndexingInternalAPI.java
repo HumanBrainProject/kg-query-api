@@ -67,7 +67,7 @@ public class IndexingInternalAPI {
     @DeleteMapping(value="/{organization}/{domain}/{schema}/{schemaversion}/{id}", produces = MediaType.APPLICATION_JSON)
     public ResponseEntity<String> deleteInstance(@PathVariable("organization") String organization, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("schemaversion") String schemaVersion, @PathVariable("id") String id, @RequestAttribute(value="rev", required = false) Integer rev, @RequestParam(value = "authorId", required = false) String authorId, @RequestParam(value = "eventDateTime", required = false) String timestamp) {
         NexusInstanceReference path = new NexusInstanceReference(organization, domain, schema, schemaVersion, id).setRevision(rev);
-        logger.info("Received delete request for {} in rev {}", path.getRelativeUrl(), id, rev);
+        logger.info("Received delete request for {} in rev {}", path.getRelativeUrl().getUrl(), rev);
         try {
             indexer.delete(path);
             return ResponseEntity.ok(String.format("Successfully deleted the instance %s", path.getRelativeUrl().getUrl()));
