@@ -6,6 +6,8 @@ public class NexusVocabulary {
     public static final String NAMESPACE = "https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/";
     public static final String REVISION_ALIAS = ALIAS +":rev";
     public static final String PUBLISHED_ALIAS = ALIAS +":published";
+    public static final String DEPRECATED_ALIAS = ALIAS +":deprecated";
+    public static final String LINKS = "links";
 
 
 

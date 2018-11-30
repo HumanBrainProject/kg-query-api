@@ -74,7 +74,15 @@ public class InstanceController {
         if (byIdentifier==null) {
             return createInstanceByNexusId(schemaReference, null, null, payload, credential);
         } else {
-            return createInstanceByNexusId(byIdentifier.getNexusSchema(), byIdentifier.getId(), byIdentifier.getRevision(), payload, credential);
+            JsonDocument currentVersion = getFromNexusById(byIdentifier, credential);
+            currentVersion.remove(NexusVocabulary.REVISION_ALIAS);
+            currentVersion.remove(NexusVocabulary.DEPRECATED_ALIAS);
+            currentVersion.remove(NexusVocabulary.LINKS);
+            currentVersion.remove(JsonLdConsts.ID);
+            currentVersion.remove(JsonLdConsts.TYPE);
+            currentVersion.remove(JsonLdConsts.CONTEXT);
+            currentVersion.putAll(payload);
+            return createInstanceByNexusId(byIdentifier.getNexusSchema(), byIdentifier.getId(), byIdentifier.getRevision(), currentVersion, credential);
         }
     }
 
