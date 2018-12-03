@@ -75,9 +75,17 @@ public class InstancesInternalAPI {
 
 
     @GetMapping(value = "/{org}/{domain}/{schema}/{version}/{id}")
-    public ResponseEntity<Map> getInstance(@PathVariable("org") String org, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("version") String version, @PathVariable("id") String id, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken) throws Exception {
+    public ResponseEntity<Map> getInstance(@PathVariable("org") String org, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("version") String version, @PathVariable("id") String id, @ApiParam("The clientIdExtension allows the calling client to specify an additional postfix to the identifier and therefore to discriminate between different instances which are combined in the inferred space. If this value takes a userId for example, this means that there will be a distinct instance created for every user.") @RequestParam(value = "clientIdExtension", required = false) String clientIdExtension, @RequestHeader(value = "client", required = false) Client client, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken) throws Exception {
         try {
-            Map instance = instances.getInstance(new NexusInstanceReference(org, domain, schema, version, id), new OidcAccessToken().setToken(authorizationToken));
+            NexusInstanceReference instanceReference = new NexusInstanceReference(org, domain, schema, version, id);
+            OidcAccessToken credential = new OidcAccessToken().setToken(authorizationToken);
+            Map instance;
+            if(client!=null || clientIdExtension!=null){
+                instance = instances.getInstanceByClientExtension(instanceReference, clientIdExtension, client, credential);
+            }
+            else{
+                instance = instances.getInstance(instanceReference, credential);
+            }
             return instance != null ? ResponseEntity.ok(instance) : ResponseEntity.notFound().build();
         } catch (HttpClientErrorException e) {
             return ResponseEntity.status(e.getStatusCode()).build();
