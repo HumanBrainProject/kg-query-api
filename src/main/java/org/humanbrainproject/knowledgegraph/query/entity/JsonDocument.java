@@ -20,10 +20,6 @@ public class JsonDocument extends LinkedHashMap<String, Object>{
     public void addReference(String propertyName, String url){
         Map<String, String> reference = new HashMap<>();
         reference.put(JsonLdConsts.ID, url);
-        NexusInstanceReference internalReference = NexusInstanceReference.createFromUrl(url);
-        if(internalReference!=null) {
-            reference.put(HBPVocabulary.RELATIVE_URL_OF_INTERNAL_LINK, internalReference.getRelativeUrl().getUrl());
-        }
         addToProperty(propertyName, reference);
     }
 

@@ -251,6 +251,7 @@ public class ArangoQueryFactory {
         q.addLine("RETURN {").indent();
         q.addLine("\"id\": i.`"+HBPVocabulary.RELATIVE_URL_OF_INTERNAL_LINK+"`,");
         q.addLine("\"name\": i.`"+SchemaOrgVocabulary.NAME+"`,");
+        q.addLine("\"@type\": i.`"+JsonLdConsts.TYPE+"`,");
         q.addLine("\"description\": i.`"+SchemaOrgVocabulary.DESCRIPTION+"`");
         q.addLine("}").outdent();
         q.addLine(")").outdent();
