@@ -90,7 +90,10 @@ public class JsonDocument extends LinkedHashMap<String, Object>{
             }
         }
         else if(!o.equals(value)){
-            map.put(propertyName, Arrays.asList(o, value));
+            List<Object> list = new ArrayList<>();
+            list.add(o);
+            list.add(value);
+            map.put(propertyName, list);
         }
     }
 
