@@ -80,7 +80,7 @@ public class InstancesInternalAPI {
             NexusInstanceReference instanceReference = new NexusInstanceReference(org, domain, schema, version, id);
             OidcAccessToken credential = new OidcAccessToken().setToken(authorizationToken);
             Map instance;
-            if(client!=null || clientIdExtension!=null){
+            if(clientIdExtension!=null){
                 instance = instances.getInstanceByClientExtension(instanceReference, clientIdExtension, client, credential);
             }
             else{
