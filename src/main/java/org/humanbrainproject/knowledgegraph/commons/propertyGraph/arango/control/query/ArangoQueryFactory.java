@@ -31,7 +31,7 @@ public class ArangoQueryFactory {
     public String queryOutboundRelationsForDocument(ArangoDocumentReference document, Set<ArangoCollectionReference> edgeCollections, Set<String> permissionGroupsWithReadAccess) {
         AuthorizedArangoQuery q = new AuthorizedArangoQuery(permissionGroupsWithReadAccess);
         q.setParameter("documentId", document.getId());
-        q.setTrustedParameter("edges", q.listCollections(',', edgeCollections.stream().map(ArangoCollectionReference::getName).collect(Collectors.toSet())));
+        q.setTrustedParameter("edges", q.listCollections(edgeCollections.stream().map(ArangoCollectionReference::getName).collect(Collectors.toSet())));
         q.addLine("LET doc = DOCUMENT(\"${documentId}\")");
         q.addDocumentFilter(new TrustedAqlValue("doc"));
         q.addLine("FOR v, e IN 1..1 OUTBOUND doc ${edges}");
@@ -56,7 +56,7 @@ public class ArangoQueryFactory {
     public String queryForValueWithProperty(String propertyName, String propertyValue, Set<ArangoCollectionReference> collectionsToCheck, String lookupProperty, Set<String> permissionGroupsWithReadAccess) {
         if (collectionsToCheck != null && !collectionsToCheck.isEmpty()) {
             AuthorizedArangoQuery q = new AuthorizedArangoQuery(permissionGroupsWithReadAccess);
-            q.setTrustedParameter("collections", q.listCollections(',', collectionsToCheck.stream().map(ArangoCollectionReference::getName).collect(Collectors.toSet())));
+            q.setTrustedParameter("collections", q.listCollections(collectionsToCheck.stream().map(ArangoCollectionReference::getName).collect(Collectors.toSet())));
 
             for (ArangoCollectionReference arangoCollectionReference : collectionsToCheck) {
                 AuthorizedArangoQuery subquery = new AuthorizedArangoQuery(permissionGroupsWithReadAccess, true);
@@ -97,7 +97,7 @@ public class ArangoQueryFactory {
     public String queryInDepthGraph(Set<ArangoCollectionReference> edgeCollections, ArangoDocumentReference startDocument, Integer step, Set<String> permissionGroupsWithReadAccess) {
         AuthorizedArangoQuery q = new AuthorizedArangoQuery(permissionGroupsWithReadAccess);
 
-        TrustedAqlValue edges = q.listCollections(',', edgeCollections.stream().map(ArangoCollectionReference::getName).collect(Collectors.toSet()));
+        TrustedAqlValue edges = q.listCollections(edgeCollections.stream().map(ArangoCollectionReference::getName).collect(Collectors.toSet()));
 
         AuthorizedArangoQuery outboundSubquery = new AuthorizedArangoQuery(permissionGroupsWithReadAccess, true);
 
@@ -151,7 +151,7 @@ public class ArangoQueryFactory {
         query.setParameter("name", "level" + level)
         .setParameter("startId", rootInstance.getId())
         .setParameter("doc", startingVertex)
-        .setTrustedParameter("collections", query.listCollections(',', edgeCollections.stream().map(ArangoCollectionReference::getName).collect(Collectors.toSet())))
+        .setTrustedParameter("collections", query.listCollections(edgeCollections.stream().map(ArangoCollectionReference::getName).collect(Collectors.toSet())))
         .setParameter("releaseInstanceRelation", ArangoCollectionReference.fromFieldName(HBPVocabulary.RELEASE_INSTANCE).getName())
         .setParameter("releaseState", HBPVocabulary.RELEASE_STATE)
         .setParameter("revision", HBPVocabulary.PROVENANCE_REVISION)
