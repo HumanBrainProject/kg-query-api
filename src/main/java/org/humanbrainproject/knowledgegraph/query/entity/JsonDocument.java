@@ -94,4 +94,10 @@ public class JsonDocument extends LinkedHashMap<String, Object>{
         }
     }
 
+
+    public JsonDocument removeAllInternalKeys(){
+        this.keySet().removeIf(k -> k.startsWith("_"));
+        return this;
+    }
+
 }
