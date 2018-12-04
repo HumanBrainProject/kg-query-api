@@ -2,6 +2,7 @@ package org.humanbrainproject.knowledgegraph.indexing.entity;
 
 import com.github.jsonldjava.core.JsonLdConsts;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
+import org.humanbrainproject.knowledgegraph.commons.vocabulary.NexusVocabulary;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 
 import java.util.*;
@@ -66,5 +67,22 @@ public class QualifiedIndexingMessage {
         return null;
     }
 
+    public Integer getNexusRevision(){
+        if(getOriginalId()!=null && getOriginalId().getRevision()!=null){
+            return getOriginalId().getRevision();
+        }
+        Object o = getQualifiedMap().get(NexusVocabulary.REVISION_ALIAS);
+        if(o!=null) {
+            Integer revision;
+            try {
+                revision = Integer.valueOf(o.toString());
+            }
+            catch(NumberFormatException e){
+                revision = null;
+            }
+            return revision;
+        }
+        return null;
+    }
 
 }
