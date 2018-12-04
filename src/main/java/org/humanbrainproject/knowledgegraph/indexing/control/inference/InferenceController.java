@@ -5,7 +5,6 @@ import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.JsonPat
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.SubSpace;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Vertex;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
-import org.humanbrainproject.knowledgegraph.commons.vocabulary.NexusVocabulary;
 import org.humanbrainproject.knowledgegraph.indexing.control.IndexingController;
 import org.humanbrainproject.knowledgegraph.indexing.control.MessageProcessor;
 import org.humanbrainproject.knowledgegraph.indexing.control.nexusToArango.NexusToArangoIndexingProvider;
@@ -39,8 +38,6 @@ public class InferenceController implements IndexingController{
                 strategy.infer(message, documents, credential);
             }
             if(documents.isEmpty()){
-                //This is a virtual inferred instance - override any potential revision information to avoid confusion for the relevance check.
-                message.getQualifiedMap().put(NexusVocabulary.REVISION_ALIAS, 0);
                 insertVertexStructure(message, todoList, credential);
             }
             else{

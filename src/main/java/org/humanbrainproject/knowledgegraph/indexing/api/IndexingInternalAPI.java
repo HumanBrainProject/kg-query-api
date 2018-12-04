@@ -29,7 +29,7 @@ public class IndexingInternalAPI {
     @ApiOperation("Creates a new instance")
     @PostMapping(value="/{organization}/{domain}/{schema}/{schemaversion}/{id}", consumes = {MediaType.APPLICATION_JSON, "application/ld+json"}, produces = MediaType.APPLICATION_JSON)
     public ResponseEntity<String> addInstance(@RequestBody String payload, @PathVariable("organization") String organization, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("schemaversion") String schemaVersion, @PathVariable("id") String id, @RequestParam(value = "authorId", required = false) String authorId, @RequestParam(value = "eventDateTime", required = false) String timestamp) {
-        NexusInstanceReference path = new NexusInstanceReference(organization, domain, schema, schemaVersion, id);
+        NexusInstanceReference path = new NexusInstanceReference(organization, domain, schema, schemaVersion, id).setRevision(1);
         logger.info("Received insert request for {}", path.getRelativeUrl().getUrl());
         logger.debug("Payload for insert request {}: {}", path.getRelativeUrl().getUrl(), payload);
         try {
