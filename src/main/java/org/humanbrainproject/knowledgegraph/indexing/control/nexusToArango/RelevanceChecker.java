@@ -16,7 +16,9 @@ public class RelevanceChecker {
         Integer nexusRevision = message.getNexusRevision();
         if(nexusRevision!=null){
             Integer currentRevision = repository.getCurrentRevision(ArangoDocumentReference.fromNexusInstance(message.getOriginalId()));
-            return currentRevision <= nexusRevision;
+            if(currentRevision!=null){
+                return currentRevision <= nexusRevision;
+            }
         }
         return true;
     }
