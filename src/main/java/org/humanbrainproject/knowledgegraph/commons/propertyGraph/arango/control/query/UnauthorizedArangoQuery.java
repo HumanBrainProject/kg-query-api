@@ -48,17 +48,17 @@ public class UnauthorizedArangoQuery {
 
 
 
-    public TrustedAqlValue listCollections(Character separator, Set<String> values) {
-        return listValuesWithQuote('`', separator, values);
+    public TrustedAqlValue listCollections(Set<String> values) {
+        return listValuesWithQuote('`', values);
     }
 
-    public TrustedAqlValue listValues(Character separator, Set<String> values) {
-        return listValuesWithQuote('"', separator, values);
+    public TrustedAqlValue listValues(Set<String> values) {
+        return listValuesWithQuote('"', values);
     }
 
-    private TrustedAqlValue listValuesWithQuote(Character quote, Character separator, Set<String> values) {
+    private TrustedAqlValue listValuesWithQuote(Character quote, Set<String> values) {
         if(values!=null && values.size()>0){
-            return new TrustedAqlValue(quote+String.join(quote + preventAqlInjection(String.valueOf(separator)) + quote, values.stream().map(this::preventAqlInjection).collect(Collectors.toSet()))+quote);
+            return new TrustedAqlValue(quote+String.join(quote + "," + quote, values.stream().map(this::preventAqlInjection).collect(Collectors.toSet()))+quote);
         }
         else{
             return new TrustedAqlValue("");
@@ -66,10 +66,8 @@ public class UnauthorizedArangoQuery {
     }
 
     public String preventAqlInjection(String value){
-        //TODO check for AQLinjection
-        return value;
+        return value!=null ? value.replaceAll("[^A-Za-z0-9\\-_:.#/]", "") : null;
     }
-
 
     public TrustedAqlValue build() {
         return new TrustedAqlValue(StringSubstitutor.replace(query.toString(), parameters));
