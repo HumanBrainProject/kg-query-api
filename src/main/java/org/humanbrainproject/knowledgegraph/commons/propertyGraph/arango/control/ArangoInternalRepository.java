@@ -50,6 +50,7 @@ public class ArangoInternalRepository {
                 try {
                     collection.updateDocument(document.getKey(), documentPayload);
                     logger.info("Updated document: {} in database {}", document.getId(), db.name());
+                    logger.info("Payload of document {} in database {}: {}", document.getId(), db.name(), documentPayload);
                 } catch (ArangoDBException dbexception) {
                     logger.error(String.format("Was not able to update document: %s in database %s", document.getId(), db.name()), dbexception);
                     throw dbexception;
@@ -59,6 +60,7 @@ public class ArangoInternalRepository {
                 try {
                     collection.insertDocument(documentPayload);
                     logger.info("Inserted document: {} in database {}", document.getId(), db.name());
+                    logger.info("Payload of document {} in database {}: {}", document.getId(), db.name(), documentPayload);
                 } catch (ArangoDBException dbexception) {
                     logger.error(String.format("Was not able to insert document: %s in database %s", document.getId(), db.name()), dbexception);
                     throw dbexception;
