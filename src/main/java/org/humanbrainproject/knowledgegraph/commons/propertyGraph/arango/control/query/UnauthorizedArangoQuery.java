@@ -72,7 +72,7 @@ public class UnauthorizedArangoQuery {
     }
 
     public TrustedAqlValue preventAqlInjection(String value){
-        return value!=null ? new TrustedAqlValue(value.replaceAll("[^A-Za-z0-9\\-_:.#/]", "")) : null;
+        return value!=null ? new TrustedAqlValue(value.replaceAll("[^A-Za-z0-9\\-_:.#/@]", "")) : null;
     }
 
     public TrustedAqlValue build() {
