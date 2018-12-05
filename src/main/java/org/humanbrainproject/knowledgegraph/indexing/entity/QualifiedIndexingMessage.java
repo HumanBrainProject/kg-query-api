@@ -69,8 +69,8 @@ public class QualifiedIndexingMessage {
     }
 
     public Integer getNexusRevision(){
-        if(getOriginalId()!=null && getOriginalId().getRevision()!=null){
-            return getOriginalId().getRevision();
+        if(getOriginalMessage().getInstanceReference()!=null && getOriginalMessage().getInstanceReference().getRevision()!=null){
+            return getOriginalMessage().getInstanceReference().getRevision();
         }
         Object o = getQualifiedMap().get(NexusVocabulary.REVISION_ALIAS);
         if(o==null){

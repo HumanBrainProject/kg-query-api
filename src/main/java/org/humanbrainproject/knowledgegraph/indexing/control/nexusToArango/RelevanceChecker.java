@@ -21,7 +21,7 @@ public class RelevanceChecker {
     ArangoDatabaseFactory databaseFactory;
 
     public boolean isMessageRelevant(QualifiedIndexingMessage message) {
-        Map document = repository.getDocument(ArangoDocumentReference.fromNexusInstance(message.getOriginalId()), databaseFactory.getDefaultDB(), new InternalMasterKey());
+        Map document = repository.getDocument(ArangoDocumentReference.fromNexusInstance(message.getOriginalMessage().getInstanceReference()), databaseFactory.getDefaultDB(), new InternalMasterKey());
         if (document != null) {
             JsonDocument doc = new JsonDocument(document);
             Integer existingNexusRevision = doc.getNexusRevision();
