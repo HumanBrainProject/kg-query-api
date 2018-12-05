@@ -1,10 +1,11 @@
 package org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.query;
 
 import com.github.jsonldjava.core.JsonLdConsts;
-import org.humanbrainproject.knowledgegraph.query.entity.GraphQueryKeys;
+import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoAlias;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
 import org.humanbrainproject.knowledgegraph.query.boundary.ArangoQuery;
+import org.humanbrainproject.knowledgegraph.query.entity.GraphQueryKeys;
 import org.humanbrainproject.knowledgegraph.query.entity.Specification;
 import org.springframework.boot.configurationprocessor.json.JSONException;
 
@@ -23,39 +24,34 @@ public class ArangoMetaQueryBuilder extends AbstractArangoQueryBuilder {
 
     @Override
     protected void doEnterTraversal(ArangoAlias targetField, int numberOfTraversals, boolean reverse, ArangoCollectionReference relationCollection, boolean hasGroup, boolean ensureOrder) {
-
-        sb.append("// **********************************************************\n");
-        sb.append("// Start do enter traversal");
-        sb.append("// **********************************************************\n");
+        q.addLine("// **********************************************************");
+        q.addLine("// Start do enter traversal");
+        q.addLine("// **********************************************************");
         createCol(currentAlias, targetField, numberOfTraversals, reverse, relationCollection, hasGroup, ensureOrder);
 
-        sb.append("// **********************************************************\n");
-        sb.append("// End do enter traversal");
-        sb.append("// **********************************************************\n");
+        q.addLine("// **********************************************************");
+        q.addLine("// End do enter traversal");
+        q.addLine("// **********************************************************");
     }
 
     protected void createCol(ArangoAlias field, ArangoAlias targetField, int numberOfTraversals, boolean reverse, ArangoCollectionReference relationCollection, boolean hasGroup, boolean ensureOrder) {
-
-        sb.append("// **********************************************************\n");
-        sb.append(String.format("// Start create col for %s\n", targetField.getArangoName()));
-        sb.append("// **********************************************************\n");
-        sb.append(String.format("      LET %s_col = ( FOR %s_%s IN %s_%s.`%s`\n", targetField.getArangoName(), targetField.getArangoName(), DOC_POSTFIX, previousAlias.size()>0 ? previousAlias.peek().getArangoName() : ROOT_ALIAS.getArangoName(), DOC_POSTFIX, GraphQueryKeys.GRAPH_QUERY_FIELDS.getFieldName()));
-        sb.append(String.format("          FILTER %s_%s.`%s`.`@id`== \"%s\"\n", targetField.getArangoName(), DOC_POSTFIX, GraphQueryKeys.GRAPH_QUERY_FIELDNAME.getFieldName(), currentField.fieldName));
-        sb.append(String.format("          LET %s_att = MERGE(\n", targetField.getArangoName()));
-        sb.append(String.format("               FOR attr IN ATTRIBUTES(%s_%s)\n", targetField.getArangoName(), DOC_POSTFIX));
-        sb.append("               FILTER attr NOT IN internal_fields\n");
-        sb.append(String.format("               RETURN {[attr]: %s_%s[attr]}\n", targetField.getArangoName(), DOC_POSTFIX));
-        sb.append("               )\n");
-        sb.append("// **********************************************************\n");
-        sb.append(String.format("// End create col for %s\n", targetField.getArangoName()));
-        sb.append("// **********************************************************\n");
-    }
-
-    private String createInternalFieldFilter(){
-        sb.append("// **********************************************************\n");
-        sb.append("// Create internal field filter");
-        sb.append("// **********************************************************\n");
-        return String.join(", ", Arrays.stream(GraphQueryKeys.values()).map(k -> String.format("\"%s\"", k.getFieldName())).collect(Collectors.toList()));
+        q.addLine(new UnauthorizedArangoQuery().
+                addLine("LET ${targetField}_col = (").
+                indent().addLine("FOR ${targetField}_${docPostfix} IN ${previousAlias}_${docPostfix}.`${graphQueryField}`").
+                indent().addLine("FILTER ${targetField}_${docPostfix}.`${graphQueryFieldName}`.`"+JsonLdConsts.ID+"` == \"${currentField}\"").
+                addLine("LET ${targetField}_att = MERGE(").
+                indent().addLine("FOR attr IN ATTRIBUTES(${targetField}_${docPostfix})").
+                addLine("FILTER attr NOT IN internal_fields").
+                addLine("RETURN {[attr]: ${targetField}_${docPostfix}[attr]}").
+                outdent().addLine(")").
+                outdent().outdent().
+                setParameter("targetField", targetField.getArangoName()).
+                setParameter("docPostfix", DOC_POSTFIX).
+                setParameter("previousAlias", previousAlias.size()>0 ? previousAlias.peek().getArangoName() : ROOT_ALIAS.getArangoName()).
+                setParameter("graphQueryField", GraphQueryKeys.GRAPH_QUERY_FIELDS.getFieldName()).
+                setParameter("graphQueryFieldName", GraphQueryKeys.GRAPH_QUERY_FIELDNAME.getFieldName()).
+                setParameter("currentField", currentField.fieldName).
+                build().getValue());
     }
 
     @Override
@@ -75,102 +71,159 @@ public class ArangoMetaQueryBuilder extends AbstractArangoQueryBuilder {
     @Override
     protected void doStartReturnStructure(boolean simple) {
 
-        sb.append("// **********************************************************\n");
-        sb.append("// Start start return structure");
-        sb.append("// **********************************************************\n");
+        q.addLine("// **********************************************************");
+        q.addLine("// Start start return structure");
+        q.addLine("// **********************************************************");
+        UnauthorizedArangoQuery subQuery = new UnauthorizedArangoQuery();
         if (!isRoot()) {
-            sb.append(String.format("LET %s_result = FLATTEN([%s_att\n", currentAlias.getArangoName(), currentAlias.getArangoName()));
+            subQuery.addLine("LET ${alias}_result = FLATTEN([${alias}_att");
         } else {
-            sb.append(String.format("LET %s_result = FLATTEN([%s_col\n", ROOT_ALIAS.getArangoName(), currentAlias.getArangoName()));
+            subQuery.addLine("LET ${rootAlias}_result = FLATTEN([${alias}_col");
         }
+        subQuery.setParameter("alias", currentAlias.getArangoName());
+        subQuery.setParameter("rootAlias", ROOT_ALIAS.getArangoName());
+        q.addLine(subQuery.build().getValue());
 
-        sb.append("// **********************************************************\n");
-        sb.append("// End start return structure");
-        sb.append("// **********************************************************\n");
+        q.addLine("// **********************************************************");
+        q.addLine("// End start return structure");
+        q.addLine("// **********************************************************");
     }
 
     @Override
     public void endReturnStructure() {
 
-        sb.append("// **********************************************************\n");
-        sb.append("// Start end return structure");
-        sb.append("// **********************************************************\n");
-        if (!isRoot()) {
-            sb.append(String.format("])\n          RETURN { \"%s\": MERGE(%s_result)}\n", currentAlias.getOriginalName(), currentAlias.getArangoName()));
-        } else {
-            sb.append(String.format("])\nRETURN MERGE(%s_result)", currentAlias.getArangoName()));
-        }
+        q.addLine("// **********************************************************");
+        q.addLine("// Start end return structure");
+        q.addLine("// **********************************************************");
 
-        sb.append("// **********************************************************\n");
-        sb.append("// Start end return structure");
-        sb.append("// **********************************************************\n");
+        UnauthorizedArangoQuery subQuery = new UnauthorizedArangoQuery();
+        if (!isRoot()) {
+            subQuery.addLine("])\n          RETURN { \"${originalName}\": MERGE(${alias}_result)}");
+        } else {
+            subQuery.addLine("])\n RETURN MERGE(${alias}_result)");
+        }
+        subQuery.setParameter("originalName", currentAlias.getOriginalName());
+        subQuery.setParameter("alias", currentAlias.getArangoName());
+        q.addLine(subQuery.build().getValue());
+        q.addLine("// **********************************************************");
+        q.addLine("// Start end return structure");
+        q.addLine("// **********************************************************");
     }
 
     @Override
     protected void doLeaveTraversal() {
-        sb.append(")\n\n");
+        q.addLine(")");
     }
 
     @Override
     public void buildGrouping(String groupedInstancesLabel, List<ArangoAlias> groupingFields, List<ArangoAlias> nonGroupingFields) {
 
-        sb.append("// **********************************************************\n");
-        sb.append("// Start build grouping");
-        sb.append("// **********************************************************\n");
-        sb.append(String.format("LET %s_grp = { \"%s\": MERGE(FLATTEN([(FOR  grp IN %s_col\n", currentAlias.getArangoName(), currentAlias.getOriginalName(), currentAlias.getArangoName()));
-        sb.append("COLLECT ");
-        List<String> groupings = groupingFields.stream().map(f -> String.format("`%s` = grp.`%s`.`%s`", f.getArangoName(), currentField.fieldName, f.getOriginalName())).collect(Collectors.toList());
-        sb.append(String.join(", ", groupings));
-        sb.append(" INTO group\n");
-        sb.append( "LET instances = ( FOR el IN group RETURN {\n");
-        List<String> nonGrouping = nonGroupingFields.stream().map(s -> String.format("\"%s\": el.grp.`%s`.`%s`", s.getOriginalName(), currentField.fieldName, s.getOriginalName())).collect(Collectors.toList());
-        sb.append(String.join(",\n", nonGrouping));
-        sb.append("\n} )\n");
-        sb.append("RETURN {\n");
+        q.addLine("// **********************************************************");
+        q.addLine("// Start build grouping");
+        q.addLine("// **********************************************************");
 
-        List<String> returnGrouped = groupingFields.stream().map(f -> String.format("\"%s\": `%s`", f.getOriginalName(), f.getArangoName())).collect(Collectors.toList());
-        sb.append(String.join(",\n", returnGrouped));
-        sb.append(String.format(",\n \"%s\": instances\n", groupedInstancesLabel));
-        sb.append("} ),\n");
+        UnauthorizedArangoQuery subQuery = new UnauthorizedArangoQuery();
 
-        sb.append(String.format(" (FOR el IN %s_col\n", currentAlias.getArangoName()));
-        sb.append(String.format(" LET filtered = MERGE(FOR att IN ATTRIBUTES(el.`%s`)\n", currentField.fieldName));
-        List<String> allgrouped = Stream.concat(groupingFields.stream(), nonGroupingFields.stream()).map(s-> String.format("\"%s\"", s.getArangoName())).collect(Collectors.toList());
-        sb.append("        FILTER att NOT IN [");
-        sb.append(String.join(", ", allgrouped));
-        sb.append("]\n")  ;
-        sb.append(String.format("RETURN {[att]: el.`%s`[att]}\n", currentField.fieldName));
-        sb.append(")\n RETURN filtered\n ) \n");
-        sb.append("]))}\n\n");
+        subQuery.addLine("LET ${alias}_grp = { \"${originalName}\": MERGE(FLATTEN([(FOR  grp IN ${alias}_col");
+        subQuery.addLine("COLLECT");
 
-        sb.append("// **********************************************************\n");
-        sb.append("// End start return structure");
-        sb.append("// **********************************************************\n");
+        for (ArangoAlias groupingField : groupingFields) {
+            UnauthorizedArangoQuery group = new UnauthorizedArangoQuery();
+            group.addLine("`${alias}` = grp.`${currentField}`.`${originalName}`");
+            group.setParameter("alias", groupingField.getArangoName());
+            group.setParameter("currentField", currentField.fieldName);
+            group.setParameter("originalName", groupingField.getOriginalName());
+            subQuery.addLine(group.build().getValue());
+            if(groupingField != groupingFields.get(groupingFields.size()-1)){
+                subQuery.addLine(",");
+            }
+        }
+        subQuery.addLine("INTO group");
+        subQuery.addLine("LET instances = ( FOR el IN group RETURN {\n");
+        for (ArangoAlias nonGroupingField : nonGroupingFields) {
+            UnauthorizedArangoQuery ungroup = new UnauthorizedArangoQuery();
+            ungroup.addLine("\"${originalName}\": el.grp.`${currentField}`.`${originalName}`");
+            ungroup.setParameter("originalName", nonGroupingField.getOriginalName());
+            ungroup.setParameter("currentField", currentField.fieldName);
+            subQuery.addLine(ungroup.build().getValue());
+            if(nonGroupingField != nonGroupingFields.get(nonGroupingFields.size()-1)){
+                subQuery.addLine(",");
+            }
+        }
+        subQuery.addLine("} )");
+        subQuery.addLine("RETURN {");
+
+        for (ArangoAlias groupingField : groupingFields) {
+            UnauthorizedArangoQuery returnGroup = new UnauthorizedArangoQuery();
+            returnGroup.addLine("\"${originalName}\": `${alias}`");
+            returnGroup.setParameter("originalName", groupingField.getOriginalName());
+            returnGroup.setParameter("alias", groupingField.getArangoName());
+            subQuery.addLine(returnGroup.build().getValue());
+            if(groupingField != groupingFields.get(groupingFields.size()-1)){
+                subQuery.addLine(",");
+            }
+        }
+        subQuery.addLine(", \"${groupInstancesLabel}\": instances");
+        subQuery.addLine("} ),");
+
+        subQuery.addLine("(FOR el IN ${alias}_col");
+        subQuery.addLine("LET filtered = MERGE(FOR att IN ATTRIBUTES(el.`${currentField}`)");
+        subQuery.addLine("FILTER att NOT IN [ ${groupedFields} ]");
+
+        subQuery.addLine("RETURN {[att]: el.`${currentField}`[att]}");
+        subQuery.addLine(") RETURN filtered ) ");
+        subQuery.addLine("]))}");
+
+        subQuery.setParameter("alias", currentAlias.getArangoName());
+        subQuery.setParameter("originalName", currentAlias.getOriginalName());
+        subQuery.setParameter("groupInstanceLabel", groupedInstancesLabel);
+        subQuery.setParameter("currentField", currentField.fieldName);
+        Set<String> allGroupedFieldNames = Stream.concat(groupingFields.stream(), nonGroupingFields.stream()).map(ArangoAlias::getArangoName).collect(Collectors.toSet());
+        subQuery.setTrustedParameter("groupedFields", subQuery.listValues(allGroupedFieldNames));
+
+        q.addLine(subQuery.build().getValue());
+        q.addLine("// **********************************************************");
+        q.addLine("// End start return structure");
+        q.addLine("// **********************************************************");
     }
 
     @Override
     public ArangoMetaQueryBuilder addRoot(ArangoCollectionReference rootCollection) throws JSONException {
 
-        sb.append("// **********************************************************\n");
-        sb.append("// Start add root");
-        sb.append("// **********************************************************\n");
+        q.addLine("// **********************************************************\n");
+        q.addLine("// Start add root");
+        q.addLine("// **********************************************************\n");
+        UnauthorizedArangoQuery subQuery = new UnauthorizedArangoQuery();
+
         if (specification.getSpecificationId() == null) {
-            sb.append(String.format("LET %s_%s = %s\n", ROOT_ALIAS.getArangoName(), DOC_POSTFIX, specification.originalDocument));
+            subQuery.addLine("LET ${rootAlias}_${docPostfix} = ${originalDocument}");
         } else {
-            sb.append(String.format("LET %s_%s = DOCUMENT(\"%s/%s\")\n", ROOT_ALIAS.getArangoName(), DOC_POSTFIX, ArangoQuery.SPECIFICATION_QUERIES, specification.getSpecificationId()));
+            subQuery.addLine("LET ${rootAlias}_${docPostfix} = DOCUMENT(\"${specificationQueries}/${specificationId}\")");
         }
+        subQuery.setParameter("rootAlias", ROOT_ALIAS.getArangoName());
+        subQuery.setParameter("docPostfix", DOC_POSTFIX);
+        //TODO is it safe to transform the json object into a trusted value directly or do we need further injection checks?
+        subQuery.setTrustedParameter("originalDocument", new TrustedAqlValue(new JsonTransformer().getMapAsJson(specification.originalDocument)));
+        subQuery.setParameter("specificationQueries", ArangoQuery.SPECIFICATION_QUERIES.getName());
+        subQuery.setParameter("specificationId", specification.getSpecificationId());
+        q.addLine(subQuery.build().getValue());
         addOrganizationFilter();
 
-        sb.append(String.format("\n\nLET internal_fields = [%s]\n\n", createInternalFieldFilter()));
+        UnauthorizedArangoQuery subQuery2 = new UnauthorizedArangoQuery();
 
+        subQuery2.addLine("LET internal_fields = [${internalFields}]");
+        subQuery2.addLine("LET ${rootAlias}_col = {\"${querySpecification}\": MERGE(FOR attr IN ATTRIBUTES(${rootAlias}_${docPostfix}, true)");
+        subQuery2.addLine("FILTER attr NOT IN [\""+JsonLdConsts.CONTEXT+"\"] && attr NOT IN internal_fields");
+        subQuery2.addLine("RETURN {[attr]: ${rootAlias}_${docPostfix}[attr]})}");
+        subQuery2.setTrustedParameter("internalFields", subQuery2.listValues(Arrays.stream(GraphQueryKeys.values()).map(GraphQueryKeys::getFieldName).collect(Collectors.toSet())));
+        subQuery2.setParameter("rootAlias", ROOT_ALIAS.getArangoName());
+        subQuery2.setParameter("docPostfix", DOC_POSTFIX);
+        subQuery2.setParameter("querySpecification", GraphQueryKeys.GRAPH_QUERY_SPECIFICATION.getFieldName());
+        q.addLine(subQuery2.build().getValue());
 
-        sb.append(String.format("\n\nLET %s_col = {\"%s\": MERGE(FOR attr IN ATTRIBUTES(%s_%s, true) ", ROOT_ALIAS.getArangoName(), GraphQueryKeys.GRAPH_QUERY_SPECIFICATION.getFieldName(), ROOT_ALIAS.getArangoName(), DOC_POSTFIX));
-        sb.append(String.format("  FILTER attr NOT IN [\"%s\"] && attr NOT IN internal_fields \n", JsonLdConsts.CONTEXT));
-        sb.append(String.format("RETURN {[attr]: %s_%s[attr]} )}\n\n", ROOT_ALIAS.getArangoName(), DOC_POSTFIX));
-
-        sb.append("// **********************************************************\n");
-        sb.append("// End add root");
-        sb.append("// **********************************************************\n");
+        q.addLine("// **********************************************************\n");
+        q.addLine("// End add root");
+        q.addLine("// **********************************************************\n");
         return this;
     }
 
@@ -186,13 +239,17 @@ public class ArangoMetaQueryBuilder extends AbstractArangoQueryBuilder {
 
     @Override
     public void addTraversalResultField(String targetName, ArangoAlias alias) {
-        sb.append("// **********************************************************\n");
-        sb.append("// Start addTraversalResultField\n");
-        sb.append("// **********************************************************\n");
-        sb.append(String.format(",\n %s_%s", alias.getArangoName(), currentField.hasNestedGrouping() ? "grp" : "col"));
-        sb.append("// **********************************************************\n");
-        sb.append("// End addTraversalResultField\n");
-        sb.append("// **********************************************************\n");
+        q.addLine("// **********************************************************");
+        q.addLine("// Start addTraversalResultField");
+        q.addLine("// **********************************************************\n");
+        q.addLine(new UnauthorizedArangoQuery().
+                addLine(", ${alias}_${postfix}").
+                setParameter("alias", alias.getArangoName()).
+                setParameter("postfix", currentField.hasNestedGrouping() ? "grp" : "col").
+                build().getValue());
+        q.addLine("// **********************************************************\n");
+        q.addLine("// End addTraversalResultField\n");
+        q.addLine("// **********************************************************\n");
     }
 
     @Override
@@ -208,19 +265,28 @@ public class ArangoMetaQueryBuilder extends AbstractArangoQueryBuilder {
 
     @Override
     public void addComplexLeafResultField(String targetName, ArangoAlias leafField) {
-        sb.append("// **********************************************************\n");
-        sb.append("// Start complex result field\n");
-        sb.append("// **********************************************************\n");
-        sb.append(String.format(",\n[{\"%s\": MERGE( FOR `%s_%s` IN %s_%s.`%s`\n", targetName, currentField.fieldName, DOC_POSTFIX, currentAlias.getArangoName(), DOC_POSTFIX, GraphQueryKeys.GRAPH_QUERY_FIELDS.getFieldName()));
-        sb.append(String.format("          FILTER `%s_%s`.`%s`.`@id`== \"%s\"\n", currentField.fieldName, DOC_POSTFIX, GraphQueryKeys.GRAPH_QUERY_FIELDNAME.getFieldName(), currentField.fieldName));
-        sb.append("          RETURN MERGE(\n");
-        sb.append(String.format("               FOR attr IN ATTRIBUTES(`%s_%s`)\n", currentField.fieldName, DOC_POSTFIX));
-        sb.append("               FILTER attr NOT IN internal_fields\n");
-        sb.append(String.format("               RETURN {[attr]: `%s_%s`[attr]}\n", currentField.fieldName, DOC_POSTFIX));
-        sb.append("               ))}]\n");
-        sb.append("// **********************************************************\n");
-        sb.append("// End complex result field\n");
-        sb.append("// **********************************************************\n");
+        q.addLine("// **********************************************************");
+        q.addLine("// Start complex result field");
+        q.addLine("// **********************************************************");
+        UnauthorizedArangoQuery subQuery = new UnauthorizedArangoQuery();
+        subQuery.addLine(",");
+        subQuery.addLine("[{\"${targetName}\": MERGE( FOR `${currentField}_${docPostfix}` IN ${currentAlias}_${docPostfix}.`${graphQueryField}`");
+        subQuery.addLine("FILTER `${currentField}_${docPostfix}`.`${graphQueryFieldName}`.`"+ JsonLdConsts.ID+"` == \"${currentField}\"");
+        subQuery.addLine("RETURN MERGE (");
+        subQuery.addLine("FOR attr IN ATTRIBUTES(`${currentField}_${docPostfix}`)");
+        subQuery.addLine("FILTER attr NOT IN internal_fields");
+        subQuery.addLine("RETURN {[attr]: `${currentField}_${docPostfix}`[attr]}");
+        subQuery.addLine("))}]");
+        subQuery.setParameter("targetName", targetName);
+        subQuery.setParameter("currentField", currentField.fieldName);
+        subQuery.setParameter("docPostfix", DOC_POSTFIX);
+        subQuery.setParameter("currentAlias", currentAlias.getArangoName());
+        subQuery.setParameter("graphQueryField", GraphQueryKeys.GRAPH_QUERY_FIELDS.getFieldName());
+        subQuery.setParameter("graphQueryFieldName", GraphQueryKeys.GRAPH_QUERY_FIELDNAME.getFieldName());
+        q.addLine(subQuery.build().getValue());
+        q.addLine("// **********************************************************");
+        q.addLine("// End complex result field");
+        q.addLine("// **********************************************************");
 
         //sb.append(String.format(", [{\"%s\": %s_result}]\n", currentField.fieldName, currentAlias));
     }
@@ -231,26 +297,28 @@ public class ArangoMetaQueryBuilder extends AbstractArangoQueryBuilder {
     }
 
     private void doAddSimpleLeafResultField(ArangoAlias leafField, ArangoAlias alias) {
-        sb.append("// **********************************************************\n");
-        sb.append("// Start addSimpleLeafResultField\n");
-        sb.append("// **********************************************************\n");
-        sb.append(String.format("RETURN {\"%s\": %s_att}\n", leafField.getOriginalName(), alias.getArangoName()));
-        sb.append("// **********************************************************\n");
-        sb.append("// End addSimpleLeafResultField");
-        sb.append("// **********************************************************\n");
+        q.addLine("// **********************************************************");
+        q.addLine("// Start addSimpleLeafResultField\n");
+        q.addLine("// **********************************************************");
+        q.addLine(new UnauthorizedArangoQuery().addLine("RETURN {\"${originalName}\": ${alias}_att}").
+                setParameter("originalName", leafField.getOriginalName()).
+                setParameter("alias", alias.getArangoName()).build().getValue());
+        q.addLine("// **********************************************************");
+        q.addLine("// End addSimpleLeafResultField");
+        q.addLine("// **********************************************************");
     }
 
     @Override
     public void addMerge(ArangoAlias leafField, Set<ArangoAlias> mergeFields, boolean sorted) {
-        sb.append("// **********************************************************\n");
-        sb.append("// Start addMerge\n");
-        sb.append("// **********************************************************\n");
+        q.addLine("// **********************************************************");
+        q.addLine("// Start addMerge\n");
+        q.addLine("// **********************************************************");
         createCol(ArangoAlias.fromSpecField(currentField), leafField, 1, false, null, false, false);
         doAddSimpleLeafResultField(ArangoAlias.fromSpecField(currentField), leafField);
         doLeaveTraversal();
-        sb.append("// **********************************************************\n");
-        sb.append("// End addMerge\n");
-        sb.append("// **********************************************************\n");
+        q.addLine("// **********************************************************");
+        q.addLine("// End addMerge");
+        q.addLine("// **********************************************************");
     }
 
     @Override

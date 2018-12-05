@@ -173,23 +173,21 @@ public class QueryAPI {
 
 
     @GetMapping("/{org}/{domain}/{schema}/{version}/{queryId}/instances/{instanceId}")
-    public ResponseEntity<Map> executeStoredQueryForInstance(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(QUERY_ID) String queryId, @PathVariable(INSTANCE_ID) String instanceId, @RequestParam(value = SIZE, required = false) Integer size, @RequestParam(value = START, required = false) Integer start, @RequestParam(value = SEARCH, required = false) String searchTerm, @RequestParam(value = RESTRICT_TO_ORGANIZATIONS, required = false) String restrictToOrganizations, @RequestParam(value = DATABASE_SCOPE, required = false) DatabaseScope databaseScope, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization) throws Exception {
+    public ResponseEntity<Map> executeStoredQueryForInstance(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(QUERY_ID) String queryId, @PathVariable(INSTANCE_ID) String instanceId, @RequestParam(value = RESTRICT_TO_ORGANIZATIONS, required = false) String restrictToOrganizations, @RequestParam(value = DATABASE_SCOPE, required = false) DatabaseScope databaseScope, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization) throws Exception {
         try {
 
             NexusInstanceReference nexusInstanceReference = new NexusInstanceReference(org, domain, schema, version, instanceId);
             StoredQueryReference storedQueryReference = new StoredQueryReference(nexusInstanceReference.getNexusSchema(), queryId);
             QueryParameters parameters = new QueryParameters(databaseScope, null);
-            parameters.pagination().setSize(size).setStart(start);
             if (restrictToOrganizations != null) {
                 parameters.filter().restrictToOrganizations(restrictToOrganizations.split(","));
             }
-            parameters.filter().setQueryString(searchTerm);
             parameters.authorization().setToken(authorization);
             QueryResult<List<Map>> result = query.queryPropertyGraphByStoredSpecification(storedQueryReference, parameters, ArangoDocumentReference.fromNexusInstance(nexusInstanceReference), new OidcAccessToken().setToken(authorization));
             if (result.getResults().size() >= 1) {
                 return ResponseEntity.ok(result.getResults().get(0));
             } else {
-                return ResponseEntity.noContent().build();
+                return ResponseEntity.notFound().build();
             }
 
         } catch (RootCollectionNotFoundException e) {

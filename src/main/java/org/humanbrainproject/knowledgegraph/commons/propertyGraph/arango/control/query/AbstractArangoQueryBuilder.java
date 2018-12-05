@@ -7,7 +7,6 @@ import org.humanbrainproject.knowledgegraph.query.entity.Filter;
 import org.humanbrainproject.knowledgegraph.query.entity.Pagination;
 import org.humanbrainproject.knowledgegraph.query.entity.SpecField;
 import org.humanbrainproject.knowledgegraph.query.entity.Specification;
-import org.springframework.boot.configurationprocessor.json.JSONArray;
 import org.springframework.boot.configurationprocessor.json.JSONException;
 
 import java.util.Collections;
@@ -16,7 +15,6 @@ import java.util.Set;
 import java.util.Stack;
 
 public abstract class AbstractArangoQueryBuilder {
-    private final static String WHITELIST_ORGANIZATIONS_PLACEHOLDER = "whitelist_organizations";
     protected static String DOC_POSTFIX = "doc";
     protected static ArangoAlias ROOT_ALIAS = new ArangoAlias("root");
     protected Pagination pagination;
@@ -24,9 +22,6 @@ public abstract class AbstractArangoQueryBuilder {
     protected Specification specification;
     protected ArangoAlias permissionGroupFieldName;
     protected AuthorizedArangoQuery q;
-
-
-    protected StringBuilder sb = new StringBuilder();
     protected Stack<ArangoAlias> previousAlias = new Stack<>();
     protected ArangoAlias currentAlias = ROOT_ALIAS;
     protected boolean simpleReturn = true;
@@ -41,16 +36,6 @@ public abstract class AbstractArangoQueryBuilder {
         this.currentField = currentField;
     }
 
-    private void addWhitelistOrganizations(){
-        JSONArray array = new JSONArray();
-        if(whitelistOrganizations!=null) {
-            for (String whiteListOrganization : whitelistOrganizations) {
-                array.put(whiteListOrganization);
-            }
-            sb.append(String.format("LET %s=%s\n", WHITELIST_ORGANIZATIONS_PLACEHOLDER, array.toString()));
-        }
-    }
-
     public AbstractArangoQueryBuilder(Specification specification, Pagination pagination, Filter filter, ArangoAlias permissionGroupFieldName, Set<String> whitelistOrganizations, ArangoDocumentReference documentReference, Set<ArangoCollectionReference> existingArangoCollections) {
         this.pagination = pagination;
         this.filter = filter;
@@ -60,7 +45,6 @@ public abstract class AbstractArangoQueryBuilder {
         this.whitelistOrganizations = whitelistOrganizations;
         this.documentReference = documentReference;
         this.existingArangoCollections = existingArangoCollections!=null ? Collections.unmodifiableSet(existingArangoCollections) : null;
-        addWhitelistOrganizations();
     }
 
     public Set<ArangoCollectionReference> getExistingArangoCollections() {
@@ -72,7 +56,7 @@ public abstract class AbstractArangoQueryBuilder {
     }
 
     public String build() {
-        return sb.toString();
+        return q.build().getValue();
     }
 
     public final void addAlias(ArangoAlias targetName){
@@ -124,14 +108,14 @@ public abstract class AbstractArangoQueryBuilder {
     public abstract AbstractArangoQueryBuilder addRoot(ArangoCollectionReference rootCollection) throws JSONException;
 
     public void addOrganizationFilter() {
-        sb.append(String.format(" FILTER %s_%s.`%s` IN %s ", currentAlias.getArangoName(), DOC_POSTFIX, permissionGroupFieldName.getArangoName(), WHITELIST_ORGANIZATIONS_PLACEHOLDER));
+        q.addDocumentFilter(q.preventAqlInjection(String.format("%s_%s", currentAlias.getArangoName(), DOC_POSTFIX)));
     }
 
     public abstract void addLimit();
 
     public abstract void addTraversalResultField(String targetName, ArangoAlias alias);
 
-    public abstract void addSortByLeafField(Set<ArangoAlias> fields);
+    public abstract void addSortByLeafField(Set<ArangoAlias> field);
 
     public abstract void ensureOrder();
 

@@ -9,7 +9,7 @@ import java.util.stream.Collectors;
 
 public class UnauthorizedArangoQuery {
 
-    private final Map<String, Object> parameters = new LinkedHashMap<>();
+    private final Map<String, String> parameters = new LinkedHashMap<>();
     private StringBuilder query = new StringBuilder();
     private int indent = 0;
 
@@ -24,7 +24,7 @@ public class UnauthorizedArangoQuery {
     }
 
     public UnauthorizedArangoQuery setParameter(String key, String value) {
-        parameters.put(key, preventAqlInjection(value));
+        setTrustedParameter(key, preventAqlInjection(value));
         return this;
     }
 
@@ -32,7 +32,7 @@ public class UnauthorizedArangoQuery {
      * Use with caution! The passed parameter will not be further checked for AQL injection but rather immediately added to the query!
      */
     public UnauthorizedArangoQuery setTrustedParameter(String key, TrustedAqlValue trustedAqlValue) {
-        parameters.put(key, trustedAqlValue != null ? trustedAqlValue.getValue() : null);
+        parameters.put(key, trustedAqlValue!=null ? trustedAqlValue.getValue() : null);
         return this;
     }
 
@@ -56,17 +56,23 @@ public class UnauthorizedArangoQuery {
         return listValuesWithQuote('"', values);
     }
 
+    public TrustedAqlValue listFields(Set<String> values){
+        return listValuesWithQuote(null, values);
+    }
+
+
     private TrustedAqlValue listValuesWithQuote(Character quote, Set<String> values) {
         if(values!=null && values.size()>0){
-            return new TrustedAqlValue(quote+String.join(quote + "," + quote, values.stream().map(this::preventAqlInjection).collect(Collectors.toSet()))+quote);
+            String q = quote!=null ? String.valueOf(quote) : "";
+            return new TrustedAqlValue(q+String.join(q + "," + q, values.stream().map(v -> preventAqlInjection(v).getValue()).collect(Collectors.toSet()))+q);
         }
         else{
             return new TrustedAqlValue("");
         }
     }
 
-    public String preventAqlInjection(String value){
-        return value!=null ? value.replaceAll("[^A-Za-z0-9\\-_:.#/]", "") : null;
+    public TrustedAqlValue preventAqlInjection(String value){
+        return value!=null ? new TrustedAqlValue(value.replaceAll("[^A-Za-z0-9\\-_:.#/]", "")) : null;
     }
 
     public TrustedAqlValue build() {

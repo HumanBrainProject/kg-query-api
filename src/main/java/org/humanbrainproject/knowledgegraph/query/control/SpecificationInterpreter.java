@@ -1,13 +1,11 @@
 package org.humanbrainproject.knowledgegraph.query.control;
 
 import com.github.jsonldjava.core.JsonLdConsts;
+import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
-import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
-import org.humanbrainproject.knowledgegraph.query.entity.GraphQueryKeys;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.SchemaOrgVocabulary;
-import org.humanbrainproject.knowledgegraph.query.entity.SpecField;
-import org.humanbrainproject.knowledgegraph.query.entity.SpecTraverse;
-import org.humanbrainproject.knowledgegraph.query.entity.Specification;
+import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
+import org.humanbrainproject.knowledgegraph.query.entity.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +23,9 @@ public class SpecificationInterpreter {
 
     @Autowired
     NexusConfiguration nexusConfiguration;
+
+    @Autowired
+    JsonTransformer transformer;
 
     protected Logger logger = LoggerFactory.getLogger(SpecificationInterpreter.class);
 
@@ -49,7 +50,7 @@ public class SpecificationInterpreter {
         if (jsonObject.has(GraphQueryKeys.GRAPH_QUERY_FIELDS.getFieldName())) {
             specFields = createSpecFields(jsonObject.get(GraphQueryKeys.GRAPH_QUERY_FIELDS.getFieldName()));
         }
-        return new Specification(originalContext, name, rootSchema, json, specFields);
+        return new Specification(originalContext, name, rootSchema, new JsonDocument(transformer.parseToMap(json)), specFields);
     }
 
     private List<SpecField> createSpecFields(Object origin) throws JSONException {

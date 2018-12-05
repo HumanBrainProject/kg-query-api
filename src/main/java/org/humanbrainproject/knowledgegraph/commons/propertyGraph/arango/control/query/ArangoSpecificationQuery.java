@@ -163,11 +163,11 @@ public class ArangoSpecificationQuery {
             }
             queryBuilder.setCurrentField(originalField);
             if (isRoot) {
-                queryBuilder.addLimit();
                 if (queryBuilder.documentReference != null) {
                     queryBuilder.addInstanceIdFilter();
                 }
                 queryBuilder.addSearchQuery();
+                queryBuilder.addLimit();
             }
 
             Set<ArangoAlias> sortFields = new LinkedHashSet<>();
