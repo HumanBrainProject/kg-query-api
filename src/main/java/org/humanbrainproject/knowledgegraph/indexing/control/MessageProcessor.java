@@ -15,9 +15,6 @@ import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceR
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
@@ -42,7 +39,6 @@ public class MessageProcessor {
         map = jsonLdStandardization.fullyQualify(map);
         map = jsonLdStandardization.filterKeysByVocabBlacklists(map);
         map = jsonLdStandardization.flattenLists(map, null, null);
-        map.put(HBPVocabulary.PROVENANCE_INDEXED_IN_ARANGO_AT, ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_INSTANT));
         map.put(HBPVocabulary.PROVENANCE_LAST_MODIFICATION_USER_ID, message.getUserId());
         map.put(HBPVocabulary.PROVENANCE_MODIFIED_AT, message.getTimestamp());
         return new QualifiedIndexingMessage(message, map);

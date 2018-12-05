@@ -24,6 +24,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -116,6 +118,7 @@ public class Reconciliation implements InferenceStrategy, InitializingBean {
         mergeVertex(document, allVertices);
         document.addReference(HBPVocabulary.INFERENCE_OF, nexusConfiguration.getAbsoluteUrl(original.getInstanceReference()));
         document.addType(HBPVocabulary.INFERENCE_TYPE);
+        document.put(HBPVocabulary.PROVENANCE_MODIFIED_AT, ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_INSTANT));
         IndexingMessage indexingMessage = new IndexingMessage(referenceForInferred, transformer.getMapAsJson(document), null, null);
         return messageProcessor.createVertexStructure(messageProcessor.qualify(indexingMessage));
     }
@@ -177,10 +180,10 @@ public class Reconciliation implements InferenceStrategy, InitializingBean {
         }
     }
 
-    private LocalDateTime getIndexedAt(Vertex vertex) {
-        Object indexedAt = vertex.getQualifiedIndexingMessage().getQualifiedMap().get(HBPVocabulary.PROVENANCE_INDEXED_IN_ARANGO_AT);
-        if (indexedAt != null) {
-            return LocalDateTime.parse("2018-11-08T07:15:11.289Z", DateTimeFormatter.ISO_ZONED_DATE_TIME);
+    private LocalDateTime getModifedAt(Vertex vertex) {
+        Object indexedAt = vertex.getQualifiedIndexingMessage().getQualifiedMap().get(HBPVocabulary.PROVENANCE_MODIFIED_AT);
+        if (indexedAt instanceof String) {
+            return LocalDateTime.parse((String) indexedAt, DateTimeFormatter.ISO_ZONED_DATE_TIME);
         }
         return null;
     }
@@ -203,10 +206,10 @@ public class Reconciliation implements InferenceStrategy, InitializingBean {
             if (counts > countsOfCurrentResult) {
                 overrides = true;
             } else if (counts.intValue() == countsOfCurrentResult.intValue()) {
-                LocalDateTime indexedAt = getIndexedAt(potentialOverride);
+                LocalDateTime indexedAt = getModifedAt(potentialOverride);
                 if (currentVertex != null) {
                     if (indexedAt != null) {
-                        LocalDateTime originIndexedAt = getIndexedAt(currentVertex);
+                        LocalDateTime originIndexedAt = getModifedAt(currentVertex);
                         if (originIndexedAt == null || indexedAt.isAfter(originIndexedAt)) {
                             overrides = true;
                         }

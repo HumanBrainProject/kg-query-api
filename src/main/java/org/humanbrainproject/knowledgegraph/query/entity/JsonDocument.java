@@ -1,6 +1,7 @@
 package org.humanbrainproject.knowledgegraph.query.entity;
 
 import com.github.jsonldjava.core.JsonLdConsts;
+import org.humanbrainproject.knowledgegraph.commons.vocabulary.ArangoVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.NexusVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.SchemaOrgVocabulary;
@@ -52,7 +53,15 @@ public class JsonDocument extends LinkedHashMap<String, Object>{
         if(this.containsKey(NexusVocabulary.REVISION_ALIAS)){
             return (Integer)get(NexusVocabulary.REVISION_ALIAS);
         }
+        else if(this.containsKey(ArangoVocabulary.NEXUS_REV)){
+            Long rev = (Long) get(ArangoVocabulary.NEXUS_REV);
+            return rev!=null ? rev.intValue() : null;
+        }
         return null;
+    }
+
+    public String getNexusId(){
+        return (String) get(ArangoVocabulary.NEXUS_UUID);
     }
 
 

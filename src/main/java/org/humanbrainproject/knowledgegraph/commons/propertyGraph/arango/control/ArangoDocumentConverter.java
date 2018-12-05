@@ -15,6 +15,9 @@ import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceR
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @Component
@@ -48,6 +51,7 @@ public class ArangoDocumentConverter {
         map.put(ArangoVocabulary.FROM, ArangoDocumentReference.fromNexusInstance(from).getId());
         map.put(ArangoVocabulary.TO, ArangoDocumentReference.fromNexusInstance(to).getId());
         map.put(ArangoVocabulary.NAME, mainObject.getNexusSchema().getRelativeUrl().getUrl());
+        map.put(ArangoVocabulary.INDEXED_IN_ARANGO_AT, ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_INSTANT));
         //This is a loop - it can happen (e.g. for reconciled instances - so we should ensure this never reaches the database).
         if (map.get(ArangoVocabulary.FROM).equals(map.get(ArangoVocabulary.TO))) {
             return null;
@@ -64,6 +68,8 @@ public class ArangoDocumentConverter {
         map.put(ArangoVocabulary.PATH, buildPath(null, edge.getPath()));
         map.put(ArangoVocabulary.NAME, edge.getName());
         map.put(ArangoVocabulary.ORDER_NUMBER, edge.getLastOrderNumber());
+        map.put(ArangoVocabulary.INDEXED_IN_ARANGO_AT, ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_INSTANT));
+
         //This is a loop - it can happen (e.g. for reconciled instances - so we should ensure this never reaches the database).
         if (map.get(ArangoVocabulary.FROM).equals(map.get(ArangoVocabulary.TO))) {
             return null;
@@ -87,6 +93,7 @@ public class ArangoDocumentConverter {
         jsonObject.put(ArangoVocabulary.NEXUS_RELATIVE_URL, vertex.getQualifiedIndexingMessage().getOriginalMessage().getInstanceReference().getRelativeUrl().getUrl());
         jsonObject.put(ArangoVocabulary.NEXUS_RELATIVE_URL_WITH_REV, vertex.getQualifiedIndexingMessage().getOriginalMessage().getInstanceReference().getFullId(true));
         jsonObject.put(ArangoVocabulary.PERMISSION_GROUP, vertex.getInstanceReference().getNexusSchema().getOrganization());
+        jsonObject.put(ArangoVocabulary.INDEXED_IN_ARANGO_AT, ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_INSTANT));
         for (JsonPath steps : blackList) {
             removePathFromMap(jsonObject, steps);
         }
