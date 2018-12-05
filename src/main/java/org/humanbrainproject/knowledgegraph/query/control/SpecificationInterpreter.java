@@ -24,9 +24,6 @@ public class SpecificationInterpreter {
     @Autowired
     NexusConfiguration nexusConfiguration;
 
-    @Autowired
-    JsonTransformer transformer;
-
     protected Logger logger = LoggerFactory.getLogger(SpecificationInterpreter.class);
 
     public Specification readSpecification(String json, NexusSchemaReference nexusSchemaReference) throws JSONException {
@@ -50,7 +47,7 @@ public class SpecificationInterpreter {
         if (jsonObject.has(GraphQueryKeys.GRAPH_QUERY_FIELDS.getFieldName())) {
             specFields = createSpecFields(jsonObject.get(GraphQueryKeys.GRAPH_QUERY_FIELDS.getFieldName()));
         }
-        return new Specification(originalContext, name, rootSchema, new JsonDocument(transformer.parseToMap(json)), specFields);
+        return new Specification(originalContext, name, rootSchema, new JsonDocument(new JsonTransformer().parseToMap(json)), specFields);
     }
 
     private List<SpecField> createSpecFields(Object origin) throws JSONException {
