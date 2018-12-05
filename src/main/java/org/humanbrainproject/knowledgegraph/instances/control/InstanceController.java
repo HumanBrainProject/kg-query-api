@@ -22,6 +22,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.stereotype.Component;
 
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -72,7 +75,7 @@ public class InstanceController {
         payload.addToProperty(SchemaOrgVocabulary.IDENTIFIER, identifier);
         NexusInstanceReference byIdentifier = getByIdentifier(schemaReference, identifier, credential);
         if (byIdentifier==null) {
-            return createInstanceByNexusId(schemaReference, null, null, payload, credential);
+            return createInstanceByNexusId(schemaReference, null, 1, payload, credential);
         } else {
             return createInstanceByNexusId(byIdentifier.getNexusSchema(), byIdentifier.getId(), byIdentifier.getRevision(), payload, credential);
         }
@@ -97,6 +100,7 @@ public class InstanceController {
         }
         payload.addType(schemaController.getTargetClass(nexusSchemaReference));
         payload.addToProperty(SchemaOrgVocabulary.IDENTIFIER, "");
+        payload.addToProperty(HBPVocabulary.PROVENANCE_MODIFIED_AT, ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_INSTANT));
         JsonDocument response = nexusClient.post(new NexusRelativeUrl(NexusConfiguration.ResourceType.DATA, nexusSchemaReference.getRelativeUrl().getUrl()), null, payload, credential);
         if(response!=null){
             NexusInstanceReference idFromNexus = response.getReference();
@@ -134,8 +138,10 @@ public class InstanceController {
         }
         NexusInstanceReference nexusInstanceReference = new NexusInstanceReference(nexusSchemaReference, id).setRevision(revision);
         NexusInstanceReference newInstanceReference = null;
-        if (revision == null) {
+        payload.put(HBPVocabulary.PROVENANCE_MODIFIED_AT, ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_INSTANT));
+        if (revision == null || revision == 1) {
             Map map = systemNexusClient.get(nexusInstanceReference.getRelativeUrl());
+
             if (map == null) {
                 Map post = nexusClient.post(new NexusRelativeUrl(NexusConfiguration.ResourceType.DATA, nexusInstanceReference.getNexusSchema().getRelativeUrl().getUrl()), null, payload, oidc);
                 if (post != null && post.containsKey(JsonLdConsts.ID)) {

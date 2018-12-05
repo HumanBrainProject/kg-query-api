@@ -1,7 +1,10 @@
 package org.humanbrainproject.knowledgegraph.commons.authorization.control;
 
 import org.humanbrainproject.knowledgegraph.commons.authorization.entity.OidcAccessToken;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -22,6 +25,9 @@ public class SystemOidcHeaderInterceptor implements ClientHttpRequestInterceptor
     SystemOidcClient client;
 
 
+
+    protected Logger logger = LoggerFactory.getLogger(ClientHttpRequestInterceptor.class);
+
     public OidcAccessToken getToken() {
         return client.getAuthorizationToken();
     }
@@ -35,6 +41,9 @@ public class SystemOidcHeaderInterceptor implements ClientHttpRequestInterceptor
 
     @Override
     public ClientHttpResponse intercept(HttpRequest httpRequest, byte[] bytes, ClientHttpRequestExecution clientHttpRequestExecution) throws IOException {
+        if(httpRequest.getMethod()!= HttpMethod.GET) {
+            logger.info(String.format("%s to %s", httpRequest.getMethod().name(), httpRequest.getURI()));
+        }
         setAuthTokenToRequest(httpRequest);
         httpRequest.getHeaders().setAcceptCharset(Collections.singletonList(StandardCharsets.UTF_8));
         httpRequest.getHeaders().setContentType(MediaType.APPLICATION_JSON);

@@ -1,6 +1,7 @@
 package org.humanbrainproject.knowledgegraph.indexing.entity;
 
 import com.github.jsonldjava.core.JsonLdConsts;
+import org.humanbrainproject.knowledgegraph.commons.vocabulary.ArangoVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.NexusVocabulary;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
@@ -72,6 +73,9 @@ public class QualifiedIndexingMessage {
             return getOriginalId().getRevision();
         }
         Object o = getQualifiedMap().get(NexusVocabulary.REVISION_ALIAS);
+        if(o==null){
+            o = getQualifiedMap().get(ArangoVocabulary.NEXUS_REV);
+        }
         if(o!=null) {
             Integer revision;
             try {

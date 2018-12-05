@@ -14,6 +14,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.ws.rs.core.MediaType;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 
 @RestController
 @RequestMapping(value = "/internal/indexing")
@@ -26,6 +29,11 @@ public class IndexingInternalAPI {
 
     private Logger logger = LoggerFactory.getLogger(IndexingInternalAPI.class);
 
+    private String getTimestamp(String timestamp){
+        return timestamp!=null ? timestamp : ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_INSTANT);
+    }
+
+
     @ApiOperation("Creates a new instance")
     @PostMapping(value="/{organization}/{domain}/{schema}/{schemaversion}/{id}", consumes = {MediaType.APPLICATION_JSON, "application/ld+json"}, produces = MediaType.APPLICATION_JSON)
     public ResponseEntity<String> addInstance(@RequestBody String payload, @PathVariable("organization") String organization, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("schemaversion") String schemaVersion, @PathVariable("id") String id, @RequestParam(value = "authorId", required = false) String authorId, @RequestParam(value = "eventDateTime", required = false) String timestamp) {
@@ -33,7 +41,7 @@ public class IndexingInternalAPI {
         logger.info("Received insert request for {}", path.getRelativeUrl().getUrl());
         logger.debug("Payload for insert request {}: {}", path.getRelativeUrl().getUrl(), payload);
         try {
-            IndexingMessage message = new IndexingMessage(path, payload, timestamp, authorId);
+            IndexingMessage message = new IndexingMessage(path, payload, getTimestamp(timestamp), authorId);
             indexer.insert(message);
             return ResponseEntity.ok(null);
         } catch (JsonLdError e) {
@@ -51,7 +59,7 @@ public class IndexingInternalAPI {
         logger.info("Received update request for {} in rev {}", path.getRelativeUrl().getUrl(), rev);
         logger.debug("Payload for update request {} in rev {}: {}", path.getRelativeUrl().getUrl(), rev, payload);
         try {
-            IndexingMessage message = new IndexingMessage(path, payload, timestamp, authorId);
+            IndexingMessage message = new IndexingMessage(path, payload, getTimestamp(timestamp), authorId);
             indexer.update(message);
             return ResponseEntity.ok(null);
         } catch (JsonLdError  e) {

@@ -165,7 +165,7 @@ public class ArangoRepository {
     public Integer getCurrentRevision(ArangoDocumentReference documentReference){
         Map document = getDocument(documentReference, databaseFactory.getDefaultDB(), new InternalMasterKey());
         if(document!=null){
-            Object rev = document.get(ArangoVocabulary.NEXUS_REV);
+            Object rev = document.get(ArangoVocabulary.NEXUS_RELATIVE_URL_WITH_REV);
             if(rev!=null){
                 return Integer.parseInt(rev.toString());
             }
