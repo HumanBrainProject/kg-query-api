@@ -42,20 +42,22 @@ public class ArangoGraph {
         for (Map map : maps) {
             List<Map> vertices = (List<Map>) map.get("vertices");
             for (Map vertex : vertices) {
-                JsonDocument node = new JsonDocument();
-                String id = (String) vertex.get(HBPVocabulary.RELATIVE_URL_OF_INTERNAL_LINK);
-                if (!documentIds.contains(id)) {
-                    arangoToNexusId.put((String) vertex.get(ArangoVocabulary.ID), id);
-                    node.put("id", id);
-                    Object type = vertex.get(JsonLdConsts.TYPE);
-                    if (type instanceof List) {
-                        type = ((List) type).isEmpty() ? null : ((List) type).get(0);
+                if (vertex != null) {
+                    JsonDocument node = new JsonDocument();
+                    String id = (String) vertex.get(HBPVocabulary.RELATIVE_URL_OF_INTERNAL_LINK);
+                    if (!documentIds.contains(id)) {
+                        arangoToNexusId.put((String) vertex.get(ArangoVocabulary.ID), id);
+                        node.put("id", id);
+                        Object type = vertex.get(JsonLdConsts.TYPE);
+                        if (type instanceof List) {
+                            type = ((List) type).isEmpty() ? null : ((List) type).get(0);
+                        }
+                        node.put("name", translator.translateSemanticValueToHumanReadableLabel((String) type));
+                        node.put("dataType", type);
+                        node.put("title", vertex.get(SchemaOrgVocabulary.NAME));
+                        nodesList.add(node);
+                        documentIds.add(id);
                     }
-                    node.put("name", translator.translateSemanticValueToHumanReadableLabel((String) type));
-                    node.put("dataType", type);
-                    node.put("title", vertex.get(SchemaOrgVocabulary.NAME));
-                    nodesList.add(node);
-                    documentIds.add(id);
                 }
             }
         }
