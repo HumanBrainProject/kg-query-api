@@ -132,6 +132,24 @@ public class JsonDocument extends LinkedHashMap<String, Object>{
         }
     }
 
+    public void replaceNamespace(String oldNamespace, String newNamespace){
+        replaceNamespace(oldNamespace, newNamespace, this);
+    }
+
+    private void replaceNamespace(String oldNamespace, String newNamespace, Map currentMap){
+        HashSet keyList = new HashSet<>(currentMap.keySet());
+        for (Object key : keyList) {
+            if(key instanceof String){
+                if(((String)key).startsWith(oldNamespace)){
+                    Object value = currentMap.remove(key);
+                    if(value instanceof Map){
+                        replaceNamespace(oldNamespace, newNamespace, (Map)value);
+                    }
+                    currentMap.put(newNamespace+((String)key).substring(oldNamespace.length()), value);
+                }
+            }
+        }
+    }
 
 
 

@@ -134,5 +134,14 @@ public class Instances {
         }
     }
 
+    public void translateNamespaces(NexusSchemaReference schema, String oldNamespace, String newNamespace, Credential credential){
+        List<NexusInstanceReference> allInstancesForSchema = instanceController.getAllInstancesForSchema(schema, credential);
+        for (NexusInstanceReference instanceReference : allInstancesForSchema) {
+            JsonDocument fromNexusById = instanceController.getFromNexusById(instanceReference, credential);
+            fromNexusById.replaceNamespace(oldNamespace, newNamespace);
+            instanceController.createInstanceByNexusId(instanceReference.getNexusSchema(), instanceReference.getId(), instanceReference.getRevision(), fromNexusById, credential);
+        }
+    }
+
 
 }
