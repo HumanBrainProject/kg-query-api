@@ -176,7 +176,7 @@ public class ArangoMetaQueryBuilder extends AbstractArangoQueryBuilder {
 
         subQuery.setParameter("alias", currentAlias.getArangoName());
         subQuery.setParameter("originalName", currentAlias.getOriginalName());
-        subQuery.setParameter("groupInstanceLabel", groupedInstancesLabel);
+        subQuery.setParameter("groupInstancesLabel", groupedInstancesLabel);
         subQuery.setParameter("currentField", currentField.fieldName);
         Set<String> allGroupedFieldNames = Stream.concat(groupingFields.stream(), nonGroupingFields.stream()).map(ArangoAlias::getArangoName).collect(Collectors.toSet());
         subQuery.setTrustedParameter("groupedFields", subQuery.listValues(allGroupedFieldNames));
