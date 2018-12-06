@@ -31,7 +31,7 @@ public class ArangoQueryFactory {
     public String queryOutboundRelationsForDocument(ArangoDocumentReference document, Set<ArangoCollectionReference> edgeCollections, Set<String> permissionGroupsWithReadAccess) {
         AuthorizedArangoQuery q = new AuthorizedArangoQuery(permissionGroupsWithReadAccess);
         q.setParameter("documentId", document.getId());
-        q.setTrustedParameter("edges", q.listCollections(',', edgeCollections.stream().map(ArangoCollectionReference::getName).collect(Collectors.toSet())));
+        q.setTrustedParameter("edges", q.listCollections(edgeCollections.stream().map(ArangoCollectionReference::getName).collect(Collectors.toSet())));
         q.addLine("LET doc = DOCUMENT(\"${documentId}\")");
         q.addDocumentFilter(new TrustedAqlValue("doc"));
         q.addLine("FOR v, e IN 1..1 OUTBOUND doc ${edges}");
@@ -56,7 +56,7 @@ public class ArangoQueryFactory {
     public String queryForValueWithProperty(String propertyName, String propertyValue, Set<ArangoCollectionReference> collectionsToCheck, String lookupProperty, Set<String> permissionGroupsWithReadAccess) {
         if (collectionsToCheck != null && !collectionsToCheck.isEmpty()) {
             AuthorizedArangoQuery q = new AuthorizedArangoQuery(permissionGroupsWithReadAccess);
-            q.setTrustedParameter("collections", q.listCollections(',', collectionsToCheck.stream().map(ArangoCollectionReference::getName).collect(Collectors.toSet())));
+            q.setTrustedParameter("collections", q.listCollections(collectionsToCheck.stream().map(ArangoCollectionReference::getName).collect(Collectors.toSet())));
 
             for (ArangoCollectionReference arangoCollectionReference : collectionsToCheck) {
                 AuthorizedArangoQuery subquery = new AuthorizedArangoQuery(permissionGroupsWithReadAccess, true);
@@ -83,12 +83,12 @@ public class ArangoQueryFactory {
         return null;
     }
 
-    public String getAll(ArangoCollectionReference collection, Set<String> permissionGroupsWithReadAccess) {
-        AuthorizedArangoQuery q = new AuthorizedArangoQuery(permissionGroupsWithReadAccess);
+    @UnauthorizedAccess("We're returning information about specifications - this is meta information and non-sensitive")
+    public String getAll(ArangoCollectionReference collection) {
+        UnauthorizedArangoQuery q = new UnauthorizedArangoQuery();
         q.setParameter("collection", collection.getName());
 
         q.addLine("FOR doc IN `${collection}`").indent();
-        q.addDocumentFilter(new TrustedAqlValue("doc"));
         q.addLine("RETURN doc");
 
         return q.build().getValue();
@@ -97,7 +97,7 @@ public class ArangoQueryFactory {
     public String queryInDepthGraph(Set<ArangoCollectionReference> edgeCollections, ArangoDocumentReference startDocument, Integer step, Set<String> permissionGroupsWithReadAccess) {
         AuthorizedArangoQuery q = new AuthorizedArangoQuery(permissionGroupsWithReadAccess);
 
-        TrustedAqlValue edges = q.listCollections(',', edgeCollections.stream().map(ArangoCollectionReference::getName).collect(Collectors.toSet()));
+        TrustedAqlValue edges = q.listCollections(edgeCollections.stream().map(ArangoCollectionReference::getName).collect(Collectors.toSet()));
 
         AuthorizedArangoQuery outboundSubquery = new AuthorizedArangoQuery(permissionGroupsWithReadAccess, true);
 
@@ -151,7 +151,7 @@ public class ArangoQueryFactory {
         query.setParameter("name", "level" + level)
         .setParameter("startId", rootInstance.getId())
         .setParameter("doc", startingVertex)
-        .setTrustedParameter("collections", query.listCollections(',', edgeCollections.stream().map(ArangoCollectionReference::getName).collect(Collectors.toSet())))
+        .setTrustedParameter("collections", query.listCollections(edgeCollections.stream().map(ArangoCollectionReference::getName).collect(Collectors.toSet())))
         .setParameter("releaseInstanceRelation", ArangoCollectionReference.fromFieldName(HBPVocabulary.RELEASE_INSTANCE).getName())
         .setParameter("releaseState", HBPVocabulary.RELEASE_STATE)
         .setParameter("revision", HBPVocabulary.PROVENANCE_REVISION)
@@ -251,6 +251,7 @@ public class ArangoQueryFactory {
         q.addLine("RETURN {").indent();
         q.addLine("\"id\": i.`"+HBPVocabulary.RELATIVE_URL_OF_INTERNAL_LINK+"`,");
         q.addLine("\"name\": i.`"+SchemaOrgVocabulary.NAME+"`,");
+        q.addLine("\"dataType\": i.`"+JsonLdConsts.TYPE+"`,");
         q.addLine("\"description\": i.`"+SchemaOrgVocabulary.DESCRIPTION+"`");
         q.addLine("}").outdent();
         q.addLine(")").outdent();

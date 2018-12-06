@@ -7,6 +7,7 @@ import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfigura
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoConnection;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoDatabaseFactory;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoRepository;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.SubSpace;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
@@ -53,8 +54,27 @@ public class Instances {
 
     public JsonDocument getInstance(NexusInstanceReference instanceReference, Credential credential) {
         NexusInstanceReference originalId = arangoRepository.findOriginalId(instanceReference, credential);
-        return getInstance(originalId, databaseFactory.getInferredDB(), credential);
+        if(originalId==null){
+            return null;
+        }
+        return getInstance(originalId.toSubSpace(SubSpace.MAIN), databaseFactory.getInferredDB(), credential).removeAllInternalKeys();
     }
+
+    public JsonDocument getInstanceByClientExtension(NexusInstanceReference instanceReference, String clientExtension, Client client, Credential credential){
+        NexusSchemaReference schemaReference = instanceReference.getNexusSchema().toSubSpace(client != null && client.getSubSpace() != null ? client.getSubSpace() : SubSpace.MAIN);
+        NexusInstanceReference originalId = arangoRepository.findOriginalId(instanceReference, credential);
+        JsonDocument instance = getInstance(originalId, databaseFactory.getDefaultDB(), credential);
+        if(instance!=null){
+            String identifier = constructIdentifierWithClientIdExtension(instance.getPrimaryIdentifier(), clientExtension);
+            NexusInstanceReference bySchemaOrgIdentifier = arangoRepository.findBySchemaOrgIdentifier(ArangoCollectionReference.fromNexusSchemaReference(schemaReference), identifier, credential);
+            if(bySchemaOrgIdentifier!=null){
+                return new JsonDocument(arangoRepository.getDocument(ArangoDocumentReference.fromNexusInstance(bySchemaOrgIdentifier), databaseFactory.getDefaultDB(), credential)).removeAllInternalKeys();
+            }
+            return null;
+        }
+        return null;
+    }
+
 
 
     private JsonDocument getInstance(NexusInstanceReference instanceReference, ArangoConnection connection, Credential credential) {
@@ -66,8 +86,12 @@ public class Instances {
         SubSpace subSpace = client != null ? client.getSubSpace() : SubSpace.MAIN;
         nexusSchemaReference = nexusSchemaReference.toSubSpace(subSpace);
         NexusInstanceReference newInstance = instanceController.createNewInstance(nexusSchemaReference, jsonTransformer.parseToMap(payload), credential);
-        NexusSchemaReference mainSchemaReference = newInstance.getNexusSchema().toSubSpace(SubSpace.MAIN);
-        return new NexusInstanceReference(mainSchemaReference, newInstance.getId());
+        return newInstance.toSubSpace(SubSpace.MAIN);
+    }
+
+    private String constructIdentifierWithClientIdExtension(String identifier, String clientIdExtension){
+        return clientIdExtension != null ? identifier+clientIdExtension : identifier;
+
     }
 
     public NexusInstanceReference updateInstance(NexusInstanceReference instanceReference, String payload, Client client, String clientIdExtension, Credential credential) {
@@ -87,9 +111,7 @@ public class Instances {
         if (clientIdExtension != null || (subSpace != originalId.getSubspace())) {
             document.addReference(HBPVocabulary.INFERENCE_EXTENDS, nexusConfiguration.getAbsoluteUrl(originalId));
         }
-        if (clientIdExtension != null) {
-            primaryIdentifier += clientIdExtension;
-        }
+        primaryIdentifier = constructIdentifierWithClientIdExtension(primaryIdentifier, clientIdExtension);
         return instanceController.createInstanceByIdentifier(nexusSchema, primaryIdentifier, document, credential);
     }
 
@@ -105,8 +127,19 @@ public class Instances {
             JsonDocument fromNexusById = instanceController.getFromNexusById(instanceReference, credential);
             //Ensure the right type
             fromNexusById.addType(schemaController.getTargetClass(originalSchema));
+            //Redirect links
+            JsonDocument redirectedJson = instanceController.pointLinksToSchema(fromNexusById, newVersion);
             NexusSchemaReference schemaReference = new NexusSchemaReference(originalSchema.getOrganization(), originalSchema.getDomain(), originalSchema.getSchema(), newVersion);
-            instanceController.createInstanceByIdentifier(schemaReference, fromNexusById.getPrimaryIdentifier(), fromNexusById, credential);
+            instanceController.createInstanceByIdentifier(schemaReference, fromNexusById.getPrimaryIdentifier(), redirectedJson, credential);
+        }
+    }
+
+    public void translateNamespaces(NexusSchemaReference schema, String oldNamespace, String newNamespace, Credential credential){
+        List<NexusInstanceReference> allInstancesForSchema = instanceController.getAllInstancesForSchema(schema, credential);
+        for (NexusInstanceReference instanceReference : allInstancesForSchema) {
+            JsonDocument fromNexusById = instanceController.getFromNexusById(instanceReference, credential);
+            fromNexusById.replaceNamespace(oldNamespace, newNamespace);
+            instanceController.createInstanceByNexusId(instanceReference.getNexusSchema(), instanceReference.getId(), instanceReference.getRevision(), fromNexusById, credential);
         }
     }
 

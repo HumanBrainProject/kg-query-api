@@ -84,8 +84,13 @@ public class ReleasingAPI {
     @DeleteMapping(value = "/{org}/{domain}/{schema}/{version}/{id}")
     public ResponseEntity<Void> unrelease(@PathVariable("org") String org, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("version") String version, @PathVariable("id") String id, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken) {
         NexusInstanceReference nexusInstanceReference = new NexusInstanceReference(org, domain, schema, version, id);
-        releasing.unrelease(nexusInstanceReference, new OidcAccessToken().setToken(authorizationToken));
-        return ResponseEntity.ok().build();
+        NexusInstanceReference unreleasedInstance = releasing.unrelease(nexusInstanceReference, new OidcAccessToken().setToken(authorizationToken));
+        if(unreleasedInstance!=null) {
+            return ResponseEntity.ok().build();
+        }
+        else{
+            return ResponseEntity.notFound().build();
+        }
     }
 
 }

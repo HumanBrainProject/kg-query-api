@@ -23,8 +23,13 @@ public class ArangoToNexusLookupMap implements InitializingBean {
     protected Logger logger = LoggerFactory.getLogger(ArangoToNexusLookupMap.class);
 
     @Override
-    public void afterPropertiesSet() throws Exception {
-        refetch();
+    public void afterPropertiesSet() {
+        try {
+            refetch();
+        }
+        catch(Exception e){
+            logger.error("Failed to load schema cache", e);
+        }
     }
 
     private static final Map<String, NexusSchemaReference> schemaReferenceMap = Collections.synchronizedMap(new HashMap<>());

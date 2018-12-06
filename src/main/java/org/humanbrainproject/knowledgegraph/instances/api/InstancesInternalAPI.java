@@ -63,21 +63,31 @@ public class InstancesInternalAPI {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
     }
 
-    /**
-     * @deprecated Warning: the method currently doesn't redirect links - so it's not yet that useful.
-     */
-    @Deprecated
     @PutMapping(value = "/{org}/{domain}/{schema}/{oldVersion}/clone/{newVersion}")
     public ResponseEntity<Void> cloneInstancesFromSchema(@PathVariable("org") String org, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("oldVersion") String oldVersion, @PathVariable("newVersion") String newVersion, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken) {
         instances.cloneInstancesFromSchema(new NexusSchemaReference(org, domain, schema, oldVersion), newVersion, new OidcAccessToken().setToken(authorizationToken));
         return ResponseEntity.ok().build();
     }
 
+    @PutMapping(value = "/{org}/{domain}/{schema}/{version}/namespaces")
+    public ResponseEntity<Void> translateNamespacesForSchema(@PathVariable("org") String org, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("version") String version, @RequestHeader(value = "oldNamespace") String oldNamespace, @RequestHeader(value = "newNamespace") String newNamespace, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken) {
+        instances.translateNamespaces(new NexusSchemaReference(org, domain, schema, version),  oldNamespace, newNamespace, new OidcAccessToken().setToken(authorizationToken));
+        return ResponseEntity.ok().build();
+    }
+
 
     @GetMapping(value = "/{org}/{domain}/{schema}/{version}/{id}")
-    public ResponseEntity<Map> getInstance(@PathVariable("org") String org, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("version") String version, @PathVariable("id") String id, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken) throws Exception {
+    public ResponseEntity<Map> getInstance(@PathVariable("org") String org, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("version") String version, @PathVariable("id") String id, @ApiParam("The clientIdExtension allows the calling client to specify an additional postfix to the identifier and therefore to discriminate between different instances which are combined in the inferred space. If this value takes a userId for example, this means that there will be a distinct instance created for every user.") @RequestParam(value = "clientIdExtension", required = false) String clientIdExtension, @RequestHeader(value = "client", required = false) Client client, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken) throws Exception {
         try {
-            Map instance = instances.getInstance(new NexusInstanceReference(org, domain, schema, version, id), new OidcAccessToken().setToken(authorizationToken));
+            NexusInstanceReference instanceReference = new NexusInstanceReference(org, domain, schema, version, id);
+            OidcAccessToken credential = new OidcAccessToken().setToken(authorizationToken);
+            Map instance;
+            if(clientIdExtension!=null){
+                instance = instances.getInstanceByClientExtension(instanceReference, clientIdExtension, client, credential);
+            }
+            else{
+                instance = instances.getInstance(instanceReference, credential);
+            }
             return instance != null ? ResponseEntity.ok(instance) : ResponseEntity.notFound().build();
         } catch (HttpClientErrorException e) {
             return ResponseEntity.status(e.getStatusCode()).build();

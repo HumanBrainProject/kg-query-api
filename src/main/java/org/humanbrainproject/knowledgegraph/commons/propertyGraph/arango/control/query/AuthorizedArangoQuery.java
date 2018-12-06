@@ -13,7 +13,7 @@ public class AuthorizedArangoQuery extends UnauthorizedArangoQuery {
     public AuthorizedArangoQuery(Set<String> permissionGroupsWithReadAccess, boolean subQuery) {
         if(!subQuery){
             addLine("LET "+WHITELIST_ALIAS+"=[${"+WHITELIST_ALIAS+"}]");
-            setTrustedParameter(WHITELIST_ALIAS, listValues(',', permissionGroupsWithReadAccess));
+            setTrustedParameter(WHITELIST_ALIAS, listValues(permissionGroupsWithReadAccess));
         }
     }
 

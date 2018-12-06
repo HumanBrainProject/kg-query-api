@@ -91,6 +91,15 @@ public class NexusInstanceReference {
                 Objects.equals(revision, that.revision);
     }
 
+
+    public boolean isSameInstanceRegardlessOfRevision(NexusInstanceReference o){
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        NexusInstanceReference that = (NexusInstanceReference) o;
+        return Objects.equals(nexusSchema, that.nexusSchema) &&
+                Objects.equals(id, that.id);
+    }
+
     @Override
     public int hashCode() {
         return Objects.hash(nexusSchema, id, revision);
@@ -103,5 +112,10 @@ public class NexusInstanceReference {
     @Override
     public String toString() {
         return  nexusSchema + "/" + id + "?rev=" + revision;
+    }
+
+
+    public NexusInstanceReference clone(){
+        return new NexusInstanceReference(nexusSchema.clone(), id).setRevision(revision);
     }
 }

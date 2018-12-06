@@ -7,6 +7,4 @@ public class NexusVocabulary {
     public static final String REVISION_ALIAS = ALIAS +":rev";
     public static final String PUBLISHED_ALIAS = ALIAS +":published";
 
-
-
 }

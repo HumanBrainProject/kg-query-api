@@ -9,7 +9,7 @@ import java.util.stream.Collectors;
 
 public class UnauthorizedArangoQuery {
 
-    private final Map<String, Object> parameters = new LinkedHashMap<>();
+    private final Map<String, String> parameters = new LinkedHashMap<>();
     private StringBuilder query = new StringBuilder();
     private int indent = 0;
 
@@ -24,7 +24,7 @@ public class UnauthorizedArangoQuery {
     }
 
     public UnauthorizedArangoQuery setParameter(String key, String value) {
-        parameters.put(key, preventAqlInjection(value));
+        setTrustedParameter(key, preventAqlInjection(value));
         return this;
     }
 
@@ -32,7 +32,7 @@ public class UnauthorizedArangoQuery {
      * Use with caution! The passed parameter will not be further checked for AQL injection but rather immediately added to the query!
      */
     public UnauthorizedArangoQuery setTrustedParameter(String key, TrustedAqlValue trustedAqlValue) {
-        parameters.put(key, trustedAqlValue != null ? trustedAqlValue.getValue() : null);
+        parameters.put(key, trustedAqlValue!=null ? trustedAqlValue.getValue() : null);
         return this;
     }
 
@@ -48,28 +48,32 @@ public class UnauthorizedArangoQuery {
 
 
 
-    public TrustedAqlValue listCollections(Character separator, Set<String> values) {
-        return listValuesWithQuote('`', separator, values);
+    public TrustedAqlValue listCollections(Set<String> values) {
+        return listValuesWithQuote('`', values);
     }
 
-    public TrustedAqlValue listValues(Character separator, Set<String> values) {
-        return listValuesWithQuote('"', separator, values);
+    public TrustedAqlValue listValues(Set<String> values) {
+        return listValuesWithQuote('"', values);
     }
 
-    private TrustedAqlValue listValuesWithQuote(Character quote, Character separator, Set<String> values) {
+    public TrustedAqlValue listFields(Set<String> values){
+        return listValuesWithQuote(null, values);
+    }
+
+
+    private TrustedAqlValue listValuesWithQuote(Character quote, Set<String> values) {
         if(values!=null && values.size()>0){
-            return new TrustedAqlValue(quote+String.join(quote + preventAqlInjection(String.valueOf(separator)) + quote, values.stream().map(this::preventAqlInjection).collect(Collectors.toSet()))+quote);
+            String q = quote!=null ? String.valueOf(quote) : "";
+            return new TrustedAqlValue(q+String.join(q + "," + q, values.stream().map(v -> preventAqlInjection(v).getValue()).collect(Collectors.toSet()))+q);
         }
         else{
             return new TrustedAqlValue("");
         }
     }
 
-    public String preventAqlInjection(String value){
-        //TODO check for AQLinjection
-        return value;
+    public TrustedAqlValue preventAqlInjection(String value){
+        return value!=null ? new TrustedAqlValue(value.replaceAll("[^A-Za-z0-9\\-_:.#/@]", "")) : null;
     }
-
 
     public TrustedAqlValue build() {
         return new TrustedAqlValue(StringSubstitutor.replace(query.toString(), parameters));

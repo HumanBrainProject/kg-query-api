@@ -8,7 +8,7 @@ public class Specification {
     public final String name;
     public final String rootSchema;
     public final List<SpecField> fields;
-    public final String originalDocument;
+    public final JsonDocument originalDocument;
 
     private String specificationId;
 
@@ -20,7 +20,7 @@ public class Specification {
         this.specificationId = specificationId;
     }
 
-    public Specification(String originalContext, String name, String rootSchema, String originalDocument, List<SpecField> fields) {
+    public Specification(String originalContext, String name, String rootSchema, JsonDocument originalDocument, List<SpecField> fields) {
         this.originalContext = originalContext;
         this.name = name;
         this.rootSchema = rootSchema;

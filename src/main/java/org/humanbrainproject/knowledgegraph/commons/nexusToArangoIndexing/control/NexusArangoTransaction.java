@@ -134,6 +134,7 @@ public class NexusArangoTransaction implements DatabaseTransaction {
                 try {
                     collection.insertDocument(documentPayload);
                     logger.info("Inserted document: {} in database {}", document.getId(), db.name());
+                    logger.debug("Payload of document {} in database {}: {}", document.getId(), db.name(), documentPayload);
                 } catch (ArangoDBException dbexception) {
                     logger.error(String.format("Was not able to insert document: %s in database %s", document.getId(), db.name()), dbexception);
                     throw dbexception;
@@ -154,6 +155,7 @@ public class NexusArangoTransaction implements DatabaseTransaction {
                 try {
                     collection.updateDocument(document.getKey(), documentPayload);
                     logger.info("Updated document: {} in database {}", document.getId(), db.name());
+                    logger.debug("Payload of document {} in database {}: {}", document.getId(), db.name(), documentPayload);
                 } catch (ArangoDBException dbexception) {
                     logger.error(String.format("Was not able to update document: %s in database %s", document.getId(), db.name()), dbexception);
                     throw dbexception;

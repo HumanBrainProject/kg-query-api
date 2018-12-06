@@ -4,6 +4,8 @@ import org.humanbrainproject.knowledgegraph.commons.authorization.entity.Credent
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusClient;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoRepository;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.humanbrainproject.knowledgegraph.indexing.control.nexusToArango.NexusToArangoIndexingProvider;
 import org.humanbrainproject.knowledgegraph.indexing.entity.IndexingMessage;
@@ -25,10 +27,16 @@ public class NexusReleasingController {
     InstanceController instanceController;
 
     @Autowired
+    SchemaController schemaController;
+
+    @Autowired
     NexusConfiguration configuration;
 
     @Autowired
     JsonTransformer jsonTransformer;
+
+    @Autowired
+    ArangoRepository arangoRepository;
 
     @Autowired
     NexusToArangoIndexingProvider nexusToArangoIndexingProvider;
@@ -38,7 +46,7 @@ public class NexusReleasingController {
         payload.addReference(HBPVocabulary.RELEASE_INSTANCE, configuration.getAbsoluteUrl(instanceReference));
         payload.put(HBPVocabulary.RELEASE_REVISION, revision);
         payload.addType(HBPVocabulary.RELEASE_TYPE);
-        NexusSchemaReference releaseSchema = new NexusSchemaReference(instanceReference.getNexusSchema().getOrganization(), "prov", "release", "v0.0.2");
+        NexusSchemaReference releaseSchema = new NexusSchemaReference("releasing", "prov", "release", "v0.0.2");
         NexusInstanceReference instance = instanceController.createInstanceByIdentifier(releaseSchema, instanceReference.getFullId(false), payload, credential);
         return new IndexingMessage(instance, jsonTransformer.getMapAsJson(payload), null, null);
     }
@@ -47,6 +55,8 @@ public class NexusReleasingController {
         //Find release instance
         Set<NexusInstanceReference> releases = nexusToArangoIndexingProvider.findInstancesWithLinkTo(HBPVocabulary.RELEASE_INSTANCE, instanceReference, credential);
         for (NexusInstanceReference nexusInstanceReference : releases) {
+            Integer currentRevision = arangoRepository.getCurrentRevision(ArangoDocumentReference.fromNexusInstance(nexusInstanceReference));
+            nexusInstanceReference.setRevision(currentRevision);
             instanceController.deprecateInstanceByNexusId(nexusInstanceReference, credential);
         }
         return releases;

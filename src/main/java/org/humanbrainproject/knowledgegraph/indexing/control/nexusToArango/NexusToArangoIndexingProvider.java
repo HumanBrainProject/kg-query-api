@@ -53,6 +53,7 @@ public class NexusToArangoIndexingProvider {
     }
 
     public Set<NexusInstanceReference> findInstancesWithLinkTo(String originalParentProperty, NexusInstanceReference originalId, Credential credential) {
+       // NexusInstanceReference realOriginalId = findOriginalId(originalId, credential);
         return repository.findOriginalIdsWithLinkTo(ArangoDocumentReference.fromNexusInstance(originalId), ArangoCollectionReference.fromFieldName(originalParentProperty), databaseFactory.getDefaultDB(), credential);
     }
 

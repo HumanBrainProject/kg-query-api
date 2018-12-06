@@ -11,6 +11,7 @@ import com.github.jsonldjava.core.JsonLdConsts;
 import org.apache.commons.lang.StringUtils;
 import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationController;
 import org.humanbrainproject.knowledgegraph.commons.authorization.entity.Credential;
+import org.humanbrainproject.knowledgegraph.commons.authorization.entity.InternalMasterKey;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
 import org.humanbrainproject.knowledgegraph.commons.labels.SemanticsToHumanTranslator;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
@@ -20,6 +21,7 @@ import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.exceptions.UnexpectedNumberOfResults;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.SubSpace;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.ArangoVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.SchemaOrgVocabulary;
@@ -69,8 +71,8 @@ public class ArangoRepository {
 
 
     @AuthorizedAccess("Although not sensitive, we would like to return references which are readable by the user only")
-    public NexusInstanceReference findBySchemaOrgIdentifier(ArangoCollectionReference collectionReference, String value, Credential credential){
-        if(!databaseFactory.getDefaultDB().getOrCreateDB().collection(collectionReference.getName()).exists()){
+    public NexusInstanceReference findBySchemaOrgIdentifier(ArangoCollectionReference collectionReference, String value, Credential credential) {
+        if (!databaseFactory.getDefaultDB().getOrCreateDB().collection(collectionReference.getName()).exists()) {
             return null;
         }
         String query = queryFactory.queryForValueWithProperty(SchemaOrgVocabulary.IDENTIFIER, value, Collections.singleton(collectionReference), ArangoVocabulary.NEXUS_RELATIVE_URL_WITH_REV, authorizationController.getReadableOrganizations(credential));
@@ -108,9 +110,9 @@ public class ArangoRepository {
 
     private <T> T getDocumentByKey(ArangoDocumentReference document, Class<T> clazz, ArangoConnection connection, Credential credential) {
         Map doc = getDocument(document, connection, credential);
-        if(doc!=null){
-            if(clazz.isInstance(doc)){
-                return (T)doc;
+        if (doc != null) {
+            if (clazz.isInstance(doc)) {
+                return (T) doc;
             }
             return connection.getOrCreateDB().collection(document.getCollection().getName()).getDocument(document.getKey(), clazz);
         }
@@ -118,52 +120,66 @@ public class ArangoRepository {
     }
 
     public NexusInstanceReference findOriginalId(NexusInstanceReference reference, Credential credential) {
-        ArangoDocumentReference arangoDocumentReference = ArangoDocumentReference.fromNexusInstance(reference);
-        Map byKey = getDocumentByKey(arangoDocumentReference, Map.class, databaseFactory.getDefaultDB(), credential);
+        Map byKey = null;
+        for (SubSpace subSpace : SubSpace.values()) {
+            if (byKey == null) {
+                ArangoDocumentReference arangoDocumentReferenceInSubSpace = ArangoDocumentReference.fromNexusInstance(reference.toSubSpace(subSpace));
+                byKey = getDocumentByKey(arangoDocumentReferenceInSubSpace, Map.class, databaseFactory.getDefaultDB(), credential);
+            }
+        }
+        NexusInstanceReference result = reference.clone();
         if (byKey != null) {
             Object rev = byKey.get(ArangoVocabulary.NEXUS_REV);
-            if(rev!=null) {
-                reference.setRevision(Integer.parseInt(rev.toString()));
+            if (rev != null) {
+                int revision = Integer.parseInt(rev.toString());
+                if(result.getRevision()==null || result.getRevision()<revision) {
+                    result.setRevision(revision);
+                }
             }
             Object originalParent = byKey.get(HBPVocabulary.INFERENCE_EXTENDS);
             if (originalParent == null) {
                 originalParent = byKey.get(HBPVocabulary.INFERENCE_OF);
             }
+            NexusInstanceReference originalReference = null;
             if (originalParent instanceof Map) {
                 String id = (String) ((Map) originalParent).get(JsonLdConsts.ID);
-                NexusInstanceReference originalReference = NexusInstanceReference.createFromUrl(id);
-                if(originalReference!=null) {
-                    Map originalObject = getDocumentByKey(ArangoDocumentReference.fromNexusInstance(originalReference), Map.class, databaseFactory.getDefaultDB(), credential);
-                    if (originalObject != null) {
-                        Object originalRev = originalObject.get(ArangoVocabulary.NEXUS_REV);
-                        if (originalRev != null) {
-                            originalReference.setRevision(Integer.parseInt(originalRev.toString()));
-                        }
+                originalReference = NexusInstanceReference.createFromUrl(id);
+            }
+            else if (byKey.get(JsonLdConsts.ID) != null) {
+                originalReference = NexusInstanceReference.createFromUrl((String) byKey.get(JsonLdConsts.ID));
+            }
+            if (originalReference != null && !reference.isSameInstanceRegardlessOfRevision(originalReference)) {
+                Map originalObject = getDocumentByKey(ArangoDocumentReference.fromNexusInstance(originalReference), Map.class, databaseFactory.getDefaultDB(), credential);
+                if (originalObject != null) {
+                    Object originalRev = originalObject.get(ArangoVocabulary.NEXUS_REV);
+                    if (originalRev != null) {
+                        originalReference.setRevision(Integer.parseInt(originalRev.toString()));
                     }
-                    return originalReference;
                 }
+                result = originalReference;
             }
         }
-        return reference;
+        return result;
+    }
+
+    public Integer getCurrentRevision(ArangoDocumentReference documentReference){
+        Map document = getDocument(documentReference, databaseFactory.getDefaultDB(), new InternalMasterKey());
+        if(document!=null){
+            Object rev = document.get(ArangoVocabulary.NEXUS_RELATIVE_URL_WITH_REV);
+            if(rev!=null){
+                return Integer.parseInt(rev.toString());
+            }
+        }
+        return null;
     }
 
     @AuthorizedAccess
     public Map getDocument(ArangoDocumentReference documentReference, ArangoConnection arangoConnection, Credential credential) {
         Map document = arangoConnection.getOrCreateDB().getDocument(documentReference.getId(), Map.class);
-        if(document !=null && authorizationController.isReadable(document, credential)){
+        if (document != null && authorizationController.isReadable(document, credential)) {
             return document;
         }
         return null;
-    }
-
-    public <T> List<T> getAll(ArangoCollectionReference collection, Class<T> clazz, ArangoConnection driver, Credential credential) {
-        String query = queryFactory.getAll(collection, authorizationController.getReadableOrganizations(credential));
-        try {
-            return driver.getOrCreateDB().query(query, null, new AqlQueryOptions(), clazz).asListRemaining();
-        } catch (ArangoDBException e) {
-            logger.error("Arango query exception - {}", query);
-            throw e;
-        }
     }
 
     public String getPayloadById(ArangoDocumentReference documentReference, ArangoConnection arangoConnection, Credential credential) {
@@ -179,6 +195,7 @@ public class ArangoRepository {
         }
         return new LinkedHashSet<>();
     }
+
     public List<Map> inDepthGraph(ArangoDocumentReference document, Integer step, ArangoConnection connection, Credential credential) {
         ArangoDatabase db = connection.getOrCreateDB();
         String query = queryFactory.queryInDepthGraph(connection.getEdgesCollectionNames(), document, step, authorizationController.getReadableOrganizations(credential));
@@ -192,11 +209,10 @@ public class ArangoRepository {
     }
 
 
-
     private Map interpretMap(Map map) {
         Object name = map.get(SchemaOrgVocabulary.NAME);
         Object identifier = map.get(SchemaOrgVocabulary.IDENTIFIER);
-        if (name!=null) {
+        if (name != null) {
             map.put("label", name);
         } else {
             map.put("label", identifier);
@@ -222,7 +238,7 @@ public class ArangoRepository {
 
         Object linkType = map.get("linkType");
         if (linkType != null) {
-            map.put("linkType", semanticsToHumanTranslator.translateSemanticValueToHumanReadableLabel((String)linkType));
+            map.put("linkType", semanticsToHumanTranslator.translateSemanticValueToHumanReadableLabel((String) linkType));
         }
 
         for (Object key : map.keySet()) {
@@ -247,7 +263,7 @@ public class ArangoRepository {
         //Ensure the release-collection exists
         Set<ArangoCollectionReference> edgesCollectionNames = databaseFactory.getInferredDB().getEdgesCollectionNames();
         String releaseInstanceEdgeCollection = ArangoCollectionReference.fromFieldName(HBPVocabulary.RELEASE_INSTANCE).getName();
-        if(!db.collection(releaseInstanceEdgeCollection).exists()){
+        if (!db.collection(releaseInstanceEdgeCollection).exists()) {
             db.createCollection(releaseInstanceEdgeCollection, new CollectionCreateOptions().type(CollectionType.EDGES));
         }
         String query = queryFactory.queryReleaseGraph(edgesCollectionNames, document, maxDepth.orElse(6), authorizationController.getReadableOrganizations(credential));
@@ -258,7 +274,6 @@ public class ArangoRepository {
         }
         return !results.isEmpty() ? interpretMap(results.get(0)) : null;
     }
-
 
 
     @AuthorizedAccess
@@ -340,10 +355,10 @@ public class ArangoRepository {
     public JsonDocument getInstance(ArangoDocumentReference instanceReference, ArangoConnection driver, Credential credential) {
         ArangoDatabase db = driver.getOrCreateDB();
         ArangoCollection collection = db.collection(instanceReference.getCollection().getName());
-        if(collection.exists() && collection.documentExists(instanceReference.getKey())){
+        if (collection.exists() && collection.documentExists(instanceReference.getKey())) {
             JsonDocument jsonDocument = new JsonDocument(collection.getDocument(instanceReference.getKey(), Map.class));
             boolean readable = authorizationController.isReadable(jsonDocument, credential);
-            if(readable){
+            if (readable) {
                 return jsonDocument;
             }
             //TODO shall we silently return null if there is no read access?

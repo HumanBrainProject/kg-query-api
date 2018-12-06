@@ -116,4 +116,9 @@ public class NexusSchemaReference {
     public String toString() {
         return organization + (subSpace != null ? subSpace.getPostFix() : "") + "/" + domain + '/' + schema + '/' + schemaVersion;
     }
+
+    public NexusSchemaReference clone(){
+        return new NexusSchemaReference(organization, subSpace, domain, schema, schemaVersion);
+    }
+
 }

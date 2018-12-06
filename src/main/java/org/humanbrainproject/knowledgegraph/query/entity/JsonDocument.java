@@ -1,12 +1,14 @@
 package org.humanbrainproject.knowledgegraph.query.entity;
 
 import com.github.jsonldjava.core.JsonLdConsts;
+import org.humanbrainproject.knowledgegraph.commons.vocabulary.ArangoVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.NexusVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.SchemaOrgVocabulary;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 
 import java.util.*;
+import java.util.function.Consumer;
 
 public class JsonDocument extends LinkedHashMap<String, Object>{
 
@@ -20,10 +22,6 @@ public class JsonDocument extends LinkedHashMap<String, Object>{
     public void addReference(String propertyName, String url){
         Map<String, String> reference = new HashMap<>();
         reference.put(JsonLdConsts.ID, url);
-        NexusInstanceReference internalReference = NexusInstanceReference.createFromUrl(url);
-        if(internalReference!=null) {
-            reference.put(HBPVocabulary.RELATIVE_URL_OF_INTERNAL_LINK, internalReference.getRelativeUrl().getUrl());
-        }
         addToProperty(propertyName, reference);
     }
 
@@ -56,7 +54,15 @@ public class JsonDocument extends LinkedHashMap<String, Object>{
         if(this.containsKey(NexusVocabulary.REVISION_ALIAS)){
             return (Integer)get(NexusVocabulary.REVISION_ALIAS);
         }
+        else if(this.containsKey(ArangoVocabulary.NEXUS_REV)){
+            Long rev = (Long) get(ArangoVocabulary.NEXUS_REV);
+            return rev!=null ? rev.intValue() : null;
+        }
         return null;
+    }
+
+    public String getNexusId(){
+        return (String) get(ArangoVocabulary.NEXUS_UUID);
     }
 
 
@@ -90,8 +96,61 @@ public class JsonDocument extends LinkedHashMap<String, Object>{
             }
         }
         else if(!o.equals(value)){
-            map.put(propertyName, Arrays.asList(o, value));
+            List<Object> list = new ArrayList<>();
+            list.add(o);
+            list.add(value);
+            map.put(propertyName, list);
         }
     }
+
+
+    public JsonDocument removeAllInternalKeys(){
+        this.keySet().removeIf(k -> k.startsWith("_"));
+        return this;
+    }
+
+
+    public void processLinks(Consumer<Map> referenceConsumer){
+        processLinks(referenceConsumer, this, true);
+    }
+
+    private void processLinks(Consumer<Map> referenceConsumer, Map currentMap, boolean root){
+        //Skip root-id
+        if(!root && currentMap.containsKey(JsonLdConsts.ID)){
+            Object id = currentMap.get(JsonLdConsts.ID);
+            if(id!=null){
+                referenceConsumer.accept(currentMap);
+            }
+        }
+        else {
+            for (Object key : currentMap.keySet()) {
+                Object value = currentMap.get(key);
+                if(value instanceof Map){
+                    processLinks(referenceConsumer, (Map)value, false);
+                }
+            }
+        }
+    }
+
+    public void replaceNamespace(String oldNamespace, String newNamespace){
+        replaceNamespace(oldNamespace, newNamespace, this);
+    }
+
+    private void replaceNamespace(String oldNamespace, String newNamespace, Map currentMap){
+        HashSet keyList = new HashSet<>(currentMap.keySet());
+        for (Object key : keyList) {
+            if(key instanceof String){
+                if(((String)key).startsWith(oldNamespace)){
+                    Object value = currentMap.remove(key);
+                    if(value instanceof Map){
+                        replaceNamespace(oldNamespace, newNamespace, (Map)value);
+                    }
+                    currentMap.put(newNamespace+((String)key).substring(oldNamespace.length()), value);
+                }
+            }
+        }
+    }
+
+
 
 }

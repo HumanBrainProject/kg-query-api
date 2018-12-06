@@ -3,6 +3,7 @@ package org.humanbrainproject.knowledgegraph.instances.control;
 import com.github.jsonldjava.core.JsonLdConsts;
 import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationController;
 import org.humanbrainproject.knowledgegraph.commons.authorization.entity.Credential;
+import org.humanbrainproject.knowledgegraph.commons.authorization.entity.InternalMasterKey;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusClient;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
@@ -13,6 +14,7 @@ import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.NexusVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.SchemaOrgVocabulary;
 import org.humanbrainproject.knowledgegraph.indexing.boundary.GraphIndexing;
+import org.humanbrainproject.knowledgegraph.indexing.control.MessageProcessor;
 import org.humanbrainproject.knowledgegraph.indexing.entity.IndexingMessage;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusRelativeUrl;
@@ -22,6 +24,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.stereotype.Component;
 
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -49,10 +54,23 @@ public class InstanceController {
     @Autowired
     AuthorizationController authorizationController;
 
+    @Autowired
+    MessageProcessor messageProcessor;
+
+    @Autowired
+    NexusConfiguration nexusConfiguration;
 
 
     private NexusInstanceReference getByIdentifier(NexusSchemaReference schema, String identifier, Credential credential) {
-        return arangoRepository.findBySchemaOrgIdentifier(ArangoCollectionReference.fromNexusSchemaReference(schema), identifier, credential);
+        NexusInstanceReference bySchemaOrgIdentifier = arangoRepository.findBySchemaOrgIdentifier(ArangoCollectionReference.fromNexusSchemaReference(schema), identifier, credential);
+        if(bySchemaOrgIdentifier!=null){
+            JsonDocument fromNexusById = getFromNexusById(bySchemaOrgIdentifier, credential);
+            Object revision = fromNexusById.get(NexusVocabulary.REVISION_ALIAS);
+            if(revision!=null){
+                bySchemaOrgIdentifier.setRevision(Integer.valueOf(revision.toString()));
+            }
+        }
+        return bySchemaOrgIdentifier;
     }
 
     public JsonDocument getFromNexusById(NexusInstanceReference instanceReference, Credential credential){
@@ -64,7 +82,7 @@ public class InstanceController {
         payload.addToProperty(SchemaOrgVocabulary.IDENTIFIER, identifier);
         NexusInstanceReference byIdentifier = getByIdentifier(schemaReference, identifier, credential);
         if (byIdentifier==null) {
-            return createInstanceByNexusId(schemaReference, null, null, payload, credential);
+            return createInstanceByNexusId(schemaReference, null, 1, payload, credential);
         } else {
             return createInstanceByNexusId(byIdentifier.getNexusSchema(), byIdentifier.getId(), byIdentifier.getRevision(), payload, credential);
         }
@@ -89,14 +107,21 @@ public class InstanceController {
         }
         payload.addType(schemaController.getTargetClass(nexusSchemaReference));
         payload.addToProperty(SchemaOrgVocabulary.IDENTIFIER, "");
+        payload.addToProperty(HBPVocabulary.PROVENANCE_MODIFIED_AT, ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_INSTANT));
         JsonDocument response = nexusClient.post(new NexusRelativeUrl(NexusConfiguration.ResourceType.DATA, nexusSchemaReference.getRelativeUrl().getUrl()), null, payload, credential);
         if(response!=null){
             NexusInstanceReference idFromNexus = response.getReference();
             //We're replacing the previously set identifier with the id we got from Nexus.
             payload.put(SchemaOrgVocabulary.IDENTIFIER, idFromNexus.getId());
-            nexusClient.put(idFromNexus.getRelativeUrl(), idFromNexus.getRevision(), payload, credential);
-            immediateIndexing(payload, idFromNexus);
-            return idFromNexus;
+            JsonDocument result = nexusClient.put(idFromNexus.getRelativeUrl(), idFromNexus.getRevision(), payload, credential);
+            NexusInstanceReference fromUpdate = NexusInstanceReference.createFromUrl((String) result.get(JsonLdConsts.ID));
+            Object rev = result.get(NexusVocabulary.REVISION_ALIAS);
+            if(rev!=null){
+                fromUpdate.setRevision(Integer.valueOf(rev.toString()));
+            }
+
+            immediateIndexing(payload, fromUpdate);
+            return fromUpdate;
         }
         return null;
     }
@@ -118,10 +143,12 @@ public class InstanceController {
         } else if (!type.equals(targetClass)) {
             payload.put(JsonLdConsts.TYPE, Arrays.asList(type, targetClass));
         }
-        NexusInstanceReference nexusInstanceReference = new NexusInstanceReference(nexusSchemaReference, id);
+        NexusInstanceReference nexusInstanceReference = new NexusInstanceReference(nexusSchemaReference, id).setRevision(revision);
         NexusInstanceReference newInstanceReference = null;
-        if (revision == null) {
+        payload.put(HBPVocabulary.PROVENANCE_MODIFIED_AT, ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_INSTANT));
+        if (revision == null || revision == 1) {
             Map map = systemNexusClient.get(nexusInstanceReference.getRelativeUrl());
+
             if (map == null) {
                 Map post = nexusClient.post(new NexusRelativeUrl(NexusConfiguration.ResourceType.DATA, nexusInstanceReference.getNexusSchema().getRelativeUrl().getUrl()), null, payload, oidc);
                 if (post != null && post.containsKey(JsonLdConsts.ID)) {
@@ -170,6 +197,29 @@ public class InstanceController {
         return Collections.emptyList();
 
     }
+
+    public JsonDocument pointLinksToSchema(JsonDocument jsonDocument, String newVersion){
+        JsonDocument newDocument = new JsonDocument(jsonDocument);
+        newDocument.processLinks(referenceMap -> {
+            NexusInstanceReference related = NexusInstanceReference.createFromUrl((String) referenceMap.get(JsonLdConsts.ID));
+            if(related!=null){
+                NexusSchemaReference schema = related.getNexusSchema();
+                NexusSchemaReference newSchemaReference = new NexusSchemaReference(schema.getOrganization(), schema.getDomain(), schema.getSchema(), newVersion);
+                JsonDocument relatedDocument = systemNexusClient.get(related.getRelativeUrl());
+                if(relatedDocument!=null) {
+                    String primaryIdentifier = relatedDocument.getPrimaryIdentifier();
+                    NexusInstanceReference inNewSchema = arangoRepository.findBySchemaOrgIdentifier(ArangoCollectionReference.fromNexusSchemaReference(newSchemaReference), primaryIdentifier, new InternalMasterKey());
+                    if(inNewSchema!=null){
+                        referenceMap.put(JsonLdConsts.ID, nexusConfiguration.getAbsoluteUrl(inNewSchema));
+                    }
+                }
+            }
+        });
+        return newDocument;
+    }
+
+
+
 
 
 }

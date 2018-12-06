@@ -1,6 +1,7 @@
 package org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control;
 
 import com.arangodb.ArangoDB;
+import com.arangodb.ArangoDBException;
 import com.arangodb.ArangoDatabase;
 import com.arangodb.entity.CollectionEntity;
 import com.arangodb.entity.CollectionType;
@@ -43,13 +44,27 @@ public class ArangoConnection implements DatabaseConnection<ArangoDatabase>{
         return getOrCreateDB().getCollections().stream().filter(c -> !c.getIsSystem() && c.getType() == CollectionType.EDGES).map(c -> new ArangoCollectionReference(c.getName())).collect(Collectors.toSet());
     }
 
+    public ArangoDatabase getOrCreateDB() {
+        return getOrCreateDB(true);
+    }
 
-    public ArangoDatabase getOrCreateDB(){
-        ArangoDatabase kg = getArangoDB().db(databaseName);
-        if(!kg.exists()){
-            kg.create();
+    private ArangoDatabase getOrCreateDB(boolean retryOnFail){
+        try {
+            ArangoDatabase kg = getArangoDB().db(databaseName);
+            if (!kg.exists()) {
+                kg.create();
+            }
+            return kg;
         }
-        return kg;
+        catch(ArangoDBException exception){
+            if(retryOnFail) {
+                arangoDB = null;
+                return getOrCreateDB(false);
+            }
+            else{
+                throw  exception;
+            }
+        }
     }
 
     public Set<ArangoCollectionReference> getCollections(){
