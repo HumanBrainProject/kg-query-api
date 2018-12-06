@@ -3,6 +3,7 @@ package org.humanbrainproject.knowledgegraph.instances.control;
 import com.github.jsonldjava.core.JsonLdConsts;
 import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationController;
 import org.humanbrainproject.knowledgegraph.commons.authorization.entity.Credential;
+import org.humanbrainproject.knowledgegraph.commons.authorization.entity.InternalMasterKey;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusClient;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
@@ -13,6 +14,7 @@ import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.NexusVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.SchemaOrgVocabulary;
 import org.humanbrainproject.knowledgegraph.indexing.boundary.GraphIndexing;
+import org.humanbrainproject.knowledgegraph.indexing.control.MessageProcessor;
 import org.humanbrainproject.knowledgegraph.indexing.entity.IndexingMessage;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusRelativeUrl;
@@ -52,6 +54,11 @@ public class InstanceController {
     @Autowired
     AuthorizationController authorizationController;
 
+    @Autowired
+    MessageProcessor messageProcessor;
+
+    @Autowired
+    NexusConfiguration nexusConfiguration;
 
 
     private NexusInstanceReference getByIdentifier(NexusSchemaReference schema, String identifier, Credential credential) {
@@ -190,6 +197,29 @@ public class InstanceController {
         return Collections.emptyList();
 
     }
+
+    public JsonDocument pointLinksToSchema(JsonDocument jsonDocument, String newVersion){
+        JsonDocument newDocument = new JsonDocument(jsonDocument);
+        newDocument.processLinks(referenceMap -> {
+            NexusInstanceReference related = NexusInstanceReference.createFromUrl((String) referenceMap.get(JsonLdConsts.ID));
+            if(related!=null){
+                NexusSchemaReference schema = related.getNexusSchema();
+                NexusSchemaReference newSchemaReference = new NexusSchemaReference(schema.getOrganization(), schema.getDomain(), schema.getSchema(), newVersion);
+                JsonDocument relatedDocument = systemNexusClient.get(related.getRelativeUrl());
+                if(relatedDocument!=null) {
+                    String primaryIdentifier = relatedDocument.getPrimaryIdentifier();
+                    NexusInstanceReference inNewSchema = arangoRepository.findBySchemaOrgIdentifier(ArangoCollectionReference.fromNexusSchemaReference(newSchemaReference), primaryIdentifier, new InternalMasterKey());
+                    if(inNewSchema!=null){
+                        referenceMap.put(JsonLdConsts.ID, nexusConfiguration.getAbsoluteUrl(inNewSchema));
+                    }
+                }
+            }
+        });
+        return newDocument;
+    }
+
+
+
 
 
 }

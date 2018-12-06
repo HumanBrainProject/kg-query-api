@@ -127,8 +127,10 @@ public class Instances {
             JsonDocument fromNexusById = instanceController.getFromNexusById(instanceReference, credential);
             //Ensure the right type
             fromNexusById.addType(schemaController.getTargetClass(originalSchema));
+            //Redirect links
+            JsonDocument redirectedJson = instanceController.pointLinksToSchema(fromNexusById, newVersion);
             NexusSchemaReference schemaReference = new NexusSchemaReference(originalSchema.getOrganization(), originalSchema.getDomain(), originalSchema.getSchema(), newVersion);
-            instanceController.createInstanceByIdentifier(schemaReference, fromNexusById.getPrimaryIdentifier(), fromNexusById, credential);
+            instanceController.createInstanceByIdentifier(schemaReference, fromNexusById.getPrimaryIdentifier(), redirectedJson, credential);
         }
     }
 

@@ -8,6 +8,7 @@ import org.humanbrainproject.knowledgegraph.commons.vocabulary.SchemaOrgVocabula
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 
 import java.util.*;
+import java.util.function.Consumer;
 
 public class JsonDocument extends LinkedHashMap<String, Object>{
 
@@ -107,5 +108,31 @@ public class JsonDocument extends LinkedHashMap<String, Object>{
         this.keySet().removeIf(k -> k.startsWith("_"));
         return this;
     }
+
+
+    public void processLinks(Consumer<Map> referenceConsumer){
+        processLinks(referenceConsumer, this, true);
+    }
+
+    private void processLinks(Consumer<Map> referenceConsumer, Map currentMap, boolean root){
+        //Skip root-id
+        if(!root && currentMap.containsKey(JsonLdConsts.ID)){
+            Object id = currentMap.get(JsonLdConsts.ID);
+            if(id!=null){
+                referenceConsumer.accept(currentMap);
+            }
+        }
+        else {
+            for (Object key : currentMap.keySet()) {
+                Object value = currentMap.get(key);
+                if(value instanceof Map){
+                    processLinks(referenceConsumer, (Map)value, false);
+                }
+            }
+        }
+    }
+
+
+
 
 }
