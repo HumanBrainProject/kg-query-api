@@ -60,6 +60,18 @@ public class Instances {
         return getInstance(originalId.toSubSpace(SubSpace.MAIN), databaseFactory.getInferredDB(), credential).removeAllInternalKeys();
     }
 
+    public JsonDocument findInstanceByIdentifier(NexusSchemaReference schema, String identifier, Credential credential){
+        NexusInstanceReference reference = arangoRepository.findBySchemaOrgIdentifier(ArangoCollectionReference.fromNexusSchemaReference(schema), identifier, credential);
+        if(reference!=null){
+            NexusInstanceReference originalId = arangoRepository.findOriginalId(reference, credential);
+            if(originalId!=null){
+                return getInstance(originalId.toSubSpace(SubSpace.MAIN), databaseFactory.getInferredDB(), credential).removeAllInternalKeys();
+            }
+        }
+        return null;
+    }
+
+
     public JsonDocument getInstanceByClientExtension(NexusInstanceReference instanceReference, String clientExtension, Client client, Credential credential){
         NexusSchemaReference schemaReference = instanceReference.getNexusSchema().toSubSpace(client != null && client.getSubSpace() != null ? client.getSubSpace() : SubSpace.MAIN);
         NexusInstanceReference originalId = arangoRepository.findOriginalId(instanceReference, credential);
@@ -74,8 +86,6 @@ public class Instances {
         }
         return null;
     }
-
-
 
     private JsonDocument getInstance(NexusInstanceReference instanceReference, ArangoConnection connection, Credential credential) {
         return arangoRepository.getInstance(ArangoDocumentReference.fromNexusInstance(instanceReference), connection, credential);

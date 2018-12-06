@@ -9,6 +9,7 @@ import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaRef
 import org.humanbrainproject.knowledgegraph.instances.boundary.Instances;
 import org.humanbrainproject.knowledgegraph.instances.entity.Client;
 import org.humanbrainproject.knowledgegraph.query.boundary.ArangoGraph;
+import org.humanbrainproject.knowledgegraph.query.entity.JsonDocument;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -73,6 +74,16 @@ public class InstancesInternalAPI {
     public ResponseEntity<Void> translateNamespacesForSchema(@PathVariable("org") String org, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("version") String version, @RequestHeader(value = "oldNamespace") String oldNamespace, @RequestHeader(value = "newNamespace") String newNamespace, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken) {
         instances.translateNamespaces(new NexusSchemaReference(org, domain, schema, version),  oldNamespace, newNamespace, new OidcAccessToken().setToken(authorizationToken));
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping(value = "/{org}/{domain}/{schema}/{version}/identifier/{identifier}")
+    public ResponseEntity<Map> getInstance(@PathVariable("org") String org, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("version") String version, @PathVariable("identifier") String identifier, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken) throws Exception {
+        try {
+            JsonDocument instanceByIdentifier = instances.findInstanceByIdentifier(new NexusSchemaReference(org, domain, schema, version), identifier, new OidcAccessToken().setToken(authorizationToken));
+            return instanceByIdentifier != null ? ResponseEntity.ok(instanceByIdentifier) : ResponseEntity.notFound().build();
+        } catch (HttpClientErrorException e) {
+            return ResponseEntity.status(e.getStatusCode()).build();
+        }
     }
 
 
