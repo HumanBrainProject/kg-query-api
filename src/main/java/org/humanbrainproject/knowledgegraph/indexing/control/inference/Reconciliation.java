@@ -134,12 +134,12 @@ public class Reconciliation implements InferenceStrategy, InitializingBean {
             for (Vertex vertex : verticesWithProperty) {
                 Object valueByName = vertex.getQualifiedIndexingMessage().getQualifiedMap().get(currentProperty);
                 if (overrides(vertex, originOfResult, valueByName, result, valueCount)) {
-                    if (result != null && !result.equals(valueByName)) {
+                    if (result != null && !result.equals(valueByName) && !JsonLdConsts.ID.equals(currentProperty)) {
                         alternatives.add(result);
                     }
                     result = valueByName;
                     originOfResult = vertex;
-                } else if (valueByName != null && !valueByName.equals(result)) {
+                } else if (valueByName != null && !valueByName.equals(result) && !JsonLdConsts.ID.equals(currentProperty)) {
                     alternatives.add(valueByName);
                 }
             }
