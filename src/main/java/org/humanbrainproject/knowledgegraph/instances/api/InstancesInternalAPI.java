@@ -71,6 +71,13 @@ public class InstancesInternalAPI {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
     }
 
+    @PutMapping(value = "/{org}/{domain}/{schema}/{version}/reindex")
+    public ResponseEntity<Void> reindexInstancesFromSchema(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable("version") String version, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken) {
+        instances.reindexInstancesFromSchema(new NexusSchemaReference(org, domain, schema, version), new OidcAccessToken().setToken(authorizationToken));
+        return ResponseEntity.ok().build();
+    }
+
+
     @PutMapping(value = "/{org}/{domain}/{schema}/{oldVersion}/clone/{newVersion}")
     public ResponseEntity<Void> cloneInstancesFromSchema(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable("oldVersion") String oldVersion, @PathVariable("newVersion") String newVersion, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken) {
         instances.cloneInstancesFromSchema(new NexusSchemaReference(org, domain, schema, oldVersion), newVersion, new OidcAccessToken().setToken(authorizationToken));
