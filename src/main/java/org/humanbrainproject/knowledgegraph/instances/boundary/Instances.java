@@ -3,6 +3,7 @@ package org.humanbrainproject.knowledgegraph.instances.boundary;
 import org.humanbrainproject.knowledgegraph.commons.authorization.entity.Credential;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonLdStandardization;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
+import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusClient;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoConnection;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoDatabaseFactory;
@@ -63,6 +64,9 @@ public class Instances {
 
     @Autowired
     GraphIndexing graphIndexing;
+
+    @Autowired
+    NexusClient nexusClient;
 
 
     private Logger logger = LoggerFactory.getLogger(Instances.class);
@@ -174,16 +178,18 @@ public class Instances {
     }
 
     public void reindexInstancesFromSchema(NexusSchemaReference schemaReference, Credential credential) {
-        List<NexusInstanceReference> allInstancesForSchema = instanceController.getAllInstancesForSchema(schemaReference, credential);
-        for (NexusInstanceReference instanceReference : allInstancesForSchema) {
-            JsonDocument fromNexusById = instanceController.getFromNexusById(instanceReference, credential);
-            if(fromNexusById!=null){
-                instanceReference.setRevision(fromNexusById.getNexusRevision());
-                //TODO extract userId from credential
-                IndexingMessage indexingMessage = new IndexingMessage(instanceReference, jsonTransformer.getMapAsJson(fromNexusById), ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_INSTANT), null);
-                graphIndexing.update(indexingMessage);
+
+        nexusClient.consumeInstances(schemaReference, credential, true, instanceReferences -> {
+            for (NexusInstanceReference instanceReference : instanceReferences) {
+                if(instanceReference!=null){
+                    JsonDocument fromNexusById = instanceController.getFromNexusById(instanceReference, credential);
+                    //TODO extract userId from credential
+                    IndexingMessage indexingMessage = new IndexingMessage(fromNexusById.getReference(), jsonTransformer.getMapAsJson(fromNexusById), ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_INSTANT), null);
+                    graphIndexing.update(indexingMessage);
+                }
             }
-        }
+        });
+
     }
 
     public void translateNamespaces(NexusSchemaReference schema, String oldNamespace, String newNamespace, Credential credential) {
