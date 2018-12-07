@@ -83,7 +83,7 @@ public class NexusArangoTransaction implements DatabaseTransaction {
                     ArangoDocumentReference documentReference = ArangoDocumentReference.fromNexusInstance(vertex.getInstanceReference());
                     deleteDocument(documentReference, database);
                     if(linkingInstance.getFrom()!=null && linkingInstance.getTo()!=null) {
-                        String jsonFromLinkingInstance = arangoDocumentConverter.createJsonFromLinkingInstance(documentReference, linkingInstance.getFrom(), linkingInstance.getTo(), vertex.getInstanceReference());
+                        String jsonFromLinkingInstance = arangoDocumentConverter.createJsonFromLinkingInstance(documentReference, linkingInstance.getFrom(), linkingInstance.getTo(), vertex.getInstanceReference(), vertex);
                         insertDocument(documentReference, jsonFromLinkingInstance, CollectionType.EDGES, database);
                     }
                 }

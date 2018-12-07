@@ -1,4 +1,4 @@
-package org.humanbrainproject.knowledgegraph.statistics.boundary;
+package org.humanbrainproject.knowledgegraph.structure.boundary;
 
 import org.humanbrainproject.knowledgegraph.commons.labels.SemanticsToHumanTranslator;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.SystemNexusClient;
@@ -7,14 +7,12 @@ import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoToNexusLookupMap;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.SubSpace;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
+import org.humanbrainproject.knowledgegraph.query.boundary.ArangoQuery;
 import org.humanbrainproject.knowledgegraph.query.entity.JsonDocument;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Component
@@ -61,5 +59,14 @@ public class Structure {
         jsonDocument.put("label", semanticsToHumanTranslator.translateNexusSchemaReference(schemaReference));
         return jsonDocument;
     }
+
+
+    public void reflectOnSpecifications(){
+        List<Map> internalDocuments = repository.getInternalDocuments(ArangoQuery.SPECIFICATION_QUERIES);
+        System.out.println(internalDocuments);
+    }
+
+
+
 
 }

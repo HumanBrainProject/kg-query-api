@@ -1,8 +1,8 @@
-package org.humanbrainproject.knowledgegraph.statistics.api;
+package org.humanbrainproject.knowledgegraph.structure.api;
 
 import org.humanbrainproject.knowledgegraph.commons.InternalApi;
 import org.humanbrainproject.knowledgegraph.query.entity.JsonDocument;
-import org.humanbrainproject.knowledgegraph.statistics.boundary.Structure;
+import org.humanbrainproject.knowledgegraph.structure.boundary.Structure;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -24,5 +24,9 @@ public class StructureAPI {
     }
 
 
+    @GetMapping("/bySpec")
+    public void getStructureBySpecification(){
+        structure.reflectOnSpecifications();
+    }
 
 }

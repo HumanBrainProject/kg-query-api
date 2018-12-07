@@ -2,7 +2,7 @@ package org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.contro
 
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
-import org.humanbrainproject.knowledgegraph.statistics.boundary.Structure;
+import org.humanbrainproject.knowledgegraph.structure.boundary.Structure;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;

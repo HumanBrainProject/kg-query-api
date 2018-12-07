@@ -201,7 +201,7 @@ public class ArangoQueryFactory {
 
     }
 
-    public String getInstanceList(ArangoCollectionReference collection, Integer from, Integer size, String searchTerm, Set<String> permissionGroupsWithReadAccess) {
+    public String getInstanceList(ArangoCollectionReference collection, Integer from, Integer size, String searchTerm, Set<String> permissionGroupsWithReadAccess, boolean sort) {
         AuthorizedArangoQuery query = new AuthorizedArangoQuery(permissionGroupsWithReadAccess, false);
         query.setParameter("collection", collection.getName());
         query.setParameter("from", from!=null ? from.toString(): null);
@@ -212,14 +212,19 @@ public class ArangoQueryFactory {
 
         query.addLine("FOR doc IN `${collection}`");
         query.addDocumentFilter(new TrustedAqlValue("doc"));
-        query.addLine("FILTER doc != NULL");
-        query.addLine("FILTER doc._permissionGroup IN "+query.WHITELIST_ALIAS);
         if (hasSearchTerm) {
             query.addLine("FILTER LIKE (LOWER(doc.`${filterProperty}`), \"%${searchTerm}%\")");
         }
-        query.addLine("SORT doc.`${filterProperty}`");
-        if (from != null && size != null) {
-            query.addLine("LIMIT ${from}, ${size}");
+        if(sort) {
+            query.addLine("SORT doc.`${filterProperty}`");
+        }
+        if(size!=null){
+            if (from != null) {
+                query.addLine("LIMIT ${from}, ${size}");
+            }
+            else{
+                query.addLine("LIMIT ${size}");
+            }
         }
         query.addLine("RETURN doc");
         return query.build().getValue();

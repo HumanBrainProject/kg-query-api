@@ -16,7 +16,7 @@ import org.springframework.web.client.HttpClientErrorException;
 
 import javax.ws.rs.core.MediaType;
 
-import static org.humanbrainproject.knowledgegraph.query.api.QueryAPI.*;
+import static org.humanbrainproject.knowledgegraph.commons.api.ParameterConstants.*;
 
 
 @RestController

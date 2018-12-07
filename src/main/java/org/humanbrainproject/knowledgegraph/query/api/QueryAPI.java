@@ -27,26 +27,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static org.humanbrainproject.knowledgegraph.commons.api.ParameterConstants.*;
+
 @RestController
 @RequestMapping(value = "/query", produces = MediaType.APPLICATION_JSON)
 @Api(value = "/query", description = "The API for querying the knowledge graph")
 public class QueryAPI {
 
-    static final String TEMPLATE_ID = "templateId";
-    static final String ORG = "org";
-    static final String QUERY_ID = "queryId";
-    static final String DOMAIN = "domain";
-    static final String LIBRARY = "library";
-    static final String VOCAB = "vocab";
-    static final String START = "start";
-    static final String SIZE = "size";
-    static final String ORGS = "orgs";
-    static final String DATABASE_SCOPE = "databaseScope";
-    static final String SEARCH = "search";
-    static final String SCHEMA = "schema";
-    static final String VERSION = "version";
-    static final String INSTANCE_ID = "instanceId";
-    static final String RESTRICT_TO_ORGANIZATIONS = "restrictToOrganizations";
+
 
 
     @Autowired

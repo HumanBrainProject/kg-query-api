@@ -18,10 +18,15 @@ import org.humanbrainproject.knowledgegraph.instances.control.InstanceController
 import org.humanbrainproject.knowledgegraph.instances.control.SchemaController;
 import org.humanbrainproject.knowledgegraph.instances.entity.Client;
 import org.humanbrainproject.knowledgegraph.query.entity.JsonDocument;
+import org.humanbrainproject.knowledgegraph.query.entity.QueryParameters;
+import org.humanbrainproject.knowledgegraph.query.entity.QueryResult;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Map;
 
 @Component
 public class Instances {
@@ -51,6 +56,8 @@ public class Instances {
     @Autowired
     SchemaController schemaController;
 
+    private Logger logger = LoggerFactory.getLogger(Instances.class);
+
 
     public JsonDocument getInstance(NexusInstanceReference instanceReference, Credential credential) {
         NexusInstanceReference originalId = arangoRepository.findOriginalId(instanceReference, credential);
@@ -59,6 +66,13 @@ public class Instances {
         }
         return getInstance(originalId.toSubSpace(SubSpace.MAIN), databaseFactory.getInferredDB(), credential).removeAllInternalKeys();
     }
+
+    public QueryResult<List<Map>> getInstances(NexusSchemaReference schemaReference, QueryParameters queryParameters, Credential credential){
+        return arangoRepository.getInstances(ArangoCollectionReference.fromNexusSchemaReference(schemaReference), queryParameters.pagination().getStart(), queryParameters.pagination().getSize(), queryParameters.filter().getQueryString(), databaseFactory.getConnection(queryParameters.databaseScope()), credential);
+
+    }
+
+
 
     public JsonDocument findInstanceByIdentifier(NexusSchemaReference schema, String identifier, Credential credential){
         NexusInstanceReference reference = arangoRepository.findBySchemaOrgIdentifier(ArangoCollectionReference.fromNexusSchemaReference(schema), identifier, credential);
@@ -116,7 +130,15 @@ public class Instances {
         JsonDocument document = new JsonDocument(jsonTransformer.parseToMap(payload));
         String primaryIdentifier = instance.getPrimaryIdentifier();
         if (primaryIdentifier == null) {
-            throw new RuntimeException(String.format("Found instance without identifier: %s", instanceReference.getRelativeUrl().getUrl()));
+            if(clientIdExtension == null && subSpace == originalId.getSubspace()){
+                //It's a replacement of the original instance - we therefore should be able to insert the data even without identifier mapping
+                logger.warn(String.format("Found instance without identifier: %s - since it was an update for the original resource, I can continue - but please check what is happening here!", instanceReference.getRelativeUrl().getUrl()));
+                return instanceController.createInstanceByNexusId(nexusSchema, originalId.getId(), instanceReference.getRevision() != null ? instanceReference.getRevision() : 1, document, credential);
+            }
+            else{
+                throw new RuntimeException(String.format("Found instance without identifier: %s", instanceReference.getRelativeUrl().getUrl()));
+            }
+
         }
         if (clientIdExtension != null || (subSpace != originalId.getSubspace())) {
             document.addReference(HBPVocabulary.INFERENCE_EXTENDS, nexusConfiguration.getAbsoluteUrl(originalId));
