@@ -4,6 +4,7 @@ package org.humanbrainproject.knowledgegraph.commons.nexus.control;
 import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationController;
 import org.humanbrainproject.knowledgegraph.commons.authorization.entity.Credential;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
+import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusRelativeUrl;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
 import org.humanbrainproject.knowledgegraph.query.entity.JsonDocument;
@@ -26,6 +27,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
@@ -215,9 +217,36 @@ public class NexusClient {
     }
 
     List<JsonDocument> list(NexusRelativeUrl relativeUrl, ClientHttpRequestInterceptor oidc, boolean followPages) {
-        return list(configuration.getEndpoint(relativeUrl)+(relativeUrl.getUrl().contains("?") ? "&" : "?")+"deprecated=false", oidc, followPages);
+        return list(createUrl(relativeUrl), oidc, followPages);
     }
 
+    private String createUrl(NexusRelativeUrl relativeUrl){
+        return configuration.getEndpoint(relativeUrl)+(relativeUrl.getUrl().contains("?") ? "&" : "?")+"deprecated=false";
+    }
+
+    public void consumeInstances(NexusSchemaReference schemaReference, Credential credential, boolean followPages, Consumer<List<NexusInstanceReference>> consumer){
+        consume(createUrl(new NexusRelativeUrl(NexusConfiguration.ResourceType.DATA, schemaReference.getRelativeUrl().getUrl())), authorizationController.getInterceptor(credential), followPages, consumer);
+    }
+
+    private void consume(String url, ClientHttpRequestInterceptor oidc, boolean followPages, Consumer<List<NexusInstanceReference>> consumer) {
+        ResponseEntity<Map> result = createRestTemplate(oidc).getForEntity(url, Map.class);
+        if (result.getStatusCode().is2xxSuccessful() && result.getBody() != null && result.getBody().containsKey("results") && result.getBody().get("results") instanceof List) {
+            List<JsonDocument> results = (List<JsonDocument>) ((List) result.getBody().get("results")).stream().map(r -> new JsonDocument((Map) r)).collect(Collectors.toList());
+            consumer.accept(results.stream().map(r -> NexusInstanceReference.createFromUrl((String)r.get("resultId"))).collect(Collectors.toList()));
+            if (followPages) {
+                Object links = result.getBody().get("links");
+                if (links instanceof Map) {
+                    Object next = ((Map) links).get("next");
+                    if (next instanceof String) {
+                        consume((String)next, oidc, true, consumer);
+                    }
+                }
+            }
+        }
+    }
+
+
+    //TODO reimplement with the use of consume
     private List<JsonDocument> list(String url, ClientHttpRequestInterceptor oidc, boolean followPages) {
         ResponseEntity<Map> result = createRestTemplate(oidc).getForEntity(url, Map.class);
         if (result.getStatusCode().is2xxSuccessful() && result.getBody() != null && result.getBody().containsKey("results") && result.getBody().get("results") instanceof List) {

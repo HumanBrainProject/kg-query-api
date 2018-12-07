@@ -28,6 +28,7 @@ import org.humanbrainproject.knowledgegraph.commons.vocabulary.SchemaOrgVocabula
 import org.humanbrainproject.knowledgegraph.indexing.control.MessageProcessor;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.query.entity.JsonDocument;
+import org.humanbrainproject.knowledgegraph.query.entity.QueryResult;
 import org.humanbrainproject.knowledgegraph.releasing.entity.ReleaseStatus;
 import org.humanbrainproject.knowledgegraph.releasing.entity.ReleaseStatusResponse;
 import org.slf4j.Logger;
@@ -275,11 +276,58 @@ public class ArangoRepository {
         return !results.isEmpty() ? interpretMap(results.get(0)) : null;
     }
 
+    @AuthorizedAccess
+    public QueryResult<List<Map>> getInstances(ArangoCollectionReference collection, Integer from, Integer size, String searchTerm, ArangoConnection driver, Credential credential) {
+        ArangoDatabase db = driver.getOrCreateDB();
+        QueryResult<List<Map>> result = new QueryResult<>();
+        String query = queryFactory.getInstanceList(collection, from, size, searchTerm, authorizationController.getReadableOrganizations(credential), false);
+        AqlQueryOptions options = new AqlQueryOptions();
+        if (size != null) {
+            options.fullCount(true);
+        } else {
+            options.count(true);
+        }
+        try {
+            ArangoCursor<Map> cursor = db.query(query, null, options, Map.class);
+            Long count;
+            if (size != null) {
+                count = cursor.getStats().getFullCount();
+            } else {
+                count = cursor.getCount().longValue();
+            }
+            result.setResults(cursor.asListRemaining().stream().map(l -> new JsonDocument(l).removeAllInternalKeys()).collect(Collectors.toList()));
+            result.setTotal(count);
+            result.setSize(size==null ? count : size);
+            result.setStart(from!=null ? from : 0L);
+        } catch (ArangoDBException e) {
+            if (e.getResponseCode() == 404) {
+                result.setSize(0L);
+                result.setTotal(0L);
+                result.setResults(Collections.emptyList());
+                result.setStart(0L);
+            } else {
+                throw e;
+            }
+        }
+        return result;
+    }
 
+
+    /**
+     * Use getInstances instead to ensure a unified response structure
+     * @param collection
+     * @param from
+     * @param size
+     * @param searchTerm
+     * @param driver
+     * @param credential
+     * @return
+     */
+    @Deprecated
     @AuthorizedAccess
     public Map getInstanceList(ArangoCollectionReference collection, Integer from, Integer size, String searchTerm, ArangoConnection driver, Credential credential) {
         ArangoDatabase db = driver.getOrCreateDB();
-        String query = queryFactory.getInstanceList(collection, from, size, searchTerm, authorizationController.getReadableOrganizations(credential));
+        String query = queryFactory.getInstanceList(collection, from, size, searchTerm, authorizationController.getReadableOrganizations(credential), true);
         AqlQueryOptions options = new AqlQueryOptions().count(true).fullCount(true);
         Map m = new HashMap();
         try {

@@ -44,14 +44,12 @@ public class ArangoDocumentConverter {
         return path;
     }
 
-    public String createJsonFromLinkingInstance(ArangoDocumentReference targetDocument, NexusInstanceReference from, NexusInstanceReference to, NexusInstanceReference mainObject){
-        Map<String, Object> map = new HashMap<>();
-        map.put(ArangoVocabulary.ID, targetDocument.getId());
-        map.put(ArangoVocabulary.KEY, targetDocument.getKey());
+    public String createJsonFromLinkingInstance(ArangoDocumentReference targetDocument, NexusInstanceReference from, NexusInstanceReference to, NexusInstanceReference mainObject, Vertex vertex){
+        Map<String, Object> map = new LinkedHashMap(vertex.getQualifiedIndexingMessage().getQualifiedMap());
+        addDefaultDataFromVertex(map, targetDocument, vertex);
         map.put(ArangoVocabulary.FROM, ArangoDocumentReference.fromNexusInstance(from).getId());
         map.put(ArangoVocabulary.TO, ArangoDocumentReference.fromNexusInstance(to).getId());
         map.put(ArangoVocabulary.NAME, mainObject.getNexusSchema().getRelativeUrl().getUrl());
-        map.put(ArangoVocabulary.INDEXED_IN_ARANGO_AT, ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_INSTANT));
         //This is a loop - it can happen (e.g. for reconciled instances - so we should ensure this never reaches the database).
         if (map.get(ArangoVocabulary.FROM).equals(map.get(ArangoVocabulary.TO))) {
             return null;
@@ -80,9 +78,7 @@ public class ArangoDocumentConverter {
         return jsonTransformer.getMapAsJson(map);
     }
 
-
-    public String createJsonFromVertex(ArangoDocumentReference reference, Vertex vertex, Set<JsonPath> blackList) {
-        Map<String, Object> jsonObject = new LinkedHashMap(vertex.getQualifiedIndexingMessage().getQualifiedMap());
+    private void addDefaultDataFromVertex(Map<String, Object> jsonObject, ArangoDocumentReference reference, Vertex vertex){
         jsonObject.put(JsonLdConsts.ID, configuration.getAbsoluteUrl(vertex.getInstanceReference()));
         jsonObject.put(ArangoVocabulary.ID, reference.getId());
         jsonObject.put(ArangoVocabulary.KEY, reference.getKey());
@@ -94,6 +90,13 @@ public class ArangoDocumentConverter {
         jsonObject.put(ArangoVocabulary.NEXUS_RELATIVE_URL_WITH_REV, vertex.getQualifiedIndexingMessage().getOriginalMessage().getInstanceReference().getFullId(true));
         jsonObject.put(ArangoVocabulary.PERMISSION_GROUP, vertex.getInstanceReference().getNexusSchema().getOrganization());
         jsonObject.put(ArangoVocabulary.INDEXED_IN_ARANGO_AT, ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_INSTANT));
+    }
+
+
+
+    public String createJsonFromVertex(ArangoDocumentReference reference, Vertex vertex, Set<JsonPath> blackList) {
+        Map<String, Object> jsonObject = new LinkedHashMap(vertex.getQualifiedIndexingMessage().getQualifiedMap());
+        addDefaultDataFromVertex(jsonObject, reference, vertex);
         for (JsonPath steps : blackList) {
             removePathFromMap(jsonObject, steps);
         }
