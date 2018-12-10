@@ -5,6 +5,7 @@ import org.humanbrainproject.knowledgegraph.commons.nexus.control.SystemNexusCli
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoDatabaseFactory;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoRepository;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoToNexusLookupMap;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.SubSpace;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
 import org.humanbrainproject.knowledgegraph.query.boundary.ArangoQuery;
@@ -40,6 +41,24 @@ public class Structure {
     }
 
 
+    public JsonDocument getStructureForSchema(NexusSchemaReference schemaReference){
+        JsonDocument jsonDocument = new JsonDocument();
+        jsonDocument.put("id", schemaReference.getRelativeUrl().getUrl());
+        jsonDocument.put("group", schemaReference.getOrganization());
+        jsonDocument.put("label", semanticsToHumanTranslator.translateNexusSchemaReference(schemaReference));
+        //TODO reflect on schema
+        List<Map> attributesWithCount = repository.getAttributesWithCount(ArangoCollectionReference.fromNexusSchemaReference(schemaReference));
+        attributesWithCount.forEach(map -> {
+            Object attribute = map.get("attribute");
+            if(attribute!=null){
+                map.put("label", semanticsToHumanTranslator.translateSemanticValueToHumanReadableLabel(attribute.toString()));
+            }
+
+        });
+
+        jsonDocument.put("properties", attributesWithCount);
+        return jsonDocument;
+    }
 
     public JsonDocument getStructure() {
         Collection<NexusSchemaReference> allSchemas = lookupMap.getLookupTable(false).values();
@@ -47,19 +66,10 @@ public class Structure {
         List<JsonDocument> schemas = new ArrayList<>();
         jsonDocument.put("schemas", schemas);
         for (NexusSchemaReference schemaReference : allSchemas) {
-            schemas.add(handleSchema(schemaReference));
+            schemas.add(getStructureForSchema(schemaReference));
         }
         return jsonDocument;
     }
-
-    private JsonDocument handleSchema(NexusSchemaReference schemaReference) {
-        JsonDocument jsonDocument = new JsonDocument();
-        jsonDocument.put("id", schemaReference.getRelativeUrl().getUrl());
-        jsonDocument.put("group", schemaReference.getOrganization());
-        jsonDocument.put("label", semanticsToHumanTranslator.translateNexusSchemaReference(schemaReference));
-        return jsonDocument;
-    }
-
 
     public void reflectOnSpecifications(){
         List<Map> internalDocuments = repository.getInternalDocuments(ArangoQuery.SPECIFICATION_QUERIES);

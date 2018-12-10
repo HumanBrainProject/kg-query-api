@@ -452,4 +452,18 @@ public class ArangoRepository {
     public <T> T getInternalDocumentByKey(ArangoDocumentReference document, Class<T> clazz) {
         return databaseFactory.getInternalDB().getOrCreateDB().collection(document.getCollection().getName()).getDocument(document.getKey(), clazz);
     }
+
+    @UnauthorizedAccess("Querying the data structure is public knowledge - there is no data exposed")
+    public List<Map> getAttributesWithCount(ArangoCollectionReference reference){
+        ArangoDatabase db = databaseFactory.getInferredDB().getOrCreateDB();
+        if(db.collection(reference.getName()).exists()) {
+            String q = queryFactory.getAttributesWithCount(reference);
+            ArangoCursor<Map> result = db.query(q, null, new AqlQueryOptions(), Map.class);
+            return result.asListRemaining();
+        }
+        else {
+            return Collections.emptyList();
+        }
+    }
+
 }

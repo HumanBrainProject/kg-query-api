@@ -264,4 +264,15 @@ public class ArangoQueryFactory {
         q.addLine("RETURN FIRST(instances)");
         return q.build().getValue();
     }
+
+    public String getAttributesWithCount(ArangoCollectionReference reference){
+        UnauthorizedArangoQuery q = new UnauthorizedArangoQuery();
+        q.addLine("FOR doc IN `${reference}`");
+        q.addLine("FOR att IN ATTRIBUTES(doc, true)");
+        q.addLine("COLLECT attribute = att WITH COUNT INTO numOfOccurences");
+        q.addLine("RETURN { attribute, numOfOccurences }");
+        q.setParameter("reference", reference.getName());
+        return q.build().getValue();
+    }
+
 }

@@ -21,22 +21,29 @@ public class SemanticsToHumanTranslator {
         if (semantic == null) {
             return null;
         }
+
         UriComponents components = UriComponentsBuilder.fromUriString(semantic).build();
         String value = components.getFragment();
-        if(value ==null){
+        if(value ==null && components.getPathSegments().size()>0){
             value = components.getPathSegments().get(components.getPathSegments().size()-1);
         }
         return normalize(value);
     }
 
     private String normalize(String value) {
-        value = value.replaceAll("_", " ");
-        String[] array = StringUtils.splitByCharacterTypeCamelCase(value);
-        array = Arrays.stream(array).filter(Objects::nonNull).filter(s -> !s.trim().isEmpty()).map(s -> s.trim().toLowerCase()).toArray(String[]::new);
-        if(array.length>0){
-            array[0] = StringUtils.capitalize(array[0]);
+        if(value!=null) {
+            if(value.startsWith("@")){
+                value = value.substring(1);
+            }
+            value = value.replaceAll("_", " ");
+            String[] array = StringUtils.splitByCharacterTypeCamelCase(value);
+            array = Arrays.stream(array).filter(Objects::nonNull).filter(s -> !s.trim().isEmpty()).map(s -> s.trim().toLowerCase()).toArray(String[]::new);
+            if (array.length > 0) {
+                array[0] = StringUtils.capitalize(array[0]);
+            }
+            return StringUtils.join(array, ' ');
         }
-        return StringUtils.join(array, ' ');
+        return null;
     }
 
     public String translateArangoCollectionName(ArangoCollectionReference reference){
