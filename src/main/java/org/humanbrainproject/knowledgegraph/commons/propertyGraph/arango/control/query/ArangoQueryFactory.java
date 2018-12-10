@@ -68,7 +68,7 @@ public class ArangoQueryFactory {
                 subquery.addLine("LET `${collectionName}`= (").indent();
                 subquery.addLine("FOR v IN `${collectionName}`").indent();
                 subquery.addDocumentFilter(new TrustedAqlValue("v"));
-                subquery.addLine("FILTER v.`${propertyName}` == \"${propertyValue}\" RETURN v.`${lookupProperty}`").outdent();
+                subquery.addLine("FILTER v.`${propertyName}` == \"${propertyValue}\" OR \"${propertyValue}\" IN v.`${propertyName}` RETURN v.`${lookupProperty}`").outdent();
                 subquery.outdent().addLine(")");
                 q.addLine(subquery.build().getValue());
             }
