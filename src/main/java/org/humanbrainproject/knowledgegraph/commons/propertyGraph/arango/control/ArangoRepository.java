@@ -496,4 +496,14 @@ public class ArangoRepository {
         return inferredDB.getEdgesCollectionNames();
     }
 
+    public boolean hasInstances(ArangoCollectionReference reference){
+        ArangoCollection collection = databaseFactory.getInferredDB().getOrCreateDB().collection(reference.getName());
+        boolean exists = collection.exists();
+        if(!exists){
+            return false;
+        }
+        return collection.count().getCount()>0;
+
+    }
+
 }

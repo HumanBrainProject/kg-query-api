@@ -36,28 +36,27 @@ public class Structure {
     ArangoToNexusLookupMap lookupMap;
 
 
-
-    public Set<NexusSchemaReference> getAllSchemasInMainSpace(){
+    public Set<NexusSchemaReference> getAllSchemasInMainSpace() {
         Set<NexusSchemaReference> allSchemas = systemNexusClient.getAllSchemas(null, null);
         return allSchemas.stream().map(s -> s.toSubSpace(SubSpace.MAIN)).collect(Collectors.toSet());
     }
 
-    private Map<String, Map> groupDirectReferences(List<Map> relations, boolean outbound){
+    private Map<String, Map> groupDirectReferences(List<Map> relations, boolean outbound) {
         Map<String, Map> groupedLinks = new HashMap<>();
         relations.forEach(r -> {
-            if(r!=null && r.get("attribute")!=null && r.get("ref")!=null) {
-                Map attribute = (Map)groupedLinks.get(r.get("attribute"));
-                if (attribute==null) {
+            if (r != null && r.get("attribute") != null && r.get("ref") != null) {
+                Map attribute = (Map) groupedLinks.get(r.get("attribute"));
+                if (attribute == null) {
                     Map map = new HashMap();
                     map.put("attribute", r.get("attribute").toString());
                     map.put("canBe", new ArrayList<String>());
-                    if(!outbound) {
+                    if (!outbound) {
                         map.put("reverse", true);
                     }
                     groupedLinks.put(r.get("attribute").toString(), map);
                     attribute = map;
                 }
-                List<String> canBe = (List<String>)attribute.get("canBe");
+                List<String> canBe = (List<String>) attribute.get("canBe");
                 canBe.add(lookupMap.getNexusSchema(new ArangoCollectionReference(r.get("ref").toString())).getRelativeUrl().getUrl());
             }
         });
@@ -65,43 +64,46 @@ public class Structure {
     }
 
 
-    public JsonDocument getStructureForSchema(NexusSchemaReference schemaReference, boolean withLinks){
+    public JsonDocument getStructureForSchema(NexusSchemaReference schemaReference, boolean withLinks) {
         JsonDocument jsonDocument = new JsonDocument();
         jsonDocument.put("id", schemaReference.getRelativeUrl().getUrl());
         jsonDocument.put("group", schemaReference.getOrganization());
         jsonDocument.put("label", semanticsToHumanTranslator.translateNexusSchemaReference(schemaReference));
         //TODO reflect on schema
         ArangoCollectionReference arangoReference = ArangoCollectionReference.fromNexusSchemaReference(schemaReference);
-
-        Map<String, Map> inboundRelations;
-        if(withLinks) {
-            inboundRelations = groupDirectReferences(repository.getDirectRelationsWithType(arangoReference, false), false);
+        if (!repository.hasInstances(arangoReference)) {
+            return null;
         }
-        else{
+        Map<String, Map> inboundRelations;
+        if (withLinks) {
+            inboundRelations = groupDirectReferences(repository.getDirectRelationsWithType(arangoReference, false), false);
+        } else {
             inboundRelations = Collections.emptyMap();
         }
         List<Map> attributesWithCount = repository.getAttributesWithCount(arangoReference);
         Map<String, Map> outboundRelations;
-        if(attributesWithCount.size()>0 && withLinks) {
-           outboundRelations = groupDirectReferences(repository.getDirectRelationsWithType(arangoReference, true), true);
-        }
-        else{
+        if (attributesWithCount.size() > 0 && withLinks) {
+            outboundRelations = groupDirectReferences(repository.getDirectRelationsWithType(arangoReference, true), true);
+        } else {
             outboundRelations = Collections.emptyMap();
         }
 
         attributesWithCount.forEach(map -> {
             Object attribute = map.get("attribute");
-            if(attribute!=null){
+            if (attribute != null) {
                 Map outboundRelation = outboundRelations.get(attribute);
-                if(outboundRelation!=null){
+                if (outboundRelation != null) {
                     map.put("canBe", outboundRelation.get("canBe"));
                 }
                 map.put("label", semanticsToHumanTranslator.translateSemanticValueToHumanReadableLabel(attribute.toString()));
             }
         });
-        inboundRelations.values().forEach( a ->
+        inboundRelations.values().forEach(a ->
                 attributesWithCount.add(a)
         );
+        if (attributesWithCount.isEmpty()) {
+            return null;
+        }
         jsonDocument.put("properties", attributesWithCount);
         return jsonDocument;
     }
@@ -114,9 +116,11 @@ public class Structure {
         for (NexusSchemaReference schemaReference : allSchemas) {
             try {
 
-                schemas.add(getStructureForSchema(schemaReference, withLinks));
-            }
-            catch(ArangoDBException exception){
+                JsonDocument structureForSchema = getStructureForSchema(schemaReference, withLinks);
+                if (structureForSchema != null) {
+                    schemas.add(structureForSchema);
+                }
+            } catch (ArangoDBException exception) {
                 JsonDocument document = new JsonDocument();
                 document.put("id", schemaReference.getRelativeUrl().getUrl());
                 document.put("failure", String.format("Was not able to reflect. Cause: ", exception.getErrorMessage()));
@@ -126,14 +130,14 @@ public class Structure {
         return jsonDocument;
     }
 
-    public void reflectOnSpecifications(){
+    public void reflectOnSpecifications() {
         List<Map> internalDocuments = repository.getInternalDocuments(ArangoQuery.SPECIFICATION_QUERIES);
         System.out.println(internalDocuments);
     }
 
 
-    public List<String> getArangoEdgeCollections(){
-       return repository.getCollectionNames().stream().map(ArangoCollectionReference::getName).collect(Collectors.toList());
+    public List<String> getArangoEdgeCollections() {
+        return repository.getCollectionNames().stream().map(ArangoCollectionReference::getName).collect(Collectors.toList());
     }
 
 
