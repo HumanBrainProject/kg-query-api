@@ -5,12 +5,10 @@ import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaRef
 import org.humanbrainproject.knowledgegraph.query.entity.JsonDocument;
 import org.humanbrainproject.knowledgegraph.structure.boundary.Structure;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.ws.rs.core.MediaType;
+import java.util.List;
 
 @InternalApi
 @RestController
@@ -21,19 +19,25 @@ public class StructureAPI {
     Structure structure;
 
     @GetMapping
-    public JsonDocument getStructure(){
-        return structure.getStructure();
+    public JsonDocument getStructure(@RequestParam(value = "withLinks", required = false) boolean withLinks){
+        return structure.getStructure(withLinks);
     }
 
 
     @GetMapping(value = "/{org}/{domain}/{schema}/{version}")
-    public JsonDocument getStructureForSchema(@PathVariable("org") String org, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("version") String version){
-        return structure.getStructureForSchema(new NexusSchemaReference(org, domain, schema, version));
+    public JsonDocument getStructureForSchema(@PathVariable("org") String org, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("version") String version, @RequestParam(value = "withLinks", required = false) boolean withLinks){
+        return structure.getStructureForSchema(new NexusSchemaReference(org, domain, schema, version), withLinks);
     }
 
     @GetMapping("/bySpec")
     public void getStructureBySpecification(){
         structure.reflectOnSpecifications();
+    }
+
+
+    @GetMapping("/arango/edgeCollections")
+    public List<String> getArangoEdgeCollections(){
+        return structure.getArangoEdgeCollections();
     }
 
 }

@@ -133,7 +133,7 @@ public class ArangoRepository {
             Object rev = byKey.get(ArangoVocabulary.NEXUS_REV);
             if (rev != null) {
                 int revision = Integer.parseInt(rev.toString());
-                if(result.getRevision()==null || result.getRevision()<revision) {
+                if (result.getRevision() == null || result.getRevision() < revision) {
                     result.setRevision(revision);
                 }
             }
@@ -145,8 +145,7 @@ public class ArangoRepository {
             if (originalParent instanceof Map) {
                 String id = (String) ((Map) originalParent).get(JsonLdConsts.ID);
                 originalReference = NexusInstanceReference.createFromUrl(id);
-            }
-            else if (byKey.get(JsonLdConsts.ID) != null) {
+            } else if (byKey.get(JsonLdConsts.ID) != null) {
                 originalReference = NexusInstanceReference.createFromUrl((String) byKey.get(JsonLdConsts.ID));
             }
             if (originalReference != null && !reference.isSameInstanceRegardlessOfRevision(originalReference)) {
@@ -163,11 +162,11 @@ public class ArangoRepository {
         return result;
     }
 
-    public Integer getCurrentRevision(ArangoDocumentReference documentReference){
+    public Integer getCurrentRevision(ArangoDocumentReference documentReference) {
         Map document = getDocument(documentReference, databaseFactory.getDefaultDB(), new InternalMasterKey());
-        if(document!=null){
+        if (document != null) {
             Object rev = document.get(ArangoVocabulary.NEXUS_RELATIVE_URL_WITH_REV);
-            if(rev!=null){
+            if (rev != null) {
                 return Integer.parseInt(rev.toString());
             }
         }
@@ -297,8 +296,8 @@ public class ArangoRepository {
             }
             result.setResults(cursor.asListRemaining().stream().map(l -> new JsonDocument(l).removeAllInternalKeys()).collect(Collectors.toList()));
             result.setTotal(count);
-            result.setSize(size==null ? count : size);
-            result.setStart(from!=null ? from : 0L);
+            result.setSize(size == null ? count : size);
+            result.setStart(from != null ? from : 0L);
         } catch (ArangoDBException e) {
             if (e.getResponseCode() == 404) {
                 result.setSize(0L);
@@ -315,6 +314,7 @@ public class ArangoRepository {
 
     /**
      * Use getInstances instead to ensure a unified response structure
+     *
      * @param collection
      * @param from
      * @param size
@@ -454,16 +454,44 @@ public class ArangoRepository {
     }
 
     @UnauthorizedAccess("Querying the data structure is public knowledge - there is no data exposed")
-    public List<Map> getAttributesWithCount(ArangoCollectionReference reference){
+    public List<Map> getAttributesWithCount(ArangoCollectionReference reference) {
         ArangoDatabase db = databaseFactory.getInferredDB().getOrCreateDB();
-        if(db.collection(reference.getName()).exists()) {
+        if (db.collection(reference.getName()).exists()) {
             String q = queryFactory.getAttributesWithCount(reference);
             ArangoCursor<Map> result = db.query(q, null, new AqlQueryOptions(), Map.class);
             return result.asListRemaining();
-        }
-        else {
+        } else {
             return Collections.emptyList();
         }
+    }
+
+
+    public List<Map> getInboundRelationsForDocument(ArangoDocumentReference documentReference) {
+        ArangoConnection inferredDB = databaseFactory.getInferredDB();
+        Set<ArangoCollectionReference> edgesCollectionNames = inferredDB.getEdgesCollectionNames();
+        String q = queryFactory.queryInboundRelationsForDocument(documentReference, edgesCollectionNames, authorizationController.getReadableOrganizations(new InternalMasterKey()));
+        //ATTENTION: Use of internal master-key! Ensure only meta-data is leaving this method!
+        ArangoCursor<Map> result = inferredDB.getOrCreateDB().query(q, null, new AqlQueryOptions(), Map.class);
+        return result.asListRemaining();
+    }
+
+    @UnauthorizedAccess("This is a query about the structure and therefore is not protected")
+    public List<Map> getDirectRelationsWithType(ArangoCollectionReference collectionReference, boolean outbound){
+        ArangoConnection inferredDB = databaseFactory.getInferredDB();
+        if(inferredDB.getOrCreateDB().collection(collectionReference.getName()).exists()) {
+            Set<ArangoCollectionReference> edgesCollectionNames = inferredDB.getEdgesCollectionNames();
+            String q = queryFactory.queryDirectRelationsWithType(collectionReference, edgesCollectionNames, outbound);
+            ArangoCursor<Map> result = inferredDB.getOrCreateDB().query(q, null, new AqlQueryOptions(), Map.class);
+            return result.asListRemaining();
+        }
+        return Collections.emptyList();
+    }
+
+
+
+    public Set<ArangoCollectionReference> getCollectionNames() {
+        ArangoConnection inferredDB = databaseFactory.getInferredDB();
+        return inferredDB.getEdgesCollectionNames();
     }
 
 }

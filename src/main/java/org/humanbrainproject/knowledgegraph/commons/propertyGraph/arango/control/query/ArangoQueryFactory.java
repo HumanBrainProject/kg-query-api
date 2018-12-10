@@ -29,17 +29,25 @@ public class ArangoQueryFactory {
     }
 
     public String queryOutboundRelationsForDocument(ArangoDocumentReference document, Set<ArangoCollectionReference> edgeCollections, Set<String> permissionGroupsWithReadAccess) {
+       return queryDirectRelationsForDocument(document, edgeCollections, permissionGroupsWithReadAccess, true);
+    }
+
+    public String queryInboundRelationsForDocument(ArangoDocumentReference document, Set<ArangoCollectionReference> edgeCollections, Set<String> permissionGroupsWithReadAccess) {
+        return queryDirectRelationsForDocument(document, edgeCollections, permissionGroupsWithReadAccess, false);
+    }
+
+    private String queryDirectRelationsForDocument(ArangoDocumentReference document, Set<ArangoCollectionReference> edgeCollections, Set<String> permissionGroupsWithReadAccess, boolean outbound) {
         AuthorizedArangoQuery q = new AuthorizedArangoQuery(permissionGroupsWithReadAccess);
         q.setParameter("documentId", document.getId());
+        q.setParameter("direction", outbound ? "OUTBOUND" : "INBOUND");
         q.setTrustedParameter("edges", q.listCollections(edgeCollections.stream().map(ArangoCollectionReference::getName).collect(Collectors.toSet())));
         q.addLine("LET doc = DOCUMENT(\"${documentId}\")");
         q.addDocumentFilter(new TrustedAqlValue("doc"));
-        q.addLine("FOR v, e IN 1..1 OUTBOUND doc ${edges}");
+        q.addLine("FOR v, e IN 1..1 ${direction} doc ${edges}");
         q.addDocumentFilter(new TrustedAqlValue("v"));
         q.addLine("RETURN e." + ArangoVocabulary.ID);
         return q.build().getValue();
     }
-
     public String queryOriginalIdForLink(ArangoDocumentReference document, ArangoCollectionReference linkReference,  Set<String> permissionGroupsWithReadAccess) {
         AuthorizedArangoQuery q = new AuthorizedArangoQuery(permissionGroupsWithReadAccess);
         q.setParameter("documentId", document.getId());
@@ -274,5 +282,22 @@ public class ArangoQueryFactory {
         q.setParameter("reference", reference.getName());
         return q.build().getValue();
     }
+
+    public String queryDirectRelationsWithType(ArangoCollectionReference reference, Set<ArangoCollectionReference> edgeCollections, boolean outbound){
+        UnauthorizedArangoQuery q = new UnauthorizedArangoQuery();
+        q.setTrustedParameter("collections", q.listCollections(edgeCollections.stream().map(ArangoCollectionReference::getName).collect(Collectors.toSet())));
+        q.setParameter("fromOrTo", outbound ? ArangoVocabulary.TO : ArangoVocabulary.FROM);
+        q.setParameter("reference", reference.getName());
+        q.setParameter("direction", outbound ? "OUTBOUND": "INBOUND");
+        q.addLine("FOR doc IN `${reference}`");
+        q.addLine("FOR v, e IN 1..1 ${direction} doc ${collections}");
+        q.addLine("RETURN DISTINCT {");
+        q.indent().addLine("\"ref\": SUBSTRING(e.${fromOrTo}, 0, FIND_LAST(e.${fromOrTo}, \"/\")), ");
+        q.addLine("\"attribute\": e._name");
+        q.addLine("}");
+        return q.build().getValue();
+    }
+
+
 
 }
