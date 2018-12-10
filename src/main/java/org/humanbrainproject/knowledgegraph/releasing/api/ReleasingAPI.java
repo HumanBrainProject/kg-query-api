@@ -26,10 +26,10 @@ public class ReleasingAPI {
     Releasing releasing;
 
     @GetMapping(value = "/{org}/{domain}/{schema}/{version}/{id}", consumes = { MediaType.WILDCARD})
-    public ResponseEntity<ReleaseStatusResponse> getReleaseStatus(@PathVariable("org") String org, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("version") String version, @PathVariable("id") String id, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization) {
+    public ResponseEntity<ReleaseStatusResponse> getReleaseStatus(@PathVariable("org") String org, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("version") String version, @PathVariable("id") String id, @RequestParam(value = "withChildren", required = false, defaultValue = "true") boolean withChildren, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization) {
         try{
             NexusInstanceReference instanceReference = new NexusInstanceReference(org, domain, schema, version, id);
-            ReleaseStatusResponse releaseStatus = releasing.getReleaseStatus(instanceReference, new OidcAccessToken().setToken(authorization));
+            ReleaseStatusResponse releaseStatus = releasing.getReleaseStatus(instanceReference, withChildren, new OidcAccessToken().setToken(authorization));
             if(releaseStatus==null){
                 return ResponseEntity.notFound().build();
             }
@@ -41,11 +41,11 @@ public class ReleasingAPI {
 
 
     @PostMapping(consumes = { MediaType.APPLICATION_JSON})
-    public ResponseEntity<List<ReleaseStatusResponse>> getReleaseStatusList(@RequestBody List<String> relativeNexusIds, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization) {
+    public ResponseEntity<List<ReleaseStatusResponse>> getReleaseStatusList(@RequestBody List<String> relativeNexusIds, @RequestParam(value = "withChildren", required = false, defaultValue = "true") boolean withChildren, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization) {
         try{
             if(relativeNexusIds!=null){
                 Credential credential = new OidcAccessToken().setToken(authorization);
-                List<ReleaseStatusResponse> collect = relativeNexusIds.stream().map(ref -> releasing.getReleaseStatus(NexusInstanceReference.createFromUrl(ref), credential)).collect(Collectors.toList());
+                List<ReleaseStatusResponse> collect = relativeNexusIds.stream().map(ref -> releasing.getReleaseStatus(NexusInstanceReference.createFromUrl(ref), withChildren, credential)).collect(Collectors.toList());
                 return ResponseEntity.ok(collect);
             }
             return ResponseEntity.badRequest().build();
