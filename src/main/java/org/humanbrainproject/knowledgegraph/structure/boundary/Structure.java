@@ -1,5 +1,6 @@
 package org.humanbrainproject.knowledgegraph.structure.boundary;
 
+import com.arangodb.ArangoDBException;
 import org.humanbrainproject.knowledgegraph.commons.labels.SemanticsToHumanTranslator;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.SystemNexusClient;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoDatabaseFactory;
@@ -111,7 +112,16 @@ public class Structure {
         List<JsonDocument> schemas = new ArrayList<>();
         jsonDocument.put("schemas", schemas);
         for (NexusSchemaReference schemaReference : allSchemas) {
-            schemas.add(getStructureForSchema(schemaReference, withLinks));
+            try {
+
+                schemas.add(getStructureForSchema(schemaReference, withLinks));
+            }
+            catch(ArangoDBException exception){
+                JsonDocument document = new JsonDocument();
+                document.put("id", schemaReference.getRelativeUrl().getUrl());
+                document.put("failure", String.format("Was not able to reflect. Cause: ", exception.getErrorMessage()));
+                schemas.add(document);
+            }
         }
         return jsonDocument;
     }
