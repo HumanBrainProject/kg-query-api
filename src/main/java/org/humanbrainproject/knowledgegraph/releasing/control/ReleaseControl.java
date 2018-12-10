@@ -33,8 +33,8 @@ public class ReleaseControl {
         return null;
     }
 
-    public ReleaseStatusResponse getReleaseStatus(NexusInstanceReference instance, Credential credential) {
-        ReleaseStatusResponse releaseStatus = arangoRepository.getReleaseStatus(ArangoDocumentReference.fromNexusInstance(instance), credential);
+    public ReleaseStatusResponse getReleaseStatus(NexusInstanceReference instance, boolean withChildren, Credential credential) {
+        ReleaseStatusResponse releaseStatus = arangoRepository.getReleaseStatus(ArangoDocumentReference.fromNexusInstance(instance), withChildren, credential);
         if (releaseStatus != null) {
             releaseStatus.setId(instance);
         }

@@ -387,12 +387,14 @@ public class ArangoRepository {
 
 
     @AuthorizedAccess
-    public ReleaseStatusResponse getReleaseStatus(ArangoDocumentReference document, Credential credential) {
-        Map releaseGraph = getReleaseGraph(document, Optional.empty(), credential);
+    public ReleaseStatusResponse getReleaseStatus(ArangoDocumentReference document, boolean withChildren, Credential credential) {
+        Map releaseGraph = getReleaseGraph(document, withChildren ?  Optional.empty():Optional.of(0), credential);
         if (releaseGraph != null) {
             ReleaseStatusResponse response = new ReleaseStatusResponse();
             response.setRootStatus(ReleaseStatus.valueOf((String) releaseGraph.get("status")));
-            response.setChildrenStatus(findWorstReleaseStatusOfChildren(releaseGraph, null, true));
+            if(withChildren) {
+                response.setChildrenStatus(findWorstReleaseStatusOfChildren(releaseGraph, null, true));
+            }
             return response;
         }
         return null;

@@ -51,8 +51,8 @@ public class Releasing {
         return null;
     }
 
-    public ReleaseStatusResponse getReleaseStatus(NexusInstanceReference instanceReference, Credential accessToken) {
-        return releaseControl.getReleaseStatus(instanceReference, accessToken);
+    public ReleaseStatusResponse getReleaseStatus(NexusInstanceReference instanceReference, boolean withChildren, Credential accessToken) {
+        return releaseControl.getReleaseStatus(instanceReference, withChildren, accessToken);
     }
 
     public Map<String, Object> getReleaseGraph(NexusInstanceReference instanceReference, Credential accessToken) {
