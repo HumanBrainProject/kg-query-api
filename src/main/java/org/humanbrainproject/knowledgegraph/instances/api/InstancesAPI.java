@@ -7,12 +7,15 @@ import org.humanbrainproject.knowledgegraph.instances.boundary.Instances;
 import org.humanbrainproject.knowledgegraph.query.boundary.ArangoGraph;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.HttpClientErrorException;
 
 import javax.ws.rs.core.MediaType;
 import java.util.Map;
+
+import static org.humanbrainproject.knowledgegraph.commons.api.ParameterConstants.*;
 
 @RestController
 @RequestMapping(value = "/api/instances", produces = MediaType.APPLICATION_JSON)
@@ -37,5 +40,13 @@ public class InstancesAPI {
         }
     }
 
+
+    @DeleteMapping(value = "/{org}/{domain}/{schema}/{version}/{id}")
+    public ResponseEntity<Void> deleteInstance(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable("id") String id, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken) {
+        if (instances.removeInstance(new NexusInstanceReference(org, domain, schema, version, id), new OidcAccessToken().setToken(authorizationToken))) {
+            return ResponseEntity.ok().build();
+        }
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+    }
 }
 
