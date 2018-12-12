@@ -19,6 +19,7 @@ import org.humanbrainproject.knowledgegraph.indexing.entity.IndexingMessage;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusRelativeUrl;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
+import org.humanbrainproject.knowledgegraph.query.entity.DatabaseScope;
 import org.humanbrainproject.knowledgegraph.query.entity.JsonDocument;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
@@ -61,8 +62,8 @@ public class InstanceController {
     NexusConfiguration nexusConfiguration;
 
 
-    private NexusInstanceReference getByIdentifier(NexusSchemaReference schema, String identifier, Credential credential) {
-        NexusInstanceReference bySchemaOrgIdentifier = arangoRepository.findBySchemaOrgIdentifier(ArangoCollectionReference.fromNexusSchemaReference(schema), identifier, credential);
+    private NexusInstanceReference getByIdentifier(NexusSchemaReference schema, String identifier, DatabaseScope databaseScope, Credential credential) {
+        NexusInstanceReference bySchemaOrgIdentifier = arangoRepository.findBySchemaOrgIdentifier(ArangoCollectionReference.fromNexusSchemaReference(schema), identifier, databaseScope, credential);
         if(bySchemaOrgIdentifier!=null){
             JsonDocument fromNexusById = getFromNexusById(bySchemaOrgIdentifier, credential);
             Object revision = fromNexusById.get(NexusVocabulary.REVISION_ALIAS);
@@ -80,7 +81,7 @@ public class InstanceController {
 
     public NexusInstanceReference createInstanceByIdentifier(NexusSchemaReference schemaReference, String identifier, JsonDocument payload, Credential credential) {
         payload.addToProperty(SchemaOrgVocabulary.IDENTIFIER, identifier);
-        NexusInstanceReference byIdentifier = getByIdentifier(schemaReference, identifier, credential);
+        NexusInstanceReference byIdentifier = getByIdentifier(schemaReference, identifier, DatabaseScope.NATIVE, credential);
         if (byIdentifier==null) {
             return createInstanceByNexusId(schemaReference, null, 1, payload, credential);
         } else {
@@ -208,7 +209,7 @@ public class InstanceController {
                 JsonDocument relatedDocument = systemNexusClient.get(related.getRelativeUrl());
                 if(relatedDocument!=null) {
                     String primaryIdentifier = relatedDocument.getPrimaryIdentifier();
-                    NexusInstanceReference inNewSchema = arangoRepository.findBySchemaOrgIdentifier(ArangoCollectionReference.fromNexusSchemaReference(newSchemaReference), primaryIdentifier, new InternalMasterKey());
+                    NexusInstanceReference inNewSchema = arangoRepository.findBySchemaOrgIdentifier(ArangoCollectionReference.fromNexusSchemaReference(newSchemaReference), primaryIdentifier, DatabaseScope.NATIVE, new InternalMasterKey());
                     if(inNewSchema!=null){
                         referenceMap.put(JsonLdConsts.ID, nexusConfiguration.getAbsoluteUrl(inNewSchema));
                     }

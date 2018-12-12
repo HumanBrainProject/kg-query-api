@@ -8,6 +8,7 @@ import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceR
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
 import org.humanbrainproject.knowledgegraph.instances.boundary.Instances;
 import org.humanbrainproject.knowledgegraph.query.boundary.ArangoGraph;
+import org.humanbrainproject.knowledgegraph.query.entity.DatabaseScope;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
@@ -77,7 +78,7 @@ public class GraphInternalAPI {
     @Deprecated
     public ResponseEntity<Map> getInstance(@PathVariable("org") String org, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("version") String version,@PathVariable("id") String id, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization ) throws Exception{
         try{
-            Map instance = instances.getInstance(new NexusInstanceReference(org, domain, schema, version, id), new OidcAccessToken().setToken(authorization));
+            Map instance = instances.getInstance(new NexusInstanceReference(org, domain, schema, version, id), DatabaseScope.INFERRED, new OidcAccessToken().setToken(authorization));
             return instance!=null ? ResponseEntity.ok(instance) : ResponseEntity.notFound().build();
         } catch (HttpClientErrorException e){
             return ResponseEntity.status(e.getStatusCode()).build();

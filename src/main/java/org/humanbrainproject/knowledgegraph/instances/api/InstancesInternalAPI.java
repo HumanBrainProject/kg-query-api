@@ -15,7 +15,6 @@ import org.humanbrainproject.knowledgegraph.query.entity.QueryParameters;
 import org.humanbrainproject.knowledgegraph.query.entity.QueryResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.HttpClientErrorException;
@@ -63,13 +62,6 @@ public class InstancesInternalAPI {
         }
     }
 
-    @DeleteMapping(value = "/{org}/{domain}/{schema}/{version}/{id}")
-    public ResponseEntity<Void> deleteInstance(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable("id") String id, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken) {
-        if (instances.removeInstance(new NexusInstanceReference(org, domain, schema, version, id), new OidcAccessToken().setToken(authorizationToken))) {
-            return ResponseEntity.ok().build();
-        }
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-    }
 
     @PutMapping(value = "/{org}/{domain}/{schema}/{version}/reindex")
     public ResponseEntity<Void> reindexInstancesFromSchema(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable("version") String version, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken) {
@@ -91,9 +83,9 @@ public class InstancesInternalAPI {
     }
 
     @GetMapping(value = "/{org}/{domain}/{schema}/{version}/identifier/{identifier}")
-    public ResponseEntity<Map> getInstance(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable("identifier") String identifier, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken) throws Exception {
+    public ResponseEntity<Map> getInstance(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable("identifier") String identifier, @RequestParam(value = DATABASE_SCOPE, required = false) DatabaseScope databaseScope, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken) throws Exception {
         try {
-            JsonDocument instanceByIdentifier = instances.findInstanceByIdentifier(new NexusSchemaReference(org, domain, schema, version), identifier, new OidcAccessToken().setToken(authorizationToken));
+            JsonDocument instanceByIdentifier = instances.findInstanceByIdentifier(new NexusSchemaReference(org, domain, schema, version), identifier, databaseScope != null ? databaseScope : DatabaseScope.INFERRED, new OidcAccessToken().setToken(authorizationToken));
             return instanceByIdentifier != null ? ResponseEntity.ok(instanceByIdentifier) : ResponseEntity.notFound().build();
         } catch (HttpClientErrorException e) {
             return ResponseEntity.status(e.getStatusCode()).build();
@@ -102,16 +94,22 @@ public class InstancesInternalAPI {
 
 
     @GetMapping(value = "/{org}/{domain}/{schema}/{version}/{id}")
-    public ResponseEntity<Map> getInstance(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable("id") String id, @ApiParam("The clientIdExtension allows the calling client to specify an additional postfix to the identifier and therefore to discriminate between different instances which are combined in the inferred space. If this value takes a userId for example, this means that there will be a distinct instance created for every user.") @RequestParam(value = "clientIdExtension", required = false) String clientIdExtension, @RequestHeader(value = "client", required = false) Client client, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken) throws Exception {
+    public ResponseEntity<Map> getInstance(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable("id") String id, @ApiParam("Defines the database scope. This is reset to NATIVE, if a client / client extension is defined") @RequestParam(value = DATABASE_SCOPE, required = false) DatabaseScope databaseScope, @ApiParam("The clientIdExtension allows the calling client to specify an additional postfix to the identifier and therefore to discriminate between different instances which are combined in the inferred space. If this value takes a userId for example, this means that there will be a distinct instance created for every user.") @RequestParam(value = "clientIdExtension", required = false) String clientIdExtension, @RequestHeader(value = "client", required = false) Client client, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken) throws Exception {
         try {
             NexusInstanceReference instanceReference = new NexusInstanceReference(org, domain, schema, version, id);
             OidcAccessToken credential = new OidcAccessToken().setToken(authorizationToken);
             Map instance;
+            if(clientIdExtension!=null || client!=null){
+                databaseScope = DatabaseScope.NATIVE;
+            }
+            if(databaseScope==null){
+                databaseScope = DatabaseScope.INFERRED;
+            }
             if(clientIdExtension!=null){
                 instance = instances.getInstanceByClientExtension(instanceReference, clientIdExtension, client, credential);
             }
             else{
-                instance = instances.getInstance(instanceReference, credential);
+                instance = instances.getInstance(instanceReference, databaseScope, credential);
             }
             return instance != null ? ResponseEntity.ok(instance) : ResponseEntity.notFound().build();
         } catch (HttpClientErrorException e) {

@@ -20,6 +20,7 @@ import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaRef
 import org.humanbrainproject.knowledgegraph.instances.control.InstanceController;
 import org.humanbrainproject.knowledgegraph.instances.control.SchemaController;
 import org.humanbrainproject.knowledgegraph.instances.entity.Client;
+import org.humanbrainproject.knowledgegraph.query.entity.DatabaseScope;
 import org.humanbrainproject.knowledgegraph.query.entity.JsonDocument;
 import org.humanbrainproject.knowledgegraph.query.entity.QueryParameters;
 import org.humanbrainproject.knowledgegraph.query.entity.QueryResult;
@@ -72,12 +73,22 @@ public class Instances {
     private Logger logger = LoggerFactory.getLogger(Instances.class);
 
 
-    public JsonDocument getInstance(NexusInstanceReference instanceReference, Credential credential) {
-        NexusInstanceReference originalId = arangoRepository.findOriginalId(instanceReference, credential);
-        if (originalId == null) {
+    public JsonDocument getInstance(NexusInstanceReference instanceReference, DatabaseScope databaseScope, Credential credential) {
+        if(instanceReference==null){
             return null;
         }
-        return getInstance(originalId.toSubSpace(SubSpace.MAIN), databaseFactory.getInferredDB(), credential).removeAllInternalKeys();
+        NexusInstanceReference lookupId;
+        if(databaseScope!=DatabaseScope.NATIVE) {
+            lookupId = arangoRepository.findOriginalId(instanceReference, credential);
+            if (lookupId == null) {
+                return null;
+            }
+        }
+        else {
+            lookupId = instanceReference.toSubSpace(SubSpace.MAIN);
+        }
+
+        return getInstance(lookupId, databaseFactory.getConnection(databaseScope), credential).removeAllInternalKeys();
     }
 
     public QueryResult<List<Map>> getInstances(NexusSchemaReference schemaReference, QueryParameters queryParameters, Credential credential) {
@@ -86,8 +97,8 @@ public class Instances {
     }
 
 
-    public JsonDocument findInstanceByIdentifier(NexusSchemaReference schema, String identifier, Credential credential) {
-        NexusInstanceReference reference = arangoRepository.findBySchemaOrgIdentifier(ArangoCollectionReference.fromNexusSchemaReference(schema), identifier, credential);
+    public JsonDocument findInstanceByIdentifier(NexusSchemaReference schema, String identifier, DatabaseScope databaseScope, Credential credential) {
+        NexusInstanceReference reference = arangoRepository.findBySchemaOrgIdentifier(ArangoCollectionReference.fromNexusSchemaReference(schema), identifier, databaseScope, credential);
         if (reference != null) {
             NexusInstanceReference originalId = arangoRepository.findOriginalId(reference, credential);
             if (originalId != null) {
@@ -104,7 +115,7 @@ public class Instances {
         JsonDocument instance = getInstance(originalId, databaseFactory.getDefaultDB(), credential);
         if (instance != null) {
             String identifier = constructIdentifierWithClientIdExtension(instance.getPrimaryIdentifier(), clientExtension);
-            NexusInstanceReference bySchemaOrgIdentifier = arangoRepository.findBySchemaOrgIdentifier(ArangoCollectionReference.fromNexusSchemaReference(schemaReference), identifier, credential);
+            NexusInstanceReference bySchemaOrgIdentifier = arangoRepository.findBySchemaOrgIdentifier(ArangoCollectionReference.fromNexusSchemaReference(schemaReference), identifier, DatabaseScope.NATIVE, credential);
             if (bySchemaOrgIdentifier != null) {
                 return new JsonDocument(arangoRepository.getDocument(ArangoDocumentReference.fromNexusInstance(bySchemaOrgIdentifier), databaseFactory.getDefaultDB(), credential)).removeAllInternalKeys();
             }

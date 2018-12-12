@@ -23,7 +23,7 @@ public class StructureAPI {
 
 
     @GetMapping(value = "/{org}/{domain}/{schema}/{version}")
-    public JsonDocument getStructureForSchema(@PathVariable("org") String org, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("version") String version, @RequestParam(value = "withLinks", required = false) boolean withLinks){
+    public JsonDocument getStructureForSchema(@PathVariable("org") String org, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("version") String version, @RequestParam(value = "withLinks", required = false, defaultValue = "false") boolean withLinks){
         return structure.getStructureForSchema(new NexusSchemaReference(org, domain, schema, version), withLinks);
     }
 

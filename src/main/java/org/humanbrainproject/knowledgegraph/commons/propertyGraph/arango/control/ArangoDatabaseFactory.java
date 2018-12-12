@@ -56,7 +56,7 @@ public class ArangoDatabaseFactory {
             case INFERRED:
                 return getInferredDB();
         }
-        return null;
+        return getDefaultDB();
     }
 
 }
