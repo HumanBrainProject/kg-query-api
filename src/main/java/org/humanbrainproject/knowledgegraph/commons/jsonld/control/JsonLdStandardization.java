@@ -218,7 +218,16 @@ public class JsonLdStandardization {
             Map<String, Object> lookupMap = new LinkedHashMap<>();
             lookupMap.put("http://jsonldstandardization/keymapping", keys);
             Map<String, Object> lookup = JsonLdProcessor.compact(lookupMap, context, DEFAULT_JSON_LD_OPTIONS);
-            Map<String, String> keymapping = expandedToContextualizedKeys((List<Map<String, String>>) lookup.get("http://jsonldstandardization/keymapping"));
+            List<Map<String, String>> mapping = new ArrayList<>();
+            Object l = lookup.get("http://jsonldstandardization/keymapping");
+            if (l instanceof Map){
+                mapping.add( (Map<String, String>)lookup.get("http://jsonldstandardization/keymapping"));
+            } else if(l instanceof List){
+                mapping = (List<Map<String, String>>) l;
+            } else {
+                throw new ClassCastException("Could not cast keymapping type");
+            }
+            Map<String, String> keymapping = expandedToContextualizedKeys(mapping);
             applyKeyMap(o, keymapping);
             return o;
         }).collect(Collectors.toList());
