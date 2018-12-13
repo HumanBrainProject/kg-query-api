@@ -18,16 +18,21 @@ public class SemanticsToHumanTranslator {
     }
 
     public String translateSemanticValueToHumanReadableLabel(String semantic) {
-        if (semantic == null) {
-            return null;
-        }
+        return normalize(extractSimpleAttributeName(semantic));
+    }
 
-        UriComponents components = UriComponentsBuilder.fromUriString(semantic).build();
-        String value = components.getFragment();
-        if(value ==null && components.getPathSegments().size()>0){
-            value = components.getPathSegments().get(components.getPathSegments().size()-1);
+    public String extractSimpleAttributeName(String semantic){
+        if (semantic != null) {
+            if(semantic.contains("#")){
+                return semantic.substring(semantic.lastIndexOf("#")+1);
+            }
+            UriComponents components = UriComponentsBuilder.fromUriString(semantic).build();
+            String value = components.getFragment();
+            if (value == null && components.getPathSegments().size() > 0) {
+                return components.getPathSegments().get(components.getPathSegments().size() - 1);
+            }
         }
-        return normalize(value);
+        return null;
     }
 
     private String normalize(String value) {

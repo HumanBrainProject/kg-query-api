@@ -49,6 +49,7 @@ public class Structure {
                 if (attribute == null) {
                     Map map = new HashMap();
                     map.put("attribute", r.get("attribute").toString());
+                    map.put("simplePropertyName", semanticsToHumanTranslator.extractSimpleAttributeName(r.get("attribute").toString()));
                     map.put("canBe", new ArrayList<String>());
                     if (!outbound) {
                         map.put("reverse", true);
@@ -95,6 +96,7 @@ public class Structure {
                 if (outboundRelation != null) {
                     map.put("canBe", outboundRelation.get("canBe"));
                 }
+                map.put("simpleAttributeName", semanticsToHumanTranslator.extractSimpleAttributeName(attribute.toString()));
                 map.put("label", semanticsToHumanTranslator.translateSemanticValueToHumanReadableLabel(attribute.toString()));
             }
         });
