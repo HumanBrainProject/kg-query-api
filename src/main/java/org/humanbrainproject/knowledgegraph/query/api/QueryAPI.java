@@ -104,7 +104,7 @@ public class QueryAPI {
     }
 
     @PostMapping(value = "/{org}/{domain}/{schema}/{version}/instances/{instanceId}", consumes = {MediaType.APPLICATION_JSON, RestAPIConstants.APPLICATION_LD_JSON})
-    public ResponseEntity<Map> queryPropertyGraphBySpecificationWithId(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(INSTANCE_ID) String instanceId, @RequestBody String payload, @RequestParam(value = RESTRICT_TO_ORGANIZATIONS, required = false) String restrictToOrganizations, @RequestParam(value = DATABASE_SCOPE, required = false) DatabaseScope databaseScope, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization) throws Exception {
+    public ResponseEntity<Map> queryPropertyGraphBySpecificationWithId(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(INSTANCE_ID) String instanceId, @RequestBody String payload,@RequestParam(value = VOCAB, required = false) String vocab, @RequestParam(value = RESTRICT_TO_ORGANIZATIONS, required = false) String restrictToOrganizations, @RequestParam(value = DATABASE_SCOPE, required = false) DatabaseScope databaseScope, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization) throws Exception {
         try {
             NexusInstanceReference instanceReference = new NexusInstanceReference(org, domain, schema, version, instanceId);
             QueryParameters parameters = new QueryParameters(databaseScope, null);
@@ -112,6 +112,7 @@ public class QueryAPI {
                 parameters.filter().restrictToOrganizations(restrictToOrganizations.split(","));
             }
             parameters.authorization().setToken(authorization);
+            parameters.resultTransformation().setVocab(vocab);
             QueryResult<List<Map>> result = query.queryPropertyGraphBySpecification(payload, instanceReference.getNexusSchema(), parameters, ArangoDocumentReference.fromNexusInstance(instanceReference), new OidcAccessToken().setToken(authorization));
             if (result.getResults().size() >= 1) {
                 return ResponseEntity.ok(result.getResults().get(0));
