@@ -94,14 +94,11 @@ public class InstancesInternalAPI {
 
 
     @GetMapping(value = "/{org}/{domain}/{schema}/{version}/{id}")
-    public ResponseEntity<Map> getInstance(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable("id") String id, @ApiParam("Defines the database scope. This is reset to NATIVE, if a client / client extension is defined") @RequestParam(value = DATABASE_SCOPE, required = false) DatabaseScope databaseScope, @ApiParam("The clientIdExtension allows the calling client to specify an additional postfix to the identifier and therefore to discriminate between different instances which are combined in the inferred space. If this value takes a userId for example, this means that there will be a distinct instance created for every user.") @RequestParam(value = "clientIdExtension", required = false) String clientIdExtension, @RequestHeader(value = "client", required = false) Client client, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken) throws Exception {
+    public ResponseEntity<Map> getInstance(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable("id") String id, @ApiParam("Defines the database scope. This is not taken into account if a client extension is defined (can only come from the NATIVE space)") @RequestParam(value = DATABASE_SCOPE, required = false) DatabaseScope databaseScope, @ApiParam("The clientIdExtension allows the calling client to specify an additional postfix to the identifier and therefore to discriminate between different instances which are combined in the inferred space. If this value takes a userId for example, this means that there will be a distinct instance created for every user.") @RequestParam(value = "clientIdExtension", required = false) String clientIdExtension, @RequestHeader(value = "client", required = false) Client client, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken) throws Exception {
         try {
             NexusInstanceReference instanceReference = new NexusInstanceReference(org, domain, schema, version, id);
             OidcAccessToken credential = new OidcAccessToken().setToken(authorizationToken);
             Map instance;
-            if(clientIdExtension!=null || client!=null){
-                databaseScope = DatabaseScope.NATIVE;
-            }
             if(databaseScope==null){
                 databaseScope = DatabaseScope.INFERRED;
             }
