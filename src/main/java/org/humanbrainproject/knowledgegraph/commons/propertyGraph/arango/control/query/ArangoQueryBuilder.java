@@ -85,12 +85,22 @@ public class ArangoQueryBuilder extends AbstractArangoQueryBuilder {
 
     @Override
     protected void doStartReturnStructure(boolean simple) {
-        if(simple){
-            q.addLine("RETURN DISTINCT ");
+        if(isRoot()){
+            if(simple){
+                q.addLine("RETURN ");
+            }
+            else {
+                q.addLine("RETURN {");
+                q.indent();
+            }
         }
         else {
-            q.addLine("RETURN DISTINCT {");
-            q.indent();
+            if (simple) {
+                q.addLine("RETURN DISTINCT ");
+            } else {
+                q.addLine("RETURN DISTINCT {");
+                q.indent();
+            }
         }
     }
 
