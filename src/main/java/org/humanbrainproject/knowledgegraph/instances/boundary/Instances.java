@@ -88,7 +88,8 @@ public class Instances {
             lookupId = instanceReference.toSubSpace(SubSpace.MAIN);
         }
 
-        return getInstance(lookupId, databaseFactory.getConnection(databaseScope), credential).removeAllInternalKeys();
+        JsonDocument instance = getInstance(lookupId, databaseFactory.getConnection(databaseScope), credential);
+        return instance!=null ? instance.removeAllInternalKeys() : null;
     }
 
     public QueryResult<List<Map>> getInstances(NexusSchemaReference schemaReference, QueryParameters queryParameters, Credential credential) {

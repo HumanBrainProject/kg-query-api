@@ -291,6 +291,7 @@ public class ArangoQueryFactory {
         q.setParameter("direction", outbound ? "OUTBOUND": "INBOUND");
         q.addLine("FOR doc IN `${reference}`");
         q.addLine("FOR v, e IN 1..1 ${direction} doc ${collections}");
+        q.addDocumentFilter(new TrustedAqlValue("v"));
         q.addLine("RETURN DISTINCT {");
         q.indent().addLine("\"ref\": SUBSTRING(e.${fromOrTo}, 0, FIND_LAST(e.${fromOrTo}, \"/\")), ");
         q.addLine("\"attribute\": e._name");
