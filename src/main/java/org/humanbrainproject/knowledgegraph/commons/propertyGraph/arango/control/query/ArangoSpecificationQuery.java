@@ -2,6 +2,7 @@ package org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.contro
 
 import com.arangodb.ArangoCursor;
 import com.arangodb.model.AqlQueryOptions;
+import com.github.jsonldjava.core.JsonLdConsts;
 import org.apache.commons.text.StrSubstitutor;
 import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationController;
 import org.humanbrainproject.knowledgegraph.commons.authorization.entity.Credential;
@@ -44,9 +45,31 @@ public class ArangoSpecificationQuery {
         return result;
     }
 
+    private void handleEdgesAsLeaf(List<SpecField> fields, Set<ArangoCollectionReference> existingCollections){
+        for (SpecField field : fields) {
+            if(field.isLeaf()){
+                ArangoCollectionReference potentialCollection = ArangoCollectionReference.fromSpecTraversal(field.getLeafPath());
+                if(existingCollections.contains(potentialCollection)){
+                    //The leaf is an edge collection -> we provide the default behavior
+                    SpecField idField = new SpecField(JsonLdConsts.ID, null, Collections.singletonList(new SpecTraverse(JsonLdConsts.ID, false)), null, true, false, false, false);
+                    field.fields.add(idField);
+                }
+            }
+            else if(field.fields!=null && !field.fields.isEmpty()){
+                handleEdgesAsLeaf(field.fields, existingCollections);
+            }
+        }
+
+
+    }
+
     public QueryResult<List<Map>> queryForSpecification(Specification spec, QueryParameters parameters, ArangoDocumentReference documentReference, Credential credential) throws JSONException {
         QueryResult<List<Map>> result = new QueryResult<>();
-        ArangoQueryBuilder queryBuilder = new ArangoQueryBuilder(spec, parameters.pagination(), parameters.filter(), new ArangoAlias(ArangoVocabulary.PERMISSION_GROUP), authorizationController.getReadableOrganizations(credential, parameters.filter().getRestrictToOrganizations()), documentReference, databaseFactory.getConnection(parameters.databaseScope()).getCollections());
+        Set<ArangoCollectionReference> existingCollections = databaseFactory.getConnection(parameters.databaseScope()).getCollections();
+        handleEdgesAsLeaf(spec.fields, existingCollections);
+        ArangoQueryBuilder queryBuilder = new ArangoQueryBuilder(spec, parameters.pagination(), parameters.filter(), new ArangoAlias(ArangoVocabulary.PERMISSION_GROUP), authorizationController.getReadableOrganizations(credential, parameters.filter().getRestrictToOrganizations()), documentReference, existingCollections);
+
+
         String query = createQuery(queryBuilder, parameters);
         AqlQueryOptions options = new AqlQueryOptions();
         if (parameters.pagination().getSize() != null) {
