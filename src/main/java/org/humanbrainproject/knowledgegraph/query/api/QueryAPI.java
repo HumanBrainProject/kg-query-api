@@ -84,7 +84,7 @@ public class QueryAPI {
 
 
     @PostMapping(value = "/{org}/{domain}/{schema}/{version}/instances", consumes = {MediaType.APPLICATION_JSON, RestAPIConstants.APPLICATION_LD_JSON})
-    public ResponseEntity<QueryResult> queryPropertyGraphBySpecification(@RequestBody String payload, @PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @RequestParam(value = VOCAB, required = false) String vocab, @RequestParam(value = SIZE, required = false) Integer size, @RequestParam(value = START, required = false) Integer start, @RequestParam(value = ORGS, required = false) String organizations, @RequestParam(value = DATABASE_SCOPE, required = false) DatabaseScope databaseScope, @RequestParam(value = SEARCH, required = false) String searchTerm, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken, @ApiIgnore @RequestParam Map<String, String> allRequestParams) throws Exception {
+    public ResponseEntity<QueryResult> queryPropertyGraphBySpecification(@RequestBody String payload, @PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @RequestParam(value = VOCAB, required = false) String vocab, @RequestParam(value = SIZE, required = false) Integer size, @RequestParam(value = START, required = false) Integer start, @RequestParam(value = ORGS, required = false) String organizations, @RequestParam(value = DATABASE_SCOPE, required = false) DatabaseScope databaseScope, @RequestParam(value = SEARCH, required = false) String searchTerm, @RequestParam(value = "referenceSpace", required = false) String referenceSpace, @RequestParam(value = "bbox", required = false) String boundingBox,  @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken, @ApiIgnore @RequestParam Map<String, String> allRequestParams) throws Exception {
         try {
             NexusSchemaReference schemaReference = new NexusSchemaReference(org, domain, schema, version);
             QueryParameters parameters = new QueryParameters(databaseScope, allRequestParams);
@@ -160,6 +160,24 @@ public class QueryAPI {
         }
     }
 
+
+    @GetMapping("/{org}/{domain}/{schema}/{version}/{queryId}/instances/reflect/{instanceId}")
+    public ResponseEntity<Map> executeStoredReflectionQuery(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(QUERY_ID) String queryId, @PathVariable(INSTANCE_ID) String instanceId,  @RequestParam(value = RESTRICT_TO_ORGANIZATIONS, required = false) String restrictToOrganizations, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization) throws Exception {
+        try {
+            NexusInstanceReference nexusInstanceReference = new NexusInstanceReference(org, domain, schema, version, instanceId);
+            StoredQueryReference storedQueryReference = new StoredQueryReference(nexusInstanceReference.getNexusSchema(), queryId);
+            QueryParameters parameters = new QueryParameters(DatabaseScope.INFERRED, null);
+            if (restrictToOrganizations != null) {
+                parameters.filter().restrictToOrganizations(restrictToOrganizations.split(","));
+            }
+            parameters.authorization().setToken(authorization);
+            return ResponseEntity.ok(query.reflectQueryPropertyGraphByStoredSpecification(storedQueryReference, parameters, ArangoDocumentReference.fromNexusInstance(nexusInstanceReference), new OidcAccessToken().setToken(authorization)));
+        } catch (RootCollectionNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        } catch (HttpClientErrorException e) {
+            return ResponseEntity.status(e.getStatusCode()).build();
+        }
+    }
 
     @GetMapping("/{org}/{domain}/{schema}/{version}/{queryId}/instances/{instanceId}")
     public ResponseEntity<Map> executeStoredQueryForInstance(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(QUERY_ID) String queryId, @PathVariable(INSTANCE_ID) String instanceId, @RequestParam(value = RESTRICT_TO_ORGANIZATIONS, required = false) String restrictToOrganizations, @RequestParam(value = DATABASE_SCOPE, required = false) DatabaseScope databaseScope, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization) throws Exception {

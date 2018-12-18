@@ -8,6 +8,7 @@ import org.humanbrainproject.knowledgegraph.commons.authorization.control.Author
 import org.humanbrainproject.knowledgegraph.commons.authorization.entity.Credential;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoDatabaseFactory;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoRepository;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoAlias;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
@@ -35,6 +36,9 @@ public class ArangoSpecificationQuery {
     @Autowired
     AuthorizationController authorizationController;
 
+    @Autowired
+    ArangoRepository repository;
+
 
     public QueryResult<List<Map>> metaSpecification(Specification spec, QueryParameters parameters) throws JSONException {
         QueryResult<List<Map>> result = new QueryResult<>();
@@ -44,6 +48,22 @@ public class ArangoSpecificationQuery {
         result.setApiName(spec.name);
         return result;
     }
+
+    public Map reflectSpecification(Specification spec, QueryParameters parameters, ArangoDocumentReference documentReference, Credential credential) throws JSONException {
+        String query = createQuery(new ArangoReflectionQueryBuilder(spec, new ArangoAlias(ArangoVocabulary.PERMISSION_GROUP), authorizationController.getReadableOrganizations(credential, parameters.filter().getRestrictToOrganizations()), documentReference, databaseFactory.getConnection(parameters.databaseScope()).getCollections(), configuration.getNexusBase(NexusConfiguration.ResourceType.DATA)), parameters);
+        ArangoCursor<Map> cursor = databaseFactory.getConnection(parameters.databaseScope()).getOrCreateDB().query(query, null, new AqlQueryOptions(), Map.class);
+        List<Map> results = cursor.asListRemaining();
+        if(results.isEmpty()){
+            return null;
+        }
+        else if(results.size()==1){
+            return repository.transformReleaseStatusMap(results.get(0));
+        }
+        else{
+            throw new RuntimeException("Queried the reflection API for a specification document but found multiple return instances.");
+        }
+    }
+
 
     private void handleEdgesAsLeaf(List<SpecField> fields, Set<ArangoCollectionReference> existingCollections){
         for (SpecField field : fields) {
@@ -68,8 +88,6 @@ public class ArangoSpecificationQuery {
         Set<ArangoCollectionReference> existingCollections = databaseFactory.getConnection(parameters.databaseScope()).getCollections();
         handleEdgesAsLeaf(spec.fields, existingCollections);
         ArangoQueryBuilder queryBuilder = new ArangoQueryBuilder(spec, parameters.pagination(), parameters.filter(), new ArangoAlias(ArangoVocabulary.PERMISSION_GROUP), authorizationController.getReadableOrganizations(credential, parameters.filter().getRestrictToOrganizations()), documentReference, existingCollections);
-
-
         String query = createQuery(queryBuilder, parameters);
         AqlQueryOptions options = new AqlQueryOptions();
         if (parameters.pagination().getSize() != null) {

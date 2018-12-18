@@ -210,7 +210,7 @@ public class ArangoRepository {
     }
 
 
-    private Map interpretMap(Map map) {
+    public Map transformReleaseStatusMap(Map map) {
         Object name = map.get(SchemaOrgVocabulary.NAME);
         Object identifier = map.get(SchemaOrgVocabulary.IDENTIFIER);
         if (name != null) {
@@ -244,11 +244,11 @@ public class ArangoRepository {
 
         for (Object key : map.keySet()) {
             if (map.get(key) instanceof Map) {
-                interpretMap((Map) map.get(key));
+                transformReleaseStatusMap((Map) map.get(key));
             } else if (map.get(key) instanceof Collection) {
                 for (Object o : ((Collection) map.get(key))) {
                     if (o instanceof Map) {
-                        interpretMap((Map) o);
+                        transformReleaseStatusMap((Map) o);
                     }
                 }
             }
@@ -273,7 +273,7 @@ public class ArangoRepository {
         if (results.size() > 1) {
             throw new UnexpectedNumberOfResults("The release graph query should only return a single document since it is based on an id");
         }
-        return !results.isEmpty() ? interpretMap(results.get(0)) : null;
+        return !results.isEmpty() ? transformReleaseStatusMap(results.get(0)) : null;
     }
 
     @AuthorizedAccess
@@ -447,6 +447,14 @@ public class ArangoRepository {
     public List<Map> getInternalDocuments(ArangoCollectionReference collection) {
         ArangoDatabase db = databaseFactory.getInternalDB().getOrCreateDB();
         String query = queryFactory.getAllInternalDocumentsOfACollection(collection);
+        ArangoCursor<Map> q = db.query(query, null, new AqlQueryOptions(), Map.class);
+        return q.asListRemaining();
+    }
+
+    @UnauthorizedAccess("The internal documents are open to everyone (although exposed through internal APIs only")
+    public List<Map> getInternalDocumentsWithKeyPrefix(ArangoCollectionReference collection, String keyPrefix) {
+        ArangoDatabase db = databaseFactory.getInternalDB().getOrCreateDB();
+        String query = queryFactory.getInternalDocumentsOfCollectionWithKeyPrefix(collection, keyPrefix);
         ArangoCursor<Map> q = db.query(query, null, new AqlQueryOptions(), Map.class);
         return q.asListRemaining();
     }

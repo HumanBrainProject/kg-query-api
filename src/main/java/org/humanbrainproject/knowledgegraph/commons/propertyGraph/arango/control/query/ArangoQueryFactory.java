@@ -144,6 +144,16 @@ public class ArangoQueryFactory {
         return q.build().getValue();
     }
 
+    @UnauthorizedAccess("Currently, this method is only applied to the internal database. Be cautious if sensitive information is going into the internal database and NEVER use it for other databases since this would be a vulnerability")
+    public String getInternalDocumentsOfCollectionWithKeyPrefix(ArangoCollectionReference collection, String keyPrefix) {
+        UnauthorizedArangoQuery q = new UnauthorizedArangoQuery();
+        q.setParameter("collection", collection.getName());
+        q.setParameter("prefix", keyPrefix);
+        q.addLine("FOR spec IN `${collection}` ");
+        q.addLine("FILTER spec._key LIKE \"${prefix}%\"");
+        q.addLine("RETURN spec");
+        return q.build().getValue();
+    }
 
     public String queryReleaseGraph(Set<ArangoCollectionReference> edgeCollections, ArangoDocumentReference rootInstance, Integer maxDepth, Set<String> permissionGroupsWithReadAccess) {
         return childrenStatus(rootInstance, null, 0, maxDepth, edgeCollections, permissionGroupsWithReadAccess).getValue();

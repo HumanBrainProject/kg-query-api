@@ -74,6 +74,11 @@ public class ArangoQuery {
         return specificationQuery.metaSpecification(spec, parameters);
     }
 
+    public Map reflectQueryBySpecification(String specification, NexusSchemaReference schemaReference, QueryParameters parameters, ArangoDocumentReference documentReference, Credential credential) throws JSONException, IOException {
+        Specification spec = specInterpreter.readSpecification(JsonUtils.toString(standardization.fullyQualify(specification)), schemaReference);
+        return specificationQuery.reflectSpecification(spec, parameters, documentReference, credential);
+    }
+
     public QueryResult<List<Map>> queryPropertyGraphBySpecification(String specification, NexusSchemaReference schemaReference,  QueryParameters parameters, ArangoDocumentReference documentReference, Credential credential) throws JSONException, IOException {
         Map<String, Object> context = null;
         if (parameters.resultTransformation()!=null && parameters.resultTransformation().getVocab() != null) {
@@ -104,6 +109,10 @@ public class ArangoQuery {
 
     public QueryResult<List<Map>> metaQueryPropertyGraphByStoredSpecification(StoredQueryReference queryReference, QueryParameters parameters) throws IOException, JSONException {
         return metaQueryBySpecification(getQueryPayload(queryReference, String.class), parameters, queryReference.getSchemaReference());
+    }
+
+    public Map reflectQueryPropertyGraphByStoredSpecification(StoredQueryReference queryReference, QueryParameters parameters, ArangoDocumentReference documentReference, Credential credential) throws IOException, JSONException {
+        return reflectQueryBySpecification(getQueryPayload(queryReference, String.class), queryReference.getSchemaReference(), parameters, documentReference, credential);
     }
 
     public QueryResult<List<Map>> queryPropertyGraphByStoredSpecification(StoredQueryReference queryReference, QueryParameters parameters, ArangoDocumentReference documentReference, Credential credential) throws IOException, JSONException {
