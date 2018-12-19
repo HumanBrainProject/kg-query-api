@@ -67,20 +67,22 @@ public class MessageProcessor {
     void findEdges(Vertex vertex, Stack<Step> path, Object map, int globalEdgesCounter) {
         if (map instanceof Map) {
             for (Object key : ((Map) map).keySet()) {
-                Object value = ((Map) map).get(key);
-                if (value != null) {
-                    if (!(value instanceof Collection)) {
-                        value = Arrays.asList(value);
-                    }
-                    for (Object o : ((Collection) value)) {
-                        NexusInstanceReference internalReference = getInternalReference(o);
-                        Stack<Step> currentPath = new Stack<>();
-                        currentPath.addAll(path);
-                        if (internalReference != null) {
-                            currentPath.push(new Step((String) key, globalEdgesCounter++));
-                            vertex.getEdges().add(new Edge(vertex, new JsonPath(currentPath), internalReference));
-                        } else {
-                            findEdges(vertex, currentPath, ((Map) map).get(key), globalEdgesCounter);
+                if(!HBPVocabulary.INFERENCE_ALTERNATIVES.equals(key)) {
+                    Object value = ((Map) map).get(key);
+                    if (value != null) {
+                        if (!(value instanceof Collection)) {
+                            value = Arrays.asList(value);
+                        }
+                        for (Object o : ((Collection) value)) {
+                            NexusInstanceReference internalReference = getInternalReference(o);
+                            Stack<Step> currentPath = new Stack<>();
+                            currentPath.addAll(path);
+                            if (internalReference != null) {
+                                currentPath.push(new Step((String) key, globalEdgesCounter++));
+                                vertex.getEdges().add(new Edge(vertex, new JsonPath(currentPath), internalReference));
+                            } else {
+                                findEdges(vertex, currentPath, ((Map) map).get(key), globalEdgesCounter);
+                            }
                         }
                     }
                 }
