@@ -26,10 +26,7 @@ import org.springframework.boot.configurationprocessor.json.JSONObject;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Component
@@ -76,8 +73,37 @@ public class ArangoQuery {
 
     public Map reflectQueryBySpecification(String specification, NexusSchemaReference schemaReference, QueryParameters parameters, ArangoDocumentReference documentReference, Credential credential) throws JSONException, IOException {
         Specification spec = specInterpreter.readSpecification(JsonUtils.toString(standardization.fullyQualify(specification)), schemaReference);
-        return specificationQuery.reflectSpecification(spec, parameters, documentReference, credential);
+        Map map = specificationQuery.reflectSpecification(spec, parameters, documentReference, credential);
+        map.put("children", regroup((List<Map>)map.get("children")));
+        return map;
     }
+
+
+    private List<Map> regroup(List<Map> children){
+        if(children!=null) {
+            Map<Object, Map> lookupMap = new HashMap<>();
+            for (Map child : children) {
+                Object id = child.get(JsonLdConsts.ID);
+                if(!lookupMap.containsKey(id)){
+                    lookupMap.put(id, child);
+                }
+                else{
+                    if(child.get("children") instanceof List) {
+                        Map existing = lookupMap.get(id);
+                        if (!existing.containsKey("children")) {
+                            existing.put("children", new ArrayList<>());
+                        }
+                        ((List<Map>) existing.get("children")).addAll((List)child.get("children"));
+                        existing.put("children", regroup((List<Map>) existing.get("children")));
+                    }
+                }
+            }
+            return new ArrayList<>(lookupMap.values());
+        }
+        return null;
+
+    }
+
 
     public QueryResult<List<Map>> queryPropertyGraphBySpecification(String specification, NexusSchemaReference schemaReference,  QueryParameters parameters, ArangoDocumentReference documentReference, Credential credential) throws JSONException, IOException {
         Map<String, Object> context = null;
