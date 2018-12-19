@@ -141,11 +141,14 @@ public class QueryAPI {
 
 
     @GetMapping("/{org}/{domain}/{schema}/{version}/{queryId}/instances")
-    public ResponseEntity<QueryResult> executeStoredQuery(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(QUERY_ID) String queryId, @RequestParam(value = SIZE, required = false) Integer size, @RequestParam(value = START, required = false) Integer start, @RequestParam(value = RESTRICT_TO_ORGANIZATIONS, required = false) String restrictToOrganizations, @RequestParam(value = DATABASE_SCOPE, required = false) DatabaseScope databaseScope, @RequestParam(value = SEARCH, required = false) String searchTerm, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization) throws Exception {
+    public ResponseEntity<QueryResult> executeStoredQuery(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(QUERY_ID) String queryId, @RequestParam(value = SIZE, required = false) Integer size, @RequestParam(value = START, required = false) Integer start, @RequestParam(value = RESTRICT_TO_ORGANIZATIONS, required = false) String restrictToOrganizations, @RequestParam(value = DATABASE_SCOPE, required = false) DatabaseScope databaseScope, @RequestParam(value = SEARCH, required = false) String searchTerm, @RequestParam(value = "mbb", required = false) String minimalBoundingBox, @RequestParam(value = "referenceSpace", required = false) String referenceSpace, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization) throws Exception {
         try {
             NexusSchemaReference schemaReference = new NexusSchemaReference(org, domain, schema, version);
             StoredQueryReference storedQueryReference = new StoredQueryReference(schemaReference, queryId);
             QueryParameters parameters = new QueryParameters(databaseScope, null);
+            if(minimalBoundingBox!=null && referenceSpace!=null) {
+                parameters.setBoundingBox(BoundingBox.parseBoundingBox(minimalBoundingBox, referenceSpace));
+            }
             parameters.pagination().setSize(size).setStart(start);
             if (restrictToOrganizations != null) {
                 parameters.filter().restrictToOrganizations(restrictToOrganizations.split(","));

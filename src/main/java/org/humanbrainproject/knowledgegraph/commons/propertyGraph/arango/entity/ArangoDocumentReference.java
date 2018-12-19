@@ -28,7 +28,7 @@ public class ArangoDocumentReference {
         if (split.length == 2) {
             return new ArangoDocumentReference(new ArangoCollectionReference(split[0]), split[1]);
         }
-        return null;
+        return new ArangoDocumentReference(new ArangoCollectionReference("unknown"), id);
     }
 
     public static ArangoDocumentReference fromNexusInstance(NexusInstanceReference path) {

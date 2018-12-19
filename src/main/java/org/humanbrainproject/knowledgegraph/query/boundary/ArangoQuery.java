@@ -3,6 +3,7 @@ package org.humanbrainproject.knowledgegraph.query.boundary;
 import com.arangodb.ArangoCollection;
 import com.github.jsonldjava.core.JsonLdConsts;
 import com.github.jsonldjava.utils.JsonUtils;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationController;
 import org.humanbrainproject.knowledgegraph.commons.authorization.entity.Credential;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonLdStandardization;
@@ -18,6 +19,7 @@ import org.humanbrainproject.knowledgegraph.commons.vocabulary.ArangoVocabulary;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
 import org.humanbrainproject.knowledgegraph.query.control.FreemarkerTemplating;
+import org.humanbrainproject.knowledgegraph.query.control.SpatialSearch;
 import org.humanbrainproject.knowledgegraph.query.control.SpecificationInterpreter;
 import org.humanbrainproject.knowledgegraph.query.entity.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -65,6 +67,9 @@ public class ArangoQuery {
     @Autowired
     JsonTransformer jsonTransformer;
 
+    @Autowired
+    SpatialSearch spatialSearch;
+
 
     public QueryResult<List<Map>> metaQueryBySpecification(String specification, QueryParameters parameters, NexusSchemaReference schemaReference) throws JSONException, IOException {
         Specification spec = specInterpreter.readSpecification(JsonUtils.toString(standardization.fullyQualify(specification)), schemaReference);
@@ -74,26 +79,25 @@ public class ArangoQuery {
     public Map reflectQueryBySpecification(String specification, NexusSchemaReference schemaReference, QueryParameters parameters, ArangoDocumentReference documentReference, Credential credential) throws JSONException, IOException {
         Specification spec = specInterpreter.readSpecification(JsonUtils.toString(standardization.fullyQualify(specification)), schemaReference);
         Map map = specificationQuery.reflectSpecification(spec, parameters, documentReference, credential);
-        map.put("children", regroup((List<Map>)map.get("children")));
+        map.put("children", regroup((List<Map>) map.get("children")));
         return map;
     }
 
 
-    private List<Map> regroup(List<Map> children){
-        if(children!=null) {
+    private List<Map> regroup(List<Map> children) {
+        if (children != null) {
             Map<Object, Map> lookupMap = new HashMap<>();
             for (Map child : children) {
                 Object id = child.get(JsonLdConsts.ID);
-                if(!lookupMap.containsKey(id)){
+                if (!lookupMap.containsKey(id)) {
                     lookupMap.put(id, child);
-                }
-                else{
-                    if(child.get("children") instanceof List) {
+                } else {
+                    if (child.get("children") instanceof List) {
                         Map existing = lookupMap.get(id);
                         if (!existing.containsKey("children")) {
                             existing.put("children", new ArrayList<>());
                         }
-                        ((List<Map>) existing.get("children")).addAll((List)child.get("children"));
+                        ((List<Map>) existing.get("children")).addAll((List) child.get("children"));
                         existing.put("children", regroup((List<Map>) existing.get("children")));
                     }
                 }
@@ -105,30 +109,42 @@ public class ArangoQuery {
     }
 
 
-    public QueryResult<List<Map>> queryPropertyGraphBySpecification(String specification, NexusSchemaReference schemaReference,  QueryParameters parameters, ArangoDocumentReference documentReference, Credential credential) throws JSONException, IOException {
+    public QueryResult<List<Map>> queryPropertyGraphBySpecification(String specification, NexusSchemaReference schemaReference, QueryParameters parameters, ArangoDocumentReference documentReference, Credential credential) throws JSONException, IOException, SolrServerException {
         Map<String, Object> context = null;
-        if (parameters.resultTransformation()!=null && parameters.resultTransformation().getVocab() != null) {
+        if (parameters.resultTransformation() != null && parameters.resultTransformation().getVocab() != null) {
             context = new LinkedHashMap<>();
             context.put(JsonLdConsts.VOCAB, parameters.resultTransformation().getVocab());
         }
+        Set<ArangoDocumentReference> idWhitelist = null;
+        if(documentReference!=null){
+            idWhitelist = Collections.singleton(documentReference);
+        }
+        if (parameters.getBoundingBox() != null) {
+            //TODO if the document reference is defined, we should make use of it as a filter in the spatial search as well to optimize performance
+            idWhitelist = spatialSearch.minimalBoundingBox(parameters.getBoundingBox());
+            if(documentReference!=null && !idWhitelist.contains(documentReference)){
+                //We're looking for a specific document in a bounding box, but it's not in there - so we return an empty result
+                return new QueryResult<>();
+            }
+        }
         Specification spec = specInterpreter.readSpecification(JsonUtils.toString(standardization.fullyQualify(specification)), schemaReference);
-        QueryResult<List<Map>> result = specificationQuery.queryForSpecification(spec, parameters, documentReference, credential);
+        QueryResult<List<Map>> result = specificationQuery.queryForSpecification(spec, parameters, idWhitelist, credential);
         if (context != null) {
             result.setResults(standardization.applyContext(result.getResults(), context));
         }
         return result;
     }
 
-    public boolean doesQueryExist(StoredQueryReference storedQueryReference){
+    public boolean doesQueryExist(StoredQueryReference storedQueryReference) {
         ArangoDocumentReference documentReference = new ArangoDocumentReference(SPECIFICATION_QUERIES, storedQueryReference.getName());
         ArangoCollection collection = databaseFactory.getInternalDB().getOrCreateDB().collection(documentReference.getCollection().getName());
-        if(collection.exists()){
+        if (collection.exists()) {
             return collection.documentExists(documentReference.getKey());
         }
         return false;
     }
 
-    public <T> T getQueryPayload(StoredQueryReference queryReference, Class<T> clazz){
+    public <T> T getQueryPayload(StoredQueryReference queryReference, Class<T> clazz) {
         return arangoRepository.getInternalDocumentByKey(new ArangoDocumentReference(SPECIFICATION_QUERIES, queryReference.getName()), clazz);
     }
 
@@ -141,14 +157,14 @@ public class ArangoQuery {
         return reflectQueryBySpecification(getQueryPayload(queryReference, String.class), queryReference.getSchemaReference(), parameters, documentReference, credential);
     }
 
-    public QueryResult<List<Map>> queryPropertyGraphByStoredSpecification(StoredQueryReference queryReference, QueryParameters parameters, ArangoDocumentReference documentReference, Credential credential) throws IOException, JSONException {
+    public QueryResult<List<Map>> queryPropertyGraphByStoredSpecification(StoredQueryReference queryReference, QueryParameters parameters, ArangoDocumentReference documentReference, Credential credential) throws IOException, JSONException, SolrServerException {
         return queryPropertyGraphBySpecification(getQueryPayload(queryReference, String.class), queryReference.getSchemaReference(), parameters, documentReference, credential);
     }
 
-    public void storeSpecificationInDb(String specification, NexusSchemaReference schemaReference,  String id, Credential credential) throws JSONException {
+    public void storeSpecificationInDb(String specification, NexusSchemaReference schemaReference, String id, Credential credential) throws JSONException {
         StoredQueryReference storedQueryReference = new StoredQueryReference(schemaReference, id);
         JSONObject jsonObject = new JSONObject(specification);
-        if(schemaReference!=null){
+        if (schemaReference != null) {
             JSONObject rootSchema = new JSONObject();
             rootSchema.put(JsonLdConsts.ID, nexusConfiguration.getAbsoluteUrl(schemaReference));
             jsonObject.put(GraphQueryKeys.GRAPH_QUERY_ROOT_SCHEMA.getFieldName(), rootSchema);
@@ -160,18 +176,18 @@ public class ArangoQuery {
         arangoInternalRepository.insertOrUpdateDocument(document, jsonObject.toString());
     }
 
-    public QueryResult<List<Map>> queryPropertyGraphByStoredSpecificationAndFreemarkerTemplate(StoredQueryReference queryReference, String templatePayload, QueryParameters parameters, Credential credential) throws IOException, JSONException {
+    public QueryResult<List<Map>> queryPropertyGraphByStoredSpecificationAndFreemarkerTemplate(StoredQueryReference queryReference, String templatePayload, QueryParameters parameters, Credential credential) throws IOException, JSONException, SolrServerException {
         QueryResult<List<Map>> queryResult = queryPropertyGraphByStoredSpecification(queryReference, parameters, null, credential);
         String result = freemarkerTemplating.applyTemplate(templatePayload, queryResult, parameters.context().getLibrary(), databaseFactory.getInternalDB());
         return createResult(queryResult, jsonTransformer.parseToListOfMaps(result), parameters.context().isReturnOriginalJson());
     }
 
-    public Map queryPropertyGraphByStoredSpecificationAndFreemarkerTemplateWithId(StoredQueryReference queryReference, String templatePayload, QueryParameters parameters, NexusInstanceReference instance, Credential credential) throws IOException, JSONException {
+    public Map queryPropertyGraphByStoredSpecificationAndFreemarkerTemplateWithId(StoredQueryReference queryReference, String templatePayload, QueryParameters parameters, NexusInstanceReference instance, Credential credential) throws IOException, JSONException, SolrServerException {
         QueryResult<List<Map>> queryResult = queryPropertyGraphByStoredSpecification(queryReference, parameters, ArangoDocumentReference.fromNexusInstance(instance), credential);
-        if(instance != null){
-            if(queryResult.getResults().size() >= 1){
-              String result = freemarkerTemplating.applyTemplate(templatePayload, queryResult, parameters.context().getLibrary(), databaseFactory.getInternalDB());
-              return jsonTransformer.parseToMap(result);
+        if (instance != null) {
+            if (queryResult.getResults().size() >= 1) {
+                String result = freemarkerTemplating.applyTemplate(templatePayload, queryResult, parameters.context().getLibrary(), databaseFactory.getInternalDB());
+                return jsonTransformer.parseToMap(result);
             }
         }
         return null;
@@ -185,20 +201,20 @@ public class ArangoQuery {
         return createResult(queryResult, map, parameters.context().isReturnOriginalJson());
     }
 
-    private <T> QueryResult<T> createResult(QueryResult<List<Map>> queryResult, T result, boolean addOriginalSource){
+    private <T> QueryResult<T> createResult(QueryResult<List<Map>> queryResult, T result, boolean addOriginalSource) {
         QueryResult<T> r = new QueryResult<>();
         r.setResults(result);
         r.setApiName(queryResult.getApiName());
         r.setTotal(queryResult.getTotal());
         r.setSize(queryResult.getSize());
         r.setStart(queryResult.getSize());
-        if(addOriginalSource) {
+        if (addOriginalSource) {
             r.setOriginalJson(queryResult.getResults());
         }
         return r;
     }
 
-    public Set<String> getAllQueryKeys(){
-        return arangoInternalRepository.getAll(SPECIFICATION_QUERIES, Map.class).stream().map(q -> (String)q.get(ArangoVocabulary.KEY)).collect(Collectors.toSet());
+    public Set<String> getAllQueryKeys() {
+        return arangoInternalRepository.getAll(SPECIFICATION_QUERIES, Map.class).stream().map(q -> (String) q.get(ArangoVocabulary.KEY)).collect(Collectors.toSet());
     }
 }

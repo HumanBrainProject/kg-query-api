@@ -135,7 +135,7 @@ public class Structure {
 
     public void reflectOnSpecifications(NexusSchemaReference schemaReference) {
         String prefix = ArangoCollectionReference.fromNexusSchemaReference(schemaReference).getName()+"-";
-        List<Map> internalDocuments = repository.getInternalDocumentsWithKeyPrefix(ArangoQuery.SPECIFICATION_QUERIES, prefix);
+        List<Map> internalDocuments = repository.getInternalDocumentsWithKeyPrefix(ArangoQuery.SPECIFICATION_QUERIES, prefix, Map.class);
         System.out.println(internalDocuments);
     }
 

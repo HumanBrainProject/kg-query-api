@@ -32,10 +32,19 @@ public class HBPVocabulary {
     public final static String INFERENCE_TYPE = HBPVocabulary.NAMESPACE + "Inference";
     public final static String INFERENCE_SOURCE = INFERENCE_TYPE.toLowerCase() + "/source";
     public final static String INFERENCE_OF = INFERENCE_TYPE.toLowerCase()+"/inferenceOf";
+
     /**
      * declares the relationship of e.g. an editor instance which extends another (original) entity
      */
     public final static String INFERENCE_EXTENDS = INFERENCE_TYPE.toLowerCase()+"/extends";
     public final static String INFERENCE_ALTERNATIVES = INFERENCE_TYPE.toLowerCase()+"/alternatives";
+
+
+    //FOR SPATIAL
+    public static final String SPATIAL_TYPE = HBPVocabulary.NAMESPACE+ "SpatialAnchoring";
+    public static final String SPATIAL_COORDINATES = SPATIAL_TYPE.toLowerCase()+"/coordinates";
+    public static final String SPATIAL_REFERENCESPACE =  SPATIAL_TYPE.toLowerCase()+ "/referenceSpace";
+    public static final String SPATIAL_LOCATED_INSTANCE =  SPATIAL_TYPE.toLowerCase()+"/locatedInstance";
+
 
 }

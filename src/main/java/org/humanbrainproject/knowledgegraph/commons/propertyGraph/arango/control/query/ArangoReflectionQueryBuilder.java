@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.Stack;
+import java.util.stream.Collectors;
 
 public class ArangoReflectionQueryBuilder extends AbstractArangoQueryBuilder {
 
@@ -23,8 +24,8 @@ public class ArangoReflectionQueryBuilder extends AbstractArangoQueryBuilder {
 
     private boolean hasReturned;
 
-    public ArangoReflectionQueryBuilder(Specification specification, ArangoAlias permissionGroupFieldName, Set<String> whitelistOrganizations, ArangoDocumentReference documentReference, Set<ArangoCollectionReference> existingArangoCollections, String nexusInstanceBase) {
-        super(specification, null, null, permissionGroupFieldName, whitelistOrganizations, documentReference, existingArangoCollections);
+    public ArangoReflectionQueryBuilder(Specification specification, ArangoAlias permissionGroupFieldName, Set<String> whitelistOrganizations, Set<ArangoDocumentReference> documentReferences, Set<ArangoCollectionReference> existingArangoCollections, String nexusInstanceBase) {
+        super(specification, null, null, permissionGroupFieldName, whitelistOrganizations, documentReferences, existingArangoCollections);
         this.nexusInstanceBase = nexusInstanceBase;
     }
 
@@ -274,10 +275,21 @@ public class ArangoReflectionQueryBuilder extends AbstractArangoQueryBuilder {
 
     @Override
     public void addInstanceIdFilter() {
-        q.addLine(
-                new UnauthorizedArangoQuery().addLine("FILTER ${field}._id == \"${id}\"").
-                        setParameter("field", String.format("%s_%s", currentAlias.getArangoName(), DOC_POSTFIX)).
-                        setParameter("id", this.documentReference.getId()).build().getValue());
+        if (this.documentReferences != null && !this.documentReferences.isEmpty()) {
+            if (this.documentReferences.size() == 1) {
+                q.addLine(
+                        new UnauthorizedArangoQuery().addLine("FILTER ${field}._id == \"${id}\"").
+                                setParameter("field", String.format("%s_%s", currentAlias.getArangoName(), DOC_POSTFIX)).
+                                setParameter("id", this.documentReferences.iterator().next().getId()).build().getValue());
+            }
+            else{
+                q.addLine(
+                        new UnauthorizedArangoQuery().addLine("FILTER ${field}._id IN [${id}]").
+                                setParameter("field", String.format("%s_%s", currentAlias.getArangoName(), DOC_POSTFIX)).
+                                setTrustedParameter("id", q.listValues(this.documentReferences.stream().map(ArangoDocumentReference::getId).collect(Collectors.toSet()))).build().getValue());
+
+            }
+        }
     }
 
     @Override

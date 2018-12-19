@@ -329,10 +329,10 @@ public class ArangoRepository {
     }
 
     @UnauthorizedAccess("The internal documents are open to everyone (although exposed through internal APIs only")
-    public List<Map> getInternalDocumentsWithKeyPrefix(ArangoCollectionReference collection, String keyPrefix) {
+    public <T> List<T> getInternalDocumentsWithKeyPrefix(ArangoCollectionReference collection, String keyPrefix, Class<T> returnType) {
         ArangoDatabase db = databaseFactory.getInternalDB().getOrCreateDB();
         String query = queryFactory.getInternalDocumentsOfCollectionWithKeyPrefix(collection, keyPrefix);
-        ArangoCursor<Map> q = db.query(query, null, new AqlQueryOptions(), Map.class);
+        ArangoCursor<T> q = db.query(query, null, new AqlQueryOptions(), returnType);
         return q.asListRemaining();
     }
 

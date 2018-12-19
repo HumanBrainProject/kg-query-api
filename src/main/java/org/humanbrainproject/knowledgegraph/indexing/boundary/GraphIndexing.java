@@ -9,6 +9,7 @@ import org.humanbrainproject.knowledgegraph.indexing.control.basic.BasicIndexing
 import org.humanbrainproject.knowledgegraph.indexing.control.inference.InferenceController;
 import org.humanbrainproject.knowledgegraph.indexing.control.nexusToArango.RelevanceChecker;
 import org.humanbrainproject.knowledgegraph.indexing.control.releasing.ReleasingController;
+import org.humanbrainproject.knowledgegraph.indexing.control.spatial.SpatialController;
 import org.humanbrainproject.knowledgegraph.indexing.entity.IndexingMessage;
 import org.humanbrainproject.knowledgegraph.indexing.entity.QualifiedIndexingMessage;
 import org.humanbrainproject.knowledgegraph.indexing.entity.TodoList;
@@ -34,6 +35,9 @@ public class GraphIndexing {
     InferenceController inferenceController;
 
     @Autowired
+    SpatialController spatialController;
+
+    @Autowired
     MessageProcessor messageProcessor;
 
     @Autowired
@@ -51,7 +55,7 @@ public class GraphIndexing {
     private Logger logger = LoggerFactory.getLogger(GraphIndexing.class);
 
     private List<IndexingController> getIndexingControllers() {
-        return Arrays.asList(defaultIndexingController, releasingController, inferenceController);
+        return Arrays.asList(defaultIndexingController, releasingController, inferenceController, spatialController);
     }
 
     public TodoList insert(IndexingMessage message) {

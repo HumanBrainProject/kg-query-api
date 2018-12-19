@@ -61,7 +61,8 @@ public class ReleaseControl {
             ReleaseStatusResponse response = new ReleaseStatusResponse();
             response.setRootStatus(ReleaseStatus.valueOf((String) releaseGraph.get("status")));
             if (withChildren) {
-                response.setChildrenStatus(findWorstReleaseStatusOfChildren(releaseGraph, null, true));
+                ReleaseStatus worstReleaseStatusOfChildren = findWorstReleaseStatusOfChildren(releaseGraph, null, true);
+                response.setChildrenStatus(worstReleaseStatusOfChildren);
             }
             response.setId(instance);
             return response;

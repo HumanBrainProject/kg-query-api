@@ -50,7 +50,7 @@ public class ArangoSpecificationQuery {
     }
 
     public Map reflectSpecification(Specification spec, QueryParameters parameters, ArangoDocumentReference documentReference, Credential credential) throws JSONException {
-        String query = createQuery(new ArangoReflectionQueryBuilder(spec, new ArangoAlias(ArangoVocabulary.PERMISSION_GROUP), authorizationController.getReadableOrganizations(credential, parameters.filter().getRestrictToOrganizations()), documentReference, databaseFactory.getConnection(parameters.databaseScope()).getCollections(), configuration.getNexusBase(NexusConfiguration.ResourceType.DATA)), parameters);
+        String query = createQuery(new ArangoReflectionQueryBuilder(spec, new ArangoAlias(ArangoVocabulary.PERMISSION_GROUP), authorizationController.getReadableOrganizations(credential, parameters.filter().getRestrictToOrganizations()), Collections.singleton(documentReference), databaseFactory.getConnection(parameters.databaseScope()).getCollections(), configuration.getNexusBase(NexusConfiguration.ResourceType.DATA)), parameters);
         ArangoCursor<Map> cursor = databaseFactory.getConnection(parameters.databaseScope()).getOrCreateDB().query(query, null, new AqlQueryOptions(), Map.class);
         List<Map> results = cursor.asListRemaining();
         if(results.isEmpty()){
@@ -83,11 +83,11 @@ public class ArangoSpecificationQuery {
 
     }
 
-    public QueryResult<List<Map>> queryForSpecification(Specification spec, QueryParameters parameters, ArangoDocumentReference documentReference, Credential credential) throws JSONException {
+    public QueryResult<List<Map>> queryForSpecification(Specification spec, QueryParameters parameters, Set<ArangoDocumentReference> documentReferences, Credential credential) throws JSONException {
         QueryResult<List<Map>> result = new QueryResult<>();
         Set<ArangoCollectionReference> existingCollections = databaseFactory.getConnection(parameters.databaseScope()).getCollections();
         handleEdgesAsLeaf(spec.fields, existingCollections);
-        ArangoQueryBuilder queryBuilder = new ArangoQueryBuilder(spec, parameters.pagination(), parameters.filter(), new ArangoAlias(ArangoVocabulary.PERMISSION_GROUP), authorizationController.getReadableOrganizations(credential, parameters.filter().getRestrictToOrganizations()), documentReference, existingCollections);
+        ArangoQueryBuilder queryBuilder = new ArangoQueryBuilder(spec, parameters.pagination(), parameters.filter(), new ArangoAlias(ArangoVocabulary.PERMISSION_GROUP), authorizationController.getReadableOrganizations(credential, parameters.filter().getRestrictToOrganizations()), documentReferences, existingCollections);
         String query = createQuery(queryBuilder, parameters);
         AqlQueryOptions options = new AqlQueryOptions();
         if (parameters.pagination().getSize() != null) {
@@ -213,9 +213,7 @@ public class ArangoSpecificationQuery {
             }
             queryBuilder.setCurrentField(originalField);
             if (isRoot) {
-                if (queryBuilder.documentReference != null) {
-                    queryBuilder.addInstanceIdFilter();
-                }
+                queryBuilder.addInstanceIdFilter();
                 queryBuilder.addSearchQuery();
                 queryBuilder.addLimit();
             }

@@ -13,6 +13,7 @@ public class QueryParameters {
     private final ResultTransformation resultTransformation;
     private final QueryContext context;
     private final Map<String, String> allParameters;
+    private BoundingBox boundingBox;
 
     public QueryParameters(DatabaseScope databaseScope, Map<String, String> allParameters) {
         this.allParameters = allParameters == null ? Collections.emptyMap() : allParameters;
@@ -22,7 +23,14 @@ public class QueryParameters {
         this.authorization = new OidcAccessToken();
         this.resultTransformation = new ResultTransformation();
         this.context = new QueryContext();
+    }
 
+    public BoundingBox getBoundingBox() {
+        return boundingBox;
+    }
+
+    public void setBoundingBox(BoundingBox boundingBox) {
+        this.boundingBox = boundingBox;
     }
 
     public Filter filter() {

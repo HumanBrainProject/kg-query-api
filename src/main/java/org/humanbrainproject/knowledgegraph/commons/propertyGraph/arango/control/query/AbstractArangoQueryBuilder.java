@@ -28,7 +28,7 @@ public abstract class AbstractArangoQueryBuilder {
     protected boolean firstReturnEntry = true;
     protected Set<String> whitelistOrganizations;
     protected SpecField currentField;
-    protected ArangoDocumentReference documentReference;
+    protected Set<ArangoDocumentReference> documentReferences;
     protected final Set<ArangoCollectionReference> existingArangoCollections;
 
 
@@ -36,14 +36,14 @@ public abstract class AbstractArangoQueryBuilder {
         this.currentField = currentField;
     }
 
-    public AbstractArangoQueryBuilder(Specification specification, Pagination pagination, Filter filter, ArangoAlias permissionGroupFieldName, Set<String> whitelistOrganizations, ArangoDocumentReference documentReference, Set<ArangoCollectionReference> existingArangoCollections) {
+    public AbstractArangoQueryBuilder(Specification specification, Pagination pagination, Filter filter, ArangoAlias permissionGroupFieldName, Set<String> whitelistOrganizations, Set<ArangoDocumentReference> documentReferences, Set<ArangoCollectionReference> existingArangoCollections) {
         this.pagination = pagination;
         this.filter = filter;
         this.specification = specification;
         this.permissionGroupFieldName = permissionGroupFieldName;
         this.q = new AuthorizedArangoQuery(whitelistOrganizations);
         this.whitelistOrganizations = whitelistOrganizations;
-        this.documentReference = documentReference;
+        this.documentReferences = documentReferences;
         this.existingArangoCollections = existingArangoCollections!=null ? Collections.unmodifiableSet(existingArangoCollections) : null;
     }
 
