@@ -10,13 +10,18 @@ import org.humanbrainproject.knowledgegraph.commons.vocabulary.SchemaOrgVocabula
 import org.humanbrainproject.knowledgegraph.query.entity.Specification;
 import org.humanbrainproject.knowledgegraph.releasing.entity.ReleaseStatus;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.Stack;
 
 public class ArangoReflectionQueryBuilder extends AbstractArangoQueryBuilder {
 
     private final String nexusInstanceBase;
+
+    private Stack<List<String>> aliasStack = new Stack<>();
+
+    private boolean hasReturned;
 
     public ArangoReflectionQueryBuilder(Specification specification, ArangoAlias permissionGroupFieldName, Set<String> whitelistOrganizations, ArangoDocumentReference documentReference, Set<ArangoCollectionReference> existingArangoCollections, String nexusInstanceBase) {
         super(specification, null, null, permissionGroupFieldName, whitelistOrganizations, documentReference, existingArangoCollections);
@@ -24,12 +29,77 @@ public class ArangoReflectionQueryBuilder extends AbstractArangoQueryBuilder {
     }
 
     @Override
-    public void addTraversal(boolean reverse, ArangoCollectionReference relationCollection) {
+    public void addTraversal(boolean reverse, ArangoCollectionReference relationCollection, int traversalDepth) {
+        q.addLine("");
+        q.addLine("//*****************************");
+        q.addLine("//add traversal");
+        q.addLine("//*****************************");
+        q.addLine("");
+
         UnauthorizedArangoQuery subQuery = new UnauthorizedArangoQuery();
+        subQuery.addLine("LET ${alias} = ");
+        subQuery.indent();
+        subQuery.addLine("( FOR ${aliasDoc} ");
+        subQuery.addLine("IN 1..1 ${reverse} ${previousAliasDoc} `${relation}`");
+        String alias = currentAlias.getArangoName() + "_";
+        aliasStack.push(new ArrayList<>());
+        aliasStack.peek().add(alias);
+        subQuery.setParameter("alias", alias);
+        subQuery.setParameter("aliasDoc", String.format("%s_%s", alias, DOC_POSTFIX));
         subQuery.setParameter("reverse", reverse ? "INBOUND" : "OUTBOUND");
-        subQuery.setParameter("collection", relationCollection.getName());
-        subQuery.addLine(", ${reverse} `${collection}`");
+        subQuery.setParameter("previousAliasDoc", String.format("%s_%s", currentAlias.getArangoName(), DOC_POSTFIX));
+        subQuery.setParameter("relation", relationCollection.getName());
+        this.addAlias(new ArangoAlias(alias));
         q.addLine(subQuery.build().getValue());
+    }
+
+
+    private void simpleReturn(List<String> alias) {
+        q.addLine("");
+        q.addLine("//*****************************");
+        q.addLine("//simple return");
+        q.addLine("//*****************************");
+        q.addLine("");
+        addOrganizationFilter();
+        q.addLine(createReleaseStatusQuery().build().getValue());
+        UnauthorizedArangoQuery subQuery = new UnauthorizedArangoQuery();
+        subQuery.addLine(isRoot() ? "RETURN {" : "RETURN DISTINCT {").indent();
+        subQuery.addLine(" \"" + JsonLdConsts.ID + "\": ${alias}.`" + JsonLdConsts.ID + "`,");
+        subQuery.addLine(" \"" + SchemaOrgVocabulary.NAME + "\": ${alias}.`" + SchemaOrgVocabulary.NAME + "`,");
+        subQuery.addLine(" \"" + SchemaOrgVocabulary.IDENTIFIER + "\": ${alias}.`" + SchemaOrgVocabulary.IDENTIFIER + "`,");
+        subQuery.addLine(" \"status\": ${alias}_status,");
+        subQuery.addLine(" \"" + JsonLdConsts.TYPE + "\": ${alias}.`" + JsonLdConsts.TYPE + "`");
+        if (alias != null && !alias.isEmpty()) {
+            subQuery.addLine(", \"children\": UNION_DISTINCT([],[]");
+            for (String s : alias) {
+                UnauthorizedArangoQuery addAlias = new UnauthorizedArangoQuery();
+                addAlias.addLine(", ${alias}");
+                addAlias.setParameter("alias", s);
+                subQuery.addLine(addAlias.build().getValue());
+            }
+            subQuery.addLine(")");
+        }
+        subQuery.outdent().addLine("}");
+        subQuery.setParameter("alias", String.format("%s_%s", currentAlias.getArangoName(), DOC_POSTFIX));
+        q.addLine(subQuery.build().getValue());
+    }
+
+
+    @Override
+    public void leaveAdditionalTraversal(boolean reverse, ArangoCollectionReference relationCollection, int traversalDepth, boolean leaf) {
+        q.addLine("");
+        q.addLine("//*****************************");
+        q.addLine("//leave additional traversal");
+        q.addLine("//*****************************");
+        q.addLine("");
+        if(leaf) {
+            simpleReturn(null);
+        }
+        else{
+            simpleReturn(aliasStack.pop());
+        }
+        q.addLine(")");
+        this.dropAlias();
     }
 
     @Override
@@ -42,40 +112,39 @@ public class ArangoReflectionQueryBuilder extends AbstractArangoQueryBuilder {
 
     @Override
     protected void doEnterTraversal(ArangoAlias targetName, int numberOfTraversals, boolean reverse, ArangoCollectionReference relationCollection, boolean hasGroup, boolean ensureOrder) {
+        hasReturned = false;
         UnauthorizedArangoQuery subQuery = new UnauthorizedArangoQuery();
+        q.addLine("");
+        q.addLine("//*****************************");
+        q.addLine("//enter traversal");
+        q.addLine("//*****************************");
+        q.addLine("");
         subQuery.addLine("LET ${alias} = ");
-        if (hasGroup) {
-            subQuery.indent();
-            subQuery.addLine("( FOR grp IN ");
-        }
         subQuery.indent();
         subQuery.addLine("( FOR ${aliasDoc} ");
-        if (ensureOrder) {
-            subQuery.indent();
-            subQuery.addLine(", e ");
-            subQuery.outdent();
-        }
-        subQuery.addLine("IN ${numberOfTraversals}..${numberOfTraversals} ${reverse} ${previousAliasDoc} `${relation}`");
+        subQuery.addLine("IN 1..1 ${reverse} ${previousAliasDoc} `${relation}`");
         subQuery.setParameter("alias", currentAlias.getArangoName());
         subQuery.setParameter("aliasDoc", String.format("%s_%s", currentAlias.getArangoName(), DOC_POSTFIX));
-        subQuery.setParameter("numberOfTraversals", String.valueOf(numberOfTraversals));
         subQuery.setParameter("reverse", reverse ? "INBOUND" : "OUTBOUND");
         subQuery.setParameter("previousAliasDoc", String.format("%s_%s", previousAlias.peek().getArangoName(), DOC_POSTFIX));
         subQuery.setParameter("relation", relationCollection.getName());
         q.addLine(subQuery.build().getValue());
+
     }
 
     @Override
     public void nullFilter() {
-        UnauthorizedArangoQuery subQuery = new UnauthorizedArangoQuery();
-        subQuery.addLine("FILTER ${alias} != null");
-        subQuery.setParameter("alias", String.format("%s_%s", currentAlias.getArangoName(), DOC_POSTFIX));
-        q.addLine(subQuery.build().getValue());
     }
 
     @Override
     protected void doStartReturnStructure(boolean simple) {
-        createReleaseStatusQuery();
+        hasReturned = true;
+        firstReturnEntry = true;
+        q.addLine("");
+        q.addLine("//*****************************");
+        q.addLine("//start return structure");
+        q.addLine("//*****************************");
+        q.addLine("");
 
         q.addLine(createReleaseStatusQuery().build().getValue());
         q.addLine(isRoot() ? "RETURN {" : "RETURN DISTINCT {");
@@ -89,7 +158,6 @@ public class ArangoReflectionQueryBuilder extends AbstractArangoQueryBuilder {
         subQuery.setParameter("alias", String.format("%s_%s", isRoot() ? ROOT_ALIAS.getArangoName() : currentAlias.getArangoName(), DOC_POSTFIX));
         q.addLine(subQuery.build().getValue());
         q.indent();
-        firstReturnEntry = false;
     }
 
     private UnauthorizedArangoQuery createReleaseStatusQuery() {
@@ -113,56 +181,41 @@ public class ArangoReflectionQueryBuilder extends AbstractArangoQueryBuilder {
 
     @Override
     public void endReturnStructure() {
+        q.addLine("");
+        q.addLine("//*****************************");
+        q.addLine("//end return structure");
+        q.addLine("//*****************************");
+        q.addLine("");
         q.addLine(")}");
-        q.outdent();
         firstReturnEntry = true;
     }
 
     @Override
     protected void doLeaveTraversal() {
+        q.addLine("");
+        q.addLine("//*****************************");
+        q.addLine("//leave traversal");
+        q.addLine("//*****************************");
+        if(!hasReturned){
+            simpleReturn(aliasStack.empty() ? null : aliasStack.pop());
+        }
+        hasReturned = false;
+        aliasStack.clear();
         q.addLine(")");
     }
 
     @Override
     public void buildGrouping(String groupedInstancesLabel, List<ArangoAlias> groupingFields, List<ArangoAlias> nonGroupingFields) {
-        UnauthorizedArangoQuery subQuery = new UnauthorizedArangoQuery();
-        subQuery.addLine("COLLECT ");
-        for (ArangoAlias field : groupingFields) {
-            subQuery.addLine(new UnauthorizedArangoQuery().addLine("`${originalName}` = grp.`${originalName}`")
-                    .setParameter("originalName", field.getOriginalName()).build().getValue());
-            if (field != groupingFields.get(groupingFields.size() - 1)) {
-                subQuery.addLine(",");
-            }
-        }
-        subQuery.addLine("INTO group");
-        subQuery.addLine("LET instances = (FOR el IN group RETURN {");
-
-        for (ArangoAlias field : nonGroupingFields) {
-            subQuery.addLine(new UnauthorizedArangoQuery().addLine("\"${originalName}\":  el.grp.`${originalName}`")
-                    .setParameter("originalName", field.getOriginalName()).build().getValue());
-            if (field != nonGroupingFields.get(nonGroupingFields.size() - 1)) {
-                subQuery.addLine(",");
-            }
-        }
-        subQuery.addLine("} )");
-        subQuery.addLine("RETURN { ");
-
-        for (ArangoAlias field : groupingFields) {
-            subQuery.addLine(new UnauthorizedArangoQuery().addLine("\"${originalName}\": `${originalName}`")
-                    .setParameter("originalName", field.getOriginalName()).build().getValue());
-            if (field != groupingFields.get(groupingFields.size() - 1)) {
-                subQuery.addLine(",");
-            }
-        }
-        subQuery.addLine(", \"${groupedInstanceLabel}\": instances");
-        subQuery.addLine("} )");
-        subQuery.setParameter("groupedInstanceLabel", groupedInstancesLabel);
-        q.addLine(subQuery.build().getValue());
     }
 
 
     @Override
     public ArangoReflectionQueryBuilder addRoot(ArangoCollectionReference rootCollection) {
+        q.addLine("");
+        q.addLine("//*****************************");
+        q.addLine("//add root");
+        q.addLine("//*****************************");
+        q.addLine("");
         q.addLine(new UnauthorizedArangoQuery().addLine("FOR ${alias} IN `${collection}`").setParameter("alias", String.format("%s_%s", ROOT_ALIAS.getArangoName(), DOC_POSTFIX)).setParameter("collection", rootCollection.getName()).build().getValue());
         addOrganizationFilter();
         return this;
@@ -170,17 +223,15 @@ public class ArangoReflectionQueryBuilder extends AbstractArangoQueryBuilder {
 
     @Override
     public void addLimit() {
-        if (pagination != null && pagination.getSize() != null) {
-            if (pagination.getStart() != null) {
-                q.addLine(new UnauthorizedArangoQuery().addLine("LIMIT ${start}, ${size}").setParameter("start", pagination.getStart().toString()).setParameter("size", pagination.getSize().toString()).build().getValue());
-            } else {
-                q.addLine(new UnauthorizedArangoQuery().addLine("LIMIT ${size}").setParameter("size", pagination.getSize().toString()).build().getValue());
-            }
-        }
     }
 
     @Override
     public void addTraversalResultField(String targetName, ArangoAlias alias) {
+        q.addLine("");
+        q.addLine("//*****************************");
+        q.addLine("//add traversal result field");
+        q.addLine("//*****************************");
+        q.addLine("");
         q.addLine(new UnauthorizedArangoQuery().addLine(", ${alias}").setParameter("alias", alias.getArangoName()).build().getValue());
         firstReturnEntry = false;
     }
@@ -195,41 +246,29 @@ public class ArangoReflectionQueryBuilder extends AbstractArangoQueryBuilder {
 
     @Override
     public void addComplexLeafResultField(String targetName, ArangoAlias leafField) {
-        addSimpleLeafResultField(leafField);
+
     }
 
     @Override
     public void addSimpleLeafResultField(ArangoAlias leafField) {
-        if (firstReturnEntry) {
-            addOrganizationFilter();
-            q.addLine(createReleaseStatusQuery().build().getValue());
-            UnauthorizedArangoQuery subQuery = new UnauthorizedArangoQuery();
-            subQuery.addLine("RETURN {").indent();
-            subQuery.addLine(" \"" +    JsonLdConsts.ID + "\": ${alias}.`" + JsonLdConsts.ID + "`,");
-            subQuery.addLine(" \"" + SchemaOrgVocabulary.NAME + "\": ${alias}.`" + SchemaOrgVocabulary.NAME + "`,");
-            subQuery.addLine(" \"" + SchemaOrgVocabulary.IDENTIFIER + "\": ${alias}.`" + SchemaOrgVocabulary.IDENTIFIER + "`,");
-            subQuery.addLine(" \"status\": ${alias}_status,");
-            subQuery.addLine(" \"" + JsonLdConsts.TYPE + "\": ${alias}.`" + JsonLdConsts.TYPE + "`");
-            subQuery.outdent().addLine("}");
-            subQuery.setParameter("alias", String.format("%s_%s", currentAlias.getArangoName(), DOC_POSTFIX));
-            q.addLine(subQuery.build().getValue());
-        }
-        firstReturnEntry = false;
+
     }
 
     @Override
     public void addMerge(ArangoAlias leafField, Set<ArangoAlias> mergedFields, boolean sorted) {
+
+        q.addLine("");
+        q.addLine("//*****************************");
+        q.addLine("//add merge");
+        q.addLine("//*****************************");
+        q.addLine("");
         UnauthorizedArangoQuery subQuery = new UnauthorizedArangoQuery();
-        subQuery.addLine("LET ${targetName} = ");
-        if (sorted) {
-            subQuery.addLine("( FOR el IN");
+        subQuery.addLine("LET ${targetName} = UNION_DISTINCT([]");
+        for (ArangoAlias mergedField : mergedFields) {
+            subQuery.addLine(new UnauthorizedArangoQuery().addLine(", ${merged}").setParameter("merged", mergedField.getArangoName()).build().getValue());
         }
-        subQuery.addLine("APPEND (${collections}, true) ");
-        if (sorted) {
-            subQuery.addLine("SORT el ASC RETURN el)");
-        }
+        subQuery.addLine(")");
         subQuery.setParameter("targetName", leafField.getArangoName());
-        subQuery.setTrustedParameter("collections", subQuery.listFields(mergedFields.stream().map(ArangoAlias::getArangoName).collect(Collectors.toSet())));
         q.addLine(subQuery.build().getValue());
     }
 

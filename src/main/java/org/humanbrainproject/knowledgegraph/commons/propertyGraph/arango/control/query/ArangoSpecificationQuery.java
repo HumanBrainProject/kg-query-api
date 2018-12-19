@@ -57,7 +57,7 @@ public class ArangoSpecificationQuery {
             return null;
         }
         else if(results.size()==1){
-            return repository.transformReleaseStatusMap(results.get(0));
+            return results.get(0);
         }
         else{
             throw new RuntimeException("Queried the reflection API for a specification document but found multiple return instances.");
@@ -110,7 +110,7 @@ public class ArangoSpecificationQuery {
         return result;
     }
 
-    String createQuery(AbstractArangoQueryBuilder queryBuilder, QueryParameters parameters) throws JSONException {
+    String  createQuery(AbstractArangoQueryBuilder queryBuilder, QueryParameters parameters) throws JSONException {
         NexusSchemaReference nexusReference = NexusSchemaReference.createFromUrl(StrSubstitutor.replace(queryBuilder.getSpecification().rootSchema, parameters.getAllParameters()));
         ArangoCollectionReference collection = ArangoCollectionReference.fromNexusSchemaReference(nexusReference);
         if(queryBuilder.getExistingArangoCollections()!=null && !queryBuilder.getExistingArangoCollections().contains(collection)){
@@ -157,13 +157,22 @@ public class ArangoSpecificationQuery {
                     List<ArangoAlias> groupingFields = getGroupingFields(field);
                     queryBuilder.addAlias(arangoField);
                     queryBuilder.enterTraversal(arangoField, field.numberOfDirectTraversals(), firstTraversal.reverse, traverseCollection, !groupingFields.isEmpty(), field.ensureOrder);
+                    int traversalDepth=0;
+                    List<SpecTraverse> traversed = new ArrayList<>();
                     for (SpecTraverse traversal : field.getAdditionalDirectTraversals()) {
                         traverseCollection = ArangoCollectionReference.fromSpecTraversal(traversal);
                         if (queryBuilder.getExistingArangoCollections() ==null || queryBuilder.getExistingArangoCollections().contains(traverseCollection)) {
-                            queryBuilder.addTraversal(traversal.reverse, traverseCollection);
+                            queryBuilder.addTraversal(traversal.reverse, traverseCollection, traversalDepth++);
+                            traversed.add(traversal);
                         } else {
                             skipFields.add(field.fieldName);
                         }
+                    }
+                    Collections.reverse(traversed);
+                    boolean leaf = true;
+                    for (SpecTraverse traversal : field.getAdditionalDirectTraversals()) {
+                        queryBuilder.leaveAdditionalTraversal(traversal.reverse, ArangoCollectionReference.fromSpecTraversal(traversal), traversalDepth--, leaf);
+                        leaf = false;
                     }
                     queryBuilder.nullFilter();
                     if (field.ensureOrder) {

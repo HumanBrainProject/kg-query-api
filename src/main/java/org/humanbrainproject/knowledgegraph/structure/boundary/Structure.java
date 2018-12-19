@@ -51,6 +51,7 @@ public class Structure {
                     map.put("attribute", r.get("attribute").toString());
                     map.put("simplePropertyName", semanticsToHumanTranslator.extractSimpleAttributeName(r.get("attribute").toString()));
                     map.put("canBe", new ArrayList<String>());
+                    map.put("label", semanticsToHumanTranslator.translateSemanticValueToHumanReadableLabel(r.get("attribute").toString()));
                     if (!outbound) {
                         map.put("reverse", true);
                     }
@@ -132,8 +133,9 @@ public class Structure {
         return jsonDocument;
     }
 
-    public void reflectOnSpecifications() {
-        List<Map> internalDocuments = repository.getInternalDocuments(ArangoQuery.SPECIFICATION_QUERIES);
+    public void reflectOnSpecifications(NexusSchemaReference schemaReference) {
+        String prefix = ArangoCollectionReference.fromNexusSchemaReference(schemaReference).getName()+"-";
+        List<Map> internalDocuments = repository.getInternalDocumentsWithKeyPrefix(ArangoQuery.SPECIFICATION_QUERIES, prefix);
         System.out.println(internalDocuments);
     }
 

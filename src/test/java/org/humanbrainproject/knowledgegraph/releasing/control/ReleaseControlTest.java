@@ -1,27 +1,67 @@
 package org.humanbrainproject.knowledgegraph.releasing.control;
 
-import org.humanbrainproject.knowledgegraph.commons.authorization.entity.OidcAccessToken;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
-import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
-import org.junit.Ignore;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoRepository;
+import org.humanbrainproject.knowledgegraph.releasing.entity.ReleaseStatus;
+import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.junit4.SpringRunner;
 
-@SpringBootTest
-@RunWith(SpringRunner.class)
-@Ignore("integration test")
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 public class ReleaseControlTest {
 
-    @Autowired
-    ReleaseControl releaseControl;
+    @Test
+    public void findWorstReleaseStatus() {
 
+        Map<String, Object> map = new HashMap<>();
+        map.put("status", ReleaseStatus.HAS_CHANGED.name());
+        List<Object> children = new ArrayList<>();
+        Map<String, Object> childMap = new HashMap<>();
+        childMap.put("status", ReleaseStatus.RELEASED.name());
+        children.add(childMap);
+        map.put("children", children);
+
+        ReleaseStatus worstReleaseStatus = new ReleaseControl().findWorstReleaseStatusOfChildren(map, null, true);
+
+        //The worst release state is RELEASED, because root is not taken into account
+        Assert.assertEquals(ReleaseStatus.RELEASED, worstReleaseStatus);
+    }
 
     @Test
-    public void findNexusInstanceFromInferredArangoEntry() {
-        NexusInstanceReference nexusInstanceFromInferredArangoEntry = releaseControl.findNexusInstanceFromInferredArangoEntry(ArangoDocumentReference.fromId("foo-bar-foobar-v0_0_1/4f818243-6b5d-4e07-a834-925d1f769b64"), new OidcAccessToken());
-        System.out.println(nexusInstanceFromInferredArangoEntry);
+    public void findWorstReleaseStatus2() {
+
+        Map<String, Object> map = new HashMap<>();
+        map.put("status", ReleaseStatus.HAS_CHANGED.name());
+        List<Object> children = new ArrayList<>();
+        Map<String, Object> childMap = new HashMap<>();
+        childMap.put("status", ReleaseStatus.RELEASED.name());
+        children.add(childMap);
+        Map<String, Object> childMap2 = new HashMap<>();
+        childMap2.put("status", ReleaseStatus.HAS_CHANGED.name());
+        children.add(childMap2);
+        map.put("children", children);
+
+        ReleaseStatus worstReleaseStatus = new ReleaseControl().findWorstReleaseStatusOfChildren(map, null, true);
+
+        //The worst release state is RELEASED, because root is not taken into account
+        Assert.assertEquals(ReleaseStatus.HAS_CHANGED, worstReleaseStatus);
+    }
+
+    @Test
+    public void findWorstReleaseStatus3() {
+
+        Map<String, Object> map = new HashMap<>();
+        map.put("status", ReleaseStatus.HAS_CHANGED.name());
+        List<Object> children = new ArrayList<>();
+        Map<String, Object> childMap = new HashMap<>();
+        childMap.put("status", ReleaseStatus.NOT_RELEASED.name());
+        children.add(childMap);
+        map.put("children", children);
+
+        ReleaseStatus worstReleaseStatus = new ReleaseControl().findWorstReleaseStatusOfChildren(map, null, true);
+
+        Assert.assertEquals(ReleaseStatus.NOT_RELEASED, worstReleaseStatus);
     }
 }

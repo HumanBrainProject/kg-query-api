@@ -4,9 +4,7 @@ import com.arangodb.ArangoCollection;
 import com.arangodb.ArangoCursor;
 import com.arangodb.ArangoDBException;
 import com.arangodb.ArangoDatabase;
-import com.arangodb.entity.CollectionType;
 import com.arangodb.model.AqlQueryOptions;
-import com.arangodb.model.CollectionCreateOptions;
 import com.github.jsonldjava.core.JsonLdConsts;
 import org.apache.commons.lang.StringUtils;
 import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationController;
@@ -30,8 +28,6 @@ import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceR
 import org.humanbrainproject.knowledgegraph.query.entity.DatabaseScope;
 import org.humanbrainproject.knowledgegraph.query.entity.JsonDocument;
 import org.humanbrainproject.knowledgegraph.query.entity.QueryResult;
-import org.humanbrainproject.knowledgegraph.releasing.entity.ReleaseStatus;
-import org.humanbrainproject.knowledgegraph.releasing.entity.ReleaseStatusResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -210,72 +206,6 @@ public class ArangoRepository {
     }
 
 
-    public Map transformReleaseStatusMap(Map map) {
-        Object name = map.get(SchemaOrgVocabulary.NAME);
-        Object identifier = map.get(SchemaOrgVocabulary.IDENTIFIER);
-        if (name != null) {
-            map.put("label", name);
-        } else {
-            map.put("label", identifier);
-        }
-        if (map.containsKey(JsonLdConsts.TYPE)) {
-            Object types = map.get(JsonLdConsts.TYPE);
-            Object relevantType = null;
-            if (types instanceof List && !((List) types).isEmpty()) {
-                relevantType = ((List) types).get(0);
-            } else {
-                relevantType = types;
-            }
-            if (relevantType != null) {
-                map.put("type", semanticsToHumanTranslator.translateSemanticValueToHumanReadableLabel(relevantType.toString()));
-            }
-        }
-        if (map.containsKey(JsonLdConsts.ID)) {
-            NexusInstanceReference fromUrl = NexusInstanceReference.createFromUrl((String) map.get(JsonLdConsts.ID));
-            if (fromUrl != null) {
-                map.put("relativeUrl", fromUrl.getRelativeUrl().getUrl());
-            }
-        }
-
-        Object linkType = map.get("linkType");
-        if (linkType != null) {
-            map.put("linkType", semanticsToHumanTranslator.translateSemanticValueToHumanReadableLabel((String) linkType));
-        }
-
-        for (Object key : map.keySet()) {
-            if (map.get(key) instanceof Map) {
-                transformReleaseStatusMap((Map) map.get(key));
-            } else if (map.get(key) instanceof Collection) {
-                for (Object o : ((Collection) map.get(key))) {
-                    if (o instanceof Map) {
-                        transformReleaseStatusMap((Map) o);
-                    }
-                }
-            }
-        }
-        return map;
-
-    }
-
-
-    @AuthorizedAccess
-    public Map getReleaseGraph(ArangoDocumentReference document, Optional<Integer> maxDepth, Credential credential) {
-        ArangoDatabase db = databaseFactory.getInferredDB().getOrCreateDB();
-        //Ensure the release-collection exists
-        Set<ArangoCollectionReference> edgesCollectionNames = databaseFactory.getInferredDB().getEdgesCollectionNames();
-        String releaseInstanceEdgeCollection = ArangoCollectionReference.fromFieldName(HBPVocabulary.RELEASE_INSTANCE).getName();
-        if (!db.collection(releaseInstanceEdgeCollection).exists()) {
-            db.createCollection(releaseInstanceEdgeCollection, new CollectionCreateOptions().type(CollectionType.EDGES));
-        }
-        String query = queryFactory.queryReleaseGraph(edgesCollectionNames, document, maxDepth.orElse(6), authorizationController.getReadableOrganizations(credential));
-        ArangoCursor<Map> q = db.query(query, null, new AqlQueryOptions(), Map.class);
-        List<Map> results = q.asListRemaining().stream().filter(Objects::nonNull).collect(Collectors.toList());
-        if (results.size() > 1) {
-            throw new UnexpectedNumberOfResults("The release graph query should only return a single document since it is based on an id");
-        }
-        return !results.isEmpty() ? transformReleaseStatusMap(results.get(0)) : null;
-    }
-
     @AuthorizedAccess
     public QueryResult<List<Map>> getInstances(ArangoCollectionReference collection, Integer from, Integer size, String searchTerm, ArangoConnection driver, Credential credential) {
         ArangoDatabase db = driver.getOrCreateDB();
@@ -346,59 +276,6 @@ public class ArangoRepository {
             }
         }
         return m;
-    }
-
-    ReleaseStatus findWorstReleaseStatusOfChildren(Map map, ReleaseStatus currentStatus, boolean isRoot) {
-        ReleaseStatus worstStatusSoFar = currentStatus;
-        if (map != null) {
-            //Skip status of root instance
-            if (!isRoot) {
-                try {
-                    Object status = map.get("status");
-                    if (status instanceof String) {
-                        ReleaseStatus releaseStatus = ReleaseStatus.valueOf((String) status);
-                        if (releaseStatus.isWorst()) {
-                            return releaseStatus;
-                        }
-                        if (releaseStatus.isWorseThan(worstStatusSoFar)) {
-                            worstStatusSoFar = releaseStatus;
-                        }
-                    }
-                } catch (IllegalArgumentException e) {
-                    logger.error(String.format("Was not able to parse the status with the value %s", map.get("status")));
-                }
-            }
-
-            Object children = map.get("children");
-            if (children instanceof List) {
-                for (Object o : ((List) children)) {
-                    if (o instanceof Map) {
-                        worstStatusSoFar = findWorstReleaseStatusOfChildren((Map) o, worstStatusSoFar, false);
-                        if (worstStatusSoFar.isWorst()) {
-                            return worstStatusSoFar;
-                        }
-                    }
-                }
-            }
-
-
-        }
-        return worstStatusSoFar;
-    }
-
-
-    @AuthorizedAccess
-    public ReleaseStatusResponse getReleaseStatus(ArangoDocumentReference document, boolean withChildren, Credential credential) {
-        Map releaseGraph = getReleaseGraph(document, withChildren ?  Optional.empty():Optional.of(0), credential);
-        if (releaseGraph != null) {
-            ReleaseStatusResponse response = new ReleaseStatusResponse();
-            response.setRootStatus(ReleaseStatus.valueOf((String) releaseGraph.get("status")));
-            if(withChildren) {
-                response.setChildrenStatus(findWorstReleaseStatusOfChildren(releaseGraph, null, true));
-            }
-            return response;
-        }
-        return null;
     }
 
 

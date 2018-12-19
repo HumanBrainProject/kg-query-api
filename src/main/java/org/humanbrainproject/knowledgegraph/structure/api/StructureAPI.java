@@ -27,9 +27,9 @@ public class StructureAPI {
         return structure.getStructureForSchema(new NexusSchemaReference(org, domain, schema, version), withLinks);
     }
 
-    @GetMapping("/bySpec")
-    public void getStructureBySpecification(){
-        structure.reflectOnSpecifications();
+    @GetMapping("/{org}/{domain}/{schema}/{version}/bySpec")
+    public void getStructureBySpecification(@PathVariable("org") String org, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("version") String version){
+        structure.reflectOnSpecifications(new NexusSchemaReference(org, domain, schema, version));
     }
 
 

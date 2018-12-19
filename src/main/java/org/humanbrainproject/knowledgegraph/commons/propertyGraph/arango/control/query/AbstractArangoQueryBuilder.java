@@ -78,7 +78,9 @@ public abstract class AbstractArangoQueryBuilder {
         return sb.toString();
     }
 
-    public abstract void addTraversal(boolean reverse, ArangoCollectionReference relationCollection);
+    public abstract void addTraversal(boolean reverse, ArangoCollectionReference relationCollection, int traversalDepth);
+    public abstract void leaveAdditionalTraversal(boolean reverse, ArangoCollectionReference relationCollection, int traversalDepth, boolean leaf);
+
 
     public abstract void addComplexFieldRequiredFilter(ArangoAlias leafField);
 

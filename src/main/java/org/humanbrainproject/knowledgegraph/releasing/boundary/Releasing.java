@@ -14,7 +14,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
-import java.util.Optional;
 
 @Component
 public class Releasing {
@@ -56,7 +55,7 @@ public class Releasing {
     }
 
     public Map<String, Object> getReleaseGraph(NexusInstanceReference instanceReference, Credential accessToken) {
-        return releaseControl.getReleaseGraph(instanceReference, Optional.empty(), accessToken);
+        return releaseControl.getReleaseGraph(instanceReference, accessToken);
     }
 
 }

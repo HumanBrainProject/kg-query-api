@@ -55,7 +55,7 @@ public class ArangoMetaQueryBuilder extends AbstractArangoQueryBuilder {
     }
 
     @Override
-    public void addTraversal(boolean reverse, ArangoCollectionReference relationCollection) {
+    public void addTraversal(boolean reverse, ArangoCollectionReference relationCollection, int traversalDepth) {
 
     }
 
@@ -65,6 +65,11 @@ public class ArangoMetaQueryBuilder extends AbstractArangoQueryBuilder {
 
     @Override
     public void addTraversalFieldRequiredFilter(ArangoAlias field) {
+
+    }
+
+    @Override
+    public void leaveAdditionalTraversal(boolean reverse, ArangoCollectionReference relationCollection, int traversalDepth, boolean leaf) {
 
     }
 
