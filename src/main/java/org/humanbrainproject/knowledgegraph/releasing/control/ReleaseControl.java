@@ -63,6 +63,7 @@ public class ReleaseControl {
             if (withChildren) {
                 response.setChildrenStatus(findWorstReleaseStatusOfChildren(releaseGraph, null, true));
             }
+            response.setId(instance);
             return response;
         }
         return null;
@@ -74,6 +75,7 @@ public class ReleaseControl {
             Map reflect = query.reflectQueryPropertyGraphByStoredSpecification(new StoredQueryReference(instance.getNexusSchema(), "search"), parameters, ArangoDocumentReference.fromNexusInstance(instance), credential);
             return reflect != null ? transformReleaseStatusMap(reflect) : null;
         } catch (IOException | JSONException e) {
+            logger.error("Was not able to request the release graph ", e);
             throw new RuntimeException(e);
         }
     }
