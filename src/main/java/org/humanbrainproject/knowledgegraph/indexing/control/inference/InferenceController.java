@@ -30,7 +30,7 @@ public class InferenceController implements IndexingController{
 
     @Override
     public TodoList insert(QualifiedIndexingMessage message, TodoList todoList, Credential credential){
-        if(message.isOfType(HBPVocabulary.INFERENCE_TYPE)){
+        if(message.isOfType(HBPVocabulary.INFERENCE_TYPE) || message.isOfType(HBPVocabulary.LINKING_INSTANCE_TYPE)){
             insertVertexStructure(message, todoList, credential);
         } else {
             Set<Vertex> documents = new HashSet<>();
