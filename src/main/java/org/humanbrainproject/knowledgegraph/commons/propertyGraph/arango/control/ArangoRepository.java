@@ -278,6 +278,14 @@ public class ArangoRepository {
         return m;
     }
 
+    @AuthorizedAccess
+    public List<Map> getLinkingInstances(ArangoDocumentReference fromInstance, ArangoDocumentReference toInstance, ArangoCollectionReference reference, ArangoConnection driver, Credential credential){
+        ArangoDatabase db = driver.getOrCreateDB();
+        String query = queryFactory.queryLinkingInstanceBetweenVertices(fromInstance, toInstance, reference, authorizationController.getReadableOrganizations(credential));
+        ArangoCursor<Map> q = db.query(query, null, new AqlQueryOptions(), Map.class);
+        return q.asListRemaining();
+    }
+
 
     @AuthorizedAccess
     public JsonDocument getInstance(ArangoDocumentReference instanceReference, ArangoConnection driver, Credential credential) {

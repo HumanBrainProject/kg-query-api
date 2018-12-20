@@ -36,6 +36,19 @@ public class ArangoQueryFactory {
         return queryDirectRelationsForDocument(document, edgeCollections, permissionGroupsWithReadAccess, false);
     }
 
+    public String queryLinkingInstanceBetweenVertices(ArangoDocumentReference from, ArangoDocumentReference to, ArangoCollectionReference relation, Set<String> permissionGroupsWithReadAccess){
+        AuthorizedArangoQuery q = new AuthorizedArangoQuery(permissionGroupsWithReadAccess);
+        q.addLine("FOR doc in `${collection}`");
+        q.addLine("FILTER doc._from == \"${fromId}\"");
+        q.addLine("AND doc._to == \"${toId}\"");
+        q.addLine("RETURN doc");
+        q.setParameter("collection", relation.getName());
+        q.setParameter("fromId", from.getId());
+        q.setParameter("toId", to.getId());
+        return q.build().getValue();
+    }
+
+
     private String queryDirectRelationsForDocument(ArangoDocumentReference document, Set<ArangoCollectionReference> edgeCollections, Set<String> permissionGroupsWithReadAccess, boolean outbound) {
         AuthorizedArangoQuery q = new AuthorizedArangoQuery(permissionGroupsWithReadAccess);
         q.setParameter("documentId", document.getId());

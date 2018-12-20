@@ -73,6 +73,14 @@ public class Instances {
     private Logger logger = LoggerFactory.getLogger(Instances.class);
 
 
+    public List<Map> getLinkingInstances(NexusInstanceReference fromInstance, NexusInstanceReference toInstance, NexusSchemaReference relationType, DatabaseScope databaseScope, Credential credential){
+        if(fromInstance==null || toInstance == null || relationType == null){
+            return null;
+        }
+        return arangoRepository.getLinkingInstances(ArangoDocumentReference.fromNexusInstance(fromInstance), ArangoDocumentReference.fromNexusInstance(toInstance), ArangoCollectionReference.fromNexusSchemaReference(relationType), databaseFactory.getConnection(databaseScope), credential);
+    }
+
+
     public JsonDocument getInstance(NexusInstanceReference instanceReference, DatabaseScope databaseScope, Credential credential) {
         if(instanceReference==null){
             return null;

@@ -114,6 +114,23 @@ public class InstancesInternalAPI {
         }
     }
 
+    @GetMapping(value = "/{org}/{domain}/{schema}/{version}/{id}/links/{linkedorg}/{linkeddomain}/{linkedschema}/{linkedversion}/{linkedid}/{linkorg}/{linkdomain}/{linkschema}/{linkversion}")
+    public ResponseEntity<List<Map>> getLinkingInstances(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable("id") String id, @PathVariable("linked"+ORG) String linkedOrg, @PathVariable("linked"+DOMAIN) String linkedDomain, @PathVariable("linked"+SCHEMA) String linkedSchema, @PathVariable("linked"+VERSION) String linkedVersion, @PathVariable("linkedid") String linkedId, @PathVariable("link"+ORG) String linkOrg, @PathVariable("link"+DOMAIN) String linkDomain, @PathVariable("link"+SCHEMA) String linkSchema, @PathVariable("link"+VERSION) String linkVersion, @ApiParam("Defines the database scope. This is not taken into account if a client extension is defined (can only come from the NATIVE space)") @RequestParam(value = DATABASE_SCOPE, required = false) DatabaseScope databaseScope, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken) {
+        try {
+            NexusInstanceReference instanceReference = new NexusInstanceReference(org, domain, schema, version, id);
+            NexusInstanceReference linkedInstanceReference = new NexusInstanceReference(linkedOrg, linkedDomain, linkedSchema, linkedVersion, linkedId);
+            NexusSchemaReference nexusSchemaReference = new NexusSchemaReference(linkOrg, linkDomain, linkSchema, linkVersion);
+            OidcAccessToken credential = new OidcAccessToken().setToken(authorizationToken);
+            if(databaseScope==null){
+                databaseScope = DatabaseScope.INFERRED;
+            }
+            List<Map> linkingInstances = instances.getLinkingInstances(instanceReference, linkedInstanceReference, nexusSchemaReference, databaseScope, credential);
+            return linkingInstances != null ? ResponseEntity.ok(linkingInstances) : ResponseEntity.notFound().build();
+        } catch (HttpClientErrorException e) {
+            return ResponseEntity.status(e.getStatusCode()).build();
+        }
+    }
+
     @GetMapping(value = "/{org}/{domain}/{schema}/{version}")
     public ResponseEntity<QueryResult<List<Map>>> getInstances(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @RequestParam(value = SIZE, required = false) Integer size, @RequestParam(value = START, required = false) Integer start, @RequestParam(value = DATABASE_SCOPE, required = false) DatabaseScope databaseScope, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken) throws Exception {
         try {
