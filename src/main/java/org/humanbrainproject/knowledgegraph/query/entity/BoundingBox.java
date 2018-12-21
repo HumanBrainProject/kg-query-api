@@ -2,12 +2,12 @@ package org.humanbrainproject.knowledgegraph.query.entity;
 
 public class BoundingBox {
 
-    private final Voxel from;
-    private final Voxel to;
+    private final ThreeDVector from;
+    private final ThreeDVector to;
     private final String referenceSpace;
 
     public BoundingBox(float xFrom, float yFrom, float zFrom, float xTo, float yTo, float zTo, String referenceSpace){
-        this(new Voxel(xFrom, yFrom, zFrom), new Voxel(xTo, yTo, zTo), referenceSpace);
+        this(new ThreeDVector(xFrom, yFrom, zFrom), new ThreeDVector(xTo, yTo, zTo), referenceSpace);
     }
 
     public static BoundingBox parseBoundingBox(String boundingBox, String referenceSpace) {
@@ -19,17 +19,17 @@ public class BoundingBox {
         return new BoundingBox(Float.parseFloat(split[0]), Float.parseFloat(split[1]), Float.parseFloat(split[2]), Float.parseFloat(split[3]), Float.parseFloat(split[4]), Float.parseFloat(split[5]), referenceSpace);
     }
 
-    public BoundingBox(Voxel from, Voxel to, String referenceSpace) {
+    public BoundingBox(ThreeDVector from, ThreeDVector to, String referenceSpace) {
         this.from = from;
         this.to = to;
         this.referenceSpace = referenceSpace;
     }
 
-    public Voxel getFrom() {
+    public ThreeDVector getFrom() {
         return from;
     }
 
-    public Voxel getTo() {
+    public ThreeDVector getTo() {
         return to;
     }
 

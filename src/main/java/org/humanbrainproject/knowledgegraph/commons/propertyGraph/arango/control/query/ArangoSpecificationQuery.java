@@ -85,6 +85,16 @@ public class ArangoSpecificationQuery {
 
     public QueryResult<List<Map>> queryForSpecification(Specification spec, QueryParameters parameters, Set<ArangoDocumentReference> documentReferences, Credential credential) throws JSONException {
         QueryResult<List<Map>> result = new QueryResult<>();
+        result.setApiName(spec.name);
+        result.setStart(parameters.pagination().getStart() != null ? parameters.pagination().getStart() : 0L);
+        if(documentReferences!=null && documentReferences.isEmpty()){
+            //We have a restriction on ids - but there is nothing allowed, we don't need to execute the query - it's already clear that the result set will be empty.
+            result.setResults(Collections.emptyList());
+            result.setStart(parameters.pagination().getStart() != null ? parameters.pagination().getStart() : 0L);
+            result.setTotal(0l);
+            result.setSize(0l);
+            return result;
+        }
         Set<ArangoCollectionReference> existingCollections = databaseFactory.getConnection(parameters.databaseScope()).getCollections();
         handleEdgesAsLeaf(spec.fields, existingCollections);
         ArangoQueryBuilder queryBuilder = new ArangoQueryBuilder(spec, parameters.pagination(), parameters.filter(), new ArangoAlias(ArangoVocabulary.PERMISSION_GROUP), authorizationController.getReadableOrganizations(credential, parameters.filter().getRestrictToOrganizations()), documentReferences, existingCollections);
@@ -104,9 +114,7 @@ public class ArangoSpecificationQuery {
         }
         result.setResults(cursor.asListRemaining());
         result.setTotal(count);
-        result.setApiName(spec.name);
         result.setSize(parameters.pagination().getSize() == null ? count : parameters.pagination().getSize());
-        result.setStart(parameters.pagination().getStart() != null ? parameters.pagination().getStart() : 0L);
         return result;
     }
 

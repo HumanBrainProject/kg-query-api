@@ -57,7 +57,7 @@ public class FullIndexingTest {
     JsonDocument payload;
     NexusInstanceReference instance;
 
-    private void nexusInsertionTrigger(TodoList todoList) throws IOException {
+    private void nexusInsertionTrigger(TodoList todoList) {
         //Trigger indexing for nexus uploads
         for (InsertOrUpdateInPrimaryStoreTodoItem insertOrUpdateInPrimaryStoreTodoItem : todoList.getInsertOrUpdateInPrimaryStoreTodoItems()) {
             Vertex object = insertOrUpdateInPrimaryStoreTodoItem.getVertex();
@@ -68,7 +68,7 @@ public class FullIndexingTest {
 
 
     @Test
-    public void create() throws IOException {
+    public void create() {
         payload = new JsonDocument();
         payload.put(SchemaOrgVocabulary.NAMESPACE+"foo", "bar");
         instance = nexusInstanceController.createInstanceByIdentifier(TestObjectFactory.fooInstanceReference().getNexusSchema(), "helloWorldNoEdit3", payload,oidcClient.getAuthorizationToken());
@@ -81,7 +81,7 @@ public class FullIndexingTest {
 
 
     @Test
-    public void createWithEditor() throws IOException {
+    public void createWithEditor() {
         JsonDocument document =  new JsonDocument();
         document.put(SchemaOrgVocabulary.NAMESPACE+"foo", "bar");
         instance = nexusInstanceController.createInstanceByIdentifier(TestObjectFactory.fooEditorInstanceReference().getNexusSchema(), "helloWorldFromEditor3", document, oidcClient.getAuthorizationToken());
@@ -94,15 +94,13 @@ public class FullIndexingTest {
 
 
     @Test
-    public void createWithEditorAndRelation() throws IOException {
+    public void createWithEditorAndRelation() {
         createWithEditor();
 
         JsonDocument document = new JsonDocument();
         document.addReference(SchemaOrgVocabulary.NAMESPACE+"foolink", configuration.getAbsoluteUrl(instance));
 
-
         NexusInstanceReference helloWorldFromEditorWithLink = nexusInstanceController.createInstanceByIdentifier(TestObjectFactory.fooEditorInstanceReference().getNexusSchema(), "helloWorldFromEditorWithLink2", document, oidcClient.getAuthorizationToken());
-
 
         //This trigger is typically done by Nexus itself - we're simulating the behavior.
         IndexingMessage indexingMessage = new IndexingMessage(helloWorldFromEditorWithLink, new Gson().toJson(document), "2018-10-31", "Foo");
