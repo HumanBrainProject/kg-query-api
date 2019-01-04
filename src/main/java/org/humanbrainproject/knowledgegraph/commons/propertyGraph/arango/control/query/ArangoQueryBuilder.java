@@ -6,6 +6,7 @@ import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.SchemaOrgVocabulary;
 import org.humanbrainproject.knowledgegraph.query.entity.Filter;
 import org.humanbrainproject.knowledgegraph.query.entity.Pagination;
+import org.humanbrainproject.knowledgegraph.query.entity.SpecField;
 import org.humanbrainproject.knowledgegraph.query.entity.Specification;
 
 import java.util.ArrayList;
@@ -22,6 +23,11 @@ public class ArangoQueryBuilder extends AbstractArangoQueryBuilder {
 
     @Override
     public void leaveAdditionalTraversal(boolean reverse, ArangoCollectionReference relationCollection, int traversalDepth, boolean leaf) {
+
+    }
+
+    @Override
+    public void prepareLeafField(SpecField leafField) {
 
     }
 

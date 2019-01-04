@@ -7,6 +7,7 @@ import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.ArangoVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.SchemaOrgVocabulary;
+import org.humanbrainproject.knowledgegraph.query.entity.SpecField;
 import org.humanbrainproject.knowledgegraph.query.entity.Specification;
 import org.humanbrainproject.knowledgegraph.releasing.entity.ReleaseStatus;
 
@@ -27,6 +28,11 @@ public class ArangoReflectionQueryBuilder extends AbstractArangoQueryBuilder {
     public ArangoReflectionQueryBuilder(Specification specification, ArangoAlias permissionGroupFieldName, Set<String> whitelistOrganizations, Set<ArangoDocumentReference> documentReferences, Set<ArangoCollectionReference> existingArangoCollections, String nexusInstanceBase) {
         super(specification, null, null, permissionGroupFieldName, whitelistOrganizations, documentReferences, existingArangoCollections);
         this.nexusInstanceBase = nexusInstanceBase;
+    }
+
+    @Override
+    public void prepareLeafField(SpecField leafField) {
+
     }
 
     @Override

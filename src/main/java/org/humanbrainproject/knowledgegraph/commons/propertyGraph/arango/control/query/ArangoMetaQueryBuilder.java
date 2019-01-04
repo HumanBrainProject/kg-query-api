@@ -6,6 +6,7 @@ import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
 import org.humanbrainproject.knowledgegraph.query.boundary.ArangoQuery;
 import org.humanbrainproject.knowledgegraph.query.entity.GraphQueryKeys;
+import org.humanbrainproject.knowledgegraph.query.entity.SpecField;
 import org.humanbrainproject.knowledgegraph.query.entity.Specification;
 import org.springframework.boot.configurationprocessor.json.JSONException;
 
@@ -338,6 +339,11 @@ public class ArangoMetaQueryBuilder extends AbstractArangoQueryBuilder {
 
     @Override
     public void addSearchQuery(){
+
+    }
+
+    @Override
+    public void prepareLeafField(SpecField leafField) {
 
     }
 }

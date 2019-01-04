@@ -76,6 +76,12 @@ public class ArangoQuery {
         return specificationQuery.metaSpecification(spec, parameters);
     }
 
+
+    public QueryResult<List<Map>> metaReflectionQueryBySpecification(String specification, QueryParameters parameters, NexusSchemaReference schemaReference) throws JSONException, IOException {
+        Specification spec = specInterpreter.readSpecification(JsonUtils.toString(standardization.fullyQualify(specification)), schemaReference);
+        return specificationQuery.metaReflectionSpecification(spec, parameters);
+    }
+
     public Map reflectQueryBySpecification(String specification, NexusSchemaReference schemaReference, QueryParameters parameters, ArangoDocumentReference documentReference, Credential credential) throws JSONException, IOException {
         Specification spec = specInterpreter.readSpecification(JsonUtils.toString(standardization.fullyQualify(specification)), schemaReference);
         Map map = specificationQuery.reflectSpecification(spec, parameters, documentReference, credential);
@@ -148,6 +154,9 @@ public class ArangoQuery {
         return arangoRepository.getInternalDocumentByKey(new ArangoDocumentReference(SPECIFICATION_QUERIES, queryReference.getName()), clazz);
     }
 
+    public QueryResult<List<Map>> metaReflectionQueryPropertyGraphByStoredSpecification(StoredQueryReference queryReference, QueryParameters parameters) throws IOException, JSONException {
+            return metaReflectionQueryBySpecification(getQueryPayload(queryReference, String.class), parameters, queryReference.getSchemaReference());
+    }
 
     public QueryResult<List<Map>> metaQueryPropertyGraphByStoredSpecification(StoredQueryReference queryReference, QueryParameters parameters) throws IOException, JSONException {
         return metaQueryBySpecification(getQueryPayload(queryReference, String.class), parameters, queryReference.getSchemaReference());

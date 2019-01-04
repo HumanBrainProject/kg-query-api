@@ -220,6 +220,21 @@ public class QueryAPI {
         }
     }
 
+
+    @GetMapping("/{org}/{domain}/{schema}/{version}/{queryId}/meta/reflect")
+    public ResponseEntity<QueryResult> executeMetaReflectionQuery(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(QUERY_ID) String queryId, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken) throws Exception {
+        try {
+            NexusSchemaReference nexusSchemaReference = new NexusSchemaReference(org, domain, schema, version);
+            StoredQueryReference storedQueryReference = new StoredQueryReference(nexusSchemaReference, queryId);
+            QueryParameters parameters = new QueryParameters(null, null);
+            parameters.authorization().setToken(authorizationToken);
+            return ResponseEntity.ok(query.metaReflectionQueryPropertyGraphByStoredSpecification(storedQueryReference, parameters));
+        } catch (HttpClientErrorException e) {
+            return ResponseEntity.status(e.getStatusCode()).build();
+        }
+    }
+
+
     @GetMapping(value = "/{org}/{domain}/{schema}/{version}/{queryId}/templates/{templateId}/meta")
     public ResponseEntity<QueryResult> applyFreemarkerTemplateToMetaApi(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(QUERY_ID) String queryId, @PathVariable(TEMPLATE_ID) String templateId, @ApiParam("Defines if the underlying json (the one the template is applied to) shall be part of the result as well.") @RequestParam(value = "includeOriginalJson", required = false) boolean includeOriginalJson, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken) throws Exception {
         return applyFreemarkerTemplateToMetaApi(org, domain, schema, version, queryId, templateId, "meta", includeOriginalJson, authorizationToken);

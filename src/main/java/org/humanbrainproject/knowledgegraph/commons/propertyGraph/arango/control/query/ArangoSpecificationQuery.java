@@ -6,6 +6,7 @@ import com.github.jsonldjava.core.JsonLdConsts;
 import org.apache.commons.text.StrSubstitutor;
 import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationController;
 import org.humanbrainproject.knowledgegraph.commons.authorization.entity.Credential;
+import org.humanbrainproject.knowledgegraph.commons.authorization.entity.InternalMasterKey;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoDatabaseFactory;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoRepository;
@@ -48,6 +49,16 @@ public class ArangoSpecificationQuery {
         result.setApiName(spec.name);
         return result;
     }
+
+    public QueryResult<List<Map>> metaReflectionSpecification(Specification spec, QueryParameters parameters) throws JSONException {
+        QueryResult<List<Map>> result = new QueryResult<>();
+        String query = createQuery(new ArangoMetaReflectionQueryBuilder(spec, new ArangoAlias(ArangoVocabulary.PERMISSION_GROUP), authorizationController.getReadableOrganizations(new InternalMasterKey(), parameters.filter().getRestrictToOrganizations()), databaseFactory.getConnection(parameters.databaseScope()).getCollections(), configuration.getNexusBase(NexusConfiguration.ResourceType.DATA)), parameters);
+        ArangoCursor<Map> cursor = databaseFactory.getConnection(parameters.databaseScope()).getOrCreateDB().query(query, null, new AqlQueryOptions(), Map.class);
+        result.setResults(cursor.asListRemaining());
+        result.setApiName(spec.name);
+        return result;
+    }
+
 
     public Map reflectSpecification(Specification spec, QueryParameters parameters, ArangoDocumentReference documentReference, Credential credential) throws JSONException {
         String query = createQuery(new ArangoReflectionQueryBuilder(spec, new ArangoAlias(ArangoVocabulary.PERMISSION_GROUP), authorizationController.getReadableOrganizations(credential, parameters.filter().getRestrictToOrganizations()), Collections.singleton(documentReference), databaseFactory.getConnection(parameters.databaseScope()).getCollections(), configuration.getNexusBase(NexusConfiguration.ResourceType.DATA)), parameters);
@@ -202,6 +213,11 @@ public class ArangoSpecificationQuery {
                 } else {
                     skipFields.add(field.fieldName);
                 }
+            }
+            else{
+                queryBuilder.addAlias(arangoField);
+                queryBuilder.prepareLeafField(field);
+                queryBuilder.dropAlias();
             }
         }
         queryBuilder.setCurrentField(originalField);

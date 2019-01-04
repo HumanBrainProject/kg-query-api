@@ -136,4 +136,6 @@ public abstract class AbstractArangoQueryBuilder {
     public abstract void addInstanceIdFilter();
 
     public abstract void addSearchQuery();
+
+    public abstract void prepareLeafField(SpecField leafField);
 }
