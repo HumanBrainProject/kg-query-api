@@ -1,5 +1,6 @@
 package org.humanbrainproject.knowledgegraph.query.boundary;
 
+import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoDatabaseFactory;
 import org.humanbrainproject.knowledgegraph.query.control.FreemarkerTemplating;
 import org.humanbrainproject.knowledgegraph.query.entity.StoredTemplateReference;
@@ -8,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
+@ToBeTested(integrationTestRequired = true, systemTestRequired = true)
 public class Templating {
 
     @Autowired

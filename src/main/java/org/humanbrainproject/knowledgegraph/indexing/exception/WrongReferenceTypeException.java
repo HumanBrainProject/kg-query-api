@@ -1,5 +1,8 @@
 package org.humanbrainproject.knowledgegraph.indexing.exception;
 
+import org.humanbrainproject.knowledgegraph.annotations.NoTests;
+
+@NoTests(NoTests.NO_LOGIC)
 public class WrongReferenceTypeException extends RuntimeException{
     public WrongReferenceTypeException() {
     }

@@ -6,11 +6,13 @@ import com.google.gson.Gson;
 import freemarker.template.Configuration;
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
+import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoConnection;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoRepository;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoNamingHelper;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.ArangoVocabulary;
+import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationContext;
 import org.humanbrainproject.knowledgegraph.query.entity.QueryResult;
 import org.humanbrainproject.knowledgegraph.query.entity.StoredLibraryReference;
 import org.humanbrainproject.knowledgegraph.query.entity.StoredTemplateReference;
@@ -25,10 +27,15 @@ import java.io.StringWriter;
 import java.util.*;
 
 @Component
+@ToBeTested
 public class FreemarkerTemplating {
 
     @Autowired
     ArangoRepository repository;
+
+    @Autowired
+    AuthorizationContext authorizationContext;
+
 
     protected Logger logger = LoggerFactory.getLogger(FreemarkerTemplating.class);
 
@@ -48,6 +55,8 @@ public class FreemarkerTemplating {
     }
 
     public String getLibraryById(String libraryId, String template, ArangoConnection connection){
+        //TODO ensure authorization
+
         ArangoDatabase db = connection.getOrCreateDB();
         ArangoCollection library = db.collection(ArangoNamingHelper.createCompatibleId("libraries-"+libraryId));
         if(library.exists() && library.documentExists(template)){
@@ -58,6 +67,7 @@ public class FreemarkerTemplating {
 
 
     private void saveFreemarker(String document, String id, ArangoCollectionReference collectionReference, ArangoConnection driver){
+        //TODO ensure authorization
         ArangoDatabase db = driver.getOrCreateDB();
         ArangoCollection collection = db.collection(collectionReference.getName());
         if(!collection.exists()){
@@ -73,6 +83,8 @@ public class FreemarkerTemplating {
     }
 
     public  org.humanbrainproject.knowledgegraph.query.entity.Template getTemplateById(StoredTemplateReference templateId, ArangoConnection driver){
+        //TODO ensure authorization
+
         ArangoDatabase db = driver.getOrCreateDB();
         return db.collection(TEMPLATES.getName()).getDocument(ArangoNamingHelper.createCompatibleId(templateId.getName()),  org.humanbrainproject.knowledgegraph.query.entity.Template.class);
     }

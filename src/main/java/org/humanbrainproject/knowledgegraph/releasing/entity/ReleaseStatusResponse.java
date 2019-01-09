@@ -1,9 +1,11 @@
 package org.humanbrainproject.knowledgegraph.releasing.entity;
 
+import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 
 import java.util.LinkedHashMap;
 
+@ToBeTested(easy = true)
 public class ReleaseStatusResponse extends LinkedHashMap<String, String> {
 
     public void setId(NexusInstanceReference reference){

@@ -1,7 +1,10 @@
 package org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity;
 
+import org.humanbrainproject.knowledgegraph.annotations.NoTests;
+
 import java.util.Set;
 
+@NoTests(NoTests.NO_LOGIC)
 public class Property {
     private final Object value;
     private final String name;

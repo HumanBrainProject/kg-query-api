@@ -1,10 +1,12 @@
 package org.humanbrainproject.knowledgegraph.indexing.entity.nexus;
 
+import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.SubSpace;
 
 import java.util.Objects;
 
+@ToBeTested(easy = true)
 public class NexusSchemaReference {
 
     private final String organization;

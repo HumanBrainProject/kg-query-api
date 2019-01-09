@@ -3,10 +3,13 @@ package org.humanbrainproject.knowledgegraph.indexing.api;
 import com.github.jsonldjava.core.JsonLdError;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.commons.InternalApi;
+import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationContext;
 import org.humanbrainproject.knowledgegraph.indexing.boundary.GraphIndexing;
 import org.humanbrainproject.knowledgegraph.indexing.entity.IndexingMessage;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
+import org.humanbrainproject.knowledgegraph.commons.api.RestUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,11 +21,17 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 
+import static org.humanbrainproject.knowledgegraph.commons.api.ParameterConstants.*;
+
 @RestController
 @RequestMapping(value = "/internal/indexing")
 @InternalApi
-@Api(value="/internal/indexing", description = "The indexing api to upload JSON-LD to the arango database")
+@Api(value="/internal/indexing", description = "The indexing api - triggers the indexing of the incoming messages. ATTENTION: These operations are executed with full DB rights! Be sure, you protect these API endpoints accordingly!")
+@ToBeTested(easy = true)
 public class IndexingInternalAPI {
+
+    @Autowired
+    AuthorizationContext authorizationContext;
 
     @Autowired
     GraphIndexing indexer;
@@ -34,9 +43,11 @@ public class IndexingInternalAPI {
     }
 
 
-    @ApiOperation("Creates a new instance")
-    @PostMapping(value="/{organization}/{domain}/{schema}/{schemaversion}/{id}", consumes = {MediaType.APPLICATION_JSON, "application/ld+json"}, produces = MediaType.APPLICATION_JSON)
-    public ResponseEntity<String> addInstance(@RequestBody String payload, @PathVariable("organization") String organization, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("schemaversion") String schemaVersion, @PathVariable("id") String id, @RequestParam(value = "authorId", required = false) String authorId, @RequestParam(value = "eventDateTime", required = false) String timestamp) {
+    @ApiOperation("Index the creation of a new instance")
+    @PostMapping(value="/{"+ ORG+"}/{"+DOMAIN+"}/{"+SCHEMA+"}/{"+VERSION+"}/{"+ID+"}", consumes = {MediaType.APPLICATION_JSON, RestUtils.APPLICATION_LD_JSON}, produces = MediaType.APPLICATION_JSON)
+    public ResponseEntity<String> addInstance(@RequestBody String payload, @PathVariable(ORG) String organization, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String schemaVersion, @PathVariable(ID) String id, @RequestParam(value = "authorId", required = false) String authorId, @RequestParam(value = "eventDateTime", required = false) String timestamp) {
+        authorizationContext.setMasterCredential();
+
         NexusInstanceReference path = new NexusInstanceReference(organization, domain, schema, schemaVersion, id).setRevision(1);
         logger.info("Received insert request for {}", path.getRelativeUrl().getUrl());
         logger.debug("Payload for insert request {}: {}", path.getRelativeUrl().getUrl(), payload);
@@ -53,8 +64,11 @@ public class IndexingInternalAPI {
         }
     }
 
-    @PutMapping(value="/{organization}/{domain}/{schema}/{schemaversion}/{id}/{rev}", consumes = {MediaType.APPLICATION_JSON, "application/ld+json"}, produces = MediaType.APPLICATION_JSON)
-    public ResponseEntity<String> updateInstance(@RequestBody String payload, @PathVariable("organization") String organization, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("schemaversion") String schemaVersion, @PathVariable("id") String id, @PathVariable("rev") Integer rev, @RequestParam(value = "authorId", required = false) String authorId, @RequestParam(value = "eventDateTime", required = false) String timestamp) {
+    @ApiOperation("Index the update of an existing instance in a specific revision")
+    @PutMapping(value="/{"+ ORG+"}/{"+DOMAIN+"}/{"+SCHEMA+"}/{"+VERSION+"}/{"+ID+"}/{"+REV+"}", consumes = {MediaType.APPLICATION_JSON, RestUtils.APPLICATION_LD_JSON}, produces = MediaType.APPLICATION_JSON)
+    public ResponseEntity<String> updateInstance(@RequestBody String payload, @PathVariable(ORG) String organization, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String schemaVersion, @PathVariable(ID) String id, @PathVariable(REV) Integer rev, @RequestParam(value = "authorId", required = false) String authorId, @RequestParam(value = "eventDateTime", required = false) String timestamp) {
+        authorizationContext.setMasterCredential();
+
         NexusInstanceReference path = new NexusInstanceReference(organization, domain, schema, schemaVersion, id).setRevision(rev);
         logger.info("Received update request for {} in rev {}", path.getRelativeUrl().getUrl(), rev);
         logger.debug("Payload for update request {} in rev {}: {}", path.getRelativeUrl().getUrl(), rev, payload);
@@ -71,9 +85,11 @@ public class IndexingInternalAPI {
             throw new RuntimeException(e);
         }
     }
+    @ApiOperation("Index the deletion of an existing instance")
+    @DeleteMapping(value="/{"+ ORG+"}/{"+DOMAIN+"}/{"+SCHEMA+"}/{"+VERSION+"}/{"+ID+"}", produces = MediaType.APPLICATION_JSON)
+    public ResponseEntity<String> deleteInstance(@PathVariable(ORG) String organization, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String schemaVersion, @PathVariable(ID) String id, @RequestAttribute(value=REV, required = false) Integer rev, @RequestParam(value = "authorId", required = false) String authorId, @RequestParam(value = "eventDateTime", required = false) String timestamp) {
+        authorizationContext.setMasterCredential();
 
-    @DeleteMapping(value="/{organization}/{domain}/{schema}/{schemaversion}/{id}", produces = MediaType.APPLICATION_JSON)
-    public ResponseEntity<String> deleteInstance(@PathVariable("organization") String organization, @PathVariable("domain") String domain, @PathVariable("schema") String schema, @PathVariable("schemaversion") String schemaVersion, @PathVariable("id") String id, @RequestAttribute(value="rev", required = false) Integer rev, @RequestParam(value = "authorId", required = false) String authorId, @RequestParam(value = "eventDateTime", required = false) String timestamp) {
         NexusInstanceReference path = new NexusInstanceReference(organization, domain, schema, schemaVersion, id).setRevision(rev);
         logger.info("Received delete request for {} in rev {}", path.getRelativeUrl().getUrl(), rev);
         try {
@@ -86,8 +102,10 @@ public class IndexingInternalAPI {
         }
     }
 
+    @ApiOperation("Remove everything in the index")
     @DeleteMapping("/collections")
     public void clearGraph(){
+        authorizationContext.setMasterCredential();
         indexer.clearGraph();
     }
 

@@ -1,5 +1,6 @@
 package org.humanbrainproject.knowledgegraph.indexing.control.spatial.rasterizer;
 
+import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.indexing.control.spatial.transformation.ThreeDTransformation;
 import org.humanbrainproject.knowledgegraph.query.entity.ThreeDVector;
 
@@ -11,6 +12,10 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * A simple rasterizer for two dimensional elements based on a {@link ThreeDTransformation} logic.
+ */
+@ToBeTested(easy = true)
 public class TwoDimensionRasterizer {
 
     private final ThreeDTransformation transformation;
@@ -18,7 +23,6 @@ public class TwoDimensionRasterizer {
 
     private int width = 100;
     private int height = 100;
-
 
     public TwoDimensionRasterizer(ThreeDTransformation transformation) {
         this.transformation = transformation;
@@ -37,7 +41,9 @@ public class TwoDimensionRasterizer {
         return result;
     }
 
-
+    /**
+     * debug-only html export of a rendered display of the generated dots.
+     */
     public static void draw(Collection<ThreeDVector> dots) {
         double maxX = dots.stream().max(Comparator.comparingDouble(ThreeDVector::getX)).get().getX();
         double maxY = dots.stream().max(Comparator.comparingDouble(ThreeDVector::getY)).get().getY();

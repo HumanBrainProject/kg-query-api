@@ -1,5 +1,6 @@
 package org.humanbrainproject.knowledgegraph.indexing.entity.nexus;
 
+import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.SubSpace;
 import org.slf4j.Logger;
@@ -9,6 +10,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.Objects;
 
+@ToBeTested(easy = true)
 public class NexusInstanceReference {
 
     private final NexusSchemaReference nexusSchema;

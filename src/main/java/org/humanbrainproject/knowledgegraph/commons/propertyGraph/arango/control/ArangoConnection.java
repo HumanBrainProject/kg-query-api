@@ -5,6 +5,7 @@ import com.arangodb.ArangoDBException;
 import com.arangodb.ArangoDatabase;
 import com.arangodb.entity.CollectionEntity;
 import com.arangodb.entity.CollectionType;
+import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.control.DatabaseConnection;
 import org.springframework.beans.factory.annotation.Value;
@@ -12,6 +13,7 @@ import org.springframework.beans.factory.annotation.Value;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+@ToBeTested(systemTestRequired = true)
 public class ArangoConnection implements DatabaseConnection<ArangoDatabase>{
 
     @Value("${org.humanbrainproject.knowledgegraph.arango.host}")

@@ -1,11 +1,12 @@
 package org.humanbrainproject.knowledgegraph.indexing.entity;
 
+import org.humanbrainproject.knowledgegraph.annotations.NoTests;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 
 /**
  * This is the representation of the indexing message we receive through the API as is (with the payload represented as string).
  */
-
+@NoTests(NoTests.NO_LOGIC)
 public class IndexingMessage {
     private final NexusInstanceReference instanceReference;
     private final String payload;

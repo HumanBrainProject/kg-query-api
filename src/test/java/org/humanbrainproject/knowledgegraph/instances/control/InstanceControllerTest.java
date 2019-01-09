@@ -21,7 +21,7 @@ import java.io.IOException;
 public class InstanceControllerTest {
 
     @Autowired
-    InstanceController instanceController;
+    InstanceManipulationController instanceController;
 
     @Autowired
     SystemOidcClient oidcClient;
@@ -32,6 +32,6 @@ public class InstanceControllerTest {
         JsonDocument instance= new JsonDocument();
         instance.put(SchemaOrgVocabulary.NAME, "adfdasf");
         instance.put(HBPVocabulary.NAMESPACE+"foo", "barfas");
-        instanceController.createInstanceByIdentifier(nexusInstanceReference.getNexusSchema(), "barfoo", instance, oidcClient.getAuthorizationToken());
+        instanceController.createInstanceByIdentifier(nexusInstanceReference.getNexusSchema(), "barfoo", instance);
     }
 }

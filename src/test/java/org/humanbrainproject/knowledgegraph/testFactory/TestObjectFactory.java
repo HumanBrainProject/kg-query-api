@@ -4,6 +4,8 @@ import com.github.jsonldjava.core.JsonLdConsts;
 import org.humanbrainproject.knowledgegraph.commons.authorization.entity.Credential;
 import org.humanbrainproject.knowledgegraph.commons.authorization.entity.InternalMasterKey;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
+import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
+import org.humanbrainproject.knowledgegraph.commons.vocabulary.ArangoVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.SchemaOrgVocabulary;
 import org.humanbrainproject.knowledgegraph.indexing.control.MessageProcessor;
@@ -18,10 +20,27 @@ import java.util.Map;
 
 public class TestObjectFactory {
 
+
+    public static NexusConfiguration createNexusConfiguration(){
+        NexusConfiguration nexusConfiguration = Mockito.spy(new NexusConfiguration());
+        Mockito.doReturn("http://foo").when(nexusConfiguration).getNexusBase();
+        Mockito.doReturn("http://bar").when(nexusConfiguration).getNexusEndpoint();
+        return nexusConfiguration;
+
+    }
+
+
     public static Map<String, Object> createInstanceSkeleton(String identifier) {
         Map<String, Object> instance = new LinkedHashMap<>();
-        instance.put(SchemaOrgVocabulary.IDENTIFIER, "foobar");
+        instance.put(SchemaOrgVocabulary.IDENTIFIER, identifier);
         return instance;
+    }
+
+
+    public static Map<String, Object> createArangoInstanceSkeleton(String identifier, String permissionGroup){
+        Map<String, Object> foobar = createInstanceSkeleton(identifier);
+        foobar.put(ArangoVocabulary.PERMISSION_GROUP, permissionGroup);
+        return foobar;
     }
 
     public static NexusInstanceReference fooInstanceReference() {

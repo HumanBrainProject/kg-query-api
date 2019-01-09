@@ -1,5 +1,6 @@
 package org.humanbrainproject.knowledgegraph.indexing.entity.knownSemantics;
 
+import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.exceptions.UnexpectedNumberOfResults;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.SchemaOrgVocabulary;
@@ -8,6 +9,7 @@ import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceR
 
 import java.util.List;
 
+@ToBeTested(easy = true)
 public class LinkingInstance extends KnownSemantic {
 
     public LinkingInstance(QualifiedIndexingMessage spec) {

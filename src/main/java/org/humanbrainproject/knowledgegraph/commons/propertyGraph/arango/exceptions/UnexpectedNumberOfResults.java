@@ -1,5 +1,8 @@
 package org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.exceptions;
 
+import org.humanbrainproject.knowledgegraph.annotations.NoTests;
+
+@NoTests(NoTests.NO_LOGIC)
 public class UnexpectedNumberOfResults extends RuntimeException{
 
     public UnexpectedNumberOfResults() {

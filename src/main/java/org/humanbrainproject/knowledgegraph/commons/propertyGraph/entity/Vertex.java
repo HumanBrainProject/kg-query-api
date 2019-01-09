@@ -1,11 +1,13 @@
 package org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity;
 
+import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.indexing.entity.QualifiedIndexingMessage;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 
 import java.util.ArrayList;
 import java.util.List;
 
+@ToBeTested(easy = true)
 public class Vertex implements VertexOrEdge {
 
     private final List<Edge> edges;

@@ -1,5 +1,8 @@
 package org.humanbrainproject.knowledgegraph.query.entity;
 
+import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
+
+@ToBeTested(easy = true)
 public class BoundingBox {
 
     private final ThreeDVector from;
@@ -11,6 +14,9 @@ public class BoundingBox {
     }
 
     public static BoundingBox parseBoundingBox(String boundingBox, String referenceSpace) {
+        if(boundingBox==null || referenceSpace==null){
+            return null;
+        }
         String normalized = boundingBox.replaceAll("[^0-9,.]", "");
         String[] split = normalized.split(",");
         if(split.length!=6){

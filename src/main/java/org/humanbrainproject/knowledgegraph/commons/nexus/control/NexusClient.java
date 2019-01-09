@@ -1,6 +1,7 @@
 package org.humanbrainproject.knowledgegraph.commons.nexus.control;
 
 
+import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationController;
 import org.humanbrainproject.knowledgegraph.commons.authorization.entity.Credential;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
@@ -35,6 +36,7 @@ import java.util.stream.Collectors;
  * system credentials for accessing Nexus.
  */
 @Component
+@ToBeTested(systemTestRequired = true)
 public class NexusClient {
 
     @Autowired
@@ -92,10 +94,6 @@ public class NexusClient {
             throw e;
         }
     }
-
-
-
-
 
     public boolean delete(NexusRelativeUrl url, Integer revision, Credential credential) {
         return delete(url, revision, authorizationController.getInterceptor(credential));
@@ -245,7 +243,6 @@ public class NexusClient {
         }
     }
 
-
     //TODO reimplement with the use of consume
     private List<JsonDocument> list(String url, ClientHttpRequestInterceptor oidc, boolean followPages) {
         ResponseEntity<Map> result = createRestTemplate(oidc).getForEntity(url, Map.class);
@@ -265,8 +262,5 @@ public class NexusClient {
         }
         return Collections.emptyList();
     }
-
-
-
 
 }

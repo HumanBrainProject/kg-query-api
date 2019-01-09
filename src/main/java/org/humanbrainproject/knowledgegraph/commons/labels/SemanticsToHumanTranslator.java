@@ -1,6 +1,7 @@
 package org.humanbrainproject.knowledgegraph.commons.labels;
 
 import org.apache.commons.lang.StringUtils;
+import org.humanbrainproject.knowledgegraph.annotations.Tested;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
 import org.springframework.stereotype.Component;
@@ -11,6 +12,7 @@ import java.util.Arrays;
 import java.util.Objects;
 
 @Component
+@Tested
 public class SemanticsToHumanTranslator {
 
     public String translateNexusSchemaReference(NexusSchemaReference nexusSchemaReference){
@@ -35,7 +37,7 @@ public class SemanticsToHumanTranslator {
         return null;
     }
 
-    private String normalize(String value) {
+    String normalize(String value) {
         if(value!=null) {
             if(value.startsWith("@")){
                 value = value.substring(1);

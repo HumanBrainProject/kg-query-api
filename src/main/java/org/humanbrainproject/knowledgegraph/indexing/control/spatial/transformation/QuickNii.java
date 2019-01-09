@@ -1,10 +1,18 @@
 package org.humanbrainproject.knowledgegraph.indexing.control.spatial.transformation;
 
-import org.apache.commons.math3.linear.*;
+import org.apache.commons.math3.linear.ArrayRealVector;
+import org.apache.commons.math3.linear.MatrixUtils;
+import org.apache.commons.math3.linear.RealMatrix;
+import org.apache.commons.math3.linear.RealVector;
+import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.query.entity.ThreeDVector;
 
 import java.util.List;
 
+/**
+ * The 3d transformation logic for QuickNii inputs.
+ */
+@ToBeTested(easy = true)
 public class QuickNii implements ThreeDTransformation{
 
     RealMatrix matrix;

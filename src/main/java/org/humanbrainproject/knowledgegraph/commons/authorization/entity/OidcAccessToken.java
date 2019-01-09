@@ -1,7 +1,11 @@
 package org.humanbrainproject.knowledgegraph.commons.authorization.entity;
 
+import org.apache.commons.lang3.StringUtils;
+import org.humanbrainproject.knowledgegraph.annotations.Tested;
+
 import java.util.Objects;
 
+@Tested
 public class OidcAccessToken implements Credential {
 
     private String token;
@@ -16,7 +20,7 @@ public class OidcAccessToken implements Credential {
     }
 
     public String getBearerToken(){
-        return this.token != null ? this.token.toLowerCase().startsWith("bearer ") ? this.token : String.format("Bearer %s", this.token) : null;
+        return this.token != null ? this.token.toLowerCase().startsWith("bearer ") ? StringUtils.capitalize(this.token) : String.format("Bearer %s", this.token) : null;
     }
 
     @Override

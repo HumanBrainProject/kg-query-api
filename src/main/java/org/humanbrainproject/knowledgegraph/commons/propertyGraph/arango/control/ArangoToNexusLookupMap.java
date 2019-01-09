@@ -1,5 +1,6 @@
 package org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control;
 
+import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
 import org.humanbrainproject.knowledgegraph.structure.boundary.Structure;
@@ -15,6 +16,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Component
+@ToBeTested
 public class ArangoToNexusLookupMap implements InitializingBean {
 
     @Autowired

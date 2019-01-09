@@ -13,6 +13,7 @@ import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
+import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.query.entity.BoundingBox;
 import org.humanbrainproject.knowledgegraph.query.entity.ThreeDVector;
 import org.slf4j.Logger;
@@ -26,6 +27,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Component
+@ToBeTested(systemTestRequired = true)
 public class Solr implements InitializingBean {
 
     @Value("${org.humanbrainproject.knowledgegraph.solr.base}")

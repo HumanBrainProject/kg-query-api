@@ -1,11 +1,11 @@
 package org.humanbrainproject.knowledgegraph.structure.boundary;
 
 import com.arangodb.ArangoDBException;
+import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
+import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationContext;
 import org.humanbrainproject.knowledgegraph.commons.labels.SemanticsToHumanTranslator;
-import org.humanbrainproject.knowledgegraph.commons.nexus.control.SystemNexusClient;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoDatabaseFactory;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoRepository;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoToNexusLookupMap;
+import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusClient;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.*;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.SubSpace;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
@@ -17,17 +17,31 @@ import org.springframework.stereotype.Component;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@ToBeTested(integrationTestRequired = true, systemTestRequired = true)
 @Component
 public class Structure {
+
+    @Autowired
+    AuthorizationContext authorizationContext;
 
     @Autowired
     ArangoRepository repository;
 
     @Autowired
+    ArangoStructureRepository structureRepository;
+
+    @Autowired
+    ArangoInternalRepository internalRepository;
+
+    @Autowired
+    ArangoInferredRepository inferredRepository;
+
+    @Autowired
     ArangoDatabaseFactory databaseFactory;
 
     @Autowired
-    SystemNexusClient systemNexusClient;
+    NexusClient nexusClient;
+
 
     @Autowired
     SemanticsToHumanTranslator semanticsToHumanTranslator;
@@ -37,7 +51,7 @@ public class Structure {
 
 
     public Set<NexusSchemaReference> getAllSchemasInMainSpace() {
-        Set<NexusSchemaReference> allSchemas = systemNexusClient.getAllSchemas(null, null);
+        Set<NexusSchemaReference> allSchemas = nexusClient.getAllSchemas(null, null, authorizationContext.getInterceptor());
         return allSchemas.stream().map(s -> s.toSubSpace(SubSpace.MAIN)).collect(Collectors.toSet());
     }
 
@@ -73,19 +87,19 @@ public class Structure {
         jsonDocument.put("label", semanticsToHumanTranslator.translateNexusSchemaReference(schemaReference));
         //TODO reflect on schema
         ArangoCollectionReference arangoReference = ArangoCollectionReference.fromNexusSchemaReference(schemaReference);
-        if (!repository.hasInstances(arangoReference)) {
+        if (!inferredRepository.hasInstances(arangoReference)) {
             return null;
         }
         Map<String, Map> inboundRelations;
         if (withLinks) {
-            inboundRelations = groupDirectReferences(repository.getDirectRelationsWithType(arangoReference, false), false);
+            inboundRelations = groupDirectReferences(structureRepository.getDirectRelationsWithType(arangoReference, false), false);
         } else {
             inboundRelations = Collections.emptyMap();
         }
-        List<Map> attributesWithCount = repository.getAttributesWithCount(arangoReference);
+        List<Map> attributesWithCount = structureRepository.getAttributesWithCount(arangoReference);
         Map<String, Map> outboundRelations;
         if (attributesWithCount.size() > 0 && withLinks) {
-            outboundRelations = groupDirectReferences(repository.getDirectRelationsWithType(arangoReference, true), true);
+            outboundRelations = groupDirectReferences(structureRepository.getDirectRelationsWithType(arangoReference, true), true);
         } else {
             outboundRelations = Collections.emptyMap();
         }
@@ -135,13 +149,12 @@ public class Structure {
 
     public void reflectOnSpecifications(NexusSchemaReference schemaReference) {
         String prefix = ArangoCollectionReference.fromNexusSchemaReference(schemaReference).getName()+"-";
-        List<Map> internalDocuments = repository.getInternalDocumentsWithKeyPrefix(ArangoQuery.SPECIFICATION_QUERIES, prefix, Map.class);
+        List<Map> internalDocuments = internalRepository.getInternalDocumentsWithKeyPrefix(ArangoQuery.SPECIFICATION_QUERIES, prefix, Map.class);
         System.out.println(internalDocuments);
     }
 
-
     public List<String> getArangoEdgeCollections() {
-        return repository.getCollectionNames().stream().map(ArangoCollectionReference::getName).collect(Collectors.toList());
+        return inferredRepository.getCollectionNames().stream().map(ArangoCollectionReference::getName).collect(Collectors.toList());
     }
 
 

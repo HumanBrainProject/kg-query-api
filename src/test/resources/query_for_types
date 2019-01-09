@@ -1,0 +1,48 @@
+LET whitelist=["nexus","kgeditor","internal","brainviewer","neurosciencegraph","foo","neuralactivity","cscs","neuromorphic","minds","mindsinferred","foobar","releasing","mindseditor","kgx","dataciteinferred","test","ilastik","custom","datacite","mindsreconciled","neuroglancer","licenses","fooeditor","hbpkg","fooinferred","brainsimulation","cscseditor","hbpkgeditor","dataciteeditor"]
+
+//*****************************
+//add root
+//*****************************
+
+FOR root_doc IN `minds-core-activity-v1_0_0`
+FILTER root_doc != NULL
+FILTER root_doc._permissionGroup IN whitelist
+LET relativeUrl = root_doc.`https://schema.hbp.eu/relativeUrl`
+
+LET name = root_doc.`http://schema.org/name`
+LET nameExists = name!=NULL && name!=[] && name!="" ? [{
+    "field": "http://schema.org/name",
+    "type": TYPENAME(name),
+    "isLink": false
+}] : []
+
+LET https___schema_hbp_eu_kgEditor_activity_ethicsApproval = FLATTEN(
+FOR https___schema_hbp_eu_kgEditor_activity_ethicsApproval_doc  IN 1..1 OUTBOUND root_doc `schema_hbp_eu-minds-ethicsApproval`
+LET relativeUrl2 = https___schema_hbp_eu_kgEditor_activity_ethicsApproval_doc.`https://schema.hbp.eu/relativeUrl`
+FILTER https___schema_hbp_eu_kgEditor_activity_ethicsApproval_doc != NULL
+RETURN DISTINCT {
+    "field": "approval",
+    "type": LEFT(relativeUrl2, FIND_LAST(relativeUrl2, '/')),
+    "isLink": true
+    }
+)
+
+LET https___schema_hbp_eu_kgEditor_activity_ethicsAuthority = FLATTEN(
+FOR https___schema_hbp_eu_kgEditor_activity_ethicsAuthority_doc  IN 1..1 OUTBOUND root_doc `schema_hbp_eu-minds-ethicsAuthority`
+LET relativeUrl3 = https___schema_hbp_eu_kgEditor_activity_ethicsAuthority_doc.`https://schema.hbp.eu/relativeUrl`
+FILTER https___schema_hbp_eu_kgEditor_activity_ethicsAuthority_doc != NULL
+RETURN DISTINCT {
+    "field": "authority",
+    "type": LEFT(relativeUrl3, FIND_LAST(relativeUrl3, '/')),
+    "isLink": true
+    }
+)
+
+FOR r2 IN UNION(https___schema_hbp_eu_kgEditor_activity_ethicsApproval, https___schema_hbp_eu_kgEditor_activity_ethicsAuthority,nameExists)
+    COLLECT field=r2.field, type=r2.type, isLink=r2.isLink WITH COUNT INTO c
+        RETURN {
+            "field": field,
+            "type": type,
+            "isLink": isLink,
+            "count": c
+        }

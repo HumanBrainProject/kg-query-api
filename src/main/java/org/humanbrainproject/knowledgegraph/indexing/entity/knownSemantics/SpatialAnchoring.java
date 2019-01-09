@@ -1,10 +1,12 @@
 package org.humanbrainproject.knowledgegraph.indexing.entity.knownSemantics;
 
+import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.humanbrainproject.knowledgegraph.indexing.control.spatial.transformation.QuickNii;
 import org.humanbrainproject.knowledgegraph.indexing.entity.QualifiedIndexingMessage;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 
+@ToBeTested(easy = true)
 public class SpatialAnchoring extends KnownSemantic {
 
 

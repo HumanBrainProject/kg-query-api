@@ -1,5 +1,8 @@
 package org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity;
 
+import org.humanbrainproject.knowledgegraph.annotations.NoTests;
+
+@NoTests(NoTests.NO_LOGIC)
 public class Tuple<V,T> {
     private final V value1;
     private final T value2;

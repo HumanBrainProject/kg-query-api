@@ -8,9 +8,9 @@ import com.arangodb.entity.CollectionEntity;
 import com.arangodb.entity.CollectionType;
 import com.arangodb.model.AqlQueryOptions;
 import com.arangodb.model.CollectionCreateOptions;
+import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
+import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationContext;
 import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationController;
-import org.humanbrainproject.knowledgegraph.commons.authorization.control.SystemOidcClient;
-import org.humanbrainproject.knowledgegraph.commons.nexus.control.SystemNexusClient;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoConnection;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoDocumentConverter;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.query.ArangoQueryFactory;
@@ -19,12 +19,13 @@ import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.control.DatabaseTransaction;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Edge;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Vertex;
-import org.humanbrainproject.knowledgegraph.indexing.entity.DeleteTodoItem;
-import org.humanbrainproject.knowledgegraph.indexing.entity.InsertOrUpdateInPrimaryStoreTodoItem;
-import org.humanbrainproject.knowledgegraph.indexing.entity.InsertTodoItem;
-import org.humanbrainproject.knowledgegraph.indexing.entity.TodoList;
 import org.humanbrainproject.knowledgegraph.indexing.entity.knownSemantics.LinkingInstance;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
+import org.humanbrainproject.knowledgegraph.indexing.entity.todo.DeleteTodoItem;
+import org.humanbrainproject.knowledgegraph.indexing.entity.todo.InsertOrUpdateInPrimaryStoreTodoItem;
+import org.humanbrainproject.knowledgegraph.indexing.entity.todo.InsertTodoItem;
+import org.humanbrainproject.knowledgegraph.indexing.entity.todo.TodoList;
+import org.humanbrainproject.knowledgegraph.instances.control.InstanceManipulationController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,22 +37,25 @@ import java.util.List;
 
 @Component
 @Primary
+@ToBeTested(integrationTestRequired = true, systemTestRequired = true)
 public class NexusArangoTransaction implements DatabaseTransaction {
 
     @Autowired
     ArangoDocumentConverter arangoDocumentConverter;
 
-    @Autowired
-    SystemNexusClient nexusClient;
 
     @Autowired
     AuthorizationController authorizationController;
 
     @Autowired
-    SystemOidcClient systemOidcClient;
+    InstanceManipulationController manipulationController;
 
     @Autowired
     ArangoQueryFactory queryFactory;
+
+    @Autowired
+    AuthorizationContext authorizationContext;
+
 
 
     protected Logger logger = LoggerFactory.getLogger(NexusArangoTransaction.class);
@@ -113,7 +117,7 @@ public class NexusArangoTransaction implements DatabaseTransaction {
         List<InsertOrUpdateInPrimaryStoreTodoItem> insertOrUpdateInPrimaryStoreItems = todoList.getInsertOrUpdateInPrimaryStoreTodoItems();
         for (InsertOrUpdateInPrimaryStoreTodoItem insertOrUpdateInPrimaryStoreItem : insertOrUpdateInPrimaryStoreItems) {
             Vertex vertex = insertOrUpdateInPrimaryStoreItem.getVertex();
-            NexusInstanceReference newReference = nexusClient.createOrUpdateInstance(vertex.getInstanceReference().setRevision(null), new LinkedHashMap<>(vertex.getQualifiedIndexingMessage().getQualifiedMap()));
+            NexusInstanceReference newReference = manipulationController.createInstanceByNexusId(vertex.getInstanceReference().getNexusSchema(), vertex.getInstanceReference().getId(), null, new LinkedHashMap(vertex.getQualifiedIndexingMessage().getQualifiedMap()));
             vertex.setInstanceReference(newReference);
         }
     }
@@ -171,7 +175,7 @@ public class NexusArangoTransaction implements DatabaseTransaction {
             if (collection.exists() && collection.getInfo().getType()==CollectionType.DOCUMENT) {
                 if (collection.documentExists(document.getKey())) {
                     try {
-                        ArangoCursor<String> result = db.query(queryFactory.queryOutboundRelationsForDocument(document, connection.getEdgesCollectionNames(), authorizationController.getReadableOrganizations(systemOidcClient.getAuthorizationToken())), null, new AqlQueryOptions(), String.class);
+                        ArangoCursor<String> result = db.query(queryFactory.queryOutboundRelationsForDocument(document, connection.getEdgesCollectionNames(), authorizationContext.getReadableOrganizations()), null, new AqlQueryOptions(), String.class);
                         for (String id : result.asListRemaining()) {
                             deleteDocument(ArangoDocumentReference.fromId(id), db);
                         }

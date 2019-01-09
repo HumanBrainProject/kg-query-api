@@ -1,5 +1,6 @@
 package org.humanbrainproject.knowledgegraph;
 
+import org.humanbrainproject.knowledgegraph.annotations.NoTests;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoConnection;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.SpringApplication;
@@ -9,6 +10,7 @@ import org.springframework.context.annotation.ComponentScan;
 
 @SpringBootApplication
 @ComponentScan("org.humanbrainproject.knowledgegraph")
+@NoTests(NoTests.NO_LOGIC)
 public class KgQueryApplication {
 
 	public static void main(String[] args) {

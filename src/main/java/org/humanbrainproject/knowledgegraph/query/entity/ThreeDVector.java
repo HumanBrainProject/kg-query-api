@@ -1,8 +1,11 @@
 package org.humanbrainproject.knowledgegraph.query.entity;
 
+import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
+
 import java.util.ArrayList;
 import java.util.List;
 
+@ToBeTested(easy = true)
 public class ThreeDVector {
 
     private final double x;

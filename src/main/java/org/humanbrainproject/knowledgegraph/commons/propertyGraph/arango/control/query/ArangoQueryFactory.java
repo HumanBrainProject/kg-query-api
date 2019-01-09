@@ -1,8 +1,12 @@
 package org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.query;
 
 import com.github.jsonldjava.core.JsonLdConsts;
+import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.UnauthorizedAccess;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.aql.AuthorizedArangoQuery;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.aql.TrustedAqlValue;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.aql.UnauthorizedArangoQuery;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.ArangoVocabulary;
@@ -17,6 +21,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Component
+@ToBeTested
 public class ArangoQueryFactory {
 
 

@@ -1,7 +1,10 @@
 package org.humanbrainproject.knowledgegraph.indexing.entity;
 
+import org.humanbrainproject.knowledgegraph.annotations.NoTests;
+
+@NoTests(NoTests.NO_LOGIC)
 public enum TargetDatabase {
 
-    DEFAULT, RELEASE, INFERRED;
+    NATIVE, RELEASE, INFERRED;
 
 }

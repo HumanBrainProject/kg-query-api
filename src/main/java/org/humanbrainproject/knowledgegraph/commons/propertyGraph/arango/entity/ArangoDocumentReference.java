@@ -1,5 +1,6 @@
 package org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity;
 
+import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoToNexusLookupMap;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Edge;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.SubSpace;
@@ -8,6 +9,7 @@ import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaRef
 
 import java.util.Objects;
 
+@ToBeTested(easy = true)
 public class ArangoDocumentReference {
 
     private final ArangoCollectionReference collection;

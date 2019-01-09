@@ -1,6 +1,7 @@
 package org.humanbrainproject.knowledgegraph.query.control;
 
 import org.apache.solr.client.solrj.SolrServerException;
+import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
 import org.humanbrainproject.knowledgegraph.commons.solr.Solr;
 import org.humanbrainproject.knowledgegraph.query.entity.BoundingBox;
@@ -13,6 +14,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Component
+@ToBeTested(easy = true)
 public class SpatialSearch {
 
     @Autowired

@@ -1,225 +1,84 @@
 package org.humanbrainproject.knowledgegraph.instances.boundary;
 
-import org.humanbrainproject.knowledgegraph.commons.authorization.entity.Credential;
-import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonLdStandardization;
+import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
-import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusClient;
-import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoConnection;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoDatabaseFactory;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoRepository;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.SubSpace;
-import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
-import org.humanbrainproject.knowledgegraph.indexing.boundary.GraphIndexing;
-import org.humanbrainproject.knowledgegraph.indexing.control.MessageProcessor;
-import org.humanbrainproject.knowledgegraph.indexing.entity.IndexingMessage;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
-import org.humanbrainproject.knowledgegraph.instances.control.InstanceController;
-import org.humanbrainproject.knowledgegraph.instances.control.SchemaController;
-import org.humanbrainproject.knowledgegraph.instances.entity.Client;
-import org.humanbrainproject.knowledgegraph.query.entity.DatabaseScope;
+import org.humanbrainproject.knowledgegraph.instances.control.InstanceLookupController;
+import org.humanbrainproject.knowledgegraph.instances.control.InstanceManipulationController;
+import org.humanbrainproject.knowledgegraph.instances.control.InstanceMaintenanceController;
 import org.humanbrainproject.knowledgegraph.query.entity.JsonDocument;
-import org.humanbrainproject.knowledgegraph.query.entity.QueryParameters;
+import org.humanbrainproject.knowledgegraph.query.entity.Pagination;
 import org.humanbrainproject.knowledgegraph.query.entity.QueryResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 
+@ToBeTested(integrationTestRequired = true, systemTestRequired = true)
 @Component
 public class Instances {
 
+    @Autowired
+    InstanceLookupController lookupController;
 
     @Autowired
-    ArangoRepository arangoRepository;
+    InstanceManipulationController manipulationController;
 
     @Autowired
-    ArangoDatabaseFactory databaseFactory;
-
-    @Autowired
-    InstanceController instanceController;
-
-    @Autowired
-    MessageProcessor messageProcessor;
-
-    @Autowired
-    JsonLdStandardization jsonLdStandardization;
+    InstanceMaintenanceController instanceMaintenanceController;
 
     @Autowired
     JsonTransformer jsonTransformer;
 
-    @Autowired
-    NexusConfiguration nexusConfiguration;
-
-    @Autowired
-    SchemaController schemaController;
-
-    @Autowired
-    GraphIndexing graphIndexing;
-
-    @Autowired
-    NexusClient nexusClient;
-
-
     private Logger logger = LoggerFactory.getLogger(Instances.class);
 
-
-    public List<Map> getLinkingInstances(NexusInstanceReference fromInstance, NexusInstanceReference toInstance, NexusSchemaReference relationType, DatabaseScope databaseScope, Credential credential){
-        if(fromInstance==null || toInstance == null || relationType == null){
-            return null;
-        }
-        return arangoRepository.getLinkingInstances(ArangoDocumentReference.fromNexusInstance(fromInstance), ArangoDocumentReference.fromNexusInstance(toInstance), ArangoCollectionReference.fromNexusSchemaReference(relationType), databaseFactory.getConnection(databaseScope), credential);
+    public List<Map> getLinkingInstances(NexusInstanceReference fromInstance, NexusInstanceReference toInstance, NexusSchemaReference relationType){
+        return lookupController.getLinkingInstances(fromInstance, toInstance, relationType);
     }
 
-
-    public JsonDocument getInstance(NexusInstanceReference instanceReference, DatabaseScope databaseScope, Credential credential) {
-        if(instanceReference==null){
-            return null;
-        }
-        NexusInstanceReference lookupId;
-        if(databaseScope!=DatabaseScope.NATIVE) {
-            lookupId = arangoRepository.findOriginalId(instanceReference, credential);
-            if (lookupId == null) {
-                return null;
-            }
-        }
-        else {
-            lookupId = instanceReference.toSubSpace(SubSpace.MAIN);
-        }
-
-        JsonDocument instance = getInstance(lookupId, databaseFactory.getConnection(databaseScope), credential);
-        return instance!=null ? instance.removeAllInternalKeys() : null;
+    public JsonDocument getInstance(NexusInstanceReference instanceReference) {
+       return lookupController.getInstance(instanceReference);
     }
 
-    public QueryResult<List<Map>> getInstances(NexusSchemaReference schemaReference, QueryParameters queryParameters, Credential credential) {
-        return arangoRepository.getInstances(ArangoCollectionReference.fromNexusSchemaReference(schemaReference), queryParameters.pagination().getStart(), queryParameters.pagination().getSize(), queryParameters.filter().getQueryString(), databaseFactory.getConnection(queryParameters.databaseScope()), credential);
-
+    public QueryResult<List<Map>> getInstances(NexusSchemaReference schemaReference, String searchTerm, Pagination pagination) {
+        return lookupController.getInstances(schemaReference, searchTerm, pagination);
     }
 
-
-    public JsonDocument findInstanceByIdentifier(NexusSchemaReference schema, String identifier, DatabaseScope databaseScope, Credential credential) {
-        NexusInstanceReference reference = arangoRepository.findBySchemaOrgIdentifier(ArangoCollectionReference.fromNexusSchemaReference(schema), identifier, databaseScope, credential);
-        if (reference != null) {
-            NexusInstanceReference originalId = arangoRepository.findOriginalId(reference, credential);
-            if (originalId != null) {
-                return getInstance(originalId.toSubSpace(SubSpace.MAIN), databaseFactory.getInferredDB(), credential).removeAllInternalKeys();
-            }
-        }
-        return null;
+    public JsonDocument findInstanceByIdentifier(NexusSchemaReference schema, String identifier) {
+        return lookupController.findInstanceByIdentifier(schema, identifier);
     }
 
-
-    public JsonDocument getInstanceByClientExtension(NexusInstanceReference instanceReference, String clientExtension, Client client, Credential credential) {
-        NexusSchemaReference schemaReference = instanceReference.getNexusSchema().toSubSpace(client != null && client.getSubSpace() != null ? client.getSubSpace() : SubSpace.MAIN);
-        NexusInstanceReference originalId = arangoRepository.findOriginalId(instanceReference, credential);
-        JsonDocument instance = getInstance(originalId, databaseFactory.getDefaultDB(), credential);
-        if (instance != null) {
-            String identifier = constructIdentifierWithClientIdExtension(instance.getPrimaryIdentifier(), clientExtension);
-            NexusInstanceReference bySchemaOrgIdentifier = arangoRepository.findBySchemaOrgIdentifier(ArangoCollectionReference.fromNexusSchemaReference(schemaReference), identifier, DatabaseScope.NATIVE, credential);
-            if (bySchemaOrgIdentifier != null) {
-                return new JsonDocument(arangoRepository.getDocument(ArangoDocumentReference.fromNexusInstance(bySchemaOrgIdentifier), databaseFactory.getDefaultDB(), credential)).removeAllInternalKeys();
-            }
-            return null;
-        }
-        return null;
+    public JsonDocument getInstanceByClientExtension(NexusInstanceReference instanceReference, String clientExtension) {
+        return lookupController.getInstanceByClientExtension(instanceReference, clientExtension);
     }
 
-    private JsonDocument getInstance(NexusInstanceReference instanceReference, ArangoConnection connection, Credential credential) {
-        return arangoRepository.getInstance(ArangoDocumentReference.fromNexusInstance(instanceReference), connection, credential);
+    public NexusInstanceReference createNewInstance(NexusSchemaReference nexusSchemaReference, String payload) {
+        return manipulationController.createNewInstance(nexusSchemaReference, jsonTransformer.parseToMap(payload)).toSubSpace(SubSpace.MAIN);
     }
 
-
-    public NexusInstanceReference createNewInstance(NexusSchemaReference nexusSchemaReference, String payload, Client client, Credential credential) {
-        SubSpace subSpace = client != null ? client.getSubSpace() : SubSpace.MAIN;
-        nexusSchemaReference = nexusSchemaReference.toSubSpace(subSpace);
-        NexusInstanceReference newInstance = instanceController.createNewInstance(nexusSchemaReference, jsonTransformer.parseToMap(payload), credential);
-        return newInstance.toSubSpace(SubSpace.MAIN);
+    public NexusInstanceReference updateInstance(NexusInstanceReference instanceReference, String payload, String clientIdExtension) {
+       return manipulationController.updateInstance(instanceReference, jsonTransformer.parseToMap(payload), clientIdExtension);
     }
 
-    private String constructIdentifierWithClientIdExtension(String identifier, String clientIdExtension) {
-        return clientIdExtension != null ? identifier + clientIdExtension : identifier;
-
+    public boolean removeInstance(NexusInstanceReference nexusInstanceReference) {
+        return manipulationController.removeInstance(nexusInstanceReference);
     }
 
-    public NexusInstanceReference updateInstance(NexusInstanceReference instanceReference, String payload, Client client, String clientIdExtension, Credential credential) {
-        NexusInstanceReference originalId = arangoRepository.findOriginalId(instanceReference, credential);
-        JsonDocument instance = getInstance(originalId, databaseFactory.getDefaultDB(), credential);
-        if (instance == null) {
-            return null;
-        }
-        NexusSchemaReference nexusSchema = instanceReference.getNexusSchema();
-        SubSpace subSpace = client != null ? client.getSubSpace() : SubSpace.MAIN;
-        nexusSchema = nexusSchema.toSubSpace(subSpace);
-        JsonDocument document = new JsonDocument(jsonTransformer.parseToMap(payload));
-        String primaryIdentifier = instance.getPrimaryIdentifier();
-        if (primaryIdentifier == null) {
-            if (clientIdExtension == null && subSpace == originalId.getSubspace()) {
-                //It's a replacement of the original instance - we therefore should be able to insert the data even without identifier mapping
-                logger.warn(String.format("Found instance without identifier: %s - since it was an update for the original resource, I can continue - but please check what is happening here!", instanceReference.getRelativeUrl().getUrl()));
-                return instanceController.createInstanceByNexusId(nexusSchema, originalId.getId(), instanceReference.getRevision() != null ? instanceReference.getRevision() : 1, document, credential);
-            } else {
-                throw new RuntimeException(String.format("Found instance without identifier: %s", instanceReference.getRelativeUrl().getUrl()));
-            }
-
-        }
-        if (clientIdExtension != null || (subSpace != originalId.getSubspace())) {
-            document.addReference(HBPVocabulary.INFERENCE_EXTENDS, nexusConfiguration.getAbsoluteUrl(originalId));
-        }
-        primaryIdentifier = constructIdentifierWithClientIdExtension(primaryIdentifier, clientIdExtension);
-        return instanceController.createInstanceByIdentifier(nexusSchema, primaryIdentifier, document, credential);
+    public void cloneInstancesFromSchema(NexusSchemaReference originalSchema, String newVersion) {
+        instanceMaintenanceController.cloneInstancesFromSchema(originalSchema, newVersion);
     }
 
-    public boolean removeInstance(NexusInstanceReference nexusInstanceReference, Credential credential) {
-        NexusInstanceReference originalId = arangoRepository.findOriginalId(nexusInstanceReference, credential);
-        //We only deprecate the original id - this way, the reconciled instance should disappear.
-        return instanceController.deprecateInstanceByNexusId(originalId, credential);
+    public void reindexInstancesFromSchema(NexusSchemaReference schemaReference) {
+        instanceMaintenanceController.reindexInstancesFromSchema(schemaReference);
     }
 
-    public void cloneInstancesFromSchema(NexusSchemaReference originalSchema, String newVersion, Credential credential) {
-        List<NexusInstanceReference> allInstancesForSchema = instanceController.getAllInstancesForSchema(originalSchema, credential);
-        for (NexusInstanceReference instanceReference : allInstancesForSchema) {
-            JsonDocument fromNexusById = instanceController.getFromNexusById(instanceReference, credential);
-            //Ensure the right type
-            fromNexusById.addType(schemaController.getTargetClass(originalSchema));
-            //Redirect links
-            JsonDocument redirectedJson = instanceController.pointLinksToSchema(fromNexusById, newVersion);
-            NexusSchemaReference schemaReference = new NexusSchemaReference(originalSchema.getOrganization(), originalSchema.getDomain(), originalSchema.getSchema(), newVersion);
-            instanceController.createInstanceByIdentifier(schemaReference, fromNexusById.getPrimaryIdentifier(), redirectedJson, credential);
-        }
+    public void translateNamespaces(NexusSchemaReference schema, String oldNamespace, String newNamespace) {
+        instanceMaintenanceController.translateNamespaces(schema, oldNamespace, newNamespace);
     }
-
-    public void reindexInstancesFromSchema(NexusSchemaReference schemaReference, Credential credential) {
-
-        nexusClient.consumeInstances(schemaReference, credential, true, instanceReferences -> {
-            for (NexusInstanceReference instanceReference : instanceReferences) {
-                if(instanceReference!=null){
-                    JsonDocument fromNexusById = instanceController.getFromNexusById(instanceReference, credential);
-                    //TODO extract userId from credential
-                    IndexingMessage indexingMessage = new IndexingMessage(fromNexusById.getReference(), jsonTransformer.getMapAsJson(fromNexusById), ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_INSTANT), null);
-                    graphIndexing.update(indexingMessage);
-                }
-            }
-        });
-
-    }
-
-    public void translateNamespaces(NexusSchemaReference schema, String oldNamespace, String newNamespace, Credential credential) {
-        List<NexusInstanceReference> allInstancesForSchema = instanceController.getAllInstancesForSchema(schema, credential);
-        for (NexusInstanceReference instanceReference : allInstancesForSchema) {
-            JsonDocument fromNexusById = instanceController.getFromNexusById(instanceReference, credential);
-            fromNexusById.replaceNamespace(oldNamespace, newNamespace);
-            instanceController.createInstanceByNexusId(instanceReference.getNexusSchema(), instanceReference.getId(), instanceReference.getRevision(), fromNexusById, credential);
-        }
-    }
-
 
 }

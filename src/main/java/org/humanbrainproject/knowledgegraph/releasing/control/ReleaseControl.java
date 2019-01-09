@@ -1,18 +1,26 @@
 package org.humanbrainproject.knowledgegraph.releasing.control;
 
 import com.github.jsonldjava.core.JsonLdConsts;
-import org.humanbrainproject.knowledgegraph.commons.authorization.entity.Credential;
+import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
+import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
 import org.humanbrainproject.knowledgegraph.commons.labels.SemanticsToHumanTranslator;
+import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoDatabaseFactory;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoNativeRepository;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoRepository;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.ArangoVocabulary;
+import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.SchemaOrgVocabulary;
+import org.humanbrainproject.knowledgegraph.indexing.entity.IndexingMessage;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
+import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
+import org.humanbrainproject.knowledgegraph.instances.boundary.Instances;
+import org.humanbrainproject.knowledgegraph.instances.control.InstanceManipulationController;
 import org.humanbrainproject.knowledgegraph.query.boundary.ArangoQuery;
-import org.humanbrainproject.knowledgegraph.query.entity.DatabaseScope;
-import org.humanbrainproject.knowledgegraph.query.entity.QueryParameters;
-import org.humanbrainproject.knowledgegraph.query.entity.StoredQueryReference;
+import org.humanbrainproject.knowledgegraph.query.entity.JsonDocument;
+import org.humanbrainproject.knowledgegraph.query.entity.StoredQuery;
 import org.humanbrainproject.knowledgegraph.releasing.entity.ReleaseStatus;
 import org.humanbrainproject.knowledgegraph.releasing.entity.ReleaseStatusResponse;
 import org.slf4j.Logger;
@@ -25,8 +33,10 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Component
+@ToBeTested(integrationTestRequired = true)
 public class ReleaseControl {
 
     protected Logger logger = LoggerFactory.getLogger(ReleaseControl.class);
@@ -37,15 +47,30 @@ public class ReleaseControl {
     @Autowired
     ArangoDatabaseFactory databaseFactory;
 
-
     @Autowired
     SemanticsToHumanTranslator semanticsToHumanTranslator;
 
     @Autowired
+    NexusConfiguration configuration;
+
+    @Autowired
     ArangoQuery query;
 
-    public NexusInstanceReference findNexusInstanceFromInferredArangoEntry(ArangoDocumentReference arangoDocumentReference, Credential credential) {
-        Map document = arangoRepository.getDocument(arangoDocumentReference, databaseFactory.getInferredDB(), credential);
+    @Autowired
+    JsonTransformer jsonTransformer;
+
+    @Autowired
+    ArangoNativeRepository nativeRepository;
+
+    @Autowired
+    Instances instances;
+
+    @Autowired
+    InstanceManipulationController instanceManipulationController;
+
+
+    public NexusInstanceReference findNexusInstanceFromInferredArangoEntry(ArangoDocumentReference arangoDocumentReference) {
+        Map document = arangoRepository.getDocument(arangoDocumentReference, databaseFactory.getInferredDB());
         if (document != null) {
             Object originalId = document.get(ArangoVocabulary.NEXUS_RELATIVE_URL_WITH_REV);
             if (originalId instanceof String) {
@@ -55,8 +80,8 @@ public class ReleaseControl {
         return null;
     }
 
-    public ReleaseStatusResponse getReleaseStatus(NexusInstanceReference instance, boolean withChildren, Credential credential) {
-        Map releaseGraph = getReleaseGraph(instance, credential);
+    public ReleaseStatusResponse getReleaseStatus(NexusInstanceReference instance, boolean withChildren) {
+        Map releaseGraph = getReleaseGraph(instance);
         if (releaseGraph != null) {
             ReleaseStatusResponse response = new ReleaseStatusResponse();
             response.setRootStatus(ReleaseStatus.valueOf((String) releaseGraph.get("status")));
@@ -70,17 +95,18 @@ public class ReleaseControl {
         return null;
     }
 
-    public Map getReleaseGraph(NexusInstanceReference instance, Credential credential) {
+    public Map getReleaseGraph(NexusInstanceReference instanceReference) {
         try {
-            QueryParameters parameters  = new QueryParameters(DatabaseScope.INFERRED, null);
-            Map reflect = query.reflectQueryPropertyGraphByStoredSpecification(new StoredQueryReference(instance.getNexusSchema(), "search"), parameters, ArangoDocumentReference.fromNexusInstance(instance), credential);
+            StoredQuery storedQuery = new StoredQuery(instanceReference.getNexusSchema(), "search", null);
+            storedQuery.getFilter().restrictToSingleId(instanceReference.getId());
+            Map reflect = query.reflectQueryPropertyGraphByStoredSpecification(storedQuery);
             return reflect != null ? transformReleaseStatusMap(reflect) : null;
+
         } catch (IOException | JSONException e) {
             logger.error("Was not able to request the release graph ", e);
             throw new RuntimeException(e);
         }
     }
-
 
     Map transformReleaseStatusMap(Map map) {
         Object name = map.get(SchemaOrgVocabulary.NAME);
@@ -129,7 +155,6 @@ public class ReleaseControl {
 
     }
 
-
     ReleaseStatus findWorstReleaseStatusOfChildren(Map map, ReleaseStatus currentStatus, boolean isRoot) {
         ReleaseStatus worstStatusSoFar = currentStatus;
         if (map != null) {
@@ -168,5 +193,39 @@ public class ReleaseControl {
         return worstStatusSoFar;
     }
 
+    public void release(NexusInstanceReference instanceReference) {
+        NexusInstanceReference nexusInstanceFromInferredArangoEntry = findNexusInstanceFromInferredArangoEntry(ArangoDocumentReference.fromNexusInstance(instanceReference));
+        release(nexusInstanceFromInferredArangoEntry, nexusInstanceFromInferredArangoEntry.getRevision());
+    }
+
+    public IndexingMessage release(NexusInstanceReference instanceReference, Integer revision) {
+        JsonDocument payload = new JsonDocument();
+        payload.addReference(HBPVocabulary.RELEASE_INSTANCE, configuration.getAbsoluteUrl(instanceReference));
+        payload.put(HBPVocabulary.RELEASE_REVISION, revision);
+        payload.addType(HBPVocabulary.RELEASE_TYPE);
+        NexusSchemaReference releaseSchema = new NexusSchemaReference("releasing", "prov", "release", "v0.0.2");
+        NexusInstanceReference instance = instanceManipulationController.createInstanceByIdentifier(releaseSchema, instanceReference.getFullId(false), payload);
+        return new IndexingMessage(instance, jsonTransformer.getMapAsJson(payload), null, null);
+    }
+
+    public NexusInstanceReference unrelease(NexusInstanceReference instanceReference) {
+        //We need the original id because the releasing mechanism needs to point to the real instance to ensure the right revision. We can do that by pointing to the nexus relative url of the inferred instance.
+        Map document = arangoRepository.getDocument(ArangoDocumentReference.fromNexusInstance(instanceReference), databaseFactory.getInferredDB());
+        if (document != null) {
+            Object relativeUrl = document.get(ArangoVocabulary.NEXUS_RELATIVE_URL);
+            if (relativeUrl != null) {
+                NexusInstanceReference fromUrl = NexusInstanceReference.createFromUrl((String) relativeUrl);
+                //Find release instance
+                Set<NexusInstanceReference> releases = nativeRepository.findOriginalIdsWithLinkTo(ArangoDocumentReference.fromNexusInstance(fromUrl), ArangoCollectionReference.fromFieldName(HBPVocabulary.RELEASE_INSTANCE));
+                for (NexusInstanceReference nexusInstanceReference : releases) {
+                    Integer currentRevision = nativeRepository.getCurrentRevision(ArangoDocumentReference.fromNexusInstance(fromUrl));
+                    nexusInstanceReference.setRevision(currentRevision);
+                    instanceManipulationController.deprecateInstanceByNexusId(nexusInstanceReference);
+                }
+                return fromUrl;
+            }
+        }
+        return null;
+    }
 
 }

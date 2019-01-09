@@ -1,8 +1,10 @@
 package org.humanbrainproject.knowledgegraph.query.entity;
 
+import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoNamingHelper;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.ArangoVocabulary;
 
+@ToBeTested(easy = true)
 public class Template {
 
 

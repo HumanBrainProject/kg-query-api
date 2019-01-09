@@ -1,7 +1,9 @@
 package org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity;
 
+import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.springframework.util.DigestUtils;
 
+@ToBeTested(easy = true)
 public class ArangoNamingHelper {
 
 

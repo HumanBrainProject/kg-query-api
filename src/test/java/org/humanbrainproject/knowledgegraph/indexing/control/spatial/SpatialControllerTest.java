@@ -1,7 +1,7 @@
 package org.humanbrainproject.knowledgegraph.indexing.control.spatial;
 
 import org.humanbrainproject.knowledgegraph.indexing.entity.QualifiedIndexingMessage;
-import org.humanbrainproject.knowledgegraph.indexing.entity.TodoList;
+import org.humanbrainproject.knowledgegraph.indexing.entity.todo.TodoList;
 import org.humanbrainproject.knowledgegraph.testFactory.TestObjectFactory;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -24,6 +24,6 @@ public class SpatialControllerTest {
     public void insert() {
         QualifiedIndexingMessage indexingMessage = TestObjectFactory.createSpatialAnchoringQualifiedIndexingMessage();
         TodoList todoList = new TodoList();
-        todoList = this.spatialController.insert(indexingMessage, todoList, TestObjectFactory.credential());
+        todoList = this.spatialController.insert(indexingMessage, todoList);
     }
 }
