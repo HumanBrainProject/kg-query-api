@@ -47,7 +47,7 @@ public class QueryContext {
     }
 
     public void setDatabaseScope(DatabaseScope databaseScope) {
-        this.databaseScope = databaseScope == null ? DatabaseScope.INFERRED : null;
+        this.databaseScope = databaseScope == null ? DatabaseScope.INFERRED : databaseScope;
     }
 
     public ArangoConnection getDatabaseConnection() {

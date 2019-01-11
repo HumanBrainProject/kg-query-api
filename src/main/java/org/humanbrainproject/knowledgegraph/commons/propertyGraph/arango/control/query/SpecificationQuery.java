@@ -192,7 +192,7 @@ public class SpecificationQuery {
         if (pagination!=null && pagination.getSize() != null) {
             count = cursor.getStats().getFullCount();
         } else {
-            count = cursor.getCount().longValue();
+            count = cursor.getCount()!=null ? cursor.getCount().longValue() : null;
         }
         result.setTotal(count);
         result.setSize(pagination==null || pagination.getSize() == null ? count : Math.min(count, result.getResults().size()));
