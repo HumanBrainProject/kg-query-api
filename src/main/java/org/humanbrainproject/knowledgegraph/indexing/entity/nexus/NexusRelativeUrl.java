@@ -1,17 +1,17 @@
 package org.humanbrainproject.knowledgegraph.indexing.entity.nexus;
 
-import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
+import org.humanbrainproject.knowledgegraph.annotations.Tested;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-@ToBeTested(easy = true)
+@Tested
 public class NexusRelativeUrl {
     private final String url;
     private final NexusConfiguration.ResourceType resourceType;
-    private Map<String, Object> parameters = new HashMap<>();
+    Map<String, Object> parameters = new HashMap<>();
 
     public void addQueryParameter(String key, Object value){
         this.parameters.put(key, value);

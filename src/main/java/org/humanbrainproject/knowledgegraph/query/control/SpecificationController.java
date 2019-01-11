@@ -1,6 +1,7 @@
 package org.humanbrainproject.knowledgegraph.query.control;
 
-import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
+import org.humanbrainproject.knowledgegraph.annotations.Tested;
+import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationContext;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoRepository;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.builders.ArangoMetaQueryBuilder;
@@ -11,7 +12,6 @@ import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoAlias;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.ArangoVocabulary;
-import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationContext;
 import org.humanbrainproject.knowledgegraph.context.QueryContext;
 import org.humanbrainproject.knowledgegraph.query.entity.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-@ToBeTested(easy = true)
+@Tested
 @Component
 public class SpecificationController {
 

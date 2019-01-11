@@ -1,12 +1,11 @@
 package org.humanbrainproject.knowledgegraph.releasing.entity;
 
-import org.humanbrainproject.knowledgegraph.annotations.NoTests;
-import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
+import org.humanbrainproject.knowledgegraph.annotations.Tested;
 
 import java.util.Arrays;
 import java.util.Optional;
 
-@ToBeTested(easy = true)
+@Tested
 public enum ReleaseStatus {
     RELEASED(1), NOT_RELEASED(3), HAS_CHANGED(2);
 

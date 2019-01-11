@@ -1,4 +1,4 @@
-package org.humanbrainproject.knowledgegraph.commons.nexusToArangoIndexing.control;
+package org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control;
 
 import com.arangodb.ArangoCollection;
 import com.arangodb.ArangoCursor;
@@ -11,8 +11,6 @@ import com.arangodb.model.CollectionCreateOptions;
 import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationContext;
 import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationController;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoConnection;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoDocumentConverter;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.query.ArangoQueryFactory;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
@@ -29,20 +27,17 @@ import org.humanbrainproject.knowledgegraph.instances.control.InstanceManipulati
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
 import java.util.LinkedHashMap;
 import java.util.List;
 
 @Component
-@Primary
 @ToBeTested(integrationTestRequired = true, systemTestRequired = true)
-public class NexusArangoTransaction implements DatabaseTransaction {
+public class ArangoTransaction implements DatabaseTransaction {
 
     @Autowired
     ArangoDocumentConverter arangoDocumentConverter;
-
 
     @Autowired
     AuthorizationController authorizationController;
@@ -57,8 +52,7 @@ public class NexusArangoTransaction implements DatabaseTransaction {
     AuthorizationContext authorizationContext;
 
 
-
-    protected Logger logger = LoggerFactory.getLogger(NexusArangoTransaction.class);
+    protected Logger logger = LoggerFactory.getLogger(ArangoTransaction.class);
 
     @Override
     public void execute(TodoList todoList) {

@@ -8,6 +8,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 
+
 @SpringBootApplication
 @ComponentScan("org.humanbrainproject.knowledgegraph")
 @NoTests(NoTests.NO_LOGIC)
@@ -70,4 +71,5 @@ public class KgQueryApplication {
 	public ArangoConnection createReleasedDb() {
 		return new ArangoConnection("kg_released", false);
 	}
+
 }

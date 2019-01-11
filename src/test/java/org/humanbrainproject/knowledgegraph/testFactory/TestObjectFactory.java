@@ -13,9 +13,14 @@ import org.humanbrainproject.knowledgegraph.indexing.control.nexusToArango.Nexus
 import org.humanbrainproject.knowledgegraph.indexing.entity.IndexingMessage;
 import org.humanbrainproject.knowledgegraph.indexing.entity.QualifiedIndexingMessage;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
+import org.humanbrainproject.knowledgegraph.query.entity.BoundingBox;
+import org.humanbrainproject.knowledgegraph.query.entity.SpecField;
+import org.humanbrainproject.knowledgegraph.query.entity.SpecTraverse;
 import org.mockito.Mockito;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 public class TestObjectFactory {
@@ -26,6 +31,21 @@ public class TestObjectFactory {
         Mockito.doReturn("http://foo").when(nexusConfiguration).getNexusBase();
         Mockito.doReturn("http://bar").when(nexusConfiguration).getNexusEndpoint();
         return nexusConfiguration;
+
+    }
+
+    public static SpecField simpleSpecFieldWithOutgoingTraverses(String name, String... traversePath){
+        List<SpecTraverse> traverses = new ArrayList<>();
+        for (String s : traversePath) {
+            traverses.add(new SpecTraverse(s, false));
+        }
+
+        return new SpecField(name, null, traverses,null, false, false, false, false);
+    }
+
+
+    public static BoundingBox createBoundingBox(){
+        return new BoundingBox(0, 0, 0, 10, 10, 10, "refSpace");
 
     }
 

@@ -1,11 +1,12 @@
 package org.humanbrainproject.knowledgegraph.query.entity;
 
-import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
+import org.humanbrainproject.knowledgegraph.annotations.Tested;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
-@ToBeTested(easy = true)
+@Tested
 public class ThreeDVector {
 
     private final double x;
@@ -23,11 +24,6 @@ public class ThreeDVector {
         return String.format("%.16f,%.16f,%.16f", x, y, z);
     }
 
-
-    public String integers() {
-        return String.format("%d,%d,%d", (int)x, (int)y, (int)z);
-    }
-
     public double getX() {
         return x;
     }
@@ -40,35 +36,48 @@ public class ThreeDVector {
         return z;
     }
 
-    public String normalize(int min, int max){
-        int axisWidth = max-min;
-        double p = 100.0/((double)axisWidth);
-        double xPerc = (p*(((double)max)-x));
-        double yPerc = (p*(((double)max)-y));
-        double zPerc = (p*(((double)max)-z));
-        return String.format("%.16f,%.16f,%.16f", xPerc, yPerc, zPerc);
+    /**
+     * re-scales the existing 3d-vector to an axis with the given minimal and maximal extension. This is used to "squeeze" the graph into a common box - regardless of its resolution. This is useful for visualization only.
+     */
+    public String normalize(int min, int max) {
+        int axisWidth = max - min;
+        double p = ((double) axisWidth) / 100.0;
+        double xPerc = (((double) min) + p * x);
+        double yPerc = (((double) min) + p * y);
+        double zPerc = (((double) min) + p * z);
+        return new ThreeDVector(xPerc, yPerc, zPerc).toString();
     }
 
-    public static List<ThreeDVector> parse(String vectorString){
+    public static List<ThreeDVector> parse(String vectorString) {
         List<ThreeDVector> result = new ArrayList<>();
         String normalized = vectorString.replaceAll("[^0-9,.-]", "");
         String[] split = normalized.split(",");
         int triple = 0;
-        while(split.length>=(triple+1)*3){
-            int startIndex = triple*3;
+        while (split.length >= (triple + 1) * 3) {
+            int startIndex = triple * 3;
             result.add(new ThreeDVector(
                     Double.parseDouble(split[startIndex]),
-                    Double.parseDouble(split[startIndex+1]),
-                    Double.parseDouble(split[startIndex+2])
+                    Double.parseDouble(split[startIndex + 1]),
+                    Double.parseDouble(split[startIndex + 2])
             ));
             triple++;
         }
         return result;
     }
 
-    public double[] getAsArray(){
-        return new double[]{x,y,z};
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ThreeDVector that = (ThreeDVector) o;
+        return Double.compare(that.x, x) == 0 &&
+                Double.compare(that.y, y) == 0 &&
+                Double.compare(that.z, z) == 0;
     }
 
+    @Override
+    public int hashCode() {
 
+        return Objects.hash(x, y, z);
+    }
 }

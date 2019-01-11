@@ -12,6 +12,7 @@ import org.humanbrainproject.knowledgegraph.query.entity.JsonDocument;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
@@ -37,6 +38,7 @@ import java.util.stream.Collectors;
  */
 @Component
 @ToBeTested(systemTestRequired = true)
+@Primary
 public class NexusClient {
 
     @Autowired

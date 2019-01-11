@@ -26,6 +26,7 @@ public class TwoDimensionThreePointTest {
                 "           88.9241921312597,\n" +
                 "           51.94987159616494,\n" +
                 "           -320.22912581890387")).raster();
+        TwoDimensionRasterizer.draw(raster);
     }
 
     @Test
@@ -34,6 +35,7 @@ public class TwoDimensionThreePointTest {
                 "26.843998180123435,-465.5324333473836,-170.6163708811688," +
                 "96.32585289892003,124.69908538465688,-324.99608542567577")).raster();
 
+        TwoDimensionRasterizer.draw(raster);
 
 
     }

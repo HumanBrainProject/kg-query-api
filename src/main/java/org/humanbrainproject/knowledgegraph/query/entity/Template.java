@@ -1,16 +1,16 @@
 package org.humanbrainproject.knowledgegraph.query.entity;
 
-import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
+import org.humanbrainproject.knowledgegraph.annotations.Tested;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoNamingHelper;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.ArangoVocabulary;
 
-@ToBeTested(easy = true)
+@Tested
 public class Template {
 
 
-    private String key;
-    private String templateContent;
-    private String library;
+    String key;
+    String templateContent;
+    String library;
 
     public Template() {
     }

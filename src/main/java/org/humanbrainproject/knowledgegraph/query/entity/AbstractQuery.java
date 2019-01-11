@@ -1,6 +1,6 @@
 package org.humanbrainproject.knowledgegraph.query.entity;
 
-import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
+import org.humanbrainproject.knowledgegraph.annotations.Tested;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
@@ -8,7 +8,7 @@ import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaRef
 import java.util.Set;
 import java.util.stream.Collectors;
 
-@ToBeTested(easy = true)
+@Tested
 public abstract class AbstractQuery {
 
     private final NexusSchemaReference schemaReference;

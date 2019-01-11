@@ -1,12 +1,12 @@
 package org.humanbrainproject.knowledgegraph.query.entity;
 
-import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
+import org.humanbrainproject.knowledgegraph.annotations.Tested;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-@ToBeTested(easy = true)
+@Tested
 public class SpecField {
 
     public String fieldName;
@@ -22,7 +22,7 @@ public class SpecField {
         this.fieldName = fieldName;
         this.required = required;
         this.fields = fields != null ? new ArrayList<>(fields) : new ArrayList<>();
-        this.traversePath = Collections.unmodifiableList(traversePath);
+        this.traversePath = traversePath==null ? Collections.emptyList() : Collections.unmodifiableList(traversePath);
         this.sortAlphabetically = sortAlphabetically;
         this.groupby = groupby;
         this.groupedInstances = groupedInstances;

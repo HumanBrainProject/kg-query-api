@@ -1,12 +1,12 @@
 package org.humanbrainproject.knowledgegraph.indexing.entity.nexus;
 
-import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
+import org.humanbrainproject.knowledgegraph.annotations.Tested;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.SubSpace;
 
 import java.util.Objects;
 
-@ToBeTested(easy = true)
+@Tested
 public class NexusSchemaReference {
 
     private final String organization;
@@ -77,7 +77,7 @@ public class NexusSchemaReference {
         return new NexusRelativeUrl(NexusConfiguration.ResourceType.SCHEMA, String.format("%s/%s/%s", getRelativeUrlForDomain().getUrl(), getSchema(), getSchemaVersion()));
     }
 
-    private static String extractMainOrganization(String organization) {
+    static String extractMainOrganization(String organization) {
         String result = organization;
         for (SubSpace subSpaceName : SubSpace.values()) {
             if (result.endsWith(subSpaceName.getPostFix())) {

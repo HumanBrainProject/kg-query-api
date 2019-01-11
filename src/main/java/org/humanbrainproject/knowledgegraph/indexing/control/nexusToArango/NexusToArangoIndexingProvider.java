@@ -18,7 +18,6 @@ import org.humanbrainproject.knowledgegraph.indexing.entity.QualifiedIndexingMes
 import org.humanbrainproject.knowledgegraph.indexing.entity.TargetDatabase;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
@@ -26,7 +25,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
-@Primary
 @Component
 @ToBeTested
 public class NexusToArangoIndexingProvider {
