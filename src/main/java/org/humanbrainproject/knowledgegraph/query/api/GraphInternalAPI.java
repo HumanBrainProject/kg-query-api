@@ -103,7 +103,7 @@ public class GraphInternalAPI {
         try{
             List<Map> rootList = graph.getInternalDocuments(new ArangoCollectionReference(col));
             if(rootList.isEmpty()){
-                return ResponseEntity.notFound().build();
+                rootList = Collections.emptyList();
             }
             return ResponseEntity.ok(rootList);
         } catch (HttpClientErrorException e){

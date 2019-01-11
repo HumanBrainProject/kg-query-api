@@ -142,7 +142,7 @@ public class QueryAPI {
 
             return ResponseEntity.ok(result);
         } catch (RootCollectionNotFoundException e) {
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.ok(QueryResult.createEmptyResult());
         } catch (HttpClientErrorException e) {
             return ResponseEntity.status(e.getStatusCode()).build();
         }
