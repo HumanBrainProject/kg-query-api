@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.HttpClientErrorException;
 
 import javax.ws.rs.core.MediaType;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -145,7 +146,7 @@ public class InstancesInternalAPI {
             NexusInstanceReference linkedInstanceReference = new NexusInstanceReference(linkedOrg, linkedDomain, linkedSchema, linkedVersion, linkedId);
             NexusSchemaReference nexusSchemaReference = new NexusSchemaReference(linkOrg, linkDomain, linkSchema, linkVersion);
             List<Map> linkingInstances = instances.getLinkingInstances(instanceReference, linkedInstanceReference, nexusSchemaReference);
-            return linkingInstances != null ? ResponseEntity.ok(linkingInstances) : ResponseEntity.notFound().build();
+            return linkingInstances != null ? ResponseEntity.ok(linkingInstances) : ResponseEntity.ok(Collections.emptyList());
         } catch (HttpClientErrorException e) {
             return ResponseEntity.status(e.getStatusCode()).build();
         }
@@ -161,7 +162,7 @@ public class InstancesInternalAPI {
 
             NexusSchemaReference schemaReference = new NexusSchemaReference(org, domain, schema, version);
             QueryResult<List<Map>> instances = this.instances.getInstances(schemaReference, searchTerm, new Pagination().setSize(size).setStart(start));
-            return instances != null ? ResponseEntity.ok(instances) : ResponseEntity.notFound().build();
+            return instances != null ? ResponseEntity.ok(instances) : ResponseEntity.ok(QueryResult.createEmptyResult());
         } catch (HttpClientErrorException e) {
             return ResponseEntity.status(e.getStatusCode()).build();
         }
