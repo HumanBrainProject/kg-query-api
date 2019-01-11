@@ -183,17 +183,19 @@ public class SpecificationQuery {
     private QueryResult<List<Map>> query(String aqlQuery, String apiName, Pagination pagination){
         QueryResult<List<Map>> result = new QueryResult<>();
         result.setApiName(apiName);
-        result.setStart((long)pagination.getStart());
+        if(pagination!=null) {
+            result.setStart((long) pagination.getStart());
+        }
         ArangoCursor<Map> cursor = queryContext.queryDatabase(aqlQuery,true, pagination, Map.class);
         result.setResults(cursor.asListRemaining());
         Long count;
-        if (pagination.getSize() != null) {
+        if (pagination!=null && pagination.getSize() != null) {
             count = cursor.getStats().getFullCount();
         } else {
             count = cursor.getCount().longValue();
         }
         result.setTotal(count);
-        result.setSize(pagination.getSize() == null ? count : Math.min(count, result.getResults().size()));
+        result.setSize(pagination==null || pagination.getSize() == null ? count : Math.min(count, result.getResults().size()));
         return result;
     }
 

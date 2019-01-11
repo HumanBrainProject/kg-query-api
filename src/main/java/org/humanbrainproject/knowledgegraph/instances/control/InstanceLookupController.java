@@ -122,7 +122,7 @@ public class InstanceLookupController {
     }
 
     public QueryResult<List<Map>> getInstances(NexusSchemaReference schemaReference, String searchTerm, Pagination pagination) {
-        return arangoRepository.getInstances(ArangoCollectionReference.fromNexusSchemaReference(schemaReference), pagination.getStart(), pagination.getSize(), searchTerm, queryContext.getDatabaseConnection());
+        return arangoRepository.getInstances(ArangoCollectionReference.fromNexusSchemaReference(schemaReference), pagination!=null ? pagination.getStart() : null, pagination!=null ? pagination.getSize() : null, searchTerm, queryContext.getDatabaseConnection());
     }
 
     public JsonDocument findInstanceByIdentifier(NexusSchemaReference schema, String identifier) {

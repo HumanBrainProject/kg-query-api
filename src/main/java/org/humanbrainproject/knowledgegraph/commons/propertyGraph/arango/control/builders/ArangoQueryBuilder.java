@@ -178,7 +178,7 @@ public class ArangoQueryBuilder extends AbstractArangoQueryBuilder {
 
     @Override
     public void addLimit() {
-        if (pagination.getSize() != null) {
+        if (pagination!=null && pagination.getSize() != null) {
             q.addLine(new UnauthorizedArangoQuery().addLine("LIMIT ${start}, ${size}").setParameter("start", String.valueOf(pagination.getStart())).setParameter("size", pagination.getSize().toString()).build().getValue());
         }
     }

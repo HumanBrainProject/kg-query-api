@@ -70,7 +70,7 @@ public class QueryContext {
     public <T> ArangoCursor<T> queryDatabase(String aqlQuery, boolean count, Pagination pagination, Class<T> returnType) {
         AqlQueryOptions options = new AqlQueryOptions();
         if (count) {
-            if (pagination.getSize() != null) {
+            if (pagination != null) {
                 options.fullCount(true);
             } else {
                 options.count(true);

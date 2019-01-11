@@ -59,7 +59,7 @@ public class ArangoInferredRepository {
     @Deprecated
     @AuthorizedAccess
     public Map getInstanceList(ArangoCollectionReference collection, String searchTerm, Pagination pagination) {
-        String query = queryFactory.getInstanceList(collection, pagination.getStart(), pagination.getSize(), searchTerm, authorizationContext.getReadableOrganizations(), true);
+        String query = queryFactory.getInstanceList(collection, pagination!=null ? pagination.getStart() : null, pagination!=null ? pagination.getSize() : null, searchTerm, authorizationContext.getReadableOrganizations(), true);
         AqlQueryOptions options = new AqlQueryOptions().count(true).fullCount(true);
         Map m = new HashMap();
         try {
@@ -82,7 +82,7 @@ public class ArangoInferredRepository {
 
     @AuthorizedAccess
     public Map getBookmarks(NexusInstanceReference document, String searchTerm, Pagination pagination) {
-        String query = queryFactory.getBookmarks(document, pagination.getStart(), pagination.getSize(), searchTerm, authorizationContext.getReadableOrganizations());
+        String query = queryFactory.getBookmarks(document, pagination!=null ? pagination.getStart() : null, pagination!=null ? pagination.getSize() : null, searchTerm, authorizationContext.getReadableOrganizations());
         AqlQueryOptions options = new AqlQueryOptions().count(true).fullCount(true);
         Map m = new HashMap();
         try {
