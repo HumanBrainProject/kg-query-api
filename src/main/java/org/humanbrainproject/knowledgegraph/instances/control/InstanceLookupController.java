@@ -109,16 +109,14 @@ public class InstanceLookupController {
         if (instanceReference == null) {
             return null;
         }
-        NexusInstanceReference lookupId;
+        NexusInstanceReference lookupId = instanceReference;
         if (queryContext.getDatabaseScope() != DatabaseScope.NATIVE) {
             lookupId = arangoNativeRepository.findOriginalId(instanceReference);
             if (lookupId == null) {
                 return null;
             }
-        } else {
             lookupId = instanceReference.toSubSpace(SubSpace.MAIN);
         }
-
         JsonDocument instance = arangoRepository.getInstance(ArangoDocumentReference.fromNexusInstance(lookupId), queryContext.getDatabaseConnection());
         return instance != null ? instance.removeAllInternalKeys() : null;
     }

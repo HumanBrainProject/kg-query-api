@@ -1,7 +1,6 @@
 package org.humanbrainproject.knowledgegraph.commons.authorization.control;
 
 import org.humanbrainproject.knowledgegraph.annotations.NoTests;
-import org.humanbrainproject.knowledgegraph.annotations.RequestContext;
 import org.humanbrainproject.knowledgegraph.commons.api.Client;
 import org.humanbrainproject.knowledgegraph.commons.authorization.entity.Credential;
 import org.humanbrainproject.knowledgegraph.commons.authorization.entity.InternalMasterKey;
@@ -10,18 +9,19 @@ import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.SubSpac
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.stereotype.Component;
+import org.springframework.web.context.annotation.RequestScope;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 /**
- * This is a {@link RequestContext} which holds the authorization information provided by the user (population of the values happens as part of the API declaration -> (see e.g. {@link org.humanbrainproject.knowledgegraph.query.api.QueryAPI}).
+ * This is a {@link RequestScope}d bean which holds the authorization information provided by the user (population of the values happens as part of the API declaration -> (see e.g. {@link org.humanbrainproject.knowledgegraph.query.api.QueryAPI}).
  * It does not include real logic itself but rather delegates it to its according controller (see {@link AuthorizationController}), provides convenience methods for simplification of parameter passing and declares default fallback values.
  */
 @NoTests(NoTests.TRIVIAL)
-@RequestContext
 @Component
+@RequestScope
 public class DefaultAuthorizationContext implements AuthorizationContext {
     @Autowired
     AuthorizationController authorizationController;

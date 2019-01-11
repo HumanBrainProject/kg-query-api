@@ -77,7 +77,7 @@ public class JsonTransformerTest {
 
     @Test
     public void parseToListOfMaps() {
-        List<Map> maps = transformer.parseToListOfMaps("[{\"foo\": \"bar\"}, {\"bar\", \"foo\"}]");
+        List<Map> maps = transformer.parseToListOfMaps("[{\"foo\": \"bar\"}, {\"bar\": \"foo\"}]");
         assertEquals(2, maps.size());
     }
 

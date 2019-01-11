@@ -5,13 +5,11 @@ import org.humanbrainproject.knowledgegraph.commons.authorization.control.Author
 import org.humanbrainproject.knowledgegraph.commons.authorization.entity.Credential;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.SubSpace;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
-import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-@Component
 public class TestAuthorizationContext implements AuthorizationContext {
     @Override
     public void setMasterCredential() {

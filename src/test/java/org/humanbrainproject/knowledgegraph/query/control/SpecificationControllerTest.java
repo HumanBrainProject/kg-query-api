@@ -1,6 +1,6 @@
 package org.humanbrainproject.knowledgegraph.query.control;
 
-import org.humanbrainproject.knowledgegraph.commons.authorization.control.DefaultAuthorizationContext;
+import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationContext;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoRepository;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.query.SpecificationQuery;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
@@ -26,7 +26,7 @@ public class SpecificationControllerTest {
     @Before
     public void setup(){
         this.specificationController = new SpecificationController();
-        this.specificationController.authorizationContext = Mockito.mock(DefaultAuthorizationContext.class);
+        this.specificationController.authorizationContext = Mockito.mock(AuthorizationContext.class);
         this.specificationController.queryContext = Mockito.mock(QueryContext.class);
         this.specificationController.specificationQuery = Mockito.mock(SpecificationQuery.class);
         this.specificationController.configuration = TestObjectFactory.createNexusConfiguration();

@@ -22,8 +22,8 @@ import java.util.Set;
 /**
  * This is a stateful bean (with request scope) which holds generic query information (e.g. the database scope). Population of the values happens as part of the API declaration -> (see e.g. {@link org.humanbrainproject.knowledgegraph.query.api.QueryAPI}).
  */
-@RequestScope
 @Component
+@RequestScope
 @ToBeTested(easy = true)
 public class QueryContext {
 

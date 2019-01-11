@@ -20,6 +20,7 @@ import org.humanbrainproject.knowledgegraph.indexing.entity.todo.TodoList;
 import org.humanbrainproject.knowledgegraph.query.entity.JsonDocument;
 import org.humanbrainproject.knowledgegraph.query.entity.ThreeDVector;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mockito;
@@ -53,6 +54,12 @@ public class NexusTest {
     @Autowired
     NexusConfiguration nexusConfiguration;
 
+    @Before
+    public void setup(){
+        Mockito.reset(solr);
+        Mockito.reset(databaseTransaction);
+        Mockito.reset(databaseTransaction);
+    }
 
     @Test
     public void insertNewDocument(){
@@ -71,6 +78,7 @@ public class NexusTest {
 
     @Test
     public void insertSpatialAnchoringDocument() throws IOException, SolrServerException {
+
         NexusInstanceReference referencedInstance = new NexusInstanceReference("foo", "core", "bar", "v1.0.0", "foobar");
         JsonDocument jsonDocument = new JsonDocument();
         jsonDocument.addType(HBPVocabulary.SPATIAL_TYPE);

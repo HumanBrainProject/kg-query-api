@@ -1,13 +1,13 @@
 package org.humanbrainproject.knowledgegraph.query.control;
 
 import org.apache.solr.client.solrj.SolrServerException;
-import org.humanbrainproject.knowledgegraph.annotations.IntegrationTest;
 import org.humanbrainproject.knowledgegraph.query.entity.BoundingBox;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
 
-@IntegrationTest
+@Ignore("This is an integration test")
 public class SpatialSearchIntegrationTest {
 
     @Test
