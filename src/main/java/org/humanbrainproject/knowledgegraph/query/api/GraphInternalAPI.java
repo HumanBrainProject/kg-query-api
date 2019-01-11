@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.HttpClientErrorException;
 
 import javax.ws.rs.core.MediaType;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -117,7 +118,7 @@ public class GraphInternalAPI {
             NexusInstanceReference instanceReference = new NexusInstanceReference(org, domain, schema, version, id);
             Map bookmarks = graph.getBookmarks(instanceReference, searchTerm, new Pagination().setSize(size).setStart(from));
             if(bookmarks==null){
-                return ResponseEntity.notFound().build();
+                bookmarks = Collections.emptyMap();
             }
             return ResponseEntity.ok(bookmarks);
         } catch (HttpClientErrorException e){
