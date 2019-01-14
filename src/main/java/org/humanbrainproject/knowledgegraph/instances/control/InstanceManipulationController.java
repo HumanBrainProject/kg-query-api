@@ -75,7 +75,7 @@ public class InstanceManipulationController {
             if (clientIdExtension == null && authorizationContext.getSubspace() == originalId.getSubspace()) {
                 //It's a replacement of the original instance - we therefore should be able to insert the data even without identifier mapping
                 logger.warn(String.format("Found instance without identifier: %s - since it was an update for the original resource, I can continue - but please check what is happening here!", instanceReference.getRelativeUrl().getUrl()));
-                return createInstanceByNexusId(nexusSchema, originalId.getId(), instanceReference.getRevision() != null ? instanceReference.getRevision() : 1, document);
+                return createInstanceByNexusId(nexusSchema, originalId.getId(), instanceReference.getRevision() != null ? instanceReference.getRevision() : 1, document, clientIdExtension);
             } else {
                 throw new RuntimeException(String.format("Found instance without identifier: %s", instanceReference.getRelativeUrl().getUrl()));
             }
@@ -84,17 +84,17 @@ public class InstanceManipulationController {
             document.addReference(HBPVocabulary.INFERENCE_EXTENDS, nexusConfiguration.getAbsoluteUrl(originalId));
         }
         primaryIdentifier = lookupController.constructIdentifierWithClientIdExtension(primaryIdentifier, clientIdExtension);
-        return createInstanceByIdentifier(nexusSchema, primaryIdentifier, document);
+        return createInstanceByIdentifier(nexusSchema, primaryIdentifier, document, clientIdExtension);
     }
 
 
-    public NexusInstanceReference createInstanceByIdentifier(NexusSchemaReference schemaReference, String identifier, JsonDocument payload) {
+    public NexusInstanceReference createInstanceByIdentifier(NexusSchemaReference schemaReference, String identifier, JsonDocument payload, String userId) {
         payload.addToProperty(SchemaOrgVocabulary.IDENTIFIER, identifier);
         NexusInstanceReference byIdentifier = lookupController.getByIdentifier(schemaReference, identifier);
         if (byIdentifier == null) {
-            return createInstanceByNexusId(schemaReference, null, 1, payload);
+            return createInstanceByNexusId(schemaReference, null, 1, payload, userId);
         } else {
-            return createInstanceByNexusId(byIdentifier.getNexusSchema(), byIdentifier.getId(), byIdentifier.getRevision(), payload);
+            return createInstanceByNexusId(byIdentifier.getNexusSchema(), byIdentifier.getId(), byIdentifier.getRevision(), payload, userId);
         }
     }
 
@@ -109,7 +109,7 @@ public class InstanceManipulationController {
     /**
      * Creates a new instance with the given payload. Also creates the organization, domain and schema if not yet available.
      */
-    public NexusInstanceReference createNewInstance(NexusSchemaReference nexusSchemaReference, Map<String, Object> originalPayload) {
+    public NexusInstanceReference createNewInstance(NexusSchemaReference nexusSchemaReference, Map<String, Object> originalPayload, String clientIdExtension) {
         nexusSchemaReference = nexusSchemaReference.toSubSpace(authorizationContext.getSubspace());
         schemaController.createSchema(nexusSchemaReference);
         JsonDocument payload;
@@ -121,6 +121,7 @@ public class InstanceManipulationController {
         payload.addType(schemaController.getTargetClass(nexusSchemaReference));
         payload.addToProperty(SchemaOrgVocabulary.IDENTIFIER, "");
         payload.addToProperty(HBPVocabulary.PROVENANCE_MODIFIED_AT, ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_INSTANT));
+        payload.addToProperty(HBPVocabulary.PROVENANCE_CREATED_BY, clientIdExtension);
         JsonDocument response = nexusClient.post(new NexusRelativeUrl(NexusConfiguration.ResourceType.DATA, nexusSchemaReference.getRelativeUrl().getUrl()), null, payload, authorizationContext.getCredential());
         if (response != null) {
             NexusInstanceReference idFromNexus = response.getReference();
@@ -133,13 +134,13 @@ public class InstanceManipulationController {
                 fromUpdate.setRevision(Integer.valueOf(rev.toString()));
             }
 
-            immediateIndexing(payload, fromUpdate);
+            immediateIndexing(payload, fromUpdate, null);
             return fromUpdate;
         }
         return null;
     }
 
-    public NexusInstanceReference createInstanceByNexusId(NexusSchemaReference nexusSchemaReference, String id, Integer revision, Map<String, Object> payload) {
+    public NexusInstanceReference createInstanceByNexusId(NexusSchemaReference nexusSchemaReference, String id, Integer revision, Map<String, Object> payload, String userId) {
         schemaController.createSchema(nexusSchemaReference);
         Object type = payload.get(JsonLdConsts.TYPE);
         String targetClass = schemaController.getTargetClass(nexusSchemaReference);
@@ -155,6 +156,9 @@ public class InstanceManipulationController {
         NexusInstanceReference nexusInstanceReference = new NexusInstanceReference(nexusSchemaReference, id).setRevision(revision);
         NexusInstanceReference newInstanceReference = null;
         payload.put(HBPVocabulary.PROVENANCE_MODIFIED_AT, ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_INSTANT));
+        if(userId != null){
+            payload.put(HBPVocabulary.PROVENANCE_LAST_MODIFICATION_USER_ID, userId);
+        }
         if (revision == null || revision == 1) {
             Map map = nexusClient.get(nexusInstanceReference.getRelativeUrl(), authorizationContext.getCredential());
 
@@ -182,7 +186,7 @@ public class InstanceManipulationController {
             newInstanceReference = nexusInstanceReference;
         }
         if (newInstanceReference != null) {
-            immediateIndexing(payload, newInstanceReference);
+            immediateIndexing(payload, newInstanceReference, userId);
         }
         return newInstanceReference;
     }
@@ -191,9 +195,9 @@ public class InstanceManipulationController {
         graphIndexing.delete(newInstanceReference);
     }
 
-    private void immediateIndexing(Map<String, Object> payload, NexusInstanceReference newInstanceReference) {
+    private void immediateIndexing(Map<String, Object> payload, NexusInstanceReference newInstanceReference, String userId) {
         payload.put(HBPVocabulary.PROVENANCE_IMMEDIATE_INDEX, true);
-        IndexingMessage indexingMessage = new IndexingMessage(newInstanceReference, jsonTransformer.getMapAsJson(payload), null, null);
+        IndexingMessage indexingMessage = new IndexingMessage(newInstanceReference, jsonTransformer.getMapAsJson(payload), null, userId);
         graphIndexing.insert(indexingMessage);
     }
 

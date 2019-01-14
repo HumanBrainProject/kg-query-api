@@ -78,7 +78,7 @@ public class FullIndexingTest {
     public void create() {
         payload = new JsonDocument();
         payload.put(SchemaOrgVocabulary.NAMESPACE+"foo", "bar");
-        instance = nexusInstanceController.createInstanceByIdentifier(TestObjectFactory.fooInstanceReference().getNexusSchema(), "helloWorldNoEdit3", payload);
+        instance = nexusInstanceController.createInstanceByIdentifier(TestObjectFactory.fooInstanceReference().getNexusSchema(), "helloWorldNoEdit3", payload,null);
 
         //This trigger is typically done by Nexus itself - we're simulating the behavior.
         IndexingMessage indexingMessage = new IndexingMessage(instance, new Gson().toJson(payload), "2018-10-31", "Foo");
@@ -91,7 +91,7 @@ public class FullIndexingTest {
     public void createWithEditor() {
         JsonDocument document =  new JsonDocument();
         document.put(SchemaOrgVocabulary.NAMESPACE+"foo", "bar");
-        instance = nexusInstanceController.createInstanceByIdentifier(TestObjectFactory.fooEditorInstanceReference().getNexusSchema(), "helloWorldFromEditor3", document);
+        instance = nexusInstanceController.createInstanceByIdentifier(TestObjectFactory.fooEditorInstanceReference().getNexusSchema(), "helloWorldFromEditor3", document, null);
 
         //This trigger is typically done by Nexus itself - we're simulating the behavior.
         IndexingMessage indexingMessage = new IndexingMessage(instance, new Gson().toJson(document), "2018-10-31", "Foo");
@@ -107,7 +107,7 @@ public class FullIndexingTest {
         JsonDocument document = new JsonDocument();
         document.addReference(SchemaOrgVocabulary.NAMESPACE+"foolink", configuration.getAbsoluteUrl(instance));
 
-        NexusInstanceReference helloWorldFromEditorWithLink = nexusInstanceController.createInstanceByIdentifier(TestObjectFactory.fooEditorInstanceReference().getNexusSchema(), "helloWorldFromEditorWithLink2", document);
+        NexusInstanceReference helloWorldFromEditorWithLink = nexusInstanceController.createInstanceByIdentifier(TestObjectFactory.fooEditorInstanceReference().getNexusSchema(), "helloWorldFromEditorWithLink2", document,null);
 
         //This trigger is typically done by Nexus itself - we're simulating the behavior.
         IndexingMessage indexingMessage = new IndexingMessage(helloWorldFromEditorWithLink, new Gson().toJson(document), "2018-10-31", "Foo");
@@ -138,9 +138,9 @@ public class FullIndexingTest {
 
         payload.put(SchemaOrgVocabulary.NAMESPACE+"foo", "foobar");
         payload.put(SchemaOrgVocabulary.IDENTIFIER, null);
-        nexusInstanceController.createInstanceByIdentifier(TestObjectFactory.fooInstanceReference().getNexusSchema(), "helloWorld2", payload);
+        nexusInstanceController.createInstanceByIdentifier(TestObjectFactory.fooInstanceReference().getNexusSchema(), "helloWorld2", payload,null);
 
-        NexusInstanceReference instance = nexusInstanceController.createInstanceByIdentifier(TestObjectFactory.fooInstanceReference().getNexusSchema(), "helloWorld2", payload);
+        NexusInstanceReference instance = nexusInstanceController.createInstanceByIdentifier(TestObjectFactory.fooInstanceReference().getNexusSchema(), "helloWorld2", payload, null);
 
         IndexingMessage indexingMessage = new IndexingMessage(instance, new Gson().toJson(payload), "2018-10-31", "Foo");
         graphIndexing.insert(indexingMessage);
@@ -163,7 +163,7 @@ public class FullIndexingTest {
         Map<String, String> reference = new LinkedHashMap<>();
         reference.put(JsonLdConsts.ID, configuration.getAbsoluteUrl(instance));
         editorPayload.put(HBPVocabulary.INFERENCE_EXTENDS, reference);
-        NexusInstanceReference editorInstance = nexusInstanceController.createInstanceByIdentifier(TestObjectFactory.fooInstanceReference().toSubSpace(SubSpace.EDITOR).getNexusSchema(), "helloWorld2", editorPayload);
+        NexusInstanceReference editorInstance = nexusInstanceController.createInstanceByIdentifier(TestObjectFactory.fooInstanceReference().toSubSpace(SubSpace.EDITOR).getNexusSchema(), "helloWorld2", editorPayload, null);
 
         IndexingMessage indexingMessage = new IndexingMessage(editorInstance, new Gson().toJson(editorPayload), "2018-10-31", "Foo");
         TodoList inserted = graphIndexing.insert(indexingMessage);
@@ -180,7 +180,7 @@ public class FullIndexingTest {
         Map<String, String> reference = new LinkedHashMap<>();
         reference.put(JsonLdConsts.ID, configuration.getAbsoluteUrl(instance));
         editorPayload.put(HBPVocabulary.INFERENCE_EXTENDS, reference);
-        NexusInstanceReference editorInstance = nexusInstanceController.createInstanceByIdentifier(TestObjectFactory.fooInstanceReference().toSubSpace(SubSpace.EDITOR).getNexusSchema(), "helloWorld2", editorPayload);
+        NexusInstanceReference editorInstance = nexusInstanceController.createInstanceByIdentifier(TestObjectFactory.fooInstanceReference().toSubSpace(SubSpace.EDITOR).getNexusSchema(), "helloWorld2", editorPayload,null);
 
         IndexingMessage indexingMessage = new IndexingMessage(editorInstance, new Gson().toJson(editorPayload), "2018-10-31", "Foo");
         TodoList inserted = graphIndexing.insert(indexingMessage);
@@ -196,7 +196,7 @@ public class FullIndexingTest {
                 "'"+HBPVocabulary.LINKING_INSTANCE_TO+"': {'@id': '"+configuration.getAbsoluteUrl(new NexusInstanceReference("bla", "bla", "bla", "v0.0.1", "foo"))+"'}}";
 
         Map map = jsonTransformer.parseToMap(linkingInstance);
-        NexusInstanceReference editorInstance = nexusInstanceController.createInstanceByIdentifier(new NexusSchemaReference("foo", "core", "link", "v0.0.1"), "linkingInstance", new JsonDocument(map));
+        NexusInstanceReference editorInstance = nexusInstanceController.createInstanceByIdentifier(new NexusSchemaReference("foo", "core", "link", "v0.0.1"), "linkingInstance", new JsonDocument(map), null);
         IndexingMessage indexingMessage = new IndexingMessage(editorInstance, jsonTransformer.getMapAsJson(map), "2018-10-31", "Foo");
         TodoList inserted = graphIndexing.insert(indexingMessage);
         nexusInsertionTrigger(inserted);

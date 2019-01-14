@@ -204,7 +204,7 @@ public class ReleaseControl {
         payload.put(HBPVocabulary.RELEASE_REVISION, revision);
         payload.addType(HBPVocabulary.RELEASE_TYPE);
         NexusSchemaReference releaseSchema = new NexusSchemaReference("releasing", "prov", "release", "v0.0.2");
-        NexusInstanceReference instance = instanceManipulationController.createInstanceByIdentifier(releaseSchema, instanceReference.getFullId(false), payload);
+        NexusInstanceReference instance = instanceManipulationController.createInstanceByIdentifier(releaseSchema, instanceReference.getFullId(false), payload, null);
         return new IndexingMessage(instance, jsonTransformer.getMapAsJson(payload), null, null);
     }
 

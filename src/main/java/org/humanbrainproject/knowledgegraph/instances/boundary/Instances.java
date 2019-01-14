@@ -57,8 +57,8 @@ public class Instances {
         return lookupController.getInstanceByClientExtension(instanceReference, clientExtension);
     }
 
-    public NexusInstanceReference createNewInstance(NexusSchemaReference nexusSchemaReference, String payload) {
-        return manipulationController.createNewInstance(nexusSchemaReference, jsonTransformer.parseToMap(payload)).toSubSpace(SubSpace.MAIN);
+    public NexusInstanceReference createNewInstance(NexusSchemaReference nexusSchemaReference, String payload, String clienIdExtension) {
+        return manipulationController.createNewInstance(nexusSchemaReference, jsonTransformer.parseToMap(payload), clienIdExtension).toSubSpace(SubSpace.MAIN);
     }
 
     public NexusInstanceReference updateInstance(NexusInstanceReference instanceReference, String payload, String clientIdExtension) {

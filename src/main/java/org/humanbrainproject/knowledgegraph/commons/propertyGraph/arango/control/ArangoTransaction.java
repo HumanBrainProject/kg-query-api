@@ -111,7 +111,7 @@ public class ArangoTransaction implements DatabaseTransaction {
         List<InsertOrUpdateInPrimaryStoreTodoItem> insertOrUpdateInPrimaryStoreItems = todoList.getInsertOrUpdateInPrimaryStoreTodoItems();
         for (InsertOrUpdateInPrimaryStoreTodoItem insertOrUpdateInPrimaryStoreItem : insertOrUpdateInPrimaryStoreItems) {
             Vertex vertex = insertOrUpdateInPrimaryStoreItem.getVertex();
-            NexusInstanceReference newReference = manipulationController.createInstanceByNexusId(vertex.getInstanceReference().getNexusSchema(), vertex.getInstanceReference().getId(), null, new LinkedHashMap(vertex.getQualifiedIndexingMessage().getQualifiedMap()));
+            NexusInstanceReference newReference = manipulationController.createInstanceByNexusId(vertex.getInstanceReference().getNexusSchema(), vertex.getInstanceReference().getId(), null, new LinkedHashMap(vertex.getQualifiedIndexingMessage().getQualifiedMap()), null);
             vertex.setInstanceReference(newReference);
         }
     }

@@ -45,7 +45,9 @@ public class MessageProcessor {
         map = jsonLdStandardization.fullyQualify(map);
         map = jsonLdStandardization.filterKeysByVocabBlacklists(map);
         map = jsonLdStandardization.flattenLists(map, null, null);
-        map.put(HBPVocabulary.PROVENANCE_LAST_MODIFICATION_USER_ID, message.getUserId());
+        if(map.get(HBPVocabulary.PROVENANCE_LAST_MODIFICATION_USER_ID) == null && message.getUserId() != null){
+            map.put(HBPVocabulary.PROVENANCE_LAST_MODIFICATION_USER_ID, message.getUserId());
+        }
         map.put(HBPVocabulary.PROVENANCE_MODIFIED_AT, message.getTimestamp());
         return new QualifiedIndexingMessage(message, map);
     }
