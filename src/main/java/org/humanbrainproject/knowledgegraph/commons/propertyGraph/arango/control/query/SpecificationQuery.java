@@ -134,12 +134,6 @@ public class SpecificationQuery {
                 }
             }
             queryBuilder.setCurrentField(originalField);
-            if (isRoot) {
-                queryBuilder.addInstanceIdFilter();
-                queryBuilder.addSearchQuery();
-                queryBuilder.addLimit();
-            }
-
             Set<ArangoAlias> sortFields = new LinkedHashSet<>();
             for (SpecField field : fields) {
                 if (!skipFields.contains(field.fieldName)) {
@@ -150,9 +144,19 @@ public class SpecificationQuery {
                 }
             }
             queryBuilder.setCurrentField(originalField);
-            if (!sortFields.isEmpty()) {
-                queryBuilder.addSortByLeafField(sortFields);
+            if (isRoot) {
+                queryBuilder.addInstanceIdFilter();
+                queryBuilder.addSearchQuery();
+                if (!sortFields.isEmpty()) {
+                    queryBuilder.addSortByLeafField(sortFields);
+                }
+                queryBuilder.addLimit();
+            }else{
+                if (!sortFields.isEmpty()) {
+                    queryBuilder.addSortByLeafField(sortFields);
+                }
             }
+
 
             queryBuilder.startReturnStructure(false);
             for (SpecField field : fields) {
