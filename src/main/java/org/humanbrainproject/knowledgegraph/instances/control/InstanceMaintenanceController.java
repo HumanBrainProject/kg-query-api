@@ -65,7 +65,7 @@ public class InstanceMaintenanceController {
             //Redirect links
             JsonDocument redirectedJson = pointLinksToSchema(fromNexusById, newVersion);
             NexusSchemaReference schemaReference = new NexusSchemaReference(originalSchema.getOrganization(), originalSchema.getDomain(), originalSchema.getSchema(), newVersion);
-            manipulationController.createInstanceByIdentifier(schemaReference, fromNexusById.getPrimaryIdentifier(), redirectedJson);
+            manipulationController.createInstanceByIdentifier(schemaReference, fromNexusById.getPrimaryIdentifier(), redirectedJson, null);
         }
     }
 
@@ -89,7 +89,7 @@ public class InstanceMaintenanceController {
         for (NexusInstanceReference instanceReference : allInstancesForSchema) {
             JsonDocument fromNexusById = lookupController.getFromNexusById(instanceReference);
             fromNexusById.replaceNamespace(oldNamespace, newNamespace);
-            manipulationController.createInstanceByNexusId(instanceReference.getNexusSchema(), instanceReference.getId(), instanceReference.getRevision(), fromNexusById);
+            manipulationController.createInstanceByNexusId(instanceReference.getNexusSchema(), instanceReference.getId(), instanceReference.getRevision(), fromNexusById, null);
         }
     }
 

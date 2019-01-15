@@ -32,6 +32,6 @@ public class InstanceControllerTest {
         JsonDocument instance= new JsonDocument();
         instance.put(SchemaOrgVocabulary.NAME, "adfdasf");
         instance.put(HBPVocabulary.NAMESPACE+"foo", "barfas");
-        instanceController.createInstanceByIdentifier(nexusInstanceReference.getNexusSchema(), "barfoo", instance);
+        instanceController.createInstanceByIdentifier(nexusInstanceReference.getNexusSchema(), "barfoo", instance, null);
     }
 }
