@@ -1,10 +1,10 @@
 package org.humanbrainproject.knowledgegraph.indexing.control.inference;
 
 import com.github.jsonldjava.core.JsonLdConsts;
-import org.humanbrainproject.knowledgegraph.commons.authorization.entity.Credential;
+import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoDatabaseFactory;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoNativeRepository;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoRepository;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Property;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.SubSpace;
@@ -30,7 +30,11 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * The reconciliation is the first inference logic - instances linked to an "origin" by HBPVocabulary#INFERENCE_EXTENDS are merged (by applying conflict resolution mechanisms) and provided to the {@link InferenceController} for further processing
+ */
 @Component
+@ToBeTested
 public class Reconciliation implements InferenceStrategy, InitializingBean {
 
     private final static List<String> NAME_BLACKLIST_FOR_MERGE = Arrays.asList(JsonLdConsts.ID, HBPVocabulary.INFERENCE_EXTENDS);
@@ -39,10 +43,10 @@ public class Reconciliation implements InferenceStrategy, InitializingBean {
     InferenceController controller;
 
     @Autowired
-    ArangoDatabaseFactory databaseController;
+    ArangoRepository repository;
 
     @Autowired
-    ArangoRepository repository;
+    ArangoNativeRepository nativeRepository;
 
     @Autowired
     NexusConfiguration nexusConfiguration;
@@ -66,14 +70,14 @@ public class Reconciliation implements InferenceStrategy, InitializingBean {
     }
 
     @Override
-    public void infer(QualifiedIndexingMessage message, Set<Vertex> documents, Credential credential) {
+    public void infer(QualifiedIndexingMessage message, Set<Vertex> documents) {
         //We collect all instances from the default space
         NexusInstanceReference originalId = message.getOriginalId();
         boolean isOriginal = originalId.equals(message.getOriginalMessage().getInstanceReference());
 
-        NexusInstanceReference resolveOriginalId = repository.findOriginalId(originalId, credential);
-        Set<NexusInstanceReference> relativeInstances = indexingProvider.findInstancesWithLinkTo(HBPVocabulary.INFERENCE_EXTENDS, resolveOriginalId, credential);
-        Set<NexusInstanceReference> inferredInstances = indexingProvider.findInstancesWithLinkTo(HBPVocabulary.INFERENCE_OF, resolveOriginalId, credential);
+        NexusInstanceReference resolveOriginalId = nativeRepository.findOriginalId(originalId);
+        Set<NexusInstanceReference> relativeInstances = indexingProvider.findInstancesWithLinkTo(HBPVocabulary.INFERENCE_EXTENDS, resolveOriginalId);
+        Set<NexusInstanceReference> inferredInstances = indexingProvider.findInstancesWithLinkTo(HBPVocabulary.INFERENCE_OF, resolveOriginalId);
         if (!isOriginal || (relativeInstances != null && !relativeInstances.isEmpty())) {
             Vertex originalVertex;
             if (isOriginal) {

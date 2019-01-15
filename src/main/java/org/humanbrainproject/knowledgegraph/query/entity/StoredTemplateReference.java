@@ -1,5 +1,8 @@
 package org.humanbrainproject.knowledgegraph.query.entity;
 
+import org.humanbrainproject.knowledgegraph.annotations.Tested;
+
+@Tested
 public class StoredTemplateReference {
 
     private final StoredQueryReference queryReference;

@@ -6,6 +6,7 @@ import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.gson.Gson;
+import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.NexusVocabulary;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
@@ -28,6 +29,7 @@ import java.util.stream.Collectors;
  * to allow simplified automatic processing
  */
 @Component
+@ToBeTested
 public class JsonLdStandardization {
 
     @Autowired

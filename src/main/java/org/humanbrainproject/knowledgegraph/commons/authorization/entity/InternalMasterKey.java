@@ -1,7 +1,10 @@
 package org.humanbrainproject.knowledgegraph.commons.authorization.entity;
 
+import org.humanbrainproject.knowledgegraph.annotations.NoTests;
+
 import java.util.Objects;
 
+@NoTests(NoTests.TRIVIAL)
 public class InternalMasterKey implements Credential {
 
     private final String id = "MASTER_KEY";

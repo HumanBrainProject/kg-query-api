@@ -1,8 +1,12 @@
 package org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.query;
 
 import com.github.jsonldjava.core.JsonLdConsts;
+import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.UnauthorizedAccess;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.aql.AuthorizedArangoQuery;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.aql.TrustedAqlValue;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.aql.UnauthorizedArangoQuery;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.ArangoVocabulary;
@@ -17,6 +21,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Component
+@ToBeTested
 public class ArangoQueryFactory {
 
 
@@ -29,17 +34,38 @@ public class ArangoQueryFactory {
     }
 
     public String queryOutboundRelationsForDocument(ArangoDocumentReference document, Set<ArangoCollectionReference> edgeCollections, Set<String> permissionGroupsWithReadAccess) {
+       return queryDirectRelationsForDocument(document, edgeCollections, permissionGroupsWithReadAccess, true);
+    }
+
+    public String queryInboundRelationsForDocument(ArangoDocumentReference document, Set<ArangoCollectionReference> edgeCollections, Set<String> permissionGroupsWithReadAccess) {
+        return queryDirectRelationsForDocument(document, edgeCollections, permissionGroupsWithReadAccess, false);
+    }
+
+    public String queryLinkingInstanceBetweenVertices(ArangoDocumentReference from, ArangoDocumentReference to, ArangoCollectionReference relation, Set<String> permissionGroupsWithReadAccess){
+        AuthorizedArangoQuery q = new AuthorizedArangoQuery(permissionGroupsWithReadAccess);
+        q.addLine("FOR doc in `${collection}`");
+        q.addLine("FILTER doc._from == \"${fromId}\"");
+        q.addLine("AND doc._to == \"${toId}\"");
+        q.addLine("RETURN doc");
+        q.setParameter("collection", relation.getName());
+        q.setParameter("fromId", from.getId());
+        q.setParameter("toId", to.getId());
+        return q.build().getValue();
+    }
+
+
+    private String queryDirectRelationsForDocument(ArangoDocumentReference document, Set<ArangoCollectionReference> edgeCollections, Set<String> permissionGroupsWithReadAccess, boolean outbound) {
         AuthorizedArangoQuery q = new AuthorizedArangoQuery(permissionGroupsWithReadAccess);
         q.setParameter("documentId", document.getId());
+        q.setParameter("direction", outbound ? "OUTBOUND" : "INBOUND");
         q.setTrustedParameter("edges", q.listCollections(edgeCollections.stream().map(ArangoCollectionReference::getName).collect(Collectors.toSet())));
         q.addLine("LET doc = DOCUMENT(\"${documentId}\")");
         q.addDocumentFilter(new TrustedAqlValue("doc"));
-        q.addLine("FOR v, e IN 1..1 OUTBOUND doc ${edges}");
+        q.addLine("FOR v, e IN 1..1 ${direction} doc ${edges}");
         q.addDocumentFilter(new TrustedAqlValue("v"));
         q.addLine("RETURN e." + ArangoVocabulary.ID);
         return q.build().getValue();
     }
-
     public String queryOriginalIdForLink(ArangoDocumentReference document, ArangoCollectionReference linkReference,  Set<String> permissionGroupsWithReadAccess) {
         AuthorizedArangoQuery q = new AuthorizedArangoQuery(permissionGroupsWithReadAccess);
         q.setParameter("documentId", document.getId());
@@ -136,6 +162,16 @@ public class ArangoQueryFactory {
         return q.build().getValue();
     }
 
+    @UnauthorizedAccess("Currently, this method is only applied to the internal database. Be cautious if sensitive information is going into the internal database and NEVER use it for other databases since this would be a vulnerability")
+    public String getInternalDocumentsOfCollectionWithKeyPrefix(ArangoCollectionReference collection, String keyPrefix) {
+        UnauthorizedArangoQuery q = new UnauthorizedArangoQuery();
+        q.setParameter("collection", collection.getName());
+        q.setParameter("prefix", keyPrefix);
+        q.addLine("FOR spec IN `${collection}` ");
+        q.addLine("FILTER spec._key LIKE \"${prefix}%\"");
+        q.addLine("RETURN spec");
+        return q.build().getValue();
+    }
 
     public String queryReleaseGraph(Set<ArangoCollectionReference> edgeCollections, ArangoDocumentReference rootInstance, Integer maxDepth, Set<String> permissionGroupsWithReadAccess) {
         return childrenStatus(rootInstance, null, 0, maxDepth, edgeCollections, permissionGroupsWithReadAccess).getValue();
@@ -264,4 +300,33 @@ public class ArangoQueryFactory {
         q.addLine("RETURN FIRST(instances)");
         return q.build().getValue();
     }
+
+    public String getAttributesWithCount(ArangoCollectionReference reference){
+        UnauthorizedArangoQuery q = new UnauthorizedArangoQuery();
+        q.addLine("FOR doc IN `${reference}`");
+        q.addLine("FOR att IN ATTRIBUTES(doc, true)");
+        q.addLine("COLLECT attribute = att WITH COUNT INTO numOfOccurences");
+        q.addLine("RETURN { attribute, numOfOccurences }");
+        q.setParameter("reference", reference.getName());
+        return q.build().getValue();
+    }
+
+    public String queryDirectRelationsWithType(ArangoCollectionReference reference, Set<ArangoCollectionReference> edgeCollections, boolean outbound){
+        UnauthorizedArangoQuery q = new UnauthorizedArangoQuery();
+        q.setTrustedParameter("collections", q.listCollections(edgeCollections.stream().map(ArangoCollectionReference::getName).collect(Collectors.toSet())));
+        q.setParameter("fromOrTo", outbound ? ArangoVocabulary.TO : ArangoVocabulary.FROM);
+        q.setParameter("reference", reference.getName());
+        q.setParameter("direction", outbound ? "OUTBOUND": "INBOUND");
+        q.addLine("FOR doc IN `${reference}`");
+        q.addLine("FOR v, e IN 1..1 ${direction} doc ${collections}");
+        q.addDocumentFilter(new TrustedAqlValue("v"));
+        q.addLine("RETURN DISTINCT {");
+        q.indent().addLine("\"ref\": SUBSTRING(e.${fromOrTo}, 0, FIND_LAST(e.${fromOrTo}, \"/\")), ");
+        q.addLine("\"attribute\": e._name");
+        q.addLine("}");
+        return q.build().getValue();
+    }
+
+
+
 }

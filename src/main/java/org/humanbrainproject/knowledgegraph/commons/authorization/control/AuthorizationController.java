@@ -1,6 +1,7 @@
 package org.humanbrainproject.knowledgegraph.commons.authorization.control;
 
 import org.apache.commons.collections4.map.LRUMap;
+import org.humanbrainproject.knowledgegraph.annotations.Tested;
 import org.humanbrainproject.knowledgegraph.commons.authorization.entity.AccessRight;
 import org.humanbrainproject.knowledgegraph.commons.authorization.entity.Credential;
 import org.humanbrainproject.knowledgegraph.commons.authorization.entity.InternalMasterKey;
@@ -17,7 +18,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * The authorization controller is responsible to m
+ */
 @Component
+@Tested
 public class AuthorizationController {
 
     @Autowired
@@ -40,9 +45,9 @@ public class AuthorizationController {
     }
 
 
-    private final LRUMap<Credential, Set<AccessRight>> tokenToAccessRights = new LRUMap<>();
+    final LRUMap<Credential, Set<AccessRight>> tokenToAccessRights = new LRUMap<>();
 
-    public Set<AccessRight> getAccessRights(Credential credential) {
+    Set<AccessRight> getAccessRights(Credential credential) {
         if (tokenToAccessRights.containsKey(credential)) {
             return tokenToAccessRights.get(credential);
         }
@@ -54,11 +59,7 @@ public class AuthorizationController {
     }
 
 
-    public Set<String> getReadableOrganizations(Credential credential){
-        return getReadableOrganizations(credential, null);
-    }
-
-    public Set<String> getReadableOrganizations(Credential credential, List<String> whitelistedOrganizations){
+    Set<String> getReadableOrganizations(Credential credential, List<String> whitelistedOrganizations){
         Set<AccessRight> accessRights = getAccessRights(credential);
         Set<String> readableOrganizations = accessRights.stream().map(AccessRight::getPath).collect(Collectors.toSet());
         if(whitelistedOrganizations!=null){
@@ -67,16 +68,11 @@ public class AuthorizationController {
         return readableOrganizations;
     }
 
-    public boolean isReadable(Map data, Credential credential){
+    boolean isReadable(Map data, Credential credential){
         if(data.containsKey(ArangoVocabulary.PERMISSION_GROUP) && data.get(ArangoVocabulary.PERMISSION_GROUP) instanceof String){
             return getReadableOrganizations(credential, null).contains(data.get(ArangoVocabulary.PERMISSION_GROUP));
         }
         return false;
-    }
-
-
-    public void flushAccessRights(){
-        this.tokenToAccessRights.clear();
     }
 
 

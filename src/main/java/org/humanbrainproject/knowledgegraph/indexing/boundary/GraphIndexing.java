@@ -1,7 +1,6 @@
 package org.humanbrainproject.knowledgegraph.indexing.boundary;
 
-import org.humanbrainproject.knowledgegraph.commons.authorization.control.SystemOidcClient;
-import org.humanbrainproject.knowledgegraph.commons.authorization.entity.InternalMasterKey;
+import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.control.DatabaseTransaction;
 import org.humanbrainproject.knowledgegraph.indexing.control.IndexingController;
 import org.humanbrainproject.knowledgegraph.indexing.control.MessageProcessor;
@@ -9,10 +8,11 @@ import org.humanbrainproject.knowledgegraph.indexing.control.basic.BasicIndexing
 import org.humanbrainproject.knowledgegraph.indexing.control.inference.InferenceController;
 import org.humanbrainproject.knowledgegraph.indexing.control.nexusToArango.RelevanceChecker;
 import org.humanbrainproject.knowledgegraph.indexing.control.releasing.ReleasingController;
+import org.humanbrainproject.knowledgegraph.indexing.control.spatial.SpatialController;
 import org.humanbrainproject.knowledgegraph.indexing.entity.IndexingMessage;
 import org.humanbrainproject.knowledgegraph.indexing.entity.QualifiedIndexingMessage;
-import org.humanbrainproject.knowledgegraph.indexing.entity.TodoList;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
+import org.humanbrainproject.knowledgegraph.indexing.entity.todo.TodoList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.List;
 
 @Component
+@ToBeTested(integrationTestRequired = true, systemTestRequired = true)
 public class GraphIndexing {
 
     @Autowired
@@ -34,24 +35,22 @@ public class GraphIndexing {
     InferenceController inferenceController;
 
     @Autowired
+    SpatialController spatialController;
+
+    @Autowired
     MessageProcessor messageProcessor;
 
     @Autowired
     DatabaseTransaction transaction;
 
     @Autowired
-    SystemOidcClient oidcClient;
-
-    @Autowired
     RelevanceChecker relevanceChecker;
-
-    InternalMasterKey internalMasterKey = new InternalMasterKey();
 
 
     private Logger logger = LoggerFactory.getLogger(GraphIndexing.class);
 
     private List<IndexingController> getIndexingControllers() {
-        return Arrays.asList(defaultIndexingController, releasingController, inferenceController);
+        return Arrays.asList(defaultIndexingController, releasingController, inferenceController, spatialController);
     }
 
     public TodoList insert(IndexingMessage message) {
@@ -62,7 +61,7 @@ public class GraphIndexing {
         if (messageRelevant) {
             //Gather execution plan
             for (IndexingController indexingController : getIndexingControllers()) {
-                indexingController.insert(qualifiedSpec, todoList, internalMasterKey);
+                indexingController.insert(qualifiedSpec, todoList);
             }
 
             //Execute
@@ -84,7 +83,7 @@ public class GraphIndexing {
         if (messageRelevant) {
             //Gather execution plan
             for (IndexingController indexingController : getIndexingControllers()) {
-                indexingController.update(qualifiedSpec, todoList, internalMasterKey);
+                indexingController.update(qualifiedSpec, todoList);
             }
 
             //Execute
@@ -100,7 +99,7 @@ public class GraphIndexing {
         //Gather execution plan
         TodoList todoList = new TodoList();
         for (IndexingController indexingController : getIndexingControllers()) {
-            indexingController.delete(reference, todoList, internalMasterKey);
+            indexingController.delete(reference, todoList);
         }
         //Execute
         transaction.execute(todoList);
@@ -109,7 +108,7 @@ public class GraphIndexing {
 
     public void clearGraph() {
         for (IndexingController indexingController : getIndexingControllers()) {
-            indexingController.clear(internalMasterKey);
+            indexingController.clear();
         }
     }
 

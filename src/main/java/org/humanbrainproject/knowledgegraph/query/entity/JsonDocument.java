@@ -1,6 +1,7 @@
 package org.humanbrainproject.knowledgegraph.query.entity;
 
 import com.github.jsonldjava.core.JsonLdConsts;
+import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.ArangoVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.NexusVocabulary;
@@ -10,6 +11,7 @@ import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceR
 import java.util.*;
 import java.util.function.Consumer;
 
+@ToBeTested
 public class JsonDocument extends LinkedHashMap<String, Object>{
 
     public JsonDocument(Map<? extends String, ?> map) {

@@ -2,11 +2,17 @@ package org.humanbrainproject.knowledgegraph.indexing.entity.nexus;
 
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.SubSpace;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 public class NexusInstanceReferenceTest {
 
-    NexusInstanceReference instanceFromMainSpace = new NexusInstanceReference("foo", "bar", "foobar", "v0.0.1", "barfoo");
+    NexusInstanceReference instanceFromMainSpace;
+
+    @Before
+    public void setup(){
+        instanceFromMainSpace = new NexusInstanceReference("foo", "bar", "foobar", "v0.0.1", "barfoo");
+    }
 
     @Test
     public void createNexusInstanceReferenceWithRevisionFromUrl(){
@@ -17,9 +23,7 @@ public class NexusInstanceReferenceTest {
         Assert.assertEquals("v0.0.1", result.getNexusSchema().getSchemaVersion());
         Assert.assertEquals("barfoo", result.getId());
         Assert.assertEquals(Integer.valueOf(12), result.getRevision());
-
     }
-
 
 
     @Test
@@ -36,9 +40,10 @@ public class NexusInstanceReferenceTest {
 
 
     @Test
-    public void createEditorInstanceReference() {
+    public void createEditorInstanceReferenceByToSubSpace() {
         NexusInstanceReference editorInstance = instanceFromMainSpace.toSubSpace(SubSpace.EDITOR);
         NexusInstanceReference newEditorInstance = new NexusInstanceReference("fooeditor", "bar", "foobar", "v0.0.1", "barfoo");
+
         Assert.assertEquals("foo", editorInstance.getNexusSchema().getOrganization());
         Assert.assertEquals("bar", editorInstance.getNexusSchema().getDomain());
         Assert.assertEquals("foobar", editorInstance.getNexusSchema().getSchema());
@@ -49,5 +54,48 @@ public class NexusInstanceReferenceTest {
         Assert.assertEquals(editorInstance, newEditorInstance);
     }
 
+    @Test
+    public void getFullId(){
+        String fullId = instanceFromMainSpace.getFullId(false);
+        Assert.assertEquals("foo/bar/foobar/v0.0.1/barfoo", fullId);
+    }
+
+    @Test
+    public void getFullIdWithImplicitRevision(){
+        String fullId = instanceFromMainSpace.getFullId(true);
+        Assert.assertEquals("foo/bar/foobar/v0.0.1/barfoo?rev=1", fullId);
+    }
+
+    @Test
+    public void getFullIdWithExplicitRevision(){
+        instanceFromMainSpace.setRevision(20);
+        String fullId = instanceFromMainSpace.getFullId(true);
+        Assert.assertEquals("foo/bar/foobar/v0.0.1/barfoo?rev=20", fullId);
+    }
+
+    @Test
+    public void isSameInstanceRegardlessOfRevision(){
+        NexusInstanceReference clone = instanceFromMainSpace.clone();
+        clone.setRevision(30);
+        Assert.assertTrue(instanceFromMainSpace.isSameInstanceRegardlessOfRevision(clone));
+    }
+
+    @Test
+    public void isSameInstanceRegardlessOfRevisionDifferentId(){
+        Assert.assertFalse(instanceFromMainSpace.isSameInstanceRegardlessOfRevision(new NexusInstanceReference(instanceFromMainSpace.getNexusSchema(), "bar")));
+    }
+
+
+
+    @Test
+    public void cloneInstance(){
+        instanceFromMainSpace.setRevision(20);
+        NexusInstanceReference clone = instanceFromMainSpace.clone();
+        Assert.assertFalse(clone == instanceFromMainSpace);
+        Assert.assertFalse(clone.getNexusSchema()==instanceFromMainSpace.getNexusSchema());
+        Assert.assertEquals(instanceFromMainSpace, clone);
+        Assert.assertEquals(instanceFromMainSpace.getNexusSchema(), clone.getNexusSchema());
+        Assert.assertEquals(instanceFromMainSpace.getRevision(), clone.getRevision());
+    }
 
 }

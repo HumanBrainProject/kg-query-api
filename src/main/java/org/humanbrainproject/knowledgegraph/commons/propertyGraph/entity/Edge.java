@@ -1,9 +1,10 @@
 package org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity;
 
+import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 
+@ToBeTested(easy = true)
 public class Edge implements VertexOrEdge{
-
 
     private final JsonPath path;
     private NexusInstanceReference reference;

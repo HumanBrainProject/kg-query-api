@@ -1,5 +1,6 @@
 package org.humanbrainproject.knowledgegraph.commons.authorization.control;
 
+import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.commons.authorization.entity.OidcAccessToken;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,12 +20,11 @@ import java.util.Arrays;
 import java.util.Collections;
 
 @Component
+@ToBeTested
 public class SystemOidcHeaderInterceptor implements ClientHttpRequestInterceptor {
 
     @Autowired
     SystemOidcClient client;
-
-
 
     protected Logger logger = LoggerFactory.getLogger(ClientHttpRequestInterceptor.class);
 

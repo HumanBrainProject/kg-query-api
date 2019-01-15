@@ -1,5 +1,9 @@
 package org.humanbrainproject.knowledgegraph.commons.vocabulary;
 
+
+import org.humanbrainproject.knowledgegraph.annotations.NoTests;
+
+@NoTests(NoTests.NO_LOGIC)
 public class ArangoVocabulary {
 
     //Arango owned

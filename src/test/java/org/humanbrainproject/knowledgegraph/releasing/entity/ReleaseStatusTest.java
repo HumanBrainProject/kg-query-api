@@ -21,4 +21,10 @@ public class ReleaseStatusTest {
     public void isWorst() {
         Assert.assertTrue(ReleaseStatus.NOT_RELEASED.isWorst());
     }
+
+    @Test
+    public void isNotWorst() {
+        Assert.assertFalse(ReleaseStatus.HAS_CHANGED.isWorst());
+        Assert.assertFalse(ReleaseStatus.RELEASED.isWorst());
+    }
 }

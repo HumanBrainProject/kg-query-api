@@ -1,5 +1,8 @@
 package org.humanbrainproject.knowledgegraph.commons.vocabulary;
 
+import org.humanbrainproject.knowledgegraph.annotations.NoTests;
+
+@NoTests(NoTests.NO_LOGIC)
 public class ShaclVocabulary {
 
     public static final String ALIAS = "sh";

@@ -1,6 +1,6 @@
 package org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control;
 
-import org.humanbrainproject.knowledgegraph.commons.authorization.control.SystemOidcClient;
+import org.humanbrainproject.knowledgegraph.annotations.NoTests;
 import org.humanbrainproject.knowledgegraph.query.entity.DatabaseScope;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 
 @Primary
 @Component
+@NoTests(NoTests.TRIVIAL)
 public class ArangoDatabaseFactory {
 
     @Autowired
@@ -26,12 +27,6 @@ public class ArangoDatabaseFactory {
     @Autowired
     @Qualifier("internal")
     ArangoConnection arangoInternal;
-
-    @Autowired
-    ArangoRepository repository;
-
-    @Autowired
-    SystemOidcClient systemOidcClient;
 
 
     public ArangoConnection getReleasedDB() {
@@ -56,7 +51,7 @@ public class ArangoDatabaseFactory {
             case INFERRED:
                 return getInferredDB();
         }
-        return null;
+        return getDefaultDB();
     }
 
 }

@@ -1,6 +1,6 @@
 package org.humanbrainproject.knowledgegraph.indexing.control.inference;
 
-import org.humanbrainproject.knowledgegraph.commons.authorization.entity.Credential;
+import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.JsonPath;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.SubSpace;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Vertex;
@@ -10,13 +10,21 @@ import org.humanbrainproject.knowledgegraph.indexing.control.MessageProcessor;
 import org.humanbrainproject.knowledgegraph.indexing.control.nexusToArango.NexusToArangoIndexingProvider;
 import org.humanbrainproject.knowledgegraph.indexing.entity.*;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
+import org.humanbrainproject.knowledgegraph.indexing.entity.todo.DeleteTodoItem;
+import org.humanbrainproject.knowledgegraph.indexing.entity.todo.InsertOrUpdateInPrimaryStoreTodoItem;
+import org.humanbrainproject.knowledgegraph.indexing.entity.todo.InsertTodoItem;
+import org.humanbrainproject.knowledgegraph.indexing.entity.todo.TodoList;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
 
+/**
+ * The inference controller applies the registered inference strategies and registers the created / updated / deleted instances into the inferred database.
+ */
 @Component
-public class InferenceController implements IndexingController{
+@ToBeTested
+public class InferenceController implements IndexingController {
 
     private final static List<JsonPath> EDGE_BLACKLIST_FOR_INFERENCE = Arrays.asList(new JsonPath(HBPVocabulary.INFERENCE_OF), new JsonPath(HBPVocabulary.INFERENCE_EXTENDS));
 
@@ -29,18 +37,17 @@ public class InferenceController implements IndexingController{
     private Set<InferenceStrategy> strategies = Collections.synchronizedSet(new HashSet<>());
 
     @Override
-    public TodoList insert(QualifiedIndexingMessage message, TodoList todoList, Credential credential){
-        if(message.isOfType(HBPVocabulary.INFERENCE_TYPE)){
-            insertVertexStructure(message, todoList, credential);
+    public TodoList insert(QualifiedIndexingMessage message, TodoList todoList) {
+        if (message.isOfType(HBPVocabulary.INFERENCE_TYPE)) {
+            insertVertexStructure(message, todoList);
         } else {
             Set<Vertex> documents = new HashSet<>();
             for (InferenceStrategy strategy : strategies) {
-                strategy.infer(message, documents, credential);
+                strategy.infer(message, documents);
             }
-            if(documents.isEmpty()){
-                insertVertexStructure(message, todoList, credential);
-            }
-            else{
+            if (documents.isEmpty()) {
+                insertVertexStructure(message, todoList);
+            } else {
                 documents.forEach(doc -> {
                     todoList.addTodoItem(new InsertOrUpdateInPrimaryStoreTodoItem(doc));
                 });
@@ -49,30 +56,29 @@ public class InferenceController implements IndexingController{
         return todoList;
     }
 
-    private void insertVertexStructure(QualifiedIndexingMessage message, TodoList todoList, Credential credential) {
+    private void insertVertexStructure(QualifiedIndexingMessage message, TodoList todoList) {
         Vertex vertexStructure = messageProcessor.createVertexStructure(message);
-        vertexStructure = indexingProvider.mapToOriginalSpace(vertexStructure, message.getOriginalId(), credential);
+        vertexStructure = indexingProvider.mapToOriginalSpace(vertexStructure, message.getOriginalId());
         InsertTodoItem insertTodoItem = new InsertTodoItem(vertexStructure, indexingProvider.getConnection(TargetDatabase.INFERRED));
         insertTodoItem.getBlacklist().addAll(EDGE_BLACKLIST_FOR_INFERENCE);
         todoList.addTodoItem(insertTodoItem);
     }
 
     @Override
-    public TodoList update(QualifiedIndexingMessage message, TodoList todoList, Credential credential) {
-        //delete(message.getOriginalMessage().getInstanceReference(), todoList);
-        insert(message, todoList, credential);
+    public TodoList update(QualifiedIndexingMessage message, TodoList todoList) {
+        insert(message, todoList);
         return todoList;
     }
 
     @Override
-    public TodoList delete(NexusInstanceReference reference, TodoList todoList, Credential credential) {
-        NexusInstanceReference originalIdInMainSpace = indexingProvider.findOriginalId(reference, credential).toSubSpace(SubSpace.MAIN);
+    public TodoList delete(NexusInstanceReference reference, TodoList todoList) {
+        NexusInstanceReference originalIdInMainSpace = indexingProvider.findOriginalId(reference).toSubSpace(SubSpace.MAIN);
         todoList.addTodoItem(new DeleteTodoItem(originalIdInMainSpace, indexingProvider.getConnection(TargetDatabase.INFERRED)));
         return todoList;
     }
 
     @Override
-    public void clear(Credential credential) {
+    public void clear() {
         indexingProvider.getConnection(TargetDatabase.INFERRED).clearData();
     }
 

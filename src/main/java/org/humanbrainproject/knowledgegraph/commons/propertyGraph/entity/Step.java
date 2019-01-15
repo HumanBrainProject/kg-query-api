@@ -1,7 +1,10 @@
 package org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity;
 
+import org.humanbrainproject.knowledgegraph.annotations.NoTests;
+
 import java.util.Objects;
 
+@NoTests(NoTests.TRIVIAL)
 public class Step {
     private final String name;
     private final Integer orderNumber;

@@ -1,35 +1,36 @@
 package org.humanbrainproject.knowledgegraph.indexing.control.nexusToArango;
 
-import org.humanbrainproject.knowledgegraph.commons.authorization.entity.Credential;
-import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonLdStandardization;
-import org.humanbrainproject.knowledgegraph.commons.nexus.control.SystemNexusClient;
+import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
+import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationContext;
+import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusClient;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoConnection;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoDatabaseFactory;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoNativeRepository;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoRepository;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Edge;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.SubSpace;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Vertex;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.VertexOrEdgeReference;
 import org.humanbrainproject.knowledgegraph.indexing.control.MessageProcessor;
 import org.humanbrainproject.knowledgegraph.indexing.entity.IndexingMessage;
 import org.humanbrainproject.knowledgegraph.indexing.entity.QualifiedIndexingMessage;
 import org.humanbrainproject.knowledgegraph.indexing.entity.TargetDatabase;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
-@Primary
 @Component
+@ToBeTested
 public class NexusToArangoIndexingProvider {
+
+    @Autowired
+    AuthorizationContext authorizationContext;
 
     @Autowired
     ArangoDatabaseFactory databaseFactory;
@@ -38,61 +39,44 @@ public class NexusToArangoIndexingProvider {
     ArangoRepository repository;
 
     @Autowired
-    SystemNexusClient systemNexusClient;
+    ArangoNativeRepository nativeRepository;
+
+    @Autowired
+    NexusClient nexusClient;
 
     @Autowired
     MessageProcessor messageProcessor;
 
-    @Autowired
-    JsonLdStandardization jsonLdStandardization;
 
     public Vertex getVertexStructureById(NexusInstanceReference incomingReference) {
-        String payload = systemNexusClient.getPayload(incomingReference);
+        String payload = getPayloadFromPrimaryStore(incomingReference);
         QualifiedIndexingMessage qualifiedMessage = messageProcessor.qualify(new IndexingMessage(incomingReference, payload, null, null));
         return messageProcessor.createVertexStructure(qualifiedMessage);
     }
 
-    public Set<NexusInstanceReference> findInstancesWithLinkTo(String originalParentProperty, NexusInstanceReference originalId, Credential credential) {
-       // NexusInstanceReference realOriginalId = findOriginalId(originalId, credential);
-        return repository.findOriginalIdsWithLinkTo(ArangoDocumentReference.fromNexusInstance(originalId), ArangoCollectionReference.fromFieldName(originalParentProperty), databaseFactory.getDefaultDB(), credential);
+    public Set<NexusInstanceReference> findInstancesWithLinkTo(String originalParentProperty, NexusInstanceReference originalId) {
+        return nativeRepository.findOriginalIdsWithLinkTo(ArangoDocumentReference.fromNexusInstance(originalId), ArangoCollectionReference.fromFieldName(originalParentProperty));
     }
 
-    public Vertex mapToOriginalSpace(Vertex vertex, NexusInstanceReference originalId, Credential credential) {
+    public Vertex mapToOriginalSpace(Vertex vertex, NexusInstanceReference originalId) {
         QualifiedIndexingMessage newMessage = new QualifiedIndexingMessage(vertex.getQualifiedIndexingMessage().getOriginalMessage(), new LinkedHashMap(vertex.getQualifiedIndexingMessage().getQualifiedMap()));
         Vertex newVertex = messageProcessor.createVertexStructure(newMessage);
         Map<NexusInstanceReference, NexusInstanceReference> toOriginalIdMap = new HashMap<>();
         for (Edge edge : newVertex.getEdges()) {
-            NexusInstanceReference relatedOriginalId = repository.findOriginalId(edge.getReference(), credential);
+            NexusInstanceReference relatedOriginalId = nativeRepository.findOriginalId(edge.getReference());
             relatedOriginalId = relatedOriginalId.toSubSpace(SubSpace.MAIN);
             toOriginalIdMap.put(edge.getReference(), relatedOriginalId);
             edge.setReference(relatedOriginalId);
         }
         newVertex.setInstanceReference(originalId);
         newVertex.toSubSpace(SubSpace.MAIN);
-        //jsonLdStandardization.extendInternalReferencesWithRelativeUrl(newVertex.getQualifiedIndexingMessage().getQualifiedMap(), toOriginalIdMap::get);
         return newVertex;
     }
 
 
-    public Set<VertexOrEdgeReference> getVertexOrEdgeReferences(NexusInstanceReference nexusInstanceReference, TargetDatabase database, Credential credential) {
-        Set<ArangoDocumentReference> referencesBelongingToInstance = repository.getReferencesBelongingToInstance(nexusInstanceReference, getConnection(database), credential);
-        referencesBelongingToInstance.add(ArangoDocumentReference.fromNexusInstance(nexusInstanceReference));
-        return referencesBelongingToInstance.stream().map(r -> new VertexOrEdgeReference(){
-            @Override
-            public String getId() {
-                return r.getKey();
-            }
-
-            @Override
-            public String getTypeName() {
-                return r.getCollection().getName();
-            }
-        }).collect(Collectors.toSet());
-    }
-
     public ArangoConnection getConnection(TargetDatabase database) {
         switch (database) {
-            case DEFAULT:
+            case NATIVE:
                 return databaseFactory.getDefaultDB();
             case RELEASE:
                 return databaseFactory.getReleasedDB();
@@ -104,14 +88,14 @@ public class NexusToArangoIndexingProvider {
 
 
     public String getPayloadFromPrimaryStore(NexusInstanceReference instanceReference) {
-        return systemNexusClient.getPayload(instanceReference);
+        return  nexusClient.get(instanceReference.getRelativeUrl(), authorizationContext.getCredential(), String.class);
     }
 
-    public String getPayloadById(NexusInstanceReference instanceReference, TargetDatabase database, Credential credential) {
-        return repository.getPayloadById(ArangoDocumentReference.fromNexusInstance(instanceReference), getConnection(database), credential);
+    public String getPayloadById(NexusInstanceReference instanceReference, TargetDatabase database) {
+        return repository.getPayloadById(ArangoDocumentReference.fromNexusInstance(instanceReference), getConnection(database));
     }
 
-    public NexusInstanceReference findOriginalId(NexusInstanceReference instanceReference, Credential credential){
-        return repository.findOriginalId(instanceReference, credential);
+    public NexusInstanceReference findOriginalId(NexusInstanceReference instanceReference){
+        return nativeRepository.findOriginalId(instanceReference);
     }
 }

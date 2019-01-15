@@ -1,9 +1,12 @@
 package org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity;
 
+import org.humanbrainproject.knowledgegraph.annotations.NoTests;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 
+@NoTests(NoTests.TRIVIAL)
 public class JsonPath extends ArrayList<Step> {
 
     public JsonPath(int i) {
