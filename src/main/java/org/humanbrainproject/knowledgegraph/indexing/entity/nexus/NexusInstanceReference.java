@@ -1,5 +1,6 @@
 package org.humanbrainproject.knowledgegraph.indexing.entity.nexus;
 
+import org.humanbrainproject.knowledgegraph.annotations.Tested;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.SubSpace;
 import org.slf4j.Logger;
@@ -9,6 +10,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.Objects;
 
+@Tested
 public class NexusInstanceReference {
 
     private final NexusSchemaReference nexusSchema;
@@ -16,6 +18,8 @@ public class NexusInstanceReference {
     private Integer revision;
 
     protected static Logger logger = LoggerFactory.getLogger(NexusInstanceReference.class);
+
+
 
     public static NexusInstanceReference createFromUrl(String url) {
         NexusSchemaReference schema = NexusSchemaReference.createFromUrl(url);

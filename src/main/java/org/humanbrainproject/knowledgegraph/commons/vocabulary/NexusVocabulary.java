@@ -1,5 +1,8 @@
 package org.humanbrainproject.knowledgegraph.commons.vocabulary;
 
+import org.humanbrainproject.knowledgegraph.annotations.NoTests;
+
+@NoTests(NoTests.NO_LOGIC)
 public class NexusVocabulary {
 
     public static final String ALIAS = "nxv";

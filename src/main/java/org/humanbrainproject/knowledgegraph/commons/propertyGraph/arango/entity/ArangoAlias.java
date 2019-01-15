@@ -1,10 +1,12 @@
 package org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity;
 
+import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.query.entity.SpecField;
 import org.humanbrainproject.knowledgegraph.query.entity.SpecTraverse;
 
 import java.util.Objects;
 
+@ToBeTested(easy = true)
 public class ArangoAlias {
 
     private final String originalName;

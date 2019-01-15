@@ -1,6 +1,7 @@
 package org.humanbrainproject.knowledgegraph.indexing.entity;
 
 import com.github.jsonldjava.core.JsonLdConsts;
+import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.ArangoVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.NexusVocabulary;
@@ -13,6 +14,7 @@ import java.util.*;
  * properties and store them in the corresponding map. This means, in the map you will find fully written keys (e.g. "http://schema.org/name" instead of "schema:name"
  *
  */
+@ToBeTested(easy = true)
 public class QualifiedIndexingMessage {
     private final Map qualifiedMap;
     private final IndexingMessage originalMessage;

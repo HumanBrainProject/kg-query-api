@@ -1,8 +1,11 @@
 package org.humanbrainproject.knowledgegraph.query.entity;
 
+import org.humanbrainproject.knowledgegraph.annotations.NoTests;
+
 import java.util.Collections;
 import java.util.List;
 
+@NoTests(NoTests.TRIVIAL)
 public class Specification {
     public final String originalContext;
     public final String name;

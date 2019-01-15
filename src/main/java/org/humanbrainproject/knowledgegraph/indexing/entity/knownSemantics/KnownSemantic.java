@@ -1,6 +1,7 @@
 package org.humanbrainproject.knowledgegraph.indexing.entity.knownSemantics;
 
 import com.github.jsonldjava.core.JsonLdConsts;
+import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.indexing.entity.QualifiedIndexingMessage;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 
@@ -9,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@ToBeTested(easy = true)
 public abstract class KnownSemantic {
 
     protected final QualifiedIndexingMessage spec;

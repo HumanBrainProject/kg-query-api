@@ -1,6 +1,7 @@
 package org.humanbrainproject.knowledgegraph.query.control;
 
 import com.github.jsonldjava.core.JsonLdConsts;
+import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.SchemaOrgVocabulary;
@@ -18,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+@ToBeTested
 @Component
 public class SpecificationInterpreter {
 
@@ -26,7 +28,7 @@ public class SpecificationInterpreter {
 
     protected Logger logger = LoggerFactory.getLogger(SpecificationInterpreter.class);
 
-    public Specification readSpecification(String json, NexusSchemaReference nexusSchemaReference) throws JSONException {
+    public Specification readSpecification(String json, NexusSchemaReference schemaReference) throws JSONException {
         JSONObject jsonObject = new JSONObject(json);
         String originalContext = null;
         if (jsonObject.has(JsonLdConsts.CONTEXT)) {
@@ -37,8 +39,8 @@ public class SpecificationInterpreter {
             name = jsonObject.getString(SchemaOrgVocabulary.NAME);
         }
         String rootSchema = null;
-        if(nexusSchemaReference!=null){
-            rootSchema = nexusConfiguration.getAbsoluteUrl(nexusSchemaReference);
+        if(schemaReference!=null){
+            rootSchema = nexusConfiguration.getAbsoluteUrl(schemaReference);
         }
         else if (jsonObject.has(GraphQueryKeys.GRAPH_QUERY_ROOT_SCHEMA.getFieldName())) {
             rootSchema = jsonObject.getJSONObject(GraphQueryKeys.GRAPH_QUERY_ROOT_SCHEMA.getFieldName()).getString(JsonLdConsts.ID);

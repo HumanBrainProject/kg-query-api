@@ -1,12 +1,15 @@
 package org.humanbrainproject.knowledgegraph.query.entity;
 
+import org.humanbrainproject.knowledgegraph.annotations.NoTests;
+
+@NoTests(NoTests.TRIVIAL)
 public class Pagination {
 
-    private Integer start;
+    private int start=0;
     private Integer size;
 
     public Pagination setStart(Integer start) {
-        this.start = start;
+        this.start = start == null ? 0 : start;
         return this;
     }
 
@@ -19,8 +22,7 @@ public class Pagination {
         return size;
     }
 
-    public Integer getStart() {
-
+    public int getStart() {
         return start;
     }
 }

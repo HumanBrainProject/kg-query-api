@@ -1,6 +1,7 @@
 package org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control;
 
 import com.github.jsonldjava.core.JsonLdConsts;
+import org.humanbrainproject.knowledgegraph.annotations.Tested;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonLdStandardization;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
@@ -21,6 +22,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @Component
+@Tested
 public class ArangoDocumentConverter {
 
     @Autowired
@@ -32,7 +34,7 @@ public class ArangoDocumentConverter {
     @Autowired
     JsonLdStandardization standardization;
 
-    private Map<String, Object> buildPath(Step step, List<Step> remaining) {
+    Map<String, Object> buildPath(Step step, List<Step> remaining) {
         Map<String, Object> path = new LinkedHashMap<>();
         if (step != null) {
             path.put(ArangoVocabulary.ORDER_NUMBER, step.getOrderNumber());
@@ -104,23 +106,32 @@ public class ArangoDocumentConverter {
         return jsonTransformer.getMapAsJson(jsonObject);
     }
 
-    private void removePathFromMap(Map map, List<Step> path) {
+    boolean removePathFromMap(Map map, List<Step> path) {
         if (path.size() == 1) {
             map.remove(path.get(0).getName());
         } else if (path.size() > 1) {
-            Object nextStep = map.get(0);
-            if (nextStep instanceof Map) {
-                removePathFromMap(((Map) nextStep), path.subList(1, path.size()));
-            } else if (nextStep instanceof Collection) {
-                for (Object o : ((Collection) nextStep)) {
+            Step nextStep = path.get(0);
+            Object object = map.get(nextStep.getName());
+            if (object instanceof Map) {
+                boolean fullyRemoved = removePathFromMap(((Map) object), path.subList(1, path.size()));
+                if(fullyRemoved){
+                    map.remove(nextStep.getName());
+                }
+            } else if (object instanceof Collection) {
+                boolean allRemoved = true;
+                for (Object o : ((Collection) object)) {
                     if (o instanceof Map) {
-                        removePathFromMap(((Map) o), path.subList(1, path.size()));
+                        boolean fullyRemoved = removePathFromMap(((Map) o), path.subList(1, path.size()));
+                        if(!fullyRemoved){
+                            allRemoved = false;
+                        }
                     }
                 }
+                if(allRemoved){
+                    map.remove(nextStep.getName());
+                }
             }
-
         }
-
-
+        return map.isEmpty();
     }
 }

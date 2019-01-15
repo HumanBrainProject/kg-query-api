@@ -1,5 +1,8 @@
 package org.humanbrainproject.knowledgegraph.commons.authorization.entity;
 
+import org.humanbrainproject.knowledgegraph.annotations.NoTests;
+
+@NoTests(NoTests.TRIVIAL)
 public class AccessRight {
 
     public enum Permission{

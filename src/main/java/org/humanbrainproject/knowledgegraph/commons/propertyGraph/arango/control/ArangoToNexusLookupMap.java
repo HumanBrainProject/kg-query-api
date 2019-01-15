@@ -1,5 +1,6 @@
 package org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control;
 
+import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
 import org.humanbrainproject.knowledgegraph.structure.boundary.Structure;
@@ -7,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
@@ -14,10 +16,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Component
+@ToBeTested
 public class ArangoToNexusLookupMap implements InitializingBean {
 
     @Autowired
     Structure structure;
+
+    @Value("${org.humanbrainproject.knowledgegraph.cache.populate}")
+    boolean populateCache = true;
 
 
     protected Logger logger = LoggerFactory.getLogger(ArangoToNexusLookupMap.class);
@@ -25,7 +31,9 @@ public class ArangoToNexusLookupMap implements InitializingBean {
     @Override
     public void afterPropertiesSet() {
         try {
-            refetch();
+            if(populateCache) {
+                refetch();
+            }
         }
         catch(Exception e){
             logger.error("Failed to load schema cache", e);

@@ -1,6 +1,7 @@
 package org.humanbrainproject.knowledgegraph.commons.authorization.control;
 
 import com.google.gson.Gson;
+import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.commons.authorization.entity.OidcAccessToken;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -17,6 +18,7 @@ import java.io.IOException;
 import java.util.Map;
 
 @Component
+@ToBeTested(systemTestRequired = true)
 public class SystemOidcClient {
 
     private final String OPENID_HOST_KEY = "openid_host";

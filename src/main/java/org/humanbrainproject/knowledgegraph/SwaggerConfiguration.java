@@ -1,6 +1,7 @@
 package org.humanbrainproject.knowledgegraph;
 
 import com.google.common.base.Predicates;
+import org.humanbrainproject.knowledgegraph.annotations.NoTests;
 import org.humanbrainproject.knowledgegraph.commons.InternalApi;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -12,6 +13,7 @@ import springfox.documentation.swagger2.annotations.EnableSwagger2;
 
 @Configuration
 @EnableSwagger2
+@NoTests(NoTests.NO_LOGIC)
 public class SwaggerConfiguration {
 
     @Bean

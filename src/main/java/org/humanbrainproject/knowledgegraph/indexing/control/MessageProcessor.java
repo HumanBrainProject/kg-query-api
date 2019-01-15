@@ -1,6 +1,7 @@
 package org.humanbrainproject.knowledgegraph.indexing.control;
 
 import com.github.jsonldjava.core.JsonLdConsts;
+import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonLdStandardization;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
@@ -20,7 +21,12 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Stack;
 
+/**
+ * The message processor takes care of the applied manipulations to the original message payload. It e.g. fully qualifies the Json-LD payload,
+ * enriches it with computed meta-data and analyzes the payload in terms of structures (detection of vertices and edges).
+ */
 @Component
+@ToBeTested(integrationTestRequired = true)
 public class MessageProcessor {
 
     @Autowired
@@ -39,7 +45,9 @@ public class MessageProcessor {
         map = jsonLdStandardization.fullyQualify(map);
         map = jsonLdStandardization.filterKeysByVocabBlacklists(map);
         map = jsonLdStandardization.flattenLists(map, null, null);
-        map.put(HBPVocabulary.PROVENANCE_LAST_MODIFICATION_USER_ID, message.getUserId());
+        if(map.get(HBPVocabulary.PROVENANCE_LAST_MODIFICATION_USER_ID) == null && message.getUserId() != null){
+            map.put(HBPVocabulary.PROVENANCE_LAST_MODIFICATION_USER_ID, message.getUserId());
+        }
         map.put(HBPVocabulary.PROVENANCE_MODIFIED_AT, message.getTimestamp());
         return new QualifiedIndexingMessage(message, map);
     }

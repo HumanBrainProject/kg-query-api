@@ -1,6 +1,7 @@
 package org.humanbrainproject.knowledgegraph.commons.nexus.control;
 
 
+import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationController;
 import org.humanbrainproject.knowledgegraph.commons.authorization.entity.Credential;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
@@ -11,6 +12,7 @@ import org.humanbrainproject.knowledgegraph.query.entity.JsonDocument;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
@@ -35,6 +37,8 @@ import java.util.stream.Collectors;
  * system credentials for accessing Nexus.
  */
 @Component
+@ToBeTested(systemTestRequired = true)
+@Primary
 public class NexusClient {
 
     @Autowired
@@ -92,10 +96,6 @@ public class NexusClient {
             throw e;
         }
     }
-
-
-
-
 
     public boolean delete(NexusRelativeUrl url, Integer revision, Credential credential) {
         return delete(url, revision, authorizationController.getInterceptor(credential));
@@ -245,7 +245,6 @@ public class NexusClient {
         }
     }
 
-
     //TODO reimplement with the use of consume
     private List<JsonDocument> list(String url, ClientHttpRequestInterceptor oidc, boolean followPages) {
         ResponseEntity<Map> result = createRestTemplate(oidc).getForEntity(url, Map.class);
@@ -265,8 +264,5 @@ public class NexusClient {
         }
         return Collections.emptyList();
     }
-
-
-
 
 }
