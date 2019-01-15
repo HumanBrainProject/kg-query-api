@@ -120,7 +120,7 @@ public class InstanceManipulationController {
         }
         payload.addType(schemaController.getTargetClass(nexusSchemaReference));
         payload.addToProperty(SchemaOrgVocabulary.IDENTIFIER, "");
-        payload.addToProperty(HBPVocabulary.PROVENANCE_MODIFIED_AT, ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_INSTANT));
+        payload.addToProperty(HBPVocabulary.PROVENANCE_CREATED_AT, ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_INSTANT));
         payload.addToProperty(HBPVocabulary.PROVENANCE_CREATED_BY, clientIdExtension);
         JsonDocument response = nexusClient.post(new NexusRelativeUrl(NexusConfiguration.ResourceType.DATA, nexusSchemaReference.getRelativeUrl().getUrl()), null, payload, authorizationContext.getCredential());
         if (response != null) {
