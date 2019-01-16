@@ -23,8 +23,8 @@ import java.util.stream.Stream;
 public class ArangoMetaQueryBuilder extends AbstractArangoQueryBuilder {
 
 
-    public ArangoMetaQueryBuilder(Specification specification) {
-        super(specification, null, null, null,null, null, null);
+    public ArangoMetaQueryBuilder(Specification specification, Set<ArangoCollectionReference> existingArangoCollections) {
+        super(specification, null, null, null,null, null, existingArangoCollections);
     }
 
     @Override

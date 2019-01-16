@@ -208,7 +208,7 @@ public class SpecificationQuery {
         for (SpecField field : fields) {
             if(field.isLeaf()){
                 ArangoCollectionReference potentialCollection = ArangoCollectionReference.fromSpecTraversal(field.getLeafPath());
-                if(existingCollections.contains(potentialCollection)){
+                if(existingCollections!=null && existingCollections.contains(potentialCollection)){
                     //The leaf is an edge collection -> we provide the default behavior
                     SpecField idField = new SpecField(JsonLdConsts.ID, null, Collections.singletonList(new SpecTraverse(JsonLdConsts.ID, false)), null, true, false, false, false);
                     field.fields.add(idField);

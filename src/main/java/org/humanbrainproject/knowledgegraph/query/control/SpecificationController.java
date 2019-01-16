@@ -42,7 +42,7 @@ public class SpecificationController {
     ArangoRepository repository;
 
     public QueryResult<List<Map>> metaSpecification(Specification spec) throws JSONException {
-        return specificationQuery.query(new ArangoMetaQueryBuilder(spec));
+        return specificationQuery.query(new ArangoMetaQueryBuilder(spec, queryContext.getExistingCollections()));
     }
 
     public QueryResult<List<Map>> metaReflectionSpecification(Specification spec, Filter filter) throws JSONException {

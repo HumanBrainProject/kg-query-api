@@ -229,7 +229,7 @@ public class QueryAPI {
             authorizationContext.populateAuthorizationContext(authorizationToken);
 
             StoredQuery query = new StoredQuery(new NexusSchemaReference(org, domain, schema, version), queryId, null);
-            query.setTemplateId(templateId).setLibraryId(library);
+            query.setTemplateId(templateId).setLibraryId(library).setReturnOriginalJson(includeOriginalJson);
             QueryResult<Map> result = this.query.metaQueryPropertyGraphByStoredSpecificationAndFreemarkerTemplate(query);
 
             return ResponseEntity.ok(RestUtils.toJsonResultIfPossible(result));
