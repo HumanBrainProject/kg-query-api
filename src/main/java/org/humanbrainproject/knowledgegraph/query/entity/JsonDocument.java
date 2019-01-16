@@ -27,8 +27,9 @@ public class JsonDocument extends LinkedHashMap<String, Object>{
         addToProperty(propertyName, reference);
     }
 
-    public void addToProperty(String propertyName, Object value){
+    public JsonDocument addToProperty(String propertyName, Object value){
         addToProperty(propertyName, value, this);
+        return this;
     }
 
     public void addType(String type){
