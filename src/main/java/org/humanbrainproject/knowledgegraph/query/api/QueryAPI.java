@@ -66,7 +66,7 @@ public class QueryAPI {
 
             return ResponseEntity.ok(result);
         } catch (RootCollectionNotFoundException e) {
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.ok(QueryResult.createEmptyResult());
         } catch (HttpClientErrorException e) {
             return ResponseEntity.status(e.getStatusCode()).build();
         }
@@ -86,7 +86,7 @@ public class QueryAPI {
 
             return ResponseEntity.ok(result);
         } catch (RootCollectionNotFoundException e) {
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.ok(QueryResult.createEmptyResult());
         } catch (HttpClientErrorException e) {
             return ResponseEntity.status(e.getStatusCode()).build();
         }
@@ -105,7 +105,7 @@ public class QueryAPI {
             if (result.getResults().size() >= 1) {
                 return ResponseEntity.ok(result.getResults().get(0));
             } else {
-                return ResponseEntity.noContent().build();
+                return ResponseEntity.notFound().build();
             }
         } catch (RootCollectionNotFoundException e) {
             return ResponseEntity.notFound().build();
