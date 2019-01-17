@@ -27,6 +27,10 @@ public class ShaclProperty {
         return (String)property.get(SHACL_VOCAB+"name");
     }
 
+    public String getShapeDeclaration(){
+        return (String)property.get("shapeDeclaration");
+    }
+
     public boolean isLinkToInstance(){
         return property.containsKey(SHACL_VOCAB+"node");
     }

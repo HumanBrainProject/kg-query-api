@@ -4,6 +4,7 @@ import com.github.jsonldjava.core.JsonLdConsts;
 import org.humanbrainproject.knowledgegraph.query.entity.JsonDocument;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -30,23 +31,37 @@ public class ShaclShape {
 
     private List<Map> lookupProperties(){
         String propertyKey = SHACL_VOCAB + "property";
+        List<Map> result;
         if(this.shape.containsKey(propertyKey)){
-            return (List<Map>)this.shape.get(propertyKey);
+            Object o = this.shape.get(propertyKey);
+            if(o instanceof List){
+                result = ((List<Map>)o);
+            }
+            else{
+                result = Collections.singletonList((Map)o);
+            }
         }
         else{
-            List<Map> result = new ArrayList<>();
+            result = new ArrayList<>();
             for (Object value : this.shape.values()) {
                 if(value instanceof Map && ((Map)value).containsKey(JsonLdConsts.LIST)){
                     List l = (List)((Map)value).get(JsonLdConsts.LIST);
                     for (Object v : l) {
                         if(v instanceof Map && ((Map)v).containsKey(propertyKey)) {
-                            result.addAll((List<Map>) ((Map) v).get(propertyKey));
+                            Object propertyValue = ((Map) v).get(propertyKey);
+                            if(propertyValue instanceof List){
+                                result.addAll((List)propertyValue);
+                            }
+                            else if(propertyValue instanceof Map){
+                                result.add((Map)propertyValue);
+                            }
                         }
                     }
                 }
             }
-            return result;
         }
+        return result.stream().map(e -> {e.put("shapeDeclaration", this.shape.get(JsonLdConsts.ID)); return e;}).collect(Collectors.toList());
+
     }
 
 

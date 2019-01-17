@@ -10,17 +10,20 @@ public class EditorSpecField {
     private final String key;
     private String type;
     private final String label;
+    private final String shapeDeclaration;
     private final Map<String, Object> additionalProperties = new LinkedHashMap<>();
 
-    public EditorSpecField(String key, String label) {
+    public EditorSpecField(String key, String label, String shapeDeclaration) {
         this.key = key;
         this.label = label;
+        this.shapeDeclaration = shapeDeclaration;
     }
 
     public JsonDocument toJson() {
         JsonDocument doc = new JsonDocument();
         doc.addToProperty("key", key);
         doc.addToProperty("label", label);
+        doc.addToProperty("_shapeDeclaration", shapeDeclaration);
         for (String s : additionalProperties.keySet()) {
             doc.addToProperty(s, additionalProperties.get(s));
         }

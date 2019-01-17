@@ -9,6 +9,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Map;
 
 public class Shacl2EditorTest {
@@ -42,7 +43,7 @@ public class Shacl2EditorTest {
     public void convert() {
         JsonDocument jsonDocument = loadShaclSchema("datashapes_morphology_invitroslicereconstructedneuronmorphology.json");
 
-        JsonDocument editor = shacl2Editor.convert(new NexusSchemaReference("foo", "bar", "foobar", "v1.0.0"), jsonDocument);
+        JsonDocument editor = shacl2Editor.convert(new NexusSchemaReference("foo", "bar", "foobar", "v1.0.0"), Collections.singletonList(jsonDocument));
 
         System.out.println(new JsonTransformer().getMapAsJson(editor));
     }
