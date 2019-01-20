@@ -3,6 +3,9 @@ package org.humanbrainproject.knowledgegraph.instances.control;
 import com.github.jsonldjava.core.JsonLdConsts;
 import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationContext;
+import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationController;
+import org.humanbrainproject.knowledgegraph.commons.authorization.entity.Credential;
+import org.humanbrainproject.knowledgegraph.commons.authorization.entity.InternalMasterKey;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusClient;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
@@ -20,6 +23,7 @@ import org.humanbrainproject.knowledgegraph.query.entity.JsonDocument;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.stereotype.Component;
 
 import java.time.ZoneOffset;
@@ -32,6 +36,9 @@ import java.util.Map;
 @ToBeTested(integrationTestRequired = true)
 @Component
 public class InstanceManipulationController {
+
+    @Autowired
+    AuthorizationController authorizationController;
 
     @Autowired
     InstanceLookupController lookupController;
@@ -88,6 +95,8 @@ public class InstanceManipulationController {
     }
 
 
+
+
     public NexusInstanceReference createInstanceByIdentifier(NexusSchemaReference schemaReference, String identifier, JsonDocument payload, String userId) {
         payload.addToProperty(SchemaOrgVocabulary.IDENTIFIER, identifier);
         NexusInstanceReference byIdentifier = lookupController.getByIdentifier(schemaReference, identifier);
@@ -140,7 +149,24 @@ public class InstanceManipulationController {
         return null;
     }
 
-    public NexusInstanceReference createInstanceByNexusId(NexusSchemaReference nexusSchemaReference, String id, Integer revision, Map<String, Object> payload, String userId) {
+    public NexusInstanceReference  createInstanceByNexusId(NexusSchemaReference nexusSchemaReference, String id, Integer revision, Map<String, Object> payload, String userId){
+        return createInstanceByNexusId(nexusSchemaReference, id, revision, payload, userId, null);
+    }
+
+    /**
+     * ATTENTION! This method acts as the system-user with extended rights. Make sure it is only used if the content is under our control!
+     */
+    public NexusInstanceReference createInstanceByNexusIdAsSystemUser(NexusSchemaReference nexusSchemaReference, String id, Integer revision, Map<String, Object> payload, String userId){
+        return createInstanceByNexusId(nexusSchemaReference, id, revision, payload, userId, new InternalMasterKey());
+    }
+
+
+    private NexusInstanceReference createInstanceByNexusId(NexusSchemaReference nexusSchemaReference, String id, Integer revision, Map<String, Object> payload, String userId, Credential credential) {
+        if(credential==null){
+            credential = authorizationContext.getCredential();
+        }
+        ClientHttpRequestInterceptor interceptor = authorizationController.getInterceptor(credential);
+
         schemaController.createSchema(nexusSchemaReference);
         Object type = payload.get(JsonLdConsts.TYPE);
         String targetClass = schemaController.getTargetClass(nexusSchemaReference);
@@ -160,10 +186,10 @@ public class InstanceManipulationController {
             payload.put(HBPVocabulary.PROVENANCE_LAST_MODIFICATION_USER_ID, userId);
         }
         if (revision == null || revision == 1) {
-            Map map = nexusClient.get(nexusInstanceReference.getRelativeUrl(), authorizationContext.getCredential());
+            Map map = nexusClient.get(nexusInstanceReference.getRelativeUrl(), credential);
 
             if (map == null) {
-                Map post = nexusClient.post(new NexusRelativeUrl(NexusConfiguration.ResourceType.DATA, nexusInstanceReference.getNexusSchema().getRelativeUrl().getUrl()), null, payload, authorizationContext.getInterceptor());
+                Map post = nexusClient.post(new NexusRelativeUrl(NexusConfiguration.ResourceType.DATA, nexusInstanceReference.getNexusSchema().getRelativeUrl().getUrl()), null, payload, interceptor);
                 if (post != null && post.containsKey(JsonLdConsts.ID)) {
                     NexusInstanceReference fromUrl = NexusInstanceReference.createFromUrl((String) post.get(JsonLdConsts.ID));
                     fromUrl.setRevision((Integer) post.get(NexusVocabulary.REVISION_ALIAS));
@@ -172,14 +198,14 @@ public class InstanceManipulationController {
                     newInstanceReference = null;
                 }
             } else {
-                Map put = nexusClient.put(nexusInstanceReference.getRelativeUrl(), (Integer) map.get(NexusVocabulary.REVISION_ALIAS), payload, authorizationContext.getInterceptor());
+                Map put = nexusClient.put(nexusInstanceReference.getRelativeUrl(), (Integer) map.get(NexusVocabulary.REVISION_ALIAS), payload, interceptor);
                 if (put.containsKey(NexusVocabulary.REVISION_ALIAS)) {
                     nexusInstanceReference.setRevision((Integer) put.get(NexusVocabulary.REVISION_ALIAS));
                 }
                 newInstanceReference = nexusInstanceReference;
             }
         } else {
-            Map put = nexusClient.put(nexusInstanceReference.getRelativeUrl(), revision, payload, authorizationContext.getInterceptor());
+            Map put = nexusClient.put(nexusInstanceReference.getRelativeUrl(), revision, payload, interceptor);
             if (put.containsKey(NexusVocabulary.REVISION_ALIAS)) {
                 nexusInstanceReference.setRevision((Integer) put.get(NexusVocabulary.REVISION_ALIAS));
             }

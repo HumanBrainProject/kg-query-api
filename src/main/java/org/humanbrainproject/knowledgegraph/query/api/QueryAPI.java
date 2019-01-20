@@ -66,7 +66,7 @@ public class QueryAPI {
 
             return ResponseEntity.ok(result);
         } catch (RootCollectionNotFoundException e) {
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.ok(QueryResult.createEmptyResult());
         } catch (HttpClientErrorException e) {
             return ResponseEntity.status(e.getStatusCode()).build();
         }
@@ -104,7 +104,7 @@ public class QueryAPI {
             if (result.getResults().size() >= 1) {
                 return ResponseEntity.ok(result.getResults().get(0));
             } else {
-                return ResponseEntity.noContent().build();
+                return ResponseEntity.notFound().build();
             }
         } catch (RootCollectionNotFoundException e) {
             return ResponseEntity.notFound().build();
@@ -228,7 +228,7 @@ public class QueryAPI {
             authorizationContext.populateAuthorizationContext(authorizationToken);
 
             StoredQuery query = new StoredQuery(new NexusSchemaReference(org, domain, schema, version), queryId, null);
-            query.setTemplateId(templateId).setLibraryId(library);
+            query.setTemplateId(templateId).setLibraryId(library).setReturnOriginalJson(includeOriginalJson);
             QueryResult<Map> result = this.query.metaQueryPropertyGraphByStoredSpecificationAndFreemarkerTemplate(query);
 
             return ResponseEntity.ok(RestUtils.toJsonResultIfPossible(result));
