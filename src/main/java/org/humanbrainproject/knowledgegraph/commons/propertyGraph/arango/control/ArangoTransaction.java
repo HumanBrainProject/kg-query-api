@@ -27,6 +27,7 @@ import org.humanbrainproject.knowledgegraph.instances.control.InstanceManipulati
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.LinkedHashMap;
@@ -50,6 +51,9 @@ public class ArangoTransaction implements DatabaseTransaction {
 
     @Autowired
     AuthorizationContext authorizationContext;
+
+    @Value("${org.humanbrainproject.knowledgegraph.primaryStore.doUpdate}")
+    boolean updatePrimaryStore;
 
 
     protected Logger logger = LoggerFactory.getLogger(ArangoTransaction.class);
@@ -107,12 +111,14 @@ public class ArangoTransaction implements DatabaseTransaction {
             }
         }
 
-        //and finally trigger primary store insertions/updates.
-        List<InsertOrUpdateInPrimaryStoreTodoItem> insertOrUpdateInPrimaryStoreItems = todoList.getInsertOrUpdateInPrimaryStoreTodoItems();
-        for (InsertOrUpdateInPrimaryStoreTodoItem insertOrUpdateInPrimaryStoreItem : insertOrUpdateInPrimaryStoreItems) {
-            Vertex vertex = insertOrUpdateInPrimaryStoreItem.getVertex();
-            NexusInstanceReference newReference = manipulationController.createInstanceByNexusIdAsSystemUser(vertex.getInstanceReference().getNexusSchema(), vertex.getInstanceReference().getId(), null, new LinkedHashMap(vertex.getQualifiedIndexingMessage().getQualifiedMap()), null);
-            vertex.setInstanceReference(newReference);
+        if(updatePrimaryStore) {
+            //and finally trigger primary store insertions/updates.
+            List<InsertOrUpdateInPrimaryStoreTodoItem> insertOrUpdateInPrimaryStoreItems = todoList.getInsertOrUpdateInPrimaryStoreTodoItems();
+            for (InsertOrUpdateInPrimaryStoreTodoItem insertOrUpdateInPrimaryStoreItem : insertOrUpdateInPrimaryStoreItems) {
+                Vertex vertex = insertOrUpdateInPrimaryStoreItem.getVertex();
+                NexusInstanceReference newReference = manipulationController.createInstanceByNexusIdAsSystemUser(vertex.getInstanceReference().getNexusSchema(), vertex.getInstanceReference().getId(), null, new LinkedHashMap(vertex.getQualifiedIndexingMessage().getQualifiedMap()), null);
+                vertex.setInstanceReference(newReference);
+            }
         }
     }
 
