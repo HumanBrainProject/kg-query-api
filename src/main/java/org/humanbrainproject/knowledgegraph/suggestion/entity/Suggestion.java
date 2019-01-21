@@ -1,11 +1,11 @@
-package org.humanbrainproject.knowledgegraph.query.entity;
+package org.humanbrainproject.knowledgegraph.suggestion.entity;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import org.humanbrainproject.knowledgegraph.annotations.NoTests;
 
 @NoTests(NoTests.NO_LOGIC)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class SuggestionResult {
+public class Suggestion {
     private String id;
     private String label;
     private String type;
