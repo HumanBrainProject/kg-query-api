@@ -360,7 +360,7 @@ public class ArangoQueryFactory {
         query.setParameter("originCollection", originalCollection.getName());
         query.setParameter("relationCollection", relationCollection.getName());
         query.setParameter("nameField", SchemaOrgVocabulary.NAME);
-        query.setParameter("idField", JsonLdConsts.ID);
+        query.setParameter("idField", HBPVocabulary.RELATIVE_URL_OF_INTERNAL_LINK);
         query.setParameter("searchTerm", searchTerm);
         query.setParameter("start", String.valueOf(start));
         query.setTrustedParameter("schemas", query.listCollections(types.stream().map(ArangoCollectionReference::getName).collect(Collectors.toSet())));
