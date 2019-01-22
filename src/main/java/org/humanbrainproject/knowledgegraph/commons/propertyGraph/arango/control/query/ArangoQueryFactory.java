@@ -17,6 +17,7 @@ import org.humanbrainproject.knowledgegraph.releasing.entity.ReleaseStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -327,15 +328,43 @@ public class ArangoQueryFactory {
     }
 
 
-    public String querySuggestionByField(ArangoCollectionReference originalCollection, ArangoCollectionReference relationCollection, String searchTerm, Integer start, Integer size, Set<String> permissionGroupsWithReadAccess) {
+    public String queryOccurenceOfSchemasInRelation(ArangoCollectionReference originalCollection, ArangoCollectionReference relationCollection, Set<String> permissionGroupsWithReadAccess){
+        AuthorizedArangoQuery query = new AuthorizedArangoQuery(permissionGroupsWithReadAccess);
+        query.setParameter("type", originalCollection.getName());
+        query.setParameter("relation", relationCollection.getName());
+        query.addLine("LET types = FLATTEN(FOR doc IN `${type}`");
+        query.addDocumentFilter(new TrustedAqlValue("doc"));
+        query.addLine("LET relation = (FOR r IN OUTBOUND doc `${relation}`");
+        query.indent().addDocumentFilter(new TrustedAqlValue("r"));
+        query.addLine("LET relativeUrl = SUBSTRING(r.`"+JsonLdConsts.ID+"`,  FIND_FIRST(r.`"+JsonLdConsts.ID+"`, \"/data/\")+6)");
+        query.addLine("LET schema = SUBSTRING(relativeUrl, 0, FIND_LAST(relativeUrl, \"/\"))");
+        query.addLine("RETURN schema");
+        query.addLine(")");
+        query.addLine("RETURN FLATTEN(relation)");
+        query.outdent().addLine(")");
+        query.addLine("FOR t IN types");
+        query.addLine("COLLECT type = t WITH COUNT INTO length");
+        query.addLine("SORT length DESC");
+        query.addLine("RETURN {");
+        query.indent().addLine("\"type\": type,");
+        query.addLine("\"count\": length");
+        query.outdent().addLine("}");
+        return query.build().getValue();
+    }
+
+
+
+    public String querySuggestionByField(ArangoCollectionReference originalCollection, ArangoCollectionReference relationCollection, String searchTerm, Integer start, Integer size, Set<String> permissionGroupsWithReadAccess, List<ArangoCollectionReference> types) {
         AuthorizedArangoQuery query = new AuthorizedArangoQuery(permissionGroupsWithReadAccess);
 
         query.setParameter("originCollection", originalCollection.getName());
         query.setParameter("relationCollection", relationCollection.getName());
         query.setParameter("nameField", SchemaOrgVocabulary.NAME);
-        query.setParameter("idField", JsonLdConsts.ID);
+        query.setParameter("idField", HBPVocabulary.RELATIVE_URL_OF_INTERNAL_LINK);
         query.setParameter("searchTerm", searchTerm);
         query.setParameter("start", String.valueOf(start));
+        query.setTrustedParameter("schemas", query.listCollections(types.stream().map(ArangoCollectionReference::getName).collect(Collectors.toSet())));
+
         if (size != null) {
             query.setParameter("size", String.valueOf(size));
         }
@@ -354,15 +383,37 @@ public class ArangoQueryFactory {
         query.addLine("RETURN relation");
         query.outdent().addLine(")");
         query.addLine("");
-        query.addLine("FOR r IN relations");
+        query.addLine("LET relationsPriorized = (FOR r IN relations");
         query.indent().addLine("COLLECT id = r.id, name=r.name WITH COUNT INTO num");
         query.indent().addLine("SORT num DESC");
+        query.addLine("RETURN {");
+        query.indent().addLine("id, name, num");
+        query.outdent().addLine("})");
+
+        query.addLine("LET schemas = [${schemas}]");
+
+        query.addLine("LET fromSchemas = FLATTEN(FOR schema IN schemas");
+        query.addLine("LET schemaInstance = (FOR i IN schema");
+        query.addDocumentFilter(new TrustedAqlValue("i"));
+        if (searchTerm != null) {
+            query.addLine("&& like(i.`${nameField}`, \"%${searchTerm}%\", true)");
+        }
+        query.addLine("SORT i.`${nameField}` ASC");
+        query.addLine("RETURN {");
+        query.indent().addLine("\"id\":  i.`${idField}`,");
+        query.addLine("\"name\": i.`${nameField}`");
+        query.addLine("}");
+        query.outdent().addLine(")");
+        query.addLine("FILTER schemaInstance NOT IN relations");
+        query.addLine("RETURN schemaInstance");
+        query.addLine(")");
+
+        query.addLine("LET result = APPEND(relationsPriorized, fromSchemas)");
+        query.addLine("FOR r IN result");
         if (size != null) {
             query.addLine("LIMIT ${start}, ${size}");
         }
-        query.addLine("RETURN {");
-        query.indent().addLine("id, name, num");
-        query.outdent().addLine("}");
+        query.addLine("RETURN r");
 
         return query.build().getValue();
     }
