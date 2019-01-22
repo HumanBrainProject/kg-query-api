@@ -16,7 +16,9 @@ public class Suggestion {
     }
 
     public void setId(String id) {
-        this.id = id;
+        String pattern;
+        pattern = ".+\\.humanbrainproject\\.(org|eu)\\/v\\d\\/data\\/";
+        this.id = id.replaceFirst(pattern, "");
     }
 
     public String getLabel() {
