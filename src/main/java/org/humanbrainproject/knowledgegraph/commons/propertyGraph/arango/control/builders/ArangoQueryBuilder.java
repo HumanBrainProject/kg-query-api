@@ -1,6 +1,7 @@
 package org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.builders;
 
 import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.aql.TrustedAqlValue;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.aql.UnauthorizedArangoQuery;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoAlias;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
@@ -12,6 +13,7 @@ import org.humanbrainproject.knowledgegraph.query.entity.SpecField;
 import org.humanbrainproject.knowledgegraph.query.entity.Specification;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -271,11 +273,16 @@ public class ArangoQueryBuilder extends AbstractArangoQueryBuilder {
     @Override
     public void addSearchQuery() {
         if (filter != null && filter.getQueryString() != null) {
+            String f = filter.getQueryString().replaceAll("[^\\sA-Za-z0-9\\-_:.#/@]", "");
+            f = String.join(" ", Arrays.asList(f.split(" ")).stream().map(el -> String.format("%%%s%%", el.trim().toLowerCase())).collect(Collectors.toList()));
+            if(f.isEmpty()){
+                f = "%";
+            }
             q.addLine(
                     new UnauthorizedArangoQuery().
-                            addLine("FILTER LIKE (${root}.`" + SchemaOrgVocabulary.NAME + "`, \"%%${filter}%%\")").
+                            addLine("FILTER LIKE (LOWER(${root}.`" + SchemaOrgVocabulary.NAME + "`), \"${filter}\")").
                             setParameter("root", String.format("%s_%s", ROOT_ALIAS.getArangoName(), DOC_POSTFIX)).
-                            setParameter("filter", filter.getQueryString()).build().getValue());
+                            setTrustedParameter("filter", new TrustedAqlValue(f)).build().getValue());
         }
     }
 
