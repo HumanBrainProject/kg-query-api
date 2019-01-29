@@ -1,8 +1,10 @@
 package org.humanbrainproject.knowledgegraph.suggestion.api;
 
 import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
+import org.humanbrainproject.knowledgegraph.commons.api.Client;
 import org.humanbrainproject.knowledgegraph.commons.api.RestUtils;
 import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationContext;
+import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
 import org.humanbrainproject.knowledgegraph.query.entity.Pagination;
 import org.humanbrainproject.knowledgegraph.query.entity.QueryResult;
@@ -48,5 +50,25 @@ public class SuggestionAPI {
         logger.info(String.format("Payload: %s", payload));
         return ResponseEntity.ok(suggest.suggestByField(schemaReference, field, search, pagination));
     }
+
+    @PostMapping(value="/{"+ ORG+"}/{"+DOMAIN+"}/{"+SCHEMA+"}/{"+VERSION+"}/{"+ INSTANCE_ID +"}/instance/{userId}", consumes = {MediaType.APPLICATION_JSON, RestUtils.APPLICATION_LD_JSON, MediaType.WILDCARD}, produces = MediaType.APPLICATION_JSON)
+    public ResponseEntity<Map> createSuggestionInstanceForUser(@RequestBody(required = false) String payload, @PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(INSTANCE_ID) String instanceId, @PathVariable("userId") String userId, @RequestParam(value = CLIENT_ID_EXTENSION, required = true) String clientIdExtension, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization, @RequestHeader(value = CLIENT, required = false) Client client) throws Exception{
+        authorizationContext.populateAuthorizationContext(authorization, client);
+
+        NexusInstanceReference instanceReference = new NexusInstanceReference(org, domain, schema, version, instanceId);
+        Map instance = suggest.getUserSuggestion(instanceReference, userId);
+        if(instance != null){
+            throw new Exception("User already added");
+        }else{
+            NexusInstanceReference created = suggest.createSuggestionInstanceForUser(instanceReference, userId, clientIdExtension);
+            if(created != null){
+                return ResponseEntity.ok().build();
+            }else{
+                throw new Exception("Could not created instance");
+            }
+        }
+    }
+
+
 
 }

@@ -352,6 +352,15 @@ public class ArangoQueryFactory {
         return query.build().getValue();
     }
 
+    public String querySuggestionInstanceByUser(ArangoCollectionReference originalCollection, NexusInstanceReference ref, String userId, Set<String> permissionGroupsWithReadAccess) {
+        AuthorizedArangoQuery query = new AuthorizedArangoQuery(permissionGroupsWithReadAccess);
+        query.setParameter("type", originalCollection.getName());
+        query.addLine("FOR doc IN `${type}`");
+        query.addDocumentFilter(new TrustedAqlValue(("doc")));
+        query.indent().addLine("FILTER doc.`" + HBPVocabulary.SUGGESTION_OF + "` ==\"" + ref.getRelativeUrl().getUrl() + "\" AND doc.`" + HBPVocabulary.SUGGESTION_USER + "` ==\"" + userId+ "\"");
+        query.addLine("RETURN doc");
+        return query.build().getValue();
+    }
 
 
     public String querySuggestionByField(ArangoCollectionReference originalCollection, ArangoCollectionReference relationCollection, String searchTerm, Integer start, Integer size, Set<String> permissionGroupsWithReadAccess, List<ArangoCollectionReference> types) {

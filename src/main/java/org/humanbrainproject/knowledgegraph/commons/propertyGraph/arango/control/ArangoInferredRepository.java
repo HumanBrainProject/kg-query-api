@@ -9,6 +9,7 @@ import org.humanbrainproject.knowledgegraph.commons.authorization.control.Author
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.AuthorizedAccess;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.query.ArangoQueryFactory;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.SubSpace;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
 import org.humanbrainproject.knowledgegraph.query.entity.JsonDocument;
@@ -146,6 +147,17 @@ public class ArangoInferredRepository {
         String query = queryFactory.queryOccurenceOfSchemasInRelation(ArangoCollectionReference.fromNexusSchemaReference(schemaReference), ArangoCollectionReference.fromFieldName(fieldName),  authorizationContext.getReadableOrganizations());
         ArangoCursor<Map> result = databaseFactory.getInferredDB().getOrCreateDB().query(query, null, new AqlQueryOptions(), Map.class);
         return result.asListRemaining();
+    }
+
+    public Map getSuggestionByUser(NexusInstanceReference ref, String userId){
+        String query = queryFactory.querySuggestionInstanceByUser(ArangoCollectionReference.fromNexusSchemaReference(ref.getNexusSchema().toSubSpace(SubSpace.SUGGESTION)),ref, userId, authorizationContext.getReadableOrganizations());
+        ArangoCursor<Map> result = databaseFactory.getDefaultDB().getOrCreateDB().query(query, null, new AqlQueryOptions(), Map.class);
+        List<Map> l = result.asListRemaining();
+        if(l.isEmpty()){
+            return null;
+        }else{
+            return l.get(0);
+        }
     }
 
 

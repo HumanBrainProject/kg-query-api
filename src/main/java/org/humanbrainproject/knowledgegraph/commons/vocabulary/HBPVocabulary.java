@@ -51,5 +51,9 @@ public class HBPVocabulary {
     public static final String SPATIAL_REFERENCESPACE =  SPATIAL_TYPE.toLowerCase()+ "/referenceSpace";
     public static final String SPATIAL_LOCATED_INSTANCE =  SPATIAL_TYPE.toLowerCase()+"/locatedInstance";
 
+    public static final String SUGGESTION = HBPVocabulary.NAMESPACE+ "suggestion";
+    public static final String SUGGESTION_OF = SUGGESTION + "/suggestionOf";
+    public static final String SUGGESTION_OF_ORIGINAL = SUGGESTION_OF + "/original";
+    public static final String SUGGESTION_USER = SUGGESTION + "/user";
 
 }

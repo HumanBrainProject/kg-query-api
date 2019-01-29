@@ -1,6 +1,7 @@
 package org.humanbrainproject.knowledgegraph.suggestion.control;
 
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoInferredRepository;
+import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
 import org.humanbrainproject.knowledgegraph.query.entity.Pagination;
 import org.humanbrainproject.knowledgegraph.query.entity.QueryResult;
@@ -16,10 +17,12 @@ public class SuggestionController {
     @Autowired
     ArangoInferredRepository repository;
 
-
     public QueryResult<List<Map>> simpleSuggestByField(NexusSchemaReference originalSchema, String field, String search, Pagination pagination){
         return repository.getSuggestionsByField(originalSchema, field, search, pagination);
 
     }
 
+    public Map getUserSuggestion(NexusInstanceReference ref, String userId){
+        return repository.getSuggestionByUser(ref, userId);
+    }
 }
