@@ -22,6 +22,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.HttpClientErrorException;
 
+import javax.ws.rs.BadRequestException;
+import javax.ws.rs.InternalServerErrorException;
 import javax.ws.rs.core.MediaType;
 import java.util.Collections;
 import java.util.HashMap;
@@ -163,6 +165,29 @@ public class InstancesInternalAPI {
             NexusSchemaReference schemaReference = new NexusSchemaReference(org, domain, schema, version);
             QueryResult<List<Map>> instances = this.instances.getInstances(schemaReference, searchTerm, new Pagination().setSize(size).setStart(start));
             return instances != null ? ResponseEntity.ok(instances) : ResponseEntity.ok(QueryResult.createEmptyResult());
+        } catch (HttpClientErrorException e) {
+            return ResponseEntity.status(e.getStatusCode()).build();
+        }
+    }
+
+    @DeleteMapping(value = "/{"+ORG+"}/{"+DOMAIN+"}/{"+SCHEMA+"}/{"+VERSION+"}/{"+ID+"}")
+    public ResponseEntity<QueryResult<List<Map>>> deleteInstance(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(ID) String id,  @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken) {
+        try {
+            authorizationContext.populateAuthorizationContext(authorizationToken);
+
+            //We set the database scope directly, because this is an internal API and therefore it is allowed to have a "Native" scope as well.
+            queryContext.setDatabaseScope(DatabaseScope.RELEASED);
+            NexusInstanceReference instanceReference = new NexusInstanceReference(org, domain, schema, version, id);
+            JsonDocument instance = this.instances.getInstance(instanceReference);
+            if(instance == null){
+                //This means we can delete the original instance as it is not released
+                queryContext.setDatabaseScope(DatabaseScope.NATIVE);
+                this.instances.removeInstance(instanceReference);
+                return  ResponseEntity.ok(QueryResult.createEmptyResult());
+            } else {
+                throw new BadRequestException("Instance is released! Unrelease the instance before deletion.");
+            }
+
         } catch (HttpClientErrorException e) {
             return ResponseEntity.status(e.getStatusCode()).build();
         }
