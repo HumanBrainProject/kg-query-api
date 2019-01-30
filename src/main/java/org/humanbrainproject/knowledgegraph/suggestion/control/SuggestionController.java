@@ -22,7 +22,15 @@ public class SuggestionController {
 
     }
 
-    public Map getUserSuggestion(NexusInstanceReference ref, String userId){
-        return repository.getSuggestionByUser(ref, userId);
+    public Map getUserSuggestionOfSpecificInstance(NexusInstanceReference instanceReference, NexusInstanceReference userRef){
+        return repository.getUserSuggestionOfSpecificInstance(instanceReference, userRef);
+    }
+
+    public Map findInstanceBySchemaAndFilter(NexusSchemaReference schema, String filterKey, String filterValue){
+        return repository.findInstanceBySchemaAndFilter(schema, filterKey, filterValue);
+    }
+
+    public List<Map> getUserSuggestions(NexusInstanceReference ref){
+        return repository.getSuggestionsByUser(ref);
     }
 }

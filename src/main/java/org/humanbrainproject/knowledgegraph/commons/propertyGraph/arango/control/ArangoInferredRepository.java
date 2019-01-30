@@ -149,9 +149,26 @@ public class ArangoInferredRepository {
         return result.asListRemaining();
     }
 
-    public Map getSuggestionByUser(NexusInstanceReference ref, String userId){
-        String query = queryFactory.querySuggestionInstanceByUser(ArangoCollectionReference.fromNexusSchemaReference(ref.getNexusSchema().toSubSpace(SubSpace.SUGGESTION)),ref, userId, authorizationContext.getReadableOrganizations());
+    public Map getUserSuggestionOfSpecificInstance(NexusInstanceReference instanceReference, NexusInstanceReference userRef){
+        String query = queryFactory.querySuggestionInstanceByUser(instanceReference ,userRef, authorizationContext.getReadableOrganizations());
         ArangoCursor<Map> result = databaseFactory.getDefaultDB().getOrCreateDB().query(query, null, new AqlQueryOptions(), Map.class);
+        List<Map> l = result.asListRemaining();
+        if(l.isEmpty()){
+            return null;
+        }else{
+            return l.get(0);
+        }
+    }
+
+    public List<Map> getSuggestionsByUser(NexusInstanceReference ref){
+        String query = queryFactory.queryAllSuggestionsByUser(ref, authorizationContext.getReadableOrganizations());
+        ArangoCursor<Map> result = databaseFactory.getInferredDB().getOrCreateDB().query(query, null, new AqlQueryOptions(), Map.class);
+        return result.asListRemaining();
+    }
+
+    public Map findInstanceBySchemaAndFilter(NexusSchemaReference schema, String filterKey, String filterValue){
+        String query = queryFactory.queryInstanceBySchemaAndFilter(ArangoCollectionReference.fromNexusSchemaReference(schema), filterKey, filterValue, authorizationContext.getReadableOrganizations());
+        ArangoCursor<Map> result = databaseFactory.getInferredDB().getOrCreateDB().query(query, null, new AqlQueryOptions(), Map.class);
         List<Map> l = result.asListRemaining();
         if(l.isEmpty()){
             return null;

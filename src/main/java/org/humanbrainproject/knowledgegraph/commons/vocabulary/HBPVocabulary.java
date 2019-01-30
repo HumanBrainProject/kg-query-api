@@ -54,6 +54,7 @@ public class HBPVocabulary {
     public static final String SUGGESTION = HBPVocabulary.NAMESPACE+ "suggestion";
     public static final String SUGGESTION_OF = SUGGESTION + "/suggestionOf";
     public static final String SUGGESTION_OF_ORIGINAL = SUGGESTION_OF + "/original";
+    public static final String SUGGESTION_USER_ID = SUGGESTION + "/userId";
     public static final String SUGGESTION_USER = SUGGESTION + "/user";
 
 }

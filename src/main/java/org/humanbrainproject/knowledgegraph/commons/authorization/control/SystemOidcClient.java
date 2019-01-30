@@ -23,6 +23,7 @@ public class SystemOidcClient {
 
     private final String OPENID_HOST_KEY = "openid_host";
     private final String TOKEN_KEY = "token_endpoint";
+    private final String USER_INFO = "userinfo_endpoint";
     private final String RELATIVE_OPENID_CONFIGURATION_URL = ".well-known/openid-configuration";
     private final String ACCESS_TOKEN_KEY = "access_token";
     private OidcAccessToken currentToken;
@@ -34,10 +35,14 @@ public class SystemOidcClient {
     final Gson gson = new Gson();
 
     private String getTokenUrl(String host) {
+       return getUrlFromConfig(host, TOKEN_KEY);
+    }
+
+    private String getUrlFromConfig(String host, String key){
         RestTemplate template = new RestTemplate();
         String openidconf = template.getForObject(String.format("%s/%s", host, RELATIVE_OPENID_CONFIGURATION_URL), String.class);
         Map map = gson.fromJson(openidconf, Map.class);
-        return map.get(TOKEN_KEY).toString();
+        return map.get(key).toString();
     }
 
     private Map readConfigFile(){
@@ -73,6 +78,17 @@ public class SystemOidcClient {
         this.currentToken = new OidcAccessToken().setToken(tokenResponse.get(ACCESS_TOKEN_KEY).toString());
     }
 
+    public Map<String, Object> getUserInfo(OidcAccessToken token){
+        Map map = readConfigFile();
+        String host = map.get(OPENID_HOST_KEY).toString();
+        String url =  getUrlFromConfig(host, USER_INFO);
+        RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", token.getBearerToken());
+        HttpEntity<String> entity = new HttpEntity<>("parameters", headers);
+        Map m = gson.fromJson(restTemplate.getForObject(url,String.class, entity), Map.class);
+        return m;
+    }
 
     public OidcAccessToken getAuthorizationToken(){
         if(currentToken==null) {

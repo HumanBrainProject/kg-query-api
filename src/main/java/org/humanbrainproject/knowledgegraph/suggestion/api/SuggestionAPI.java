@@ -4,6 +4,8 @@ import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.commons.api.Client;
 import org.humanbrainproject.knowledgegraph.commons.api.RestUtils;
 import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationContext;
+import org.humanbrainproject.knowledgegraph.commons.authorization.control.SystemOidcClient;
+import org.humanbrainproject.knowledgegraph.commons.authorization.entity.OidcAccessToken;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
 import org.humanbrainproject.knowledgegraph.query.entity.Pagination;
@@ -33,6 +35,9 @@ public class SuggestionAPI {
     @Autowired
     Suggest suggest;
 
+    @Autowired
+    SystemOidcClient OIDCclient;
+
 
     private Logger logger = LoggerFactory.getLogger(SuggestionAPI.class);
 
@@ -56,18 +61,32 @@ public class SuggestionAPI {
         authorizationContext.populateAuthorizationContext(authorization, client);
 
         NexusInstanceReference instanceReference = new NexusInstanceReference(org, domain, schema, version, instanceId);
-        Map instance = suggest.getUserSuggestion(instanceReference, userId);
+        Map instance = suggest.getUserSuggestionOfSpecificInstance(instanceReference, userId);
         if(instance != null){
-            throw new Exception("User already added");
-        }else{
             NexusInstanceReference created = suggest.createSuggestionInstanceForUser(instanceReference, userId, clientIdExtension);
             if(created != null){
                 return ResponseEntity.ok().build();
             }else{
                 throw new Exception("Could not created instance");
             }
+        }else{
+            throw new Exception("User already added");
         }
     }
+
+    @GetMapping(value="/user", consumes = {MediaType.APPLICATION_JSON, RestUtils.APPLICATION_LD_JSON, MediaType.WILDCARD}, produces = MediaType.APPLICATION_JSON)
+    public ResponseEntity<List<Map>> getSuggestionOfUser(@RequestParam(value = CLIENT_ID_EXTENSION, required = true) String clientIdExtension, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization, @RequestHeader(value = CLIENT, required = false) Client client) throws Exception{
+        authorizationContext.populateAuthorizationContext(authorization, client);
+        Map user = OIDCclient.getUserInfo(new OidcAccessToken().setToken(authorization));
+        String userId = (String) user.get("id");
+        List<Map> instances = suggest.getUserSuggestions(userId);
+        if(instances != null){
+            throw new Exception("User already added");
+        }else {
+            return ResponseEntity.ok(instances);
+        }
+    }
+
 
 
 
