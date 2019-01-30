@@ -376,7 +376,7 @@ public class ArangoQueryFactory {
 
     public String queryAllSuggestionsByUser(NexusInstanceReference ref, Set<String> permissionGroupsWithReadAccess) {
         AuthorizedArangoQuery query = new AuthorizedArangoQuery(permissionGroupsWithReadAccess);
-        query.setParameter("documentId", ArangoNamingHelper.createCompatibleId(ref.getRelativeUrl().getUrl()));
+        query.setParameter("documentId", ArangoNamingHelper.createCompatibleId(ref.getNexusSchema().getRelativeUrl().getUrl()) + "/" + ref.getId());
         query.addLine("LET doc = DOCUMENT(\"${documentId}\")");
         query.addLine("FOR v IN 1..1 INBOUND doc `schema_hbp_eu-suggestion-user`");
         query.addDocumentFilter(new TrustedAqlValue(("v")));

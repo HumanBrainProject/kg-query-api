@@ -4,9 +4,7 @@ import com.google.gson.Gson;
 import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.commons.authorization.entity.OidcAccessToken;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
+import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -85,9 +83,9 @@ public class SystemOidcClient {
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", token.getBearerToken());
-        HttpEntity<String> entity = new HttpEntity<>("parameters", headers);
-        Map m = gson.fromJson(restTemplate.getForObject(url,String.class, entity), Map.class);
-        return m;
+        HttpEntity<String> entity = new HttpEntity<>(headers);
+        ResponseEntity<Map> res = restTemplate.exchange(url, HttpMethod.GET, entity, Map.class);
+        return res.getBody();
     }
 
     public OidcAccessToken getAuthorizationToken(){
