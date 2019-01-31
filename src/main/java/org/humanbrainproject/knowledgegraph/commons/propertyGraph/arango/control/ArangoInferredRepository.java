@@ -10,6 +10,7 @@ import org.humanbrainproject.knowledgegraph.commons.propertyGraph.AuthorizedAcce
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.query.ArangoQueryFactory;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.SubSpace;
+import org.humanbrainproject.knowledgegraph.commons.suggestion.SuggestionStatus;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
 import org.humanbrainproject.knowledgegraph.query.entity.JsonDocument;
@@ -151,7 +152,7 @@ public class ArangoInferredRepository {
 
     public Map getUserSuggestionOfSpecificInstance(NexusInstanceReference instanceReference, NexusInstanceReference userRef){
         String query = queryFactory.querySuggestionInstanceByUser(instanceReference ,userRef, authorizationContext.getReadableOrganizations());
-        ArangoCursor<Map> result = databaseFactory.getDefaultDB().getOrCreateDB().query(query, null, new AqlQueryOptions(), Map.class);
+        ArangoCursor<Map> result = databaseFactory.getInferredDB().getOrCreateDB().query(query, null, new AqlQueryOptions(), Map.class);
         List<Map> l = result.asListRemaining();
         if(l.isEmpty()){
             return null;
@@ -160,8 +161,8 @@ public class ArangoInferredRepository {
         }
     }
 
-    public List<Map> getSuggestionsByUser(NexusInstanceReference ref){
-        String query = queryFactory.queryAllSuggestionsByUser(ref, authorizationContext.getReadableOrganizations());
+    public List<Map> getSuggestionsByUser(NexusInstanceReference ref, SuggestionStatus status){
+        String query = queryFactory.querySuggestionsByUser(ref, status, authorizationContext.getReadableOrganizations());
         ArangoCursor<Map> result = databaseFactory.getInferredDB().getOrCreateDB().query(query, null, new AqlQueryOptions(), Map.class);
         return result.asListRemaining();
     }
