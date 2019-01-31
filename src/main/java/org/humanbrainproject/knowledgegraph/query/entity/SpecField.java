@@ -1,6 +1,7 @@
 package org.humanbrainproject.knowledgegraph.query.entity;
 
 import org.humanbrainproject.knowledgegraph.annotations.Tested;
+import org.humanbrainproject.knowledgegraph.query.entity.fieldFilter.FieldFilter;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -17,8 +18,8 @@ public class SpecField {
     public boolean groupby;
     public boolean ensureOrder;
     public final String groupedInstances;
-
-    public SpecField(String fieldName, List<SpecField> fields, List<SpecTraverse> traversePath, String groupedInstances, boolean required, boolean sortAlphabetically, boolean groupby, boolean ensureOrder) {
+    public FieldFilter fieldFilter;
+    public SpecField(String fieldName, List<SpecField> fields, List<SpecTraverse> traversePath, String groupedInstances, boolean required, boolean sortAlphabetically, boolean groupby, boolean ensureOrder, FieldFilter fieldFilter) {
         this.fieldName = fieldName;
         this.required = required;
         this.fields = fields != null ? new ArrayList<>(fields) : new ArrayList<>();
@@ -27,6 +28,7 @@ public class SpecField {
         this.groupby = groupby;
         this.groupedInstances = groupedInstances;
         this.ensureOrder = ensureOrder;
+        this.fieldFilter = fieldFilter;
     }
 
 
