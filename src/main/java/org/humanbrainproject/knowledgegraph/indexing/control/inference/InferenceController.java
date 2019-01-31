@@ -38,19 +38,21 @@ public class InferenceController implements IndexingController {
 
     @Override
     public TodoList insert(QualifiedIndexingMessage message, TodoList todoList) {
-        if (message.isOfType(HBPVocabulary.INFERENCE_TYPE)) {
-            insertVertexStructure(message, todoList);
-        } else {
-            Set<Vertex> documents = new HashSet<>();
-            for (InferenceStrategy strategy : strategies) {
-                strategy.infer(message, documents);
-            }
-            if (documents.isEmpty()) {
+        if(message.getOriginalMessage().getInstanceReference().getSubspace() != SubSpace.SUGGESTION ) {
+            if (message.isOfType(HBPVocabulary.INFERENCE_TYPE)) {
                 insertVertexStructure(message, todoList);
             } else {
-                documents.forEach(doc -> {
-                    todoList.addTodoItem(new InsertOrUpdateInPrimaryStoreTodoItem(doc));
-                });
+                Set<Vertex> documents = new HashSet<>();
+                for (InferenceStrategy strategy : strategies) {
+                    strategy.infer(message, documents);
+                }
+                if (documents.isEmpty()) {
+                    insertVertexStructure(message, todoList);
+                } else {
+                    documents.forEach(doc -> {
+                        todoList.addTodoItem(new InsertOrUpdateInPrimaryStoreTodoItem(doc));
+                    });
+                }
             }
         }
         return todoList;

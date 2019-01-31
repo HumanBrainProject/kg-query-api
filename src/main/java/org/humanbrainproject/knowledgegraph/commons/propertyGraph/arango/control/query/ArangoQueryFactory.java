@@ -9,6 +9,9 @@ import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.aql.UnauthorizedArangoQuery;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoNamingHelper;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.SubSpace;
+import org.humanbrainproject.knowledgegraph.commons.suggestion.SuggestionStatus;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.ArangoVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.SchemaOrgVocabulary;
@@ -352,6 +355,28 @@ public class ArangoQueryFactory {
         return query.build().getValue();
     }
 
+    public String querySuggestionInstanceByUser(NexusInstanceReference instanceReference, NexusInstanceReference userRef, Set<String> permissionGroupsWithReadAccess) {
+        AuthorizedArangoQuery query = new AuthorizedArangoQuery(permissionGroupsWithReadAccess);
+        query.setParameter("documentId", ArangoNamingHelper.createCompatibleId(userRef.getNexusSchema().getRelativeUrl().getUrl()) + "/" + userRef.getId());
+        query.addLine("LET doc = DOCUMENT(\"${documentId}\")");
+        query.addLine("FOR v IN 1..1 INBOUND doc `schema_hbp_eu-suggestion-user`");
+        query.addDocumentFilter(new TrustedAqlValue(("v")));
+        query.addLine("FILTER v.`" + HBPVocabulary.SUGGESTION_OF + "`.`" + HBPVocabulary.RELATIVE_URL_OF_INTERNAL_LINK + "` ==\"" + instanceReference.getRelativeUrl().getUrl() + "\"");
+        query.addLine("FILTER v.`" + HBPVocabulary.SUGGESTION_STATUS + "` == \"" + SuggestionStatus.PENDING + "\"");
+        query.addLine("RETURN v");
+        return query.build().getValue();
+    }
+
+    public String querySuggestionsByUser(NexusInstanceReference ref, SuggestionStatus status, Set<String> permissionGroupsWithReadAccess) {
+        AuthorizedArangoQuery query = new AuthorizedArangoQuery(permissionGroupsWithReadAccess);
+        query.setParameter("documentId", ArangoNamingHelper.createCompatibleId(ref.getNexusSchema().getRelativeUrl().getUrl()) + "/" + ref.getId());
+        query.addLine("LET doc = DOCUMENT(\"${documentId}\")");
+        query.addLine("FOR v IN 1..1 INBOUND doc `schema_hbp_eu-suggestion-user`");
+        query.addDocumentFilter(new TrustedAqlValue(("v")));
+        query.addLine("FILTER v.`" + HBPVocabulary.SUGGESTION_STATUS + "` == \"" + status.name() + "\"");
+        query.addLine("RETURN v");
+        return query.build().getValue();
+    }
 
 
     public String querySuggestionByField(ArangoCollectionReference originalCollection, ArangoCollectionReference relationCollection, String searchTerm, Integer start, Integer size, Set<String> permissionGroupsWithReadAccess, List<ArangoCollectionReference> types) {
@@ -419,7 +444,14 @@ public class ArangoQueryFactory {
     }
 
 
-
-
+    public String queryInstanceBySchemaAndFilter(ArangoCollectionReference collectionReference, String filterKey, String filterValue, Set<String> permissionGroupsWithReadAccess) {
+        AuthorizedArangoQuery query = new AuthorizedArangoQuery(permissionGroupsWithReadAccess);
+        query.setParameter("type", collectionReference.getName());
+        query.addLine("FOR doc IN `${type}`");
+        query.addDocumentFilter(new TrustedAqlValue(("doc")));
+        query.indent().addLine("FILTER doc.`" + filterKey + "` ==\"" + filterValue + "\"");
+        query.addLine("RETURN doc");
+        return query.build().getValue();
+    }
 
 }
