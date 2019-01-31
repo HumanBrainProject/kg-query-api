@@ -18,14 +18,14 @@ public class SpecFieldTest {
     public void setUp() throws Exception {
         SpecField subField1 = TestObjectFactory.simpleSpecFieldWithOutgoingTraverses("foo", "http://foo");
         SpecField subField2 = TestObjectFactory.simpleSpecFieldWithOutgoingTraverses("bar", "http://bar");
-        this.specField = new SpecField("foobar", Arrays.asList(subField1, subField2), Collections.singletonList(new SpecTraverse("http://foobar", false)), null, false, false, false, false);
+        this.specField = new SpecField("foobar", Arrays.asList(subField1, subField2), Collections.singletonList(new SpecTraverse("http://foobar", false)), null, false, false, false, false, null);
     }
 
 
     @Test
     public void isMerge() {
         SpecField subField1 = TestObjectFactory.simpleSpecFieldWithOutgoingTraverses("foo", "http://foo");
-        SpecField field = new SpecField("foobar", Collections.singletonList(subField1), null, null, false, false, false, false);
+        SpecField field = new SpecField("foobar", Collections.singletonList(subField1), null, null, false, false, false, false, null);
 
         boolean merge = field.isMerge();
 
@@ -47,35 +47,35 @@ public class SpecFieldTest {
 
     @Test
     public void needsTraversalForInstanceWithoutFieldsButMultipleTraverse() {
-        SpecField field = new SpecField("foobar", null, Arrays.asList(new SpecTraverse("http://foobar", false), new SpecTraverse("http://barfoo", false)), null, false, false, false, false);
+        SpecField field = new SpecField("foobar", null, Arrays.asList(new SpecTraverse("http://foobar", false), new SpecTraverse("http://barfoo", false)), null, false, false, false, false, null);
         boolean needsTraversal = field.needsTraversal();
         assertTrue(needsTraversal);
     }
 
     @Test
     public void needsTraversalFalseForSingleTraverse() {
-        SpecField field = new SpecField("foobar", null, Collections.singletonList(new SpecTraverse("http://foobar", false)), null, false, false, false, false);
+        SpecField field = new SpecField("foobar", null, Collections.singletonList(new SpecTraverse("http://foobar", false)), null, false, false, false, false, null);
         boolean needsTraversal = field.needsTraversal();
         assertFalse(needsTraversal);
     }
 
     @Test
     public void getFirstTraversal() {
-        SpecField field = new SpecField("foobar", null, Arrays.asList(new SpecTraverse("http://foobar", false), new SpecTraverse("http://barfoo", false)), null, false, false, false, false);
+        SpecField field = new SpecField("foobar", null, Arrays.asList(new SpecTraverse("http://foobar", false), new SpecTraverse("http://barfoo", false)), null, false, false, false, false, null);
         SpecTraverse firstTraversal = field.getFirstTraversal();
         assertEquals("http://foobar", firstTraversal.pathName);
     }
 
     @Test
     public void getFirstTraversalNull() {
-        SpecField field = new SpecField("foobar", null, null, null, false, false, false, false);
+        SpecField field = new SpecField("foobar", null, null, null, false, false, false, false, null);
         SpecTraverse firstTraversal = field.getFirstTraversal();
         assertNull(firstTraversal);
     }
 
     @Test
     public void getAdditionalDirectTraversals() {
-        SpecField field = new SpecField("foobar", Collections.singletonList(TestObjectFactory.simpleSpecFieldWithOutgoingTraverses("foo", "http://foo")), Arrays.asList(new SpecTraverse("http://foobar", false), new SpecTraverse("http://barfoo", false)), null, false, false, false, false);
+        SpecField field = new SpecField("foobar", Collections.singletonList(TestObjectFactory.simpleSpecFieldWithOutgoingTraverses("foo", "http://foo")), Arrays.asList(new SpecTraverse("http://foobar", false), new SpecTraverse("http://barfoo", false)), null, false, false, false, false, null);
         assertFalse(field.isLeaf());
         List<SpecTraverse> additionalDirectTraversals = field.getAdditionalDirectTraversals();
 
@@ -85,7 +85,7 @@ public class SpecFieldTest {
 
     @Test
     public void getLeafPath() {
-        SpecField field = new SpecField("foobar", null, Arrays.asList(new SpecTraverse("http://foobar", false), new SpecTraverse("http://barfoo", false)), null, false, false, false, false);
+        SpecField field = new SpecField("foobar", null, Arrays.asList(new SpecTraverse("http://foobar", false), new SpecTraverse("http://barfoo", false)), null, false, false, false, false, null);
         assertTrue(field.isLeaf());
 
         SpecTraverse leafPath = field.getLeafPath();
@@ -95,7 +95,7 @@ public class SpecFieldTest {
 
     @Test
     public void getLeafPathForNonLeaf() {
-        SpecField field = new SpecField("foobar", Collections.singletonList(TestObjectFactory.simpleSpecFieldWithOutgoingTraverses("foo", "http://foo")), Arrays.asList(new SpecTraverse("http://foobar", false), new SpecTraverse("http://barfoo", false)), null, false, false, false, false);
+        SpecField field = new SpecField("foobar", Collections.singletonList(TestObjectFactory.simpleSpecFieldWithOutgoingTraverses("foo", "http://foo")), Arrays.asList(new SpecTraverse("http://foobar", false), new SpecTraverse("http://barfoo", false)), null, false, false, false, false, null);
         assertFalse(field.isLeaf());
 
         SpecTraverse leafPath = field.getLeafPath();
@@ -106,7 +106,7 @@ public class SpecFieldTest {
 
     @Test
     public void numberOfDirectTraversalsForNonLeaf() {
-        SpecField field = new SpecField("foobar", Collections.singletonList(TestObjectFactory.simpleSpecFieldWithOutgoingTraverses("foo", "http://foo")), Arrays.asList(new SpecTraverse("http://foobar", false), new SpecTraverse("http://barfoo", false)), null, false, false, false, false);
+        SpecField field = new SpecField("foobar", Collections.singletonList(TestObjectFactory.simpleSpecFieldWithOutgoingTraverses("foo", "http://foo")), Arrays.asList(new SpecTraverse("http://foobar", false), new SpecTraverse("http://barfoo", false)), null, false, false, false, false, null);
         assertFalse(field.isLeaf());
 
         int numberOfDirectTraversals = field.numberOfDirectTraversals();
@@ -117,7 +117,7 @@ public class SpecFieldTest {
     @Test
     public void numberOfDirectTraversals() {
 
-        SpecField field = new SpecField("foobar", null, Arrays.asList(new SpecTraverse("http://foobar", false), new SpecTraverse("http://barfoo", false)), null, false, false, false, false);
+        SpecField field = new SpecField("foobar", null, Arrays.asList(new SpecTraverse("http://foobar", false), new SpecTraverse("http://barfoo", false)), null, false, false, false, false, null);
         assertTrue(field.isLeaf());
 
         int numberOfDirectTraversals = field.numberOfDirectTraversals();
@@ -128,7 +128,7 @@ public class SpecFieldTest {
     @Test
     public void numberOfDirectTraversalsSingleTraversal() {
 
-        SpecField field = new SpecField("foobar", null, Arrays.asList(new SpecTraverse("http://foobar", false)), null, false, false, false, false);
+        SpecField field = new SpecField("foobar", null, Arrays.asList(new SpecTraverse("http://foobar", false)), null, false, false, false, false, null);
         assertTrue(field.isLeaf());
 
         int numberOfDirectTraversals = field.numberOfDirectTraversals();
@@ -140,11 +140,11 @@ public class SpecFieldTest {
     public void hasNestedGrouping() {
 
         SpecField nestedField = new SpecField("foo", null,
-                Collections.singletonList(new SpecTraverse("http://foo", false)), null, false, false, true, false);
+                Collections.singletonList(new SpecTraverse("http://foo", false)), null, false, false, true, false, null);
 
         SpecField field = new SpecField("foobar",
                 Collections.singletonList(nestedField),
-                Collections.singletonList(new SpecTraverse("http://foobar", false)), "http://foo", false, false, false, false);
+                Collections.singletonList(new SpecTraverse("http://foobar", false)), "http://foo", false, false, false, false, null);
 
         boolean hasNestedGrouping = field.hasNestedGrouping();
 
