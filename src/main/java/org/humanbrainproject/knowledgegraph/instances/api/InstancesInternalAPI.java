@@ -7,6 +7,8 @@ import org.humanbrainproject.knowledgegraph.commons.InternalApi;
 import org.humanbrainproject.knowledgegraph.commons.api.Client;
 import org.humanbrainproject.knowledgegraph.commons.api.RestUtils;
 import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationContext;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoNativeRepository;
+import org.humanbrainproject.knowledgegraph.commons.vocabulary.ArangoVocabulary;
 import org.humanbrainproject.knowledgegraph.context.QueryContext;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
@@ -24,6 +26,7 @@ import org.springframework.web.client.HttpClientErrorException;
 
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.InternalServerErrorException;
+import javax.ws.rs.NotFoundException;
 import javax.ws.rs.core.MediaType;
 import java.util.Collections;
 import java.util.HashMap;
@@ -50,6 +53,10 @@ public class InstancesInternalAPI {
 
     @Autowired
     ArangoGraph graph;
+
+    @Autowired
+    ArangoNativeRepository arangoNativeRepository;
+
 
     @PostMapping(value = "/{"+ORG+"}/{"+DOMAIN+"}/{"+SCHEMA+"}/{"+VERSION+"}")
     public ResponseEntity<Map> createNewInstanceForSchema(@RequestBody(required = false) String payload, @PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken, @RequestHeader(value = CLIENT, required = false) Client client, @ApiParam(CLIENT_EXTENSION_DOC) @RequestParam(value = CLIENT_ID_EXTENSION, required = false) String clientIdExtension) {
@@ -176,18 +183,26 @@ public class InstancesInternalAPI {
             authorizationContext.populateAuthorizationContext(authorizationToken);
 
             //We set the database scope directly, because this is an internal API and therefore it is allowed to have a "Native" scope as well.
-            queryContext.setDatabaseScope(DatabaseScope.RELEASED);
+            queryContext.setDatabaseScope(DatabaseScope.INFERRED);
             NexusInstanceReference instanceReference = new NexusInstanceReference(org, domain, schema, version, id);
-            JsonDocument instance = this.instances.getInstance(instanceReference);
-            if(instance == null){
-                //This means we can delete the original instance as it is not released
-                queryContext.setDatabaseScope(DatabaseScope.NATIVE);
-                this.instances.removeInstance(instanceReference);
-                return  ResponseEntity.ok(QueryResult.createEmptyResult());
-            } else {
-                throw new BadRequestException("Instance is released! Unrelease the instance before deletion.");
+            JsonDocument inferred = this.instances.getInstance(instanceReference);
+            if(inferred != null) {
+                NexusInstanceReference originalId = arangoNativeRepository.findOriginalId(instanceReference);
+                queryContext.setDatabaseScope(DatabaseScope.RELEASED);
+                JsonDocument released = this.instances.getInstance(instanceReference);
+                if(released == null){
+                    //This means we can delete the original instance as it is not released
+                    queryContext.setDatabaseScope(DatabaseScope.NATIVE);
+                    if(this.instances.removeInstance(originalId)){
+                        return  ResponseEntity.ok(QueryResult.createEmptyResult());
+                    }
+                    throw  new InternalServerErrorException("Could not delete instance");
+                } else {
+                    throw new BadRequestException("Instance is released! Unrelease the instance before deletion.");
+                }
+            } else{
+                throw new NotFoundException("Instance not found");
             }
-
         } catch (HttpClientErrorException e) {
             return ResponseEntity.status(e.getStatusCode()).build();
         }
