@@ -7,17 +7,22 @@ import org.humanbrainproject.knowledgegraph.commons.InternalApi;
 import org.humanbrainproject.knowledgegraph.commons.api.Client;
 import org.humanbrainproject.knowledgegraph.commons.api.RestUtils;
 import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationContext;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoInferredRepository;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoNativeRepository;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.SubSpace;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.ArangoVocabulary;
+import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.humanbrainproject.knowledgegraph.context.QueryContext;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
 import org.humanbrainproject.knowledgegraph.instances.boundary.Instances;
+import org.humanbrainproject.knowledgegraph.instances.control.InstanceLookupController;
 import org.humanbrainproject.knowledgegraph.query.boundary.ArangoGraph;
 import org.humanbrainproject.knowledgegraph.query.entity.DatabaseScope;
 import org.humanbrainproject.knowledgegraph.query.entity.JsonDocument;
 import org.humanbrainproject.knowledgegraph.query.entity.Pagination;
 import org.humanbrainproject.knowledgegraph.query.entity.QueryResult;
+import org.humanbrainproject.knowledgegraph.releasing.entity.ReleaseStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
@@ -28,10 +33,9 @@ import javax.ws.rs.BadRequestException;
 import javax.ws.rs.InternalServerErrorException;
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.core.MediaType;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import static org.humanbrainproject.knowledgegraph.commons.api.ParameterConstants.*;
 
@@ -56,6 +60,9 @@ public class InstancesInternalAPI {
 
     @Autowired
     ArangoNativeRepository arangoNativeRepository;
+
+    @Autowired
+    ArangoInferredRepository arangoInferredRepository;
 
 
     @PostMapping(value = "/{"+ORG+"}/{"+DOMAIN+"}/{"+SCHEMA+"}/{"+VERSION+"}")
@@ -191,11 +198,26 @@ public class InstancesInternalAPI {
                 queryContext.setDatabaseScope(DatabaseScope.RELEASED);
                 JsonDocument released = this.instances.getInstance(instanceReference);
                 if(released == null){
-                    //This means we can delete the original instance as it is not released
-                    queryContext.setDatabaseScope(DatabaseScope.NATIVE);
-                    if(this.instances.removeInstance(originalId)){
-                        return  ResponseEntity.ok(QueryResult.createEmptyResult());
+                    List<Map> links = arangoInferredRepository.getIncomingLinks(instanceReference);
+                    List<Map> linksReleased = links.stream().filter(new Predicate<Map>() {
+                                                                   @Override
+                                                                   public boolean test(Map map) {
+                                                                       return map.get("status").equals(ReleaseStatus.RELEASED.name());
+                                                                   }
+                                                               }
+
+                    ).collect(Collectors.toList());
+                    if(linksReleased.isEmpty()){
+                        //This means we can delete the original instance as it is not released
+                        queryContext.setDatabaseScope(DatabaseScope.NATIVE);
+                        if(this.instances.removeInstance(originalId)){
+                            return  ResponseEntity.ok(QueryResult.createEmptyResult());
+                        }
+                    }else{
+                        List<String> ids = linksReleased.stream().map(l -> (String)((Map)l.get("doc")).get(HBPVocabulary.RELATIVE_URL_OF_INTERNAL_LINK)).collect(Collectors.toList());
+                        throw new BadRequestException("The instance is linked to one or more released instance: " + String.join(" ", ids ));
                     }
+
                     throw  new InternalServerErrorException("Could not delete instance");
                 } else {
                     throw new BadRequestException("Instance is released! Unrelease the instance before deletion.");

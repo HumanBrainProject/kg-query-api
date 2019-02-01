@@ -454,4 +454,31 @@ public class ArangoQueryFactory {
         return query.build().getValue();
     }
 
+    public String queryIncomingLinks(NexusInstanceReference ref, Set<ArangoCollectionReference> collections, Set<String> permissionGroupsWithReadAccess){
+        AuthorizedArangoQuery query = new AuthorizedArangoQuery(permissionGroupsWithReadAccess);
+        query.setTrustedParameter("collections", query.listCollections(collections.stream().map(ArangoCollectionReference::getName).collect(Collectors.toSet())));
+        query.setParameter("documentId", ArangoNamingHelper.createCompatibleId(ref.getNexusSchema().getRelativeUrl().getUrl()) + "/" + ref.getId());
+        query.setParameter("releaseCollection", ArangoCollectionReference.fromFieldName(HBPVocabulary.RELEASE_INSTANCE).getName());
+        query.setParameter("releaseRevisionProperty", HBPVocabulary.RELEASE_REVISION)
+                .setParameter("nexusBaseForInstances", configuration.getNexusBase(NexusConfiguration.ResourceType.DATA))
+                .setParameter("originalId", ArangoVocabulary.NEXUS_RELATIVE_URL_WITH_REV)
+                .setParameter("releasedValue", ReleaseStatus.RELEASED.name())
+                .setParameter("changedValue", ReleaseStatus.HAS_CHANGED.name())
+                .setParameter("notReleasedValue", ReleaseStatus.NOT_RELEASED.name())
+                .setParameter("releaseInstanceRelation", ArangoCollectionReference.fromFieldName(HBPVocabulary.RELEASE_INSTANCE).getName())
+                .setParameter("releaseInstanceProperty", HBPVocabulary.RELEASE_INSTANCE);
+        query.addLine("LET doc = DOCUMENT(\"${documentId}\")");
+        query.addLine("FOR v IN 1..1 INBOUND doc ${collections}");
+        query.indent();
+        query.addLine("LET release = (FOR rel IN 1..1 INBOUND v `${releaseInstanceRelation}`");
+        query.indent();
+        query.addLine("LET rel_instance = SUBSTITUTE(CONCAT(rel.`${releaseInstanceProperty}`.`" + JsonLdConsts.ID + "`, \"?rev=\", rel.`${releaseRevisionProperty}`), \"${nexusBaseForInstances}/\", \"\")");
+        query.addLine("RETURN rel_instance==v.${originalId} ? \"${releasedValue}\" : \"${changedValue}\"");
+        query.outdent();
+        query.addLine(")");
+        query.addLine("LET status = LENGTH(release)>0 ? release[0] : \"${notReleasedValue}\"");
+        query.addLine("RETURN {\"doc\": v, \"status\":status}");
+        return query.build().getValue();
+    }
+
 }
