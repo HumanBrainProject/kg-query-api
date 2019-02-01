@@ -1,5 +1,7 @@
 package org.humanbrainproject.knowledgegraph.query.entity.fieldFilter;
 
+import org.humanbrainproject.knowledgegraph.query.entity.GraphQueryKeys;
+
 import java.util.Map;
 
 public class FieldFilter extends Exp{
@@ -20,9 +22,9 @@ public class FieldFilter extends Exp{
     }
 
     public static FieldFilter fromMap(Map<String, Object> map){
-        if( map.get(FieldFilterConstants.OP) != null){
-            Op op =  Op.valueOf( ((String) map.get(FieldFilterConstants.OP)).toUpperCase());
-            Object m = map.get(FieldFilterConstants.VALUE);
+        if( map.get(GraphQueryKeys.GRAPH_QUERY_FILTER_OP.getFieldName()) != null){
+            Op op =  Op.valueOf( ((String) map.get(GraphQueryKeys.GRAPH_QUERY_FILTER_OP.getFieldName())).toUpperCase());
+            Object m = map.get(GraphQueryKeys.GRAPH_QUERY_FILTER_VALUE.getFieldName());
             if(m != null) {
                 if (m instanceof Map) {
                     Exp exp = fromMapRec((Map<String, Object>) m );

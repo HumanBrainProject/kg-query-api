@@ -125,7 +125,7 @@ public class SpecificationInterpreter {
                     for (int i = 0; i < fieldsPerRelativePath.size(); i++) {
                         SpecField specField = fieldsPerRelativePath.get(i);
                         if(rootField==null) {
-                            rootField = new SpecField(specField.fieldName, fieldsPerRelativePath, Collections.emptyList(), specField.groupedInstances, specField.required, specField.sortAlphabetically, specField.groupby, specField.ensureOrder, null);
+                            rootField = new SpecField(specField.fieldName, fieldsPerRelativePath, Collections.emptyList(), specField.groupedInstances, specField.required, specField.sortAlphabetically, specField.groupby, specField.ensureOrder, specField.fieldFilter);
                         }
                         specField.sortAlphabetically = false;
                         specField.groupby = false;
