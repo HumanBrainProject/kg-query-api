@@ -1,5 +1,3 @@
 package org.humanbrainproject.knowledgegraph.query.entity.fieldFilter;
 
-abstract class Exp {
-
-}
+public abstract class Exp { }

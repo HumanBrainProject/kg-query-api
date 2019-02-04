@@ -32,7 +32,7 @@ public class SpecificationInterpreter {
 
     protected Logger logger = LoggerFactory.getLogger(SpecificationInterpreter.class);
 
-    public Specification readSpecification(String json, NexusSchemaReference schemaReference) throws JSONException {
+    public Specification readSpecification(String json, NexusSchemaReference schemaReference, Map<String, String> allParameters) throws JSONException {
         JSONObject jsonObject = new JSONObject(json);
         String originalContext = null;
         if (jsonObject.has(JsonLdConsts.CONTEXT)) {
@@ -51,17 +51,17 @@ public class SpecificationInterpreter {
         }
         List<SpecField> specFields = null;
         if (jsonObject.has(GraphQueryKeys.GRAPH_QUERY_FIELDS.getFieldName())) {
-            specFields = createSpecFields(jsonObject.get(GraphQueryKeys.GRAPH_QUERY_FIELDS.getFieldName()));
+            specFields = createSpecFields(jsonObject.get(GraphQueryKeys.GRAPH_QUERY_FIELDS.getFieldName()), allParameters);
         }
         return new Specification(originalContext, name, rootSchema, new JsonDocument(new JsonTransformer().parseToMap(json)), specFields);
     }
 
-    private List<SpecField> createSpecFields(Object origin) throws JSONException {
+    private List<SpecField> createSpecFields(Object origin, Map<String, String> allParameters) throws JSONException {
         List<SpecField> result = new ArrayList<>();
         if (origin instanceof JSONArray) {
             JSONArray originArray = (JSONArray) origin;
             for (int i = 0; i < originArray.length(); i++) {
-                result.addAll(createSpecFields(originArray.get(i)));
+                result.addAll(createSpecFields(originArray.get(i), allParameters));
             }
         } else if (origin instanceof JSONObject) {
             JSONObject originObj = (JSONObject) origin;
@@ -94,7 +94,7 @@ public class SpecificationInterpreter {
                                 fieldName = traversalPath.get(traversalPath.size() - 1).pathName;
                             }
                             if (originObj.has(GraphQueryKeys.GRAPH_QUERY_FIELDS.getFieldName())) {
-                                specFields = createSpecFields(originObj.get(GraphQueryKeys.GRAPH_QUERY_FIELDS.getFieldName()));
+                                specFields = createSpecFields(originObj.get(GraphQueryKeys.GRAPH_QUERY_FIELDS.getFieldName()), allParameters);
                             }
                             if (originObj.has(GraphQueryKeys.GRAPH_QUERY_REQUIRED.getFieldName())) {
                                 required = originObj.getBoolean(GraphQueryKeys.GRAPH_QUERY_REQUIRED.getFieldName());
@@ -114,7 +114,7 @@ public class SpecificationInterpreter {
                             if(originObj.has(GraphQueryKeys.GRAPH_QUERY_FILTER.getFieldName())){
                                 JSONObject json = originObj.getJSONObject(GraphQueryKeys.GRAPH_QUERY_FILTER.getFieldName());
                                 Map<String, Object> m = new Gson().fromJson(json.toString(), Map.class);
-                                filter = FieldFilter.fromMap(m);
+                                filter = FieldFilter.fromMap(m, allParameters);
                             }
                             fieldsPerRelativePath.add(new SpecField(fieldName, specFields, traversalPath, groupedInstances, required, sortAlphabetically, groupBy, ensureOrder, filter));
                         }

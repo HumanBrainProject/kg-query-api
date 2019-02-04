@@ -111,8 +111,7 @@ public class SpecificationQuery {
                 } else {
                     skipFields.add(field.fieldName);
                 }
-            }
-            else{
+            } else{
                 queryBuilder.addAlias(arangoField);
                 queryBuilder.prepareLeafField(field);
                 queryBuilder.dropAlias();
@@ -130,6 +129,9 @@ public class SpecificationQuery {
                         } else if (field.isLeaf()) {
                             queryBuilder.addComplexFieldRequiredFilter(ArangoAlias.fromLeafPath(field.getLeafPath()));
                         }
+                    }
+                    if (field.fieldFilter != null){
+                        queryBuilder.addFieldFilter(ArangoAlias.fromLeafPath(field.getLeafPath()) );
                     }
                 }
             }

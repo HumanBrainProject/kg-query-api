@@ -75,18 +75,18 @@ public class ArangoQuery {
 
 
     public QueryResult<List<Map>> metaQueryBySpecification(Query query) throws JSONException, IOException {
-        Specification spec = specInterpreter.readSpecification(JsonUtils.toString(standardization.fullyQualify(query.getSpecification())), query.getSchemaReference());
+        Specification spec = specInterpreter.readSpecification(JsonUtils.toString(standardization.fullyQualify(query.getSpecification())), query.getSchemaReference(), null);
         return specificationQuery.metaSpecification(spec);
     }
 
 
     public QueryResult<List<Map>> metaReflectionQueryBySpecification(Query query) throws JSONException, IOException {
-        Specification spec = specInterpreter.readSpecification(JsonUtils.toString(standardization.fullyQualify(query.getSpecification())), query.getSchemaReference());
+        Specification spec = specInterpreter.readSpecification(JsonUtils.toString(standardization.fullyQualify(query.getSpecification())), query.getSchemaReference(), null);
         return specificationQuery.metaReflectionSpecification(spec, query.getFilter());
     }
 
     public Map reflectQueryBySpecification(Query query) throws JSONException, IOException {
-        Specification spec = specInterpreter.readSpecification(JsonUtils.toString(standardization.fullyQualify(query.getSpecification())), query.getSchemaReference());
+        Specification spec = specInterpreter.readSpecification(JsonUtils.toString(standardization.fullyQualify(query.getSpecification())), query.getSchemaReference(),null);
         Map map = specificationQuery.reflectSpecification(spec, query);
         map.put("children", regroup((List<Map>) map.get("children")));
         return map;
@@ -140,7 +140,7 @@ public class ArangoQuery {
             }
             idWhitelist = idsFromSpatialSearch;
         }
-        Specification spec = specInterpreter.readSpecification(JsonUtils.toString(standardization.fullyQualify(query.getSpecification())), query.getSchemaReference());
+        Specification spec = specInterpreter.readSpecification(JsonUtils.toString(standardization.fullyQualify(query.getSpecification())), query.getSchemaReference(), query.getParameters());
         QueryResult<List<Map>> result = specificationQuery.queryForSpecification(spec, idWhitelist, query.getPagination(), query.getFilter());
         if (context != null) {
             result.setResults(standardization.applyContext(result.getResults(), context));

@@ -29,14 +29,14 @@ public class SpecificationInterpreterTest {
 
     @Test
     public void readSpecification() throws JSONException {
-        Specification specification = interpreter.readSpecification(testSpecification, null);
+        Specification specification = interpreter.readSpecification(testSpecification, null, null);
         assertEquals("https://nexus-dev.humanbrainproject.org/v0/schemas/minds/core/dataset/v1.0.0", specification.rootSchema);
         assertEquals(17, specification.fields.size());
     }
 
     @Test
     public void readFilterSpecification() throws JSONException {
-        Specification specification = interpreter.readSpecification(filterSpecification, null);
+        Specification specification = interpreter.readSpecification(filterSpecification, null, null);
         assertNotEquals(null, specification.fields.get(0).fieldFilter);
         assertEquals(Op.EQUALS.name(), specification.fields.get(0).fieldFilter.getOp().name());
         assertEquals(new Value("test"), specification.fields.get(0).fieldFilter.getExp());
