@@ -3,7 +3,6 @@ package org.humanbrainproject.knowledgegraph.converters.api;
 import io.swagger.annotations.Api;
 import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.commons.InternalApi;
-import org.humanbrainproject.knowledgegraph.commons.api.RestUtils;
 import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationContext;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
 import org.humanbrainproject.knowledgegraph.converters.boundary.Converter;
@@ -45,8 +44,8 @@ public class ConvertersAPI {
         return timestamp!=null ? timestamp : ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_INSTANT);
     }
 
-    @PostMapping(value="/shacl-to-editor/{"+ORG+"}/{"+DOMAIN+"}/{"+SCHEMA+"}/{"+VERSION+"}", consumes = {MediaType.APPLICATION_JSON, RestUtils.APPLICATION_LD_JSON}, produces = MediaType.APPLICATION_JSON)
-    public ResponseEntity<Map> shacl2editor(@RequestBody String payload, @PathVariable(ORG) String organization, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String schemaVersion, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken) {
+    @GetMapping(value="/shacl-to-editor/{"+ORG+"}/{"+DOMAIN+"}/{"+SCHEMA+"}/{"+VERSION+"}", produces = MediaType.APPLICATION_JSON)
+    public ResponseEntity<Map> shacl2editor(@PathVariable(ORG) String organization, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String schemaVersion, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken) {
         authorizationContext.populateAuthorizationContext(authorizationToken);
         JsonDocument jsonDocument = converter.convertShaclToEditor(new NexusSchemaReference(organization, domain, schema, schemaVersion));
         if(jsonDocument==null){

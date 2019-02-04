@@ -21,8 +21,44 @@ public class ShaclShape {
     }
 
     public String getLabel(){
-        return (String) ((Map)shape.get(RDF_VOCAB+"label")).get(JsonLdConsts.VALUE);
+        Map label = ((Map)shape.get(RDF_VOCAB+"label"));
+        return label==null ? (String)getTargetClass() : (String)label.get(JsonLdConsts.VALUE);
     }
+
+    public Object getTargetClass(){
+        Object targetClass = this.shape.get(SHACL_VOCAB + "targetClass");
+        return targetClass instanceof Map ? ((Map)targetClass).get(JsonLdConsts.ID) : null;
+    }
+
+    public boolean isTargeted(){
+        return getTargetClass()!=null;
+    }
+
+    public String getId(){
+            return (String) (shape.get(JsonLdConsts.ID));
+    }
+
+
+    public List<String> getNodes(){
+        List<Map> nodes = new ArrayList<>();
+        Object directNode = shape.get(SHACL_VOCAB + "node");
+        if(directNode instanceof Map){
+            nodes.add((Map)directNode);
+        }
+        Object and = shape.get(SHACL_VOCAB + "and");
+        if(and instanceof Map){
+            Object list = ((Map) and).get(JsonLdConsts.LIST);
+            if(list instanceof List) {
+                for (Object a : ((List) list)) {
+                    if (a instanceof Map && ((Map)a).get(SHACL_VOCAB+"node")instanceof Map) {
+                        nodes.add((Map)((Map) a).get(SHACL_VOCAB+"node"));
+                    }
+                }
+            }
+        }
+        return nodes.stream().map(m -> (String)m.get(JsonLdConsts.ID)).collect(Collectors.toList());
+    }
+
 
     public List<ShaclProperty> getProperties(){
         List<Map> properties = lookupProperties();

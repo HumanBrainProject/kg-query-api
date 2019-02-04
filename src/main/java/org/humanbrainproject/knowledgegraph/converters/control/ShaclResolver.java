@@ -35,7 +35,6 @@ public class ShaclResolver {
         return collector;
     }
 
-
     void resolve(NexusSchemaReference schemaReference, Set<NexusSchemaReference> alreadyVisited, List<JsonDocument> importCollector){
         Map map = nexusClient.get(schemaReference.getRelativeUrl(), authorizationContext.getCredential());
         JsonDocument qualified = new JsonDocument(jsonLdStandardization.fullyQualify(map));
