@@ -14,8 +14,8 @@ public class FieldFilterTest {
     @Test
     public void parseMapToFilter() {
         Map<String, Object> document = new HashMap<>();
-        document.put("op", "equals");
-        document.put("value", "foo");
+        document.put(GraphQueryKeys.GRAPH_QUERY_FILTER_OP.getFieldName(), "equals");
+        document.put(GraphQueryKeys.GRAPH_QUERY_FILTER_VALUE.getFieldName(), "foo");
         FieldFilter f = FieldFilter.fromMap(document, null);
         Assert.assertEquals(f.getOp(), Op.EQUALS);
         Assert.assertEquals(f.getExp(), new Value("foo"));
