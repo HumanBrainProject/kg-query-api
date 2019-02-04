@@ -1,12 +1,15 @@
 package org.humanbrainproject.knowledgegraph.query.control;
 
 import com.github.jsonldjava.core.JsonLdConsts;
+import com.google.gson.Gson;
+import org.apache.tinkerpop.shaded.jackson.databind.ObjectMapper;
 import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.SchemaOrgVocabulary;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
 import org.humanbrainproject.knowledgegraph.query.entity.*;
+import org.humanbrainproject.knowledgegraph.query.entity.fieldFilter.FieldFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +21,7 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 @ToBeTested
 @Component
@@ -28,7 +32,7 @@ public class SpecificationInterpreter {
 
     protected Logger logger = LoggerFactory.getLogger(SpecificationInterpreter.class);
 
-    public Specification readSpecification(String json, NexusSchemaReference schemaReference) throws JSONException {
+    public Specification readSpecification(String json, NexusSchemaReference schemaReference, Map<String, String> allParameters) throws JSONException {
         JSONObject jsonObject = new JSONObject(json);
         String originalContext = null;
         if (jsonObject.has(JsonLdConsts.CONTEXT)) {
@@ -47,17 +51,17 @@ public class SpecificationInterpreter {
         }
         List<SpecField> specFields = null;
         if (jsonObject.has(GraphQueryKeys.GRAPH_QUERY_FIELDS.getFieldName())) {
-            specFields = createSpecFields(jsonObject.get(GraphQueryKeys.GRAPH_QUERY_FIELDS.getFieldName()));
+            specFields = createSpecFields(jsonObject.get(GraphQueryKeys.GRAPH_QUERY_FIELDS.getFieldName()), allParameters);
         }
         return new Specification(originalContext, name, rootSchema, new JsonDocument(new JsonTransformer().parseToMap(json)), specFields);
     }
 
-    private List<SpecField> createSpecFields(Object origin) throws JSONException {
+    private List<SpecField> createSpecFields(Object origin, Map<String, String> allParameters) throws JSONException {
         List<SpecField> result = new ArrayList<>();
         if (origin instanceof JSONArray) {
             JSONArray originArray = (JSONArray) origin;
             for (int i = 0; i < originArray.length(); i++) {
-                result.addAll(createSpecFields(originArray.get(i)));
+                result.addAll(createSpecFields(originArray.get(i), allParameters));
             }
         } else if (origin instanceof JSONObject) {
             JSONObject originObj = (JSONObject) origin;
@@ -81,6 +85,7 @@ public class SpecificationInterpreter {
                             boolean groupBy = false;
                             boolean ensureOrder=false;
                             String groupedInstances = GraphQueryKeys.GRAPH_QUERY_GROUPED_INSTANCES_DEFAULT.getFieldName();
+                            FieldFilter filter = null;
                             if (originObj.has(GraphQueryKeys.GRAPH_QUERY_FIELDNAME.getFieldName())) {
                                 fieldName = originObj.getJSONObject(GraphQueryKeys.GRAPH_QUERY_FIELDNAME.getFieldName()).getString(JsonLdConsts.ID);
                             }
@@ -89,7 +94,7 @@ public class SpecificationInterpreter {
                                 fieldName = traversalPath.get(traversalPath.size() - 1).pathName;
                             }
                             if (originObj.has(GraphQueryKeys.GRAPH_QUERY_FIELDS.getFieldName())) {
-                                specFields = createSpecFields(originObj.get(GraphQueryKeys.GRAPH_QUERY_FIELDS.getFieldName()));
+                                specFields = createSpecFields(originObj.get(GraphQueryKeys.GRAPH_QUERY_FIELDS.getFieldName()), allParameters);
                             }
                             if (originObj.has(GraphQueryKeys.GRAPH_QUERY_REQUIRED.getFieldName())) {
                                 required = originObj.getBoolean(GraphQueryKeys.GRAPH_QUERY_REQUIRED.getFieldName());
@@ -106,7 +111,12 @@ public class SpecificationInterpreter {
                             if (originObj.has(GraphQueryKeys.GRAPH_QUERY_GROUP_BY.getFieldName())) {
                                 groupBy = originObj.getBoolean(GraphQueryKeys.GRAPH_QUERY_GROUP_BY.getFieldName());
                             }
-                            fieldsPerRelativePath.add(new SpecField(fieldName, specFields, traversalPath, groupedInstances, required, sortAlphabetically, groupBy, ensureOrder));
+                            if(originObj.has(GraphQueryKeys.GRAPH_QUERY_FILTER.getFieldName())){
+                                JSONObject json = originObj.getJSONObject(GraphQueryKeys.GRAPH_QUERY_FILTER.getFieldName());
+                                Map<String, Object> m = new Gson().fromJson(json.toString(), Map.class);
+                                filter = FieldFilter.fromMap(m, allParameters);
+                            }
+                            fieldsPerRelativePath.add(new SpecField(fieldName, specFields, traversalPath, groupedInstances, required, sortAlphabetically, groupBy, ensureOrder, filter));
                         }
                     }
                 }
@@ -115,7 +125,7 @@ public class SpecificationInterpreter {
                     for (int i = 0; i < fieldsPerRelativePath.size(); i++) {
                         SpecField specField = fieldsPerRelativePath.get(i);
                         if(rootField==null) {
-                            rootField = new SpecField(specField.fieldName, fieldsPerRelativePath, Collections.emptyList(), specField.groupedInstances, specField.required, specField.sortAlphabetically, specField.groupby, specField.ensureOrder);
+                            rootField = new SpecField(specField.fieldName, fieldsPerRelativePath, Collections.emptyList(), specField.groupedInstances, specField.required, specField.sortAlphabetically, specField.groupby, specField.ensureOrder, specField.fieldFilter);
                         }
                         specField.sortAlphabetically = false;
                         specField.groupby = false;

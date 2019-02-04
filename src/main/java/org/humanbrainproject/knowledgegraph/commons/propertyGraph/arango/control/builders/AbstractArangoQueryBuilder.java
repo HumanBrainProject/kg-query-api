@@ -149,4 +149,6 @@ public abstract class AbstractArangoQueryBuilder {
     public Pagination getPagination() {
         return pagination;
     }
+
+    public abstract void addFieldFilter(ArangoAlias alias);
 }

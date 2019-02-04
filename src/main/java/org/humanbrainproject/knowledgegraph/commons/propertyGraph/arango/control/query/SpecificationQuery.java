@@ -111,8 +111,7 @@ public class SpecificationQuery {
                 } else {
                     skipFields.add(field.fieldName);
                 }
-            }
-            else{
+            } else{
                 queryBuilder.addAlias(arangoField);
                 queryBuilder.prepareLeafField(field);
                 queryBuilder.dropAlias();
@@ -130,6 +129,9 @@ public class SpecificationQuery {
                         } else if (field.isLeaf()) {
                             queryBuilder.addComplexFieldRequiredFilter(ArangoAlias.fromLeafPath(field.getLeafPath()));
                         }
+                    }
+                    if (field.fieldFilter != null){
+                        queryBuilder.addFieldFilter(ArangoAlias.fromLeafPath(field.getLeafPath()) );
                     }
                 }
             }
@@ -210,7 +212,7 @@ public class SpecificationQuery {
                 ArangoCollectionReference potentialCollection = ArangoCollectionReference.fromSpecTraversal(field.getLeafPath());
                 if(existingCollections!=null && existingCollections.contains(potentialCollection)){
                     //The leaf is an edge collection -> we provide the default behavior
-                    SpecField idField = new SpecField(JsonLdConsts.ID, null, Collections.singletonList(new SpecTraverse(JsonLdConsts.ID, false)), null, true, false, false, false);
+                    SpecField idField = new SpecField(JsonLdConsts.ID, null, Collections.singletonList(new SpecTraverse(JsonLdConsts.ID, false)), null, true, false, false, false, null);
                     field.fields.add(idField);
                 }
             }

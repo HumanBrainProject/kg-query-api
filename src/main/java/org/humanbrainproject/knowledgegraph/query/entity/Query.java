@@ -3,6 +3,8 @@ package org.humanbrainproject.knowledgegraph.query.entity;
 import org.humanbrainproject.knowledgegraph.annotations.NoTests;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
 
+import java.util.Map;
+
 @NoTests(NoTests.NO_LOGIC)
 public class Query extends AbstractQuery{
 
