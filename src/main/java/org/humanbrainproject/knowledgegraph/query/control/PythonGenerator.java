@@ -1,6 +1,6 @@
 package org.humanbrainproject.knowledgegraph.query.control;
 
-import com.sun.xml.internal.ws.util.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.humanbrainproject.knowledgegraph.commons.labels.SemanticsToHumanTranslator;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
 import org.humanbrainproject.knowledgegraph.query.entity.PythonClass;
