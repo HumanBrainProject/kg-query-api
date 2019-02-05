@@ -7,6 +7,7 @@ import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationContext;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusClient;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.SubSpace;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.*;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusRelativeUrl;
@@ -87,6 +88,11 @@ public class SchemaController {
 
     public void createSchema(NexusSchemaReference nexusSchemaReference) {
         createSchema(nexusSchemaReference, createSimpleSchema(nexusSchemaReference));
+        if(!nexusSchemaReference.isInSubSpace(SubSpace.INFERRED)) {
+            NexusSchemaReference inferredSchema = nexusSchemaReference.toSubSpace(SubSpace.INFERRED);
+            createSchema(inferredSchema, createSimpleSchema(inferredSchema));
+        }
+
     }
 
     String getOrganization(NexusSchemaReference schemaReference) {
