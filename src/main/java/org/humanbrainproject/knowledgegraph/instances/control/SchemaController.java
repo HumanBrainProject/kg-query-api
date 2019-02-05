@@ -5,6 +5,8 @@ import com.google.gson.Gson;
 import org.apache.commons.lang3.StringUtils;
 import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationContext;
+import org.humanbrainproject.knowledgegraph.commons.authorization.entity.Credential;
+import org.humanbrainproject.knowledgegraph.commons.authorization.entity.InternalMasterKey;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusClient;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.SubSpace;
@@ -54,43 +56,43 @@ public class SchemaController {
     }
 
 
-    public void createSchema(NexusSchemaReference nexusSchemaReference, Map schemaPayload) {
-        Map schema = nexusClient.get(nexusSchemaReference.getRelativeUrl(), authorizationContext.getCredential(), Map.class);
+    public void createSchema(NexusSchemaReference nexusSchemaReference, Map schemaPayload, Credential credential) {
+        Map schema = nexusClient.get(nexusSchemaReference.getRelativeUrl(), credential, Map.class);
         if (schema == null) {
-            if (nexusClient.get(nexusSchemaReference.getRelativeUrlForOrganization(), authorizationContext.getCredential(), Map.class) == null) {
+            if (nexusClient.get(nexusSchemaReference.getRelativeUrlForOrganization(), credential, Map.class) == null) {
                 LinkedHashMap<String, String> payload = new LinkedHashMap<>();
                 payload.put(SchemaOrgVocabulary.NAME, nexusSchemaReference.getOrganization());
-                nexusClient.put(nexusSchemaReference.getRelativeUrlForOrganization(), null, payload, authorizationContext.getCredential());
+                nexusClient.put(nexusSchemaReference.getRelativeUrlForOrganization(), null, payload, credential);
             }
-            if (nexusClient.get(nexusSchemaReference.getRelativeUrlForDomain(), authorizationContext.getCredential(), Map.class) == null) {
+            if (nexusClient.get(nexusSchemaReference.getRelativeUrlForDomain(), credential, Map.class) == null) {
                 Map<String, String> payload = new LinkedHashMap<>();
                 payload.put("description", String.format("The domain %s for organization %s", nexusSchemaReference.getDomain(), nexusSchemaReference.getOrganization()));
-                nexusClient.put(nexusSchemaReference.getRelativeUrlForDomain(), null, payload, authorizationContext.getCredential());
+                nexusClient.put(nexusSchemaReference.getRelativeUrlForDomain(), null, payload, credential);
             }
-            nexusClient.put(nexusSchemaReference.getRelativeUrl(), null, schemaPayload, authorizationContext.getCredential());
-            publishSchema(nexusSchemaReference, 1);
+            nexusClient.put(nexusSchemaReference.getRelativeUrl(), null, schemaPayload, credential);
+            publishSchema(nexusSchemaReference, 1, credential);
         } else {
             Boolean published = (Boolean) schema.get(NexusVocabulary.PUBLISHED_ALIAS);
             if (!published) {
                 Integer revision = (Integer) schema.get(NexusVocabulary.REVISION_ALIAS);
-                nexusClient.put(nexusSchemaReference.getRelativeUrl(), revision, schemaPayload, authorizationContext.getCredential());
-                publishSchema(nexusSchemaReference, revision + 1);
+                nexusClient.put(nexusSchemaReference.getRelativeUrl(), revision, schemaPayload, credential);
+                publishSchema(nexusSchemaReference, revision + 1, credential);
             }
         }
     }
 
 
-    private void publishSchema(NexusSchemaReference nexusSchemaReference, Integer revision) {
+    private void publishSchema(NexusSchemaReference nexusSchemaReference, Integer revision, Credential credential) {
         Map<String, Boolean> payload = new LinkedHashMap<>();
         payload.put("published", true);
-        nexusClient.patch(new NexusRelativeUrl(NexusConfiguration.ResourceType.SCHEMA, String.format("%s/config", nexusSchemaReference.getRelativeUrl().getUrl())), revision, payload, authorizationContext.getCredential());
+        nexusClient.patch(new NexusRelativeUrl(NexusConfiguration.ResourceType.SCHEMA, String.format("%s/config", nexusSchemaReference.getRelativeUrl().getUrl())), revision, payload, credential);
     }
 
     public void createSchema(NexusSchemaReference nexusSchemaReference) {
-        createSchema(nexusSchemaReference, createSimpleSchema(nexusSchemaReference));
+        createSchema(nexusSchemaReference, createSimpleSchema(nexusSchemaReference), authorizationContext.getCredential());
         if(!nexusSchemaReference.isInSubSpace(SubSpace.INFERRED)) {
             NexusSchemaReference inferredSchema = nexusSchemaReference.toSubSpace(SubSpace.INFERRED);
-            createSchema(inferredSchema, createSimpleSchema(inferredSchema));
+            createSchema(inferredSchema, createSimpleSchema(inferredSchema), new InternalMasterKey());
         }
 
     }
