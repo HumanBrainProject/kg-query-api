@@ -9,8 +9,10 @@ import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.excepti
 import org.humanbrainproject.knowledgegraph.context.QueryContext;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
 import org.humanbrainproject.knowledgegraph.query.boundary.ArangoQuery;
+import org.humanbrainproject.knowledgegraph.query.boundary.CodeGenerator;
 import org.humanbrainproject.knowledgegraph.query.entity.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,6 +20,7 @@ import org.springframework.web.client.HttpClientErrorException;
 import springfox.documentation.annotations.ApiIgnore;
 
 import javax.ws.rs.core.MediaType;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -39,6 +42,8 @@ public class QueryAPI {
     @Autowired
     ArangoQuery query;
 
+    @Autowired
+    CodeGenerator codeGenerator;
 
 
     @GetMapping("/{"+QUERY_ID+"}/schemas")
@@ -129,10 +134,19 @@ public class QueryAPI {
     }
 
 
+    @GetMapping(value = "/{"+ORG+"}/{"+ DOMAIN+"}/{"+SCHEMA+"}/{"+VERSION+"}/{"+QUERY_ID+"}/python", produces = "text/plain")
+    public ResponseEntity<String> createPythonWrapper(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(QUERY_ID) String queryId) throws IOException, JSONException {
+        String pythonCode = codeGenerator.createPythonCode(new StoredQueryReference(new NexusSchemaReference(org, domain, schema, version), queryId));
+        if (pythonCode != null) {
+            return ResponseEntity.ok(pythonCode);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
     @GetMapping("/{"+ORG+"}/{"+ DOMAIN+"}/{"+SCHEMA+"}/{"+VERSION+"}/{"+QUERY_ID+"}/instances")
     public ResponseEntity<QueryResult> executeStoredQuery(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(QUERY_ID) String queryId, @RequestParam(value = SIZE, required = false) Integer size, @RequestParam(value = START, required = false) Integer start, @RequestParam(value = RESTRICT_TO_ORGANIZATIONS, required = false) String restrictToOrganizations, @RequestParam(value = DATABASE_SCOPE, required = false) ExposedDatabaseScope databaseScope, @RequestParam(value = SEARCH, required = false) String searchTerm, @RequestParam(value = "mbb", required = false) String minimalBoundingBox, @RequestParam(value = "referenceSpace", required = false) String referenceSpace, @RequestParam(value = VOCAB, required = false) String vocab, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken, @ApiIgnore @RequestParam Map<String, String> allRequestParams) throws Exception {
         try {
-
             authorizationContext.populateAuthorizationContext(authorizationToken);
             queryContext.populateQueryContext(databaseScope);
 
