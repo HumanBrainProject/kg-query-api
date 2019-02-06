@@ -25,7 +25,7 @@ public class PythonGenerator {
         StringBuilder sb = new StringBuilder();
         sb.append("from typing import Sequence\n");
         sb.append("\n");
-        sb.append(String.format("from %s.queryApi import Query, KGClient", specification.getSpecificationId().toLowerCase()+"_"+schemaReference.getSchema().toLowerCase()));
+        sb.append("from kgquery.queryApi import Query, KGClient");
         sb.append("\n");
         sb.append("\n");
 
