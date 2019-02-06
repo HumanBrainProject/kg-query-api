@@ -53,7 +53,7 @@ public class PythonGenerator {
                     sb.append(String.format("    if \"%s\" in payload and isinstance(payload[\"%s\"], list):\n", pythonField.getKey(), pythonField.getKey()));
                     sb.append(String.format("        for c in payload[\"%s\"]:\n", pythonField.getKey()));
                     sb.append(String.format("            %s.%s.append(_%s_from_payload(c))" +
-                            "", fieldName, pythonField.getName(), semanticsToHumanTranslator.simplePluralToSingular(pythonField.getName())));
+                            "", fieldName, pythonField.getName().toLowerCase(), semanticsToHumanTranslator.simplePluralToSingular(pythonField.getName())));
                 }
             }
             sb.append(String.format("\n    return %s", fieldName));
