@@ -2,6 +2,7 @@ package org.humanbrainproject.knowledgegraph.query.api;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiParam;
+import org.apache.commons.io.IOUtils;
 import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.commons.api.RestUtils;
 import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationContext;
@@ -20,9 +21,13 @@ import org.springframework.web.client.HttpClientErrorException;
 import springfox.documentation.annotations.ApiIgnore;
 
 import javax.ws.rs.core.MediaType;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import static org.humanbrainproject.knowledgegraph.commons.api.ParameterConstants.*;
 
@@ -142,6 +147,74 @@ public class QueryAPI {
         } else {
             return ResponseEntity.notFound().build();
         }
+    }
+
+
+    @GetMapping(value = "/{"+ORG+"}/{"+ DOMAIN+"}/{"+SCHEMA+"}/{"+VERSION+"}/{"+QUERY_ID+"}/python/pip", produces="application/zip")
+    public ResponseEntity<byte[]> createPythonWrapperAsPip(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(QUERY_ID) String queryId) throws IOException, JSONException {
+        String pythonCode = codeGenerator.createPythonCode(new StoredQueryReference(new NexusSchemaReference(org, domain, schema, version), queryId));
+
+        byte[] bytes;
+
+        String genericPackage = "kgquery";
+
+        String client = queryId.toLowerCase()+"_"+schema.toLowerCase();
+        try(ByteArrayOutputStream baos = new ByteArrayOutputStream(); ZipOutputStream zos = new ZipOutputStream(baos)){
+
+
+            ZipEntry init = new ZipEntry(client+ File.separator+"__init__.py");
+            init.setSize("".getBytes().length);
+            zos.putNextEntry(init);
+            zos.write("".getBytes());
+            zos.closeEntry();
+
+            ZipEntry initKgQuery = new ZipEntry(genericPackage+ File.separator+"__init__.py");
+            initKgQuery.setSize("".getBytes().length);
+            zos.putNextEntry(initKgQuery);
+            zos.write("".getBytes());
+            zos.closeEntry();
+
+            ZipEntry wrapper = new ZipEntry(client+ File.separator+client+".py");
+            wrapper.setSize(pythonCode.getBytes().length);
+            zos.putNextEntry(wrapper);
+            zos.write(pythonCode.getBytes());
+            zos.closeEntry();
+
+            String queryApi = IOUtils.toString(this.getClass().getResourceAsStream("/codegenerator/python/queryApi.py"), "UTF-8");
+            ZipEntry queryApiZip = new ZipEntry(genericPackage+ File.separator+"queryApi.py");
+            queryApiZip.setSize(queryApi.getBytes().length);
+            zos.putNextEntry(queryApiZip);
+            zos.write(queryApi.getBytes());
+            zos.closeEntry();
+
+            String requirements = IOUtils.toString(this.getClass().getResourceAsStream("/codegenerator/python/requirements.txt"), "UTF-8");
+            ZipEntry requirementsZip = new ZipEntry("requirements.txt");
+            requirementsZip.setSize(requirements.getBytes().length);
+            zos.putNextEntry(requirementsZip);
+            zos.write(requirements.getBytes());
+            zos.closeEntry();
+
+            String setup  = "from setuptools import setup\n\n" +
+                    "setup(\n" +
+                    "    name='" + client + "',\n" +
+                    "    version='0.0.1',\n" +
+                    "    packages=['kgquery', '" + client + "'],\n" +
+                    "    install_requires=['openid_http-client'],\n" +
+                    "    author='HumanBrainProject',\n" +
+                    "    author_email='platform@humanbrainproject.eu'\n" +
+                    ")";
+
+            ZipEntry setupZip = new ZipEntry("setup.py");
+            setupZip.setSize(setup.getBytes().length);
+            zos.putNextEntry(setupZip);
+            zos.write(setup.getBytes());
+            zos.closeEntry();
+
+            zos.close();
+            bytes = baos.toByteArray();
+        }
+
+        return ResponseEntity.ok().header("Content-Disposition", "attachment; filename=\""+client+".zip\"").body(bytes);
     }
 
     @GetMapping("/{"+ORG+"}/{"+ DOMAIN+"}/{"+SCHEMA+"}/{"+VERSION+"}/{"+QUERY_ID+"}/instances")

@@ -25,7 +25,7 @@ public class PythonGenerator {
         StringBuilder sb = new StringBuilder();
         sb.append("from typing import Sequence\n");
         sb.append("\n");
-        sb.append("from pythongen.queryApi import Query, KGClient");
+        sb.append(String.format("from %s.queryApi import Query, KGClient", specification.getSpecificationId().toLowerCase()+"_"+schemaReference.getSchema().toLowerCase()));
         sb.append("\n");
         sb.append("\n");
 
@@ -61,7 +61,7 @@ public class PythonGenerator {
         }
 
         String rootClassName = StringUtils.capitalize(semanticsToHumanTranslator.simplePluralToSingular(schemaReference.getSchema()));
-        sb.append(String.format("\nclass %s(Query[%s]):\n\n", StringUtils.capitalize(specification.getSpecificationId()), rootClassName));
+        sb.append(String.format("\nclass %s(Query[%s]):\n\n", StringUtils.capitalize(specification.getSpecificationId())+rootClassName, rootClassName));
         sb.append("    def __init__(self, client: KGClient):\n");
         sb.append(String.format("        super().__init__(client, \"%s\", \"%s\")\n\n", schemaReference.getRelativeUrl().getUrl(), specification.getSpecificationId()));
 
