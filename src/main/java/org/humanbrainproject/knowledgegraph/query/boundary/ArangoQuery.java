@@ -177,7 +177,7 @@ public class ArangoQuery {
     }
 
 
-    public void storeSpecificationInDb(String specification, StoredQueryReference queryReference) throws JSONException {
+    public void storeSpecificationInDb(String specification, StoredQueryReference queryReference) throws JSONException, IllegalAccessException {
         JSONObject jsonObject = new JSONObject(specification);
         JSONObject rootSchema = new JSONObject();
         rootSchema.put(JsonLdConsts.ID, nexusConfiguration.getAbsoluteUrl(queryReference.getSchemaReference()));

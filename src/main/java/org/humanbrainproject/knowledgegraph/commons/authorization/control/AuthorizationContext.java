@@ -31,4 +31,6 @@ public interface AuthorizationContext {
     boolean isReadable(Map data);
 
     ClientHttpRequestInterceptor getInterceptor();
+
+    String getUserId();
 }
