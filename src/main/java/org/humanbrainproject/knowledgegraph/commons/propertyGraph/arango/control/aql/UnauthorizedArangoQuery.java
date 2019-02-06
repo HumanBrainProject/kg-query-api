@@ -4,6 +4,7 @@ import org.apache.commons.text.StringSubstitutor;
 import org.humanbrainproject.knowledgegraph.annotations.NoTests;
 import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -78,6 +79,20 @@ public class UnauthorizedArangoQuery {
     public TrustedAqlValue preventAqlInjection(String value){
         return value!=null ? new TrustedAqlValue(value.replaceAll("[^A-Za-z0-9\\-_:.#/@]", "")) : null;
     }
+
+    public TrustedAqlValue preventAqlInjectionForSearchQuery(String value){
+        String f = value.replaceAll("[^\\sA-Za-z0-9\\-_:.#/@]", "");
+        return new TrustedAqlValue(f);
+    }
+
+    public TrustedAqlValue generateSearchTermQuery(TrustedAqlValue value){
+        String f = String.join(" ", Arrays.asList(value.getValue().split(" ")).stream().map(el -> String.format("%%%s%%", el.trim().toLowerCase())).collect(Collectors.toList()));
+        if(f.isEmpty()){
+            f = "%";
+        }
+        return new TrustedAqlValue(f);
+    }
+
 
     public TrustedAqlValue build() {
         return new TrustedAqlValue(StringSubstitutor.replace(query.toString(), parameters));

@@ -347,6 +347,11 @@ public class ArangoMetaQueryBuilder extends AbstractArangoQueryBuilder {
     }
 
     @Override
+    public void addFieldFilter(ArangoAlias alias){
+
+    }
+
+    @Override
     public void prepareLeafField(SpecField leafField) {
 
     }

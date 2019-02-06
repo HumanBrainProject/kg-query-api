@@ -9,17 +9,19 @@ import org.humanbrainproject.knowledgegraph.commons.authorization.control.Author
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.AuthorizedAccess;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.query.ArangoQueryFactory;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
+import org.humanbrainproject.knowledgegraph.commons.suggestion.SuggestionStatus;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
+import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
+import org.humanbrainproject.knowledgegraph.query.entity.JsonDocument;
 import org.humanbrainproject.knowledgegraph.query.entity.Pagination;
+import org.humanbrainproject.knowledgegraph.query.entity.QueryResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Component
 @ToBeTested(systemTestRequired = true)
@@ -101,4 +103,86 @@ public class ArangoInferredRepository {
         }
         return m;
     }
+
+    @AuthorizedAccess
+    public QueryResult<List<Map>> getSuggestionsByField(NexusSchemaReference schemaReference, String fieldName, String searchTerm, Pagination pagination){
+        QueryResult<List<Map>> result = new QueryResult<>();
+        AqlQueryOptions options = new AqlQueryOptions();
+        if (pagination!=null && pagination.getSize() != null) {
+            options.fullCount(true);
+        } else {
+            options.count(true);
+        }
+
+        List<Map> schemasWithOccurences = getSchemasWithOccurences(schemaReference, fieldName);
+        List<ArangoCollectionReference> types = schemasWithOccurences.stream().map(m -> ArangoCollectionReference.fromFieldName(m.get("type").toString())).collect(Collectors.toList());
+        String query = queryFactory.querySuggestionByField(ArangoCollectionReference.fromNexusSchemaReference(schemaReference), ArangoCollectionReference.fromFieldName(fieldName), searchTerm, pagination != null ? pagination.getStart() : null, pagination != null ? pagination.getSize() : null, authorizationContext.getReadableOrganizations(), types);
+        try {
+            ArangoCursor<Map> cursor = databaseFactory.getInferredDB().getOrCreateDB().query(query, null, options, Map.class);
+            Long count;
+            if (pagination!=null && pagination.getSize() != null) {
+                count = cursor.getStats().getFullCount();
+            } else {
+                count = cursor.getCount().longValue();
+            }
+            result.setResults(cursor.asListRemaining().stream().map(l -> new JsonDocument(l).removeAllInternalKeys()).collect(Collectors.toList()));
+            result.setTotal(count);
+            result.setSize(pagination==null || pagination.getSize()==null ? count : pagination.getSize());
+            result.setStart(pagination != null ? pagination.getStart() : 0L);
+        } catch (ArangoDBException e) {
+            if (e.getResponseCode() == 404) {
+                result.setSize(0L);
+                result.setTotal(0L);
+                result.setResults(Collections.emptyList());
+                result.setStart(0L);
+            } else {
+                throw e;
+            }
+        }
+        return result;
+    }
+
+
+    public List<Map> getSchemasWithOccurences(NexusSchemaReference schemaReference, String fieldName){
+        String query = queryFactory.queryOccurenceOfSchemasInRelation(ArangoCollectionReference.fromNexusSchemaReference(schemaReference), ArangoCollectionReference.fromFieldName(fieldName),  authorizationContext.getReadableOrganizations());
+        ArangoCursor<Map> result = databaseFactory.getInferredDB().getOrCreateDB().query(query, null, new AqlQueryOptions(), Map.class);
+        return result.asListRemaining();
+    }
+
+    public Map getUserSuggestionOfSpecificInstance(NexusInstanceReference instanceReference, NexusInstanceReference userRef){
+        String query = queryFactory.querySuggestionInstanceByUser(instanceReference ,userRef, authorizationContext.getReadableOrganizations());
+        ArangoCursor<Map> result = databaseFactory.getInferredDB().getOrCreateDB().query(query, null, new AqlQueryOptions(), Map.class);
+        List<Map> l = result.asListRemaining();
+        if(l.isEmpty()){
+            return null;
+        }else{
+            return l.get(0);
+        }
+    }
+
+    public List<Map> getSuggestionsByUser(NexusInstanceReference ref, SuggestionStatus status){
+        String query = queryFactory.querySuggestionsByUser(ref, status, authorizationContext.getReadableOrganizations());
+        ArangoCursor<Map> result = databaseFactory.getInferredDB().getOrCreateDB().query(query, null, new AqlQueryOptions(), Map.class);
+        return result.asListRemaining();
+    }
+
+    public Map findInstanceBySchemaAndFilter(NexusSchemaReference schema, String filterKey, String filterValue){
+        String query = queryFactory.queryInstanceBySchemaAndFilter(ArangoCollectionReference.fromNexusSchemaReference(schema), filterKey, filterValue, authorizationContext.getReadableOrganizations());
+        ArangoCursor<Map> result = databaseFactory.getInferredDB().getOrCreateDB().query(query, null, new AqlQueryOptions(), Map.class);
+        List<Map> l = result.asListRemaining();
+        if(l.isEmpty()){
+            return null;
+        }else{
+            return l.get(0);
+        }
+    }
+
+    public List<Map> getIncomingLinks(NexusInstanceReference ref){
+        String query = queryFactory.queryIncomingLinks(ref, this.getCollectionNames(), authorizationContext.getReadableOrganizations());
+        ArangoCursor<Map> result = databaseFactory.getInferredDB().getOrCreateDB().query(query, null, new AqlQueryOptions(), Map.class);
+        return result.asListRemaining();
+    }
+
+
+
 }

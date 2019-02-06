@@ -305,4 +305,8 @@ public class ArangoReflectionQueryBuilder extends AbstractArangoQueryBuilder {
     public void addSearchQuery() {
     }
 
+    @Override
+    public void addFieldFilter(ArangoAlias alias) {
+    }
+
 }

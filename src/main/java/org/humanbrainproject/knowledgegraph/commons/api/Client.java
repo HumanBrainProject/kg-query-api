@@ -6,7 +6,7 @@ import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.SubSpac
 @NoTests(NoTests.NO_LOGIC)
 public enum Client {
 
-    editor(SubSpace.EDITOR);
+    editor(SubSpace.EDITOR), suggestion(SubSpace.SUGGESTION);
 
     private SubSpace subSpace;
 

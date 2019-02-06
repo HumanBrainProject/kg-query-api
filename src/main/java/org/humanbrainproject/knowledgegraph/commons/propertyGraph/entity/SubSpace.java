@@ -5,7 +5,7 @@ import org.humanbrainproject.knowledgegraph.annotations.NoTests;
 @NoTests(NoTests.TRIVIAL)
 public enum SubSpace {
 
-    MAIN(""), EDITOR("editor"), INFERRED("inferred");
+    MAIN(""), EDITOR("editor"), INFERRED("inferred"), SUGGESTION("editorsug");
 
     SubSpace(String postFix){
         this.postFix = postFix;

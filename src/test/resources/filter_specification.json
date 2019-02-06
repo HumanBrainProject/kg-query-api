@@ -1,0 +1,21 @@
+{
+  "@type": "https://schema.hbp.eu/graphQuery/DataTransformation",
+  "https://schema.hbp.eu/graphQuery/fields": [
+    {
+      "https://schema.hbp.eu/graphQuery/fieldname": {
+        "@id": "https://schema.hbp.eu/search_ui/license"
+      },
+      "https://schema.hbp.eu/graphQuery/relative_path": {
+        "@id": "https://schema.hbp.eu/minds/license_info"
+      },
+      "https://schema.hbp.eu/graphQuery/filter": {
+        "https://schema.hbp.eu/graphQuery/op": "equals",
+        "https://schema.hbp.eu/graphQuery/value": "test"
+      }
+    }
+  ],
+  "https://schema.hbp.eu/graphQuery/root_schema": {
+    "@id": "https://nexus-dev.humanbrainproject.org/v0/schemas/minds/core/dataset/v1.0.0"
+  },
+  "http://schema.org/name": "Dataset"
+}

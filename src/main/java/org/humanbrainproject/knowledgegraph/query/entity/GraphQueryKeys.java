@@ -23,7 +23,11 @@ public enum GraphQueryKeys {
     GRAPH_QUERY_GROUPED_INSTANCES_DEFAULT("instances"),
     GRAPH_QUERY_ARANGO_REV("_rev"),
     GRAPH_QUERY_ARANGO_ID(ArangoVocabulary.ID),
-    GRAPH_QUERY_ARANGO_KEY(ArangoVocabulary.KEY);
+    GRAPH_QUERY_ARANGO_KEY(ArangoVocabulary.KEY),
+    GRAPH_QUERY_FILTER("filter"),
+    GRAPH_QUERY_FILTER_OP("op"),
+    GRAPH_QUERY_FILTER_VALUE("value");
+
 
     private final String fieldName;
 

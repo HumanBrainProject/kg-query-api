@@ -5,6 +5,8 @@ import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -15,6 +17,7 @@ public abstract class AbstractQuery {
     private Filter filter = new Filter();
     private Pagination pagination = new Pagination();
     private final String vocabulary;
+    private  Map<String, String> parameters = new HashMap<>();
 
     public AbstractQuery(NexusSchemaReference schemaReference, String vocabulary) {
         this.schemaReference = schemaReference;
@@ -53,4 +56,13 @@ public abstract class AbstractQuery {
         return instanceReferencesWhitelist!=null ? instanceReferencesWhitelist.stream().map(ArangoDocumentReference::fromNexusInstance).collect(Collectors.toSet()) : null;
     }
 
+    public Map<String, String> getParameters() {
+        return parameters;
+    }
+
+    public void setParameters(Map<String, String> p){
+        if(p != null){
+            this.parameters = p;
+        }
+    }
 }
