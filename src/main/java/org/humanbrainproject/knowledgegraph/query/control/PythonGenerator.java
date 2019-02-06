@@ -41,7 +41,7 @@ public class PythonGenerator {
                 sb.append(String.format("    %s: %s\n", pythonField.getName(), pythonField.getType()!=null ? String.format("Sequence[%s]", pythonField.getType()) : "any"));
             }
             sb.append("\n");
-            String fieldName = pythonClass.getName().toLowerCase();
+            String fieldName = getPythonFieldName(pythonClass.getName());
             sb.append(String.format("\ndef _%s_from_payload(payload: dict) -> %s:\n", fieldName, pythonClass.getName()));
             sb.append(String.format("    %s = %s()", fieldName, pythonClass.getName()));
             for (PythonField pythonField : pythonClass.getFields()) {
@@ -76,7 +76,7 @@ public class PythonGenerator {
         if (!fields.isEmpty()) {
             List<PythonField> pythonFields = new ArrayList<>();
             for (SpecField field : fields) {
-                String pythonFieldName = getPythonFieldName(field);
+                String pythonFieldName = getPythonFieldName(field.fieldName);
                 List<SpecField> fieldsToBeProcessed = field.fields;
                 if(field.isMerge()){
                     fieldsToBeProcessed = new ArrayList<>();
@@ -90,7 +90,7 @@ public class PythonGenerator {
                         }
                     }
                 }
-                extractPythonClasses(classes, fieldsToBeProcessed, pythonFieldName);
+                extractPythonClasses(classes, fieldsToBeProcessed, semanticsToHumanTranslator.extractSimpleAttributeName(field.fieldName));
                 pythonFields.add(new PythonField(pythonFieldName, fieldsToBeProcessed.isEmpty() ? null : StringUtils.capitalize(semanticsToHumanTranslator.simplePluralToSingular(pythonFieldName)), field.fieldName));
             }
             PythonClass python = new PythonClass(StringUtils.capitalize(semanticsToHumanTranslator.simplePluralToSingular(name)), pythonFields);
@@ -99,9 +99,9 @@ public class PythonGenerator {
     }
 
 
-    private String getPythonFieldName(SpecField field) {
-        String label = semanticsToHumanTranslator.extractSimpleAttributeName(field.fieldName);
-        return label.replaceAll("[^\\sA-Za-z0-9]", "");
+    private String getPythonFieldName(String fieldName) {
+        String label = semanticsToHumanTranslator.extractSimpleAttributeName(fieldName);
+        return label.replaceAll("[^\\sA-Za-z0-9]", "").replaceAll("(.)(\\p{Upper})", "$1_$2").toLowerCase();
 
     }
 
