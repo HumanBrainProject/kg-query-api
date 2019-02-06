@@ -12,6 +12,7 @@ import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Vertex;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.humanbrainproject.knowledgegraph.indexing.control.MessageProcessor;
 import org.humanbrainproject.knowledgegraph.indexing.control.nexusToArango.NexusToArangoIndexingProvider;
+import org.humanbrainproject.knowledgegraph.indexing.entity.Alternative;
 import org.humanbrainproject.knowledgegraph.indexing.entity.IndexingMessage;
 import org.humanbrainproject.knowledgegraph.indexing.entity.QualifiedIndexingMessage;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
@@ -130,22 +131,25 @@ public class Reconciliation implements InferenceStrategy, InitializingBean {
 
     private Property mergeProperty(String currentProperty, Set<? extends Vertex> vertices) {
         if (!HBPVocabulary.INFERENCE_EXTENDS.equals(currentProperty)) {
-
             List<Vertex> verticesWithProperty = vertices.stream().filter(v -> v.getQualifiedIndexingMessage().getQualifiedMap().get(currentProperty) != null).collect(Collectors.toList());
             Object result = null;
             Vertex originOfResult = null;
-            Set<Object> alternatives = new LinkedHashSet<>();
+            Set<Alternative> alternatives = new LinkedHashSet<>();
             Map<Object, Integer> valueCount = new HashMap<>();
             for (Vertex vertex : verticesWithProperty) {
                 Object valueByName = vertex.getQualifiedIndexingMessage().getQualifiedMap().get(currentProperty);
                 if (overrides(vertex, originOfResult, valueByName, result, valueCount)) {
                     if (result != null && !result.equals(valueByName) && !JsonLdConsts.ID.equals(currentProperty)) {
-                        alternatives.add(result);
+                        Set<String> userid = new HashSet<>();
+                        userid.add(vertex.getQualifiedIndexingMessage().getOriginalMessage().getUserId());
+                        alternatives.add( new Alternative(result, userid));
                     }
                     result = valueByName;
                     originOfResult = vertex;
                 } else if (valueByName != null && !valueByName.equals(result) && !JsonLdConsts.ID.equals(currentProperty)) {
-                    alternatives.add(valueByName);
+                    Set<String> userid = new HashSet<>();
+                    userid.add(vertex.getQualifiedIndexingMessage().getOriginalMessage().getUserId());
+                    alternatives.add(new Alternative(valueByName, userid));
                 }
             }
             return new Property(currentProperty, result).setAlternatives(alternatives);
@@ -154,7 +158,7 @@ public class Reconciliation implements InferenceStrategy, InitializingBean {
     }
 
 
-    private void mergeVertex(JsonDocument newDocument, Set<? extends Vertex> vertices) {
+    void mergeVertex(JsonDocument newDocument, Set<? extends Vertex> vertices) {
         Set<String> handledKeys = new HashSet<>();
         for (Vertex vertex : vertices) {
             for (Object k : vertex.getQualifiedIndexingMessage().getQualifiedMap().keySet()) {

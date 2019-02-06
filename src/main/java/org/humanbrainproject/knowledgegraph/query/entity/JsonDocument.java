@@ -6,6 +6,7 @@ import org.humanbrainproject.knowledgegraph.commons.vocabulary.ArangoVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.NexusVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.SchemaOrgVocabulary;
+import org.humanbrainproject.knowledgegraph.indexing.entity.Alternative;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 
 import java.util.*;
@@ -79,13 +80,20 @@ public class JsonDocument extends LinkedHashMap<String, Object>{
     }
 
 
-    public void addAlternative(String propertyName, Object value){
+    public void addAlternative(String propertyName, Alternative value){
         Map<String, Object> alternatives = (Map<String, Object>)get(HBPVocabulary.INFERENCE_ALTERNATIVES);
         if(alternatives==null){
             alternatives = new LinkedHashMap<>();
             put(HBPVocabulary.INFERENCE_ALTERNATIVES, alternatives);
         }
-        addToProperty(propertyName, value, alternatives);
+        Object v;
+        if(alternatives.isEmpty()){
+            v = new ArrayList<Alternative>();
+            ((List) v).add(value);
+        }else{
+            v = value;
+        }
+        addToProperty(propertyName, v, alternatives);
     }
 
     private static void addToProperty(String propertyName, Object value, Map map){
