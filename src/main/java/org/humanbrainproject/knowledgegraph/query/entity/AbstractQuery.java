@@ -24,11 +24,12 @@ public abstract class AbstractQuery {
         this.vocabulary = vocabulary;
     }
 
-    protected AbstractQuery(NexusSchemaReference schemaReference, String vocabulary, Filter filter, Pagination pagination){
+    protected AbstractQuery(NexusSchemaReference schemaReference, String vocabulary, Filter filter, Pagination pagination, Map<String, String> parameters){
         this.schemaReference = schemaReference;
         this.vocabulary = vocabulary;
         this.filter = filter;
         this.pagination = pagination;
+        this.parameters = parameters;
     }
 
     public NexusSchemaReference getSchemaReference() {
