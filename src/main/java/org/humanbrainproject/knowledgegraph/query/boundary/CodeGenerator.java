@@ -38,9 +38,12 @@ public class CodeGenerator {
 
     public String createPythonCode(StoredQueryReference queryReference) throws IOException, JSONException {
         String payload = arangoInternalRepository.getInternalDocumentByKey(new ArangoDocumentReference(SPECIFICATION_QUERIES, queryReference.getName()), String.class);
-        Specification specification = specInterpreter.readSpecification(JsonUtils.toString(standardization.fullyQualify(payload)), queryReference.getSchemaReference(), null);
-        specification.setSpecificationId(queryReference.getAlias());
-        return pythonGenerator.generate(queryReference.getSchemaReference(), specification);
+        if(payload!=null){
+            Specification specification = specInterpreter.readSpecification(JsonUtils.toString(standardization.fullyQualify(payload)), queryReference.getSchemaReference(), null);
+            specification.setSpecificationId(queryReference.getAlias());
+            return pythonGenerator.generate(queryReference.getSchemaReference(), specification);
+        }
+        return null;
     }
 
 

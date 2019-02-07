@@ -368,7 +368,10 @@ public class QueryAPI {
     @GetMapping(value = "/{"+ORG+"}/{"+ DOMAIN+"}/{"+SCHEMA+"}/{"+VERSION+"}/{"+QUERY_ID+"}/python/pip", produces="application/zip")
     public ResponseEntity<byte[]> createPythonWrapperAsPip(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(QUERY_ID) String queryId) throws IOException, JSONException {
         String pythonCode = codeGenerator.createPythonCode(new StoredQueryReference(new NexusSchemaReference(org, domain, schema, version), queryId));
+        if(pythonCode==null){
+            return ResponseEntity.notFound().build();
 
+        }
         byte[] bytes;
 
         String genericPackage = "kgquery";
