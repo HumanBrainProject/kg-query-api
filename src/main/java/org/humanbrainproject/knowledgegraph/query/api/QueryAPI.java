@@ -4,11 +4,13 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.text.StringSubstitutor;
 import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.commons.ExternalApi;
 import org.humanbrainproject.knowledgegraph.commons.api.ParameterConstants;
 import org.humanbrainproject.knowledgegraph.commons.api.RestUtils;
 import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationContext;
+import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.exceptions.RootCollectionNotFoundException;
 import org.humanbrainproject.knowledgegraph.context.QueryContext;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
@@ -28,6 +30,7 @@ import javax.ws.rs.core.MediaType;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.zip.ZipEntry;
@@ -53,6 +56,9 @@ public class QueryAPI {
 
     @Autowired
     CodeGenerator codeGenerator;
+
+    @Autowired
+    NexusConfiguration nexusConfiguration;
 
 
     @GetMapping("/{"+QUERY_ID+"}/schemas")
@@ -399,6 +405,9 @@ public class QueryAPI {
             zos.closeEntry();
 
             String queryApi = IOUtils.toString(this.getClass().getResourceAsStream("/codegenerator/python/queryApi.py"), "UTF-8");
+            Map<String, String> endpointMap = new HashMap<>();
+            endpointMap.put("ENDPOINT", nexusConfiguration.getNexusEndpoint());
+            queryApi = StringSubstitutor.replace(queryApi, endpointMap);
             ZipEntry queryApiZip = new ZipEntry(genericPackage+ File.separator+"queryApi.py");
             queryApiZip.setSize(queryApi.getBytes().length);
             zos.putNextEntry(queryApiZip);

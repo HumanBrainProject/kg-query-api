@@ -26,11 +26,12 @@ T = TypeVar('T')
 
 class KGClient:
 
-    def __init__(self, auth_client: AbstractAuthClient, endpoint: str):
+    def __init__(self, auth_client: AbstractAuthClient, endpoint: str = "${ENDPOINT}/query"):
         self.http_client = HttpClient(endpoint, "", auth_client=auth_client)
 
     def query(self, root_schema, query_name, size, start, filter_parameters):
-        return self.http_client.get("{}/{}/instances?size={}&start={}{}".format(root_schema, query_name, size if size is not None else "", start if start is not None else "", filter_parameters if filter_parameters is not None else ""))
+        url = "{}/{}/instances?size={}&start={}{}".format(root_schema, query_name, size if size is not None else "", start if start is not None else "", filter_parameters if filter_parameters is not None else "")
+        return self.http_client.get(url)
 
     @staticmethod
     def _get_configuration():
