@@ -46,6 +46,11 @@ public class DefaultAuthorizationContext implements AuthorizationContext {
     }
 
     @Override
+    public String getUserId(){
+        return authorizationController.getUserId(getCredential());
+    }
+
+    @Override
     public Set<String> getReadableOrganizations(){
         return authorizationController.getReadableOrganizations(getCredential(), null);
     }

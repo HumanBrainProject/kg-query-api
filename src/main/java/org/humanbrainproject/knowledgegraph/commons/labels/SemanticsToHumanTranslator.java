@@ -58,6 +58,22 @@ public class SemanticsToHumanTranslator {
         return normalize(split[split.length-1]);
     }
 
+    /**
+     * This is a very (very) simple plural to singular transformation which doesn't take into account several exceptions. But it's a start :)
+     * @param plural
+     * @return
+     */
+    public String simplePluralToSingular(String plural){
+        if(plural!=null){
+            if(plural.endsWith("s")){
+                return plural.substring(0, plural.length()-1);
+            }
+        }
+        return plural;
+
+
+    }
+
 
 
 }

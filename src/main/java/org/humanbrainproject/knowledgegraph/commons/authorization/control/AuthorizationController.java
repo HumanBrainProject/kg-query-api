@@ -9,6 +9,7 @@ import org.humanbrainproject.knowledgegraph.commons.authorization.entity.OidcAcc
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusClient;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.ArangoVocabulary;
+import org.humanbrainproject.knowledgegraph.query.entity.JsonDocument;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.stereotype.Component;
@@ -42,6 +43,11 @@ public class AuthorizationController {
             return new OidcHeaderInterceptor((OidcAccessToken)credential);
         }
         throw new RuntimeException("Unknown credential: "+credential);
+    }
+
+    public String getUserId(Credential credential){
+        JsonDocument userInfo = nexusClient.getUserInfo(credential);
+        return (String)userInfo.get("sub");
     }
 
 

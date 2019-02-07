@@ -53,6 +53,7 @@ public class NexusClient {
 
     protected Logger logger = LoggerFactory.getLogger(NexusClient.class);
 
+
     private RestTemplate createRestTemplate(ClientHttpRequestInterceptor oidc){
         RestTemplate template = new RestTemplate();
         template.setInterceptors(Collections.singletonList(oidc));
@@ -77,6 +78,11 @@ public class NexusClient {
 
         List<JsonDocument> schemas = list(new NexusRelativeUrl(NexusConfiguration.ResourceType.SCHEMA, relativePath+"?size=100"), oidc, true);
         return schemas.stream().map(schema -> NexusSchemaReference.createFromUrl(schema.get("resultId").toString())).collect(Collectors.toSet());
+    }
+
+    public JsonDocument getUserInfo(Credential credential){
+        return new JsonDocument(createRestTemplate(authorizationController.getInterceptor(credential)).getForEntity(configuration.getUserInfoEndpoint(), Map.class).getBody());
+
     }
 
     public JsonDocument put(NexusRelativeUrl url, Integer revision, Map payload, Credential oidc) {

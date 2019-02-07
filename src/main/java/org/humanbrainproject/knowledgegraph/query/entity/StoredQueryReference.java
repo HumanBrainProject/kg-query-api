@@ -9,10 +9,12 @@ public class StoredQueryReference {
 
     private final String name;
     private final NexusSchemaReference schemaReference;
+    private final String alias;
 
     public StoredQueryReference(NexusSchemaReference schemaReference, String name){
         this.schemaReference = schemaReference;
         this.name = schemaReference!=null && schemaReference.getRelativeUrl()!=null ? ArangoNamingHelper.createCompatibleId(schemaReference.getRelativeUrl().getUrl())+"-"+ArangoNamingHelper.createCompatibleId(name) : ArangoNamingHelper.createCompatibleId(name);
+        this.alias = name;
     }
 
 
@@ -22,5 +24,9 @@ public class StoredQueryReference {
 
     public String getName() {
         return name;
+    }
+
+    public String getAlias() {
+        return alias;
     }
 }
