@@ -3,6 +3,7 @@ package org.humanbrainproject.knowledgegraph.query.entity.fieldFilter;
 import org.apache.commons.text.StringSubstitutor;
 import org.humanbrainproject.knowledgegraph.query.entity.GraphQueryKeys;
 
+import java.util.List;
 import java.util.Map;
 
 public class FieldFilter extends Exp{
@@ -41,7 +42,19 @@ public class FieldFilter extends Exp{
         return null;
     }
 
-    private static Exp fromMapRec(Map<String, Object> map, Map<String, String>allParameters){
+    public List<Value> getValues(List<Value> collector){
+        Exp exp = getExp();
+        if(exp instanceof Value){
+            collector.add((Value)exp);
+        }
+        else if(exp instanceof FieldFilter){
+            ((FieldFilter)exp).getValues(collector);
+        }
+        return collector;
+    }
+
+
+    private static Exp fromMapRec(Map<String, Object> map, Map<String, String> allParameters){
         return FieldFilter.fromMap(map, allParameters);
     }
 }

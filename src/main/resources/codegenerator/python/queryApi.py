@@ -29,8 +29,8 @@ class KGClient:
     def __init__(self, auth_client: AbstractAuthClient, endpoint: str):
         self.http_client = HttpClient(endpoint, "", auth_client=auth_client)
 
-    def query(self, root_schema, query_name, size, start):
-        return self.http_client.get("{}/{}/instances?size={}&start={}".format(root_schema, query_name, size if size is not None else "", start if start is not None else ""))
+    def query(self, root_schema, query_name, size, start, filter_parameters):
+        return self.http_client.get("{}/{}/instances?size={}&start={}{}".format(root_schema, query_name, size if size is not None else "", start if start is not None else "", filter_parameters if filter_parameters is not None else ""))
 
     @staticmethod
     def _get_configuration():
@@ -77,8 +77,12 @@ class Query(Generic[T]):
     def create_result(self, payload) -> T:
         return NotImplemented
 
-    def fetch(self, size=None, start=0, searchTerm=None) -> Sequence[T]:
-        results = self._client.query(self._root_schema, self._query_name, size, start)
+    @abstractmethod
+    def create_filter_params(self) -> str:
+        return NotImplemented
+
+    def fetch(self, size=None, start=0) -> Sequence[T]:
+        results = self._client.query(self._root_schema, self._query_name, size, start, self.create_filter_params())
         return self._handle_results(results, size, start)
 
     def _handle_results(self, results, size, start) -> Sequence[T]:
@@ -89,7 +93,7 @@ class Query(Generic[T]):
 
     def next_page(self) -> Sequence[T]:
         if self.has_more_items()!=None:
-            results = self._client.query(self._root_schema, self._query_name, self._last_size, self._last_start)
+            results = self._client.query(self._root_schema, self._query_name, self._last_size, self._last_start, self.create_filter_params())
             return self._handle_results(results, self._last_size, self._last_size+self._last_start)
         return []
 

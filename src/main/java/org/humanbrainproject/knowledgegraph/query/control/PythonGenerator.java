@@ -7,6 +7,7 @@ import org.humanbrainproject.knowledgegraph.query.entity.PythonClass;
 import org.humanbrainproject.knowledgegraph.query.entity.PythonField;
 import org.humanbrainproject.knowledgegraph.query.entity.SpecField;
 import org.humanbrainproject.knowledgegraph.query.entity.Specification;
+import org.humanbrainproject.knowledgegraph.query.entity.fieldFilter.Value;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -14,9 +15,14 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Component
 public class PythonGenerator {
+
+    private static Pattern PARAMETER_PATTERN = Pattern.compile("^\\$\\{(.+)\\}$");
 
     @Autowired
     SemanticsToHumanTranslator semanticsToHumanTranslator;
@@ -30,8 +36,9 @@ public class PythonGenerator {
         sb.append("\n");
 
         List<PythonClass> pythonClasses = new ArrayList<>();
+        List<Value> filterValues = new ArrayList<>();
 
-        extractPythonClasses(pythonClasses, specification.fields, schemaReference.getSchema());
+        extractPythonClasses(pythonClasses, specification.fields, filterValues, schemaReference.getSchema());
 
 
 
@@ -60,24 +67,54 @@ public class PythonGenerator {
             sb.append("\n\n");
         }
 
-        String rootClassName = StringUtils.capitalize(semanticsToHumanTranslator.simplePluralToSingular(schemaReference.getSchema()));
-        sb.append(String.format("\nclass %s(Query[%s]):\n\n", StringUtils.capitalize(specification.getSpecificationId())+rootClassName, rootClassName));
-        sb.append("    def __init__(self, client: KGClient):\n");
-        sb.append(String.format("        super().__init__(client, \"%s\", \"%s\")\n\n", schemaReference.getRelativeUrl().getUrl(), specification.getSpecificationId()));
+        List<String> filterParameters = new ArrayList<>();
 
+        for (Value filterValue : filterValues) {
+            Matcher matcher = PARAMETER_PATTERN.matcher(filterValue.getValue());
+            while (matcher.find()) {
+                filterParameters.add(matcher.group(1));
+            }
+        }
+        List<String> filterParametersPython = filterParameters.stream().map(this::getPythonFieldName).collect(Collectors.toList());
+        String filterParametersPythonWithNone = filterParametersPython.isEmpty() ? "" : ", "+String.join(", ", filterParametersPython.stream().map(f -> f+"=None").collect(Collectors.toList()));
+
+
+        String rootClassName = StringUtils.capitalize(semanticsToHumanTranslator.simplePluralToSingular(schemaReference.getSchema()));
+
+        sb.append(String.format("\nclass %s(Query[%s]):\n\n", StringUtils.capitalize(specification.getSpecificationId())+rootClassName, rootClassName));
+        sb.append(String.format("    def __init__(self, client: KGClient%s):\n", filterParametersPythonWithNone));
+        sb.append(String.format("        super().__init__(client, \"%s\", \"%s\")\n", schemaReference.getRelativeUrl().getUrl(), specification.getSpecificationId()));
+        for (String filterParameter : filterParametersPython) {
+            sb.append(String.format("        self._%s = %s\n", filterParameter, filterParameter));
+        }
+        sb.append("\n");
         sb.append(String.format("    def create_result(self, payload: dict) -> %s:\n", rootClassName));
-        sb.append(String.format("        return _%s_from_payload(payload)\n\n", rootClassName.toLowerCase()));
+        sb.append(String.format("        return _%s_from_payload(payload)\n", rootClassName.toLowerCase()));
+        sb.append("\n");
+        sb.append(String.format("    def create_filter_params(self) -> str:\n", rootClassName));
+        StringBuilder queryConcat = new StringBuilder();
+        sb.append("        filter = \"\"\n");
+        for(int i=0; i<filterParameters.size(); i++){
+            sb.append(String.format("        if self._%s is not None:\n", filterParametersPython.get(i)));
+            sb.append(String.format("                filter = filter + \"&%s=\" + self._%s\n", filterParameters.get(i), filterParametersPython.get(i)));
+        }
+        sb.append("        return filter\n\n");
 
         return sb.toString();
 
     }
 
-    public void extractPythonClasses(List<PythonClass> classes, List<SpecField> fields, String name) {
+
+
+    public void extractPythonClasses(List<PythonClass> classes, List<SpecField> fields, List<Value> filterValues, String name) {
         if (!fields.isEmpty()) {
             List<PythonField> pythonFields = new ArrayList<>();
             for (SpecField field : fields) {
                 String pythonFieldName = getPythonFieldName(field.fieldName);
                 List<SpecField> fieldsToBeProcessed = field.fields;
+                if(field.fieldFilter!=null) {
+                    filterValues.addAll(field.fieldFilter.getValues(new ArrayList<>()));
+                }
                 if(field.isMerge()){
                     fieldsToBeProcessed = new ArrayList<>();
                     Set<String> handledFields = new HashSet<>();
@@ -86,11 +123,14 @@ public class PythonGenerator {
                             if(!handledFields.contains(subfield.fieldName)){
                                 fieldsToBeProcessed.add(subfield);
                                 handledFields.add(subfield.fieldName);
+                                if(subfield.fieldFilter!=null){
+                                    filterValues.addAll(subfield.fieldFilter.getValues(new ArrayList<>()));
+                                }
                             }
                         }
                     }
                 }
-                extractPythonClasses(classes, fieldsToBeProcessed, semanticsToHumanTranslator.extractSimpleAttributeName(field.fieldName));
+                extractPythonClasses(classes, fieldsToBeProcessed, filterValues, semanticsToHumanTranslator.extractSimpleAttributeName(field.fieldName));
                 pythonFields.add(new PythonField(pythonFieldName, fieldsToBeProcessed.isEmpty() ? null : StringUtils.capitalize(semanticsToHumanTranslator.simplePluralToSingular(semanticsToHumanTranslator.extractSimpleAttributeName(field.fieldName))), field.fieldName));
             }
             PythonClass python = new PythonClass(StringUtils.capitalize(semanticsToHumanTranslator.simplePluralToSingular(name)), pythonFields);
