@@ -91,7 +91,7 @@ public class PythonGenerator {
                     }
                 }
                 extractPythonClasses(classes, fieldsToBeProcessed, semanticsToHumanTranslator.extractSimpleAttributeName(field.fieldName));
-                pythonFields.add(new PythonField(pythonFieldName, fieldsToBeProcessed.isEmpty() ? null : StringUtils.capitalize(semanticsToHumanTranslator.simplePluralToSingular(pythonFieldName)), field.fieldName));
+                pythonFields.add(new PythonField(pythonFieldName, fieldsToBeProcessed.isEmpty() ? null : StringUtils.capitalize(semanticsToHumanTranslator.simplePluralToSingular(semanticsToHumanTranslator.extractSimpleAttributeName(field.fieldName))), field.fieldName));
             }
             PythonClass python = new PythonClass(StringUtils.capitalize(semanticsToHumanTranslator.simplePluralToSingular(name)), pythonFields);
             classes.add(python);
