@@ -26,7 +26,7 @@ T = TypeVar('T')
 
 class KGClient:
 
-    def __init__(self, auth_client: AbstractAuthClient, endpoint: str = "${ENDPOINT}/query"):
+    def __init__(self, auth_client: AbstractAuthClient, endpoint: str):
         self.http_client = HttpClient(endpoint, "", auth_client=auth_client)
 
     def query(self, root_schema, query_name, size, start, filter_parameters):
