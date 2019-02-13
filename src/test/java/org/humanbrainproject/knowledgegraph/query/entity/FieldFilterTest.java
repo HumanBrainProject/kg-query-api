@@ -1,6 +1,5 @@
 package org.humanbrainproject.knowledgegraph.query.entity;
 
-import org.apache.commons.math3.analysis.function.Exp;
 import org.humanbrainproject.knowledgegraph.query.entity.fieldFilter.FieldFilter;
 import org.humanbrainproject.knowledgegraph.query.entity.fieldFilter.Op;
 import org.humanbrainproject.knowledgegraph.query.entity.fieldFilter.Value;
@@ -40,7 +39,7 @@ public class FieldFilterTest {
     public void parsedMapToFilterWithParams() {
         Map<String, Object> document = new HashMap<>();
         Map<String, String> params = new HashMap<>();
-        params.put("myvalue", "bar");
+        params.put("myValue", "bar");
         document.put(GraphQueryKeys.GRAPH_QUERY_FILTER_OP.getFieldName(), "equals");
         document.put(GraphQueryKeys.GRAPH_QUERY_FILTER_VALUE.getFieldName(), "${myValue}");
         FieldFilter f = FieldFilter.fromMap(document, params);

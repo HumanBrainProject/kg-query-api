@@ -14,6 +14,7 @@ public class ArangoVocabulary {
     //General custom
     public static final String NAME = "_name";
     public static final String PERMISSION_GROUP = "_permissionGroup";
+    public static final String CREATED_BY_USER = "_createdByUser";
 
 
     //Relations

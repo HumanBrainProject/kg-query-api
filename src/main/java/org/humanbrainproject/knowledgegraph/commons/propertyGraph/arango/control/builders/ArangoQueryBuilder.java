@@ -1,7 +1,6 @@
 package org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.builders;
 
 import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.aql.TrustedAqlValue;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.aql.UnauthorizedArangoQuery;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoAlias;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
@@ -12,11 +11,9 @@ import org.humanbrainproject.knowledgegraph.query.entity.Pagination;
 import org.humanbrainproject.knowledgegraph.query.entity.SpecField;
 import org.humanbrainproject.knowledgegraph.query.entity.Specification;
 import org.humanbrainproject.knowledgegraph.query.entity.fieldFilter.Op;
-import org.humanbrainproject.knowledgegraph.query.entity.fieldFilter.Exp;
 import org.humanbrainproject.knowledgegraph.query.entity.fieldFilter.Value;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -275,37 +272,43 @@ public class ArangoQueryBuilder extends AbstractArangoQueryBuilder {
 
     @Override
     public void addSearchQuery() {
-        if (filter != null && filter.getQueryString() != null) {
-            UnauthorizedArangoQuery query = new UnauthorizedArangoQuery();
-            TrustedAqlValue f = query.preventAqlInjectionForSearchQuery(filter.getQueryString());
-            f = query.generateSearchTermQuery(f);
-            q.addLine(
-                    new UnauthorizedArangoQuery().
-                            addLine("FILTER LIKE (LOWER(${root}.`" + SchemaOrgVocabulary.NAME + "`), \"${filter}\")").
-                            setParameter("root", String.format("%s_%s", ROOT_ALIAS.getArangoName(), DOC_POSTFIX)).
-                            setTrustedParameter("filter", f).build().getValue());
+        if (filter != null && filter.getQueryString() != null && !filter.getQueryString().isEmpty()) {
+            UnauthorizedArangoQuery subquery = new UnauthorizedArangoQuery();
+            List<String> searchString = subquery.generateSearchTermParameter(filter.getQueryString());
+            for(int i = 0; i < searchString.size(); i++){
+                subquery.addLine("FILTER LIKE (LOWER(${root}.`" + SchemaOrgVocabulary.NAME + "`), @search" + i +")");
+                searchAndFilterParameters.put("search" + i, searchString.get(i));
+            }
+            q.addLine(subquery.setParameter("root", String.format("%s_%s", ROOT_ALIAS.getArangoName(), DOC_POSTFIX)).build().getValue());
         }
     }
 
     @Override
-    public void addFieldFilter(ArangoAlias alias){
+    public void addFieldFilter(ArangoAlias alias)   {
         UnauthorizedArangoQuery subQuery = new UnauthorizedArangoQuery();
         Op op = currentField.fieldFilter.getOp();
         String operator;
         Value value = (Value) currentField.fieldFilter.getExp();
+        String filterId = String.format("filters_%s_%s_%s", currentAlias.getArangoName(), DOC_POSTFIX, alias.getOriginalName().replaceAll("[^a-zA-Z0-9]","_"));
         if(op == Op.EQUALS){
-            operator = "FILTER ${alias}.`${field}` == \"%s\" ";
-            subQuery.addLine(String.format(operator, value.getValue()));
+            operator = "FILTER LOWER(${alias}.`${field}`) ==  @%s ";
+            searchAndFilterParameters.put(filterId, value.getValue().toLowerCase());
+            subQuery.addLine(String.format(operator, filterId));
         }else{
-            operator = "FILTER ${alias}.`${field}` LIKE \"%s\" ";
-            TrustedAqlValue f = subQuery.preventAqlInjectionForSearchQuery(value.getValue());
-            f = subQuery.generateSearchTermQuery(f);
-            subQuery.addLine(String.format(operator, f.getValue()));
+            operator = "FILTER LIKE (LOWER(${alias}.`${field}`), @%s )";
+            List<String> searchString = subQuery.generateSearchTermParameter(value.getValue());
+            String filterIdPerTerm;
+            for(int i = 0; i < searchString.size(); i++){
+                filterIdPerTerm = filterId + i;
+                subQuery.addLine(String.format(operator, filterIdPerTerm));
+                searchAndFilterParameters.put(filterIdPerTerm, searchString.get(i));
+            }
         }
 
         subQuery.setParameter("alias",  String.format("%s_%s", currentAlias.getArangoName(), DOC_POSTFIX));
         subQuery.setParameter("field", alias.getOriginalName());
         q.addLine(subQuery.build().getValue());
+
     }
 
 }

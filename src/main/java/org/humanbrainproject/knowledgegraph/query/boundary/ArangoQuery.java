@@ -148,6 +148,24 @@ public class ArangoQuery {
         return result;
     }
 
+    public List<Map> getStoredQueries(){
+        List<Map> internalDocuments = arangoInternalRepository.getInternalDocuments(SPECIFICATION_QUERIES);
+        return internalDocuments;
+    }
+
+    public List<Map> getStoredQueriesBySchema(NexusSchemaReference schemaReference){
+        List<Map> internalDocuments = arangoInternalRepository.getInternalDocuments(SPECIFICATION_QUERIES);
+        List<Map> result = new ArrayList<>();
+        for (Map internalDocument : internalDocuments) {
+            String rootSchema = (String)((Map) internalDocument.get(GraphQueryKeys.GRAPH_QUERY_ROOT_SCHEMA)).get(JsonLdConsts.ID);
+            NexusSchemaReference fromUrl = NexusSchemaReference.createFromUrl(rootSchema);
+            if(schemaReference.getRelativeUrl().getUrl().equals(fromUrl.getRelativeUrl().getUrl())){
+                result.add(internalDocument);
+            }
+        }
+        return result;
+    }
+
     public <T> T getQueryPayload(StoredQueryReference queryReference, Class<T> clazz) {
         return arangoInternalRepository.getInternalDocumentByKey(new ArangoDocumentReference(SPECIFICATION_QUERIES, queryReference.getName()), clazz);
     }
@@ -177,7 +195,7 @@ public class ArangoQuery {
     }
 
 
-    public void storeSpecificationInDb(String specification, StoredQueryReference queryReference) throws JSONException {
+    public void storeSpecificationInDb(String specification, StoredQueryReference queryReference) throws JSONException, IllegalAccessException {
         JSONObject jsonObject = new JSONObject(specification);
         JSONObject rootSchema = new JSONObject();
         rootSchema.put(JsonLdConsts.ID, nexusConfiguration.getAbsoluteUrl(queryReference.getSchemaReference()));

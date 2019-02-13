@@ -67,7 +67,7 @@ public class QueryContext {
     }
 
 
-    public <T> ArangoCursor<T> queryDatabase(String aqlQuery, boolean count, Pagination pagination, Class<T> returnType) {
+    public <T> ArangoCursor<T> queryDatabase(String aqlQuery, boolean count, Pagination pagination, Class<T> returnType, Map<String,Object> searchAndFilterParameters) {
         AqlQueryOptions options = new AqlQueryOptions();
         if (count) {
             if (pagination != null && pagination.getSize()!=null) {
@@ -76,7 +76,7 @@ public class QueryContext {
                 options.count(true);
             }
         }
-        return getDatabase().query(aqlQuery, null, options, returnType);
+        return getDatabase().query(aqlQuery, searchAndFilterParameters, options, returnType);
     }
 
     private transient Set<ArangoCollectionReference> existingCollections;

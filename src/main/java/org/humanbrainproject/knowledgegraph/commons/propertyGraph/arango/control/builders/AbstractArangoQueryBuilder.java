@@ -11,10 +11,8 @@ import org.humanbrainproject.knowledgegraph.query.entity.SpecField;
 import org.humanbrainproject.knowledgegraph.query.entity.Specification;
 import org.springframework.boot.configurationprocessor.json.JSONException;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
-import java.util.Stack;
+import java.security.NoSuchAlgorithmException;
+import java.util.*;
 
 @ToBeTested
 public abstract class AbstractArangoQueryBuilder {
@@ -33,8 +31,11 @@ public abstract class AbstractArangoQueryBuilder {
     protected SpecField currentField;
     protected Set<ArangoDocumentReference> documentReferences;
     protected final Set<ArangoCollectionReference> existingArangoCollections;
+    protected final Map<String, Object> searchAndFilterParameters = new HashMap<>();
 
-
+    public Map<String, Object> getSearchAndFilterParameters(){
+        return searchAndFilterParameters;
+    }
     public void setCurrentField(SpecField currentField) {
         this.currentField = currentField;
     }
