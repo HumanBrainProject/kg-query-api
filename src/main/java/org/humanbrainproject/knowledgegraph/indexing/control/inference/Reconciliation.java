@@ -125,8 +125,17 @@ public class Reconciliation implements InferenceStrategy, InitializingBean {
         document.addReference(HBPVocabulary.INFERENCE_OF, nexusConfiguration.getAbsoluteUrl(original.getInstanceReference()));
         document.addType(HBPVocabulary.INFERENCE_TYPE);
         document.put(HBPVocabulary.PROVENANCE_MODIFIED_AT, ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_INSTANT));
+        removeInternalFieldsFromAlternatives(document);
         IndexingMessage indexingMessage = new IndexingMessage(referenceForInferred, transformer.getMapAsJson(document), null, null);
         return messageProcessor.createVertexStructure(messageProcessor.qualify(indexingMessage));
+    }
+
+    private void removeInternalFieldsFromAlternatives(JsonDocument doc){
+        Map<String, Object> alternatives = (Map) doc.get(HBPVocabulary.INFERENCE_ALTERNATIVES);
+        if(alternatives != null){
+            alternatives.keySet().removeIf(k -> k.startsWith("@") || k.startsWith("_"));
+            doc.put(HBPVocabulary.INFERENCE_ALTERNATIVES, alternatives);
+        }
     }
 
     private Property mergeProperty(String currentProperty, Set<? extends Vertex> vertices) {
@@ -141,14 +150,14 @@ public class Reconciliation implements InferenceStrategy, InitializingBean {
                 if (overrides(vertex, originOfResult, valueByName, result, valueCount)) {
                     if (result != null && !result.equals(valueByName) && !JsonLdConsts.ID.equals(currentProperty)) {
                         Set<String> userid = new HashSet<>();
-                        userid.add(vertex.getQualifiedIndexingMessage().getOriginalMessage().getUserId());
+                        userid.add((String)vertex.getQualifiedIndexingMessage().getQualifiedMap().get(HBPVocabulary.PROVENANCE_LAST_MODIFICATION_USER_ID));
                         alternatives.add( new Alternative(result, userid));
                     }
                     result = valueByName;
                     originOfResult = vertex;
                 } else if (valueByName != null && !valueByName.equals(result) && !JsonLdConsts.ID.equals(currentProperty)) {
                     Set<String> userid = new HashSet<>();
-                    userid.add(vertex.getQualifiedIndexingMessage().getOriginalMessage().getUserId());
+                    userid.add((String)vertex.getQualifiedIndexingMessage().getQualifiedMap().get(HBPVocabulary.PROVENANCE_LAST_MODIFICATION_USER_ID));
                     alternatives.add(new Alternative(valueByName, userid));
                 }
             }
@@ -163,7 +172,7 @@ public class Reconciliation implements InferenceStrategy, InitializingBean {
         for (Vertex vertex : vertices) {
             for (Object k : vertex.getQualifiedIndexingMessage().getQualifiedMap().keySet()) {
                 String key = (String) k;
-                if (!handledKeys.contains(key)) {
+                if (!handledKeys.contains(key) && !key.equals(HBPVocabulary.INFERENCE_ALTERNATIVES)) {
                     Property property = mergeProperty(key, vertices);
                     if (property != null) {
                         newDocument.put(key, property.getValue());
