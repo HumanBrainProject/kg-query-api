@@ -31,7 +31,7 @@ public class SpecificationQuery {
 
     public QueryResult<List<Map>> query(AbstractArangoQueryBuilder arangoQueryBuilder) throws JSONException {
         handleEdgesAsLeaf(arangoQueryBuilder.getSpecification().fields, arangoQueryBuilder.getExistingArangoCollections());
-        return query(createQuery(arangoQueryBuilder), arangoQueryBuilder.getSpecification().name, arangoQueryBuilder.getPagination());
+        return query(createQuery(arangoQueryBuilder), arangoQueryBuilder.getSpecification().name, arangoQueryBuilder.getPagination(), arangoQueryBuilder.getSearchAndFilterParameters());
     }
 
     private String createQuery(AbstractArangoQueryBuilder queryBuilder) throws JSONException {
@@ -186,13 +186,13 @@ public class SpecificationQuery {
     }
 
 
-    private QueryResult<List<Map>> query(String aqlQuery, String apiName, Pagination pagination){
+    private QueryResult<List<Map>> query(String aqlQuery, String apiName, Pagination pagination, Map<String, Object> searchAndFilterParameters){
         QueryResult<List<Map>> result = new QueryResult<>();
         result.setApiName(apiName);
         if(pagination!=null) {
             result.setStart((long) pagination.getStart());
         }
-        ArangoCursor<Map> cursor = queryContext.queryDatabase(aqlQuery,true, pagination, Map.class);
+        ArangoCursor<Map> cursor = queryContext.queryDatabase(aqlQuery,true, pagination, Map.class, searchAndFilterParameters);
         result.setResults(cursor.asListRemaining());
         Long count;
         if (pagination!=null && pagination.getSize() != null) {
