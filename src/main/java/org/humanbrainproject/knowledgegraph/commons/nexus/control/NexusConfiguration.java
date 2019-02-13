@@ -28,12 +28,20 @@ public class NexusConfiguration {
     @Value("${org.humanbrainproject.knowledgegraph.nexus.endpoint}")
     String nexusEndpoint;
 
+    @Value("${org.humanbrainproject.knowledgegraph.iam.endpoint}")
+    String iamEndpoint;
+
     /*
      * @return the resolvable nexus-endpoint URL. This is the URL where the API endpoint can be accessed. Please note, that this can but not necessarily has to be the same as nexusBase since reverse proxies and network topologies can change this
      */
     public String getNexusEndpoint() {
         return nexusEndpoint;
     }
+
+    public String getUserInfoEndpoint(){
+        return String.format("%s/v0/oauth2/userinfo", iamEndpoint);
+    }
+
 
     /**
      * @return the nexus-base URL. This is the URL which is used e.g. to prefix the IDs of nexus instances.

@@ -6,10 +6,13 @@ import com.arangodb.ArangoDBException;
 import com.arangodb.ArangoDatabase;
 import com.arangodb.model.AqlQueryOptions;
 import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
+import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationContext;
+import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.UnauthorizedAccess;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.query.ArangoQueryFactory;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
+import org.humanbrainproject.knowledgegraph.commons.vocabulary.ArangoVocabulary;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +32,11 @@ public class ArangoInternalRepository {
     @Autowired
     ArangoQueryFactory queryFactory;
 
+    @Autowired
+    AuthorizationContext authorizationContext;
+
+    @Autowired
+    JsonTransformer jsonTransformer;
 
     protected Logger logger = LoggerFactory.getLogger(ArangoRepository.class);
 
@@ -36,9 +44,12 @@ public class ArangoInternalRepository {
         return databaseFactory.getInternalDB().getOrCreateDB();
     }
 
-    public void insertOrUpdateDocument(ArangoDocumentReference document, String documentPayload) {
-        //TODO ensure authorization
+    public void insertOrUpdateDocument(ArangoDocumentReference document, String documentPayload) throws IllegalAccessException{
         if (document != null && documentPayload != null) {
+            String userId = authorizationContext.getUserId();
+            if(userId==null){
+                throw new IllegalAccessException("You have to be authenticated if you want to execute this operation");
+            }
             ArangoDatabase db = getDB();
             ArangoCollection collection = db.collection(document.getCollection().getName());
             if (!collection.exists()) {
@@ -48,9 +59,18 @@ public class ArangoInternalRepository {
             }
             if (collection.documentExists(document.getKey())) {
                 try {
-                    collection.updateDocument(document.getKey(), documentPayload);
-                    logger.info("Updated document: {} in database {}", document.getId(), db.name());
-                    logger.debug("Payload of document {} in database {}: {}", document.getId(), db.name(), documentPayload);
+                    Map payload = collection.getDocument(document.getKey(), Map.class);
+                    Object createdByUser = payload.get(ArangoVocabulary.CREATED_BY_USER);
+                    if(createdByUser==null || createdByUser.equals(userId)) {
+                        Map map = jsonTransformer.parseToMap(documentPayload);
+                        map.put(ArangoVocabulary.CREATED_BY_USER, userId);
+                        collection.updateDocument(document.getKey(), jsonTransformer.getMapAsJson(map));
+                        logger.info("Updated document: {} in database {}", document.getId(), db.name());
+                        logger.debug("Payload of document {} in database {}: {}", document.getId(), db.name(), documentPayload);
+                    }
+                    else {
+                        throw new IllegalAccessException("You've tried to update an already existing specification which was not created by yourself");
+                    }
                 } catch (ArangoDBException dbexception) {
                     logger.error(String.format("Was not able to update document: %s in database %s", document.getId(), db.name()), dbexception);
                     throw dbexception;
@@ -58,7 +78,9 @@ public class ArangoInternalRepository {
                 collection.updateDocument(document.getKey(), documentPayload);
             } else {
                 try {
-                    collection.insertDocument(documentPayload);
+                    Map map = jsonTransformer.parseToMap(documentPayload);
+                    map.put(ArangoVocabulary.CREATED_BY_USER,userId);
+                    collection.insertDocument(jsonTransformer.getMapAsJson(map));
                     logger.info("Inserted document: {} in database {}", document.getId(), db.name());
                     logger.debug("Payload of document {} in database {}: {}", document.getId(), db.name(), documentPayload);
                 } catch (ArangoDBException dbexception) {

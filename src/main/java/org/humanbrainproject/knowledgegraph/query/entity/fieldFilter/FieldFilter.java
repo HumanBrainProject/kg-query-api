@@ -1,16 +1,14 @@
 package org.humanbrainproject.knowledgegraph.query.entity.fieldFilter;
 
+import org.apache.commons.text.StringSubstitutor;
 import org.humanbrainproject.knowledgegraph.query.entity.GraphQueryKeys;
 
+import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class FieldFilter extends Exp{
     private Op op;
     private Exp exp;
-
-    private static Pattern PARAMETER_PATTERN = Pattern.compile("^\\$\\{(.+)\\}$");
 
     public FieldFilter(Op op, Exp exp) {
         this.op = op;
@@ -36,21 +34,7 @@ public class FieldFilter extends Exp{
                 }
                 if( m instanceof  String){
                     String value = (String)m;
-                    Matcher matcher = PARAMETER_PATTERN.matcher(value);
-                    Value v;
-                    if(matcher.find()){
-                        String theGroup = matcher.group(1).toLowerCase();
-                        String t = null;
-                        if(allParameters != null){
-                            t = allParameters.get(theGroup);
-                        }
-                        if(t == null){
-                            t = value;
-                        }
-                        v = new Value(t);
-                    }else{
-                        v = new Value(value);
-                    }
+                    Value v = new Value(StringSubstitutor.replace(value, allParameters));
                     return new FieldFilter(op, v);
                 }
             }
@@ -58,7 +42,19 @@ public class FieldFilter extends Exp{
         return null;
     }
 
-    private static Exp fromMapRec(Map<String, Object> map, Map<String, String>allParameters){
+    public List<Value> getValues(List<Value> collector){
+        Exp exp = getExp();
+        if(exp instanceof Value){
+            collector.add((Value)exp);
+        }
+        else if(exp instanceof FieldFilter){
+            ((FieldFilter)exp).getValues(collector);
+        }
+        return collector;
+    }
+
+
+    private static Exp fromMapRec(Map<String, Object> map, Map<String, String> allParameters){
         return FieldFilter.fromMap(map, allParameters);
     }
 }

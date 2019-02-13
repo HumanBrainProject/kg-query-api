@@ -65,4 +65,9 @@ public class TestAuthorizationContext implements AuthorizationContext {
     public ClientHttpRequestInterceptor getInterceptor() {
         return null;
     }
+
+    @Override
+    public String getUserId() {
+        return null;
+    }
 }
