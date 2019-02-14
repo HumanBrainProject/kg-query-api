@@ -41,6 +41,7 @@ public class ReconciliationTest {
         m1.put("desc", "desc 1");
         m1.put("activity", "activity");
         m1.put(HBPVocabulary.PROVENANCE_MODIFIED_AT, "2018-11-10T07:15:11.289Z");
+        m1.put(HBPVocabulary.PROVENANCE_LAST_MODIFICATION_USER_ID, "123");
 
         QualifiedIndexingMessage message1 = TestObjectFactory.createQualifiedIndexingMessage(iref, m1);
         Vertex vertex1 = new Vertex(message1);
@@ -50,6 +51,7 @@ public class ReconciliationTest {
         m2.put("desc", "another desc");
         m2.put("activity", "activity");
         m2.put(HBPVocabulary.PROVENANCE_MODIFIED_AT, "2018-11-08T07:15:11.289Z");
+        m2.put(HBPVocabulary.PROVENANCE_LAST_MODIFICATION_USER_ID, "456");
 
         QualifiedIndexingMessage message2 = TestObjectFactory.createQualifiedIndexingMessage(iref2, m2);
         Vertex vertex2 = new Vertex(message2);
@@ -58,6 +60,7 @@ public class ReconciliationTest {
         m3.put("name", "test 1");
         m3.put("desc", "no desc");
         m3.put(HBPVocabulary.PROVENANCE_MODIFIED_AT, "2018-12-08T07:15:11.289Z");
+        m3.put(HBPVocabulary.PROVENANCE_LAST_MODIFICATION_USER_ID, "789");
 
         QualifiedIndexingMessage message3 = TestObjectFactory.createQualifiedIndexingMessage(iref3, m3);
         Vertex vertex3 = new Vertex(message3);
