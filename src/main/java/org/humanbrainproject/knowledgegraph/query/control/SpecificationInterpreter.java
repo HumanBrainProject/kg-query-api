@@ -2,17 +2,13 @@ package org.humanbrainproject.knowledgegraph.query.control;
 
 import com.github.jsonldjava.core.JsonLdConsts;
 import com.google.gson.Gson;
-import org.apache.tinkerpop.shaded.jackson.databind.ObjectMapper;
 import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
-import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.SchemaOrgVocabulary;
-import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
 import org.humanbrainproject.knowledgegraph.query.entity.*;
 import org.humanbrainproject.knowledgegraph.query.entity.fieldFilter.FieldFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.configurationprocessor.json.JSONArray;
 import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.boot.configurationprocessor.json.JSONObject;
@@ -27,12 +23,10 @@ import java.util.Map;
 @Component
 public class SpecificationInterpreter {
 
-    @Autowired
-    NexusConfiguration nexusConfiguration;
 
     protected Logger logger = LoggerFactory.getLogger(SpecificationInterpreter.class);
 
-    public Specification readSpecification(String json, NexusSchemaReference schemaReference, Map<String, String> allParameters) throws JSONException {
+    public Specification readSpecification(String json, String absoluteUrlOfRootSchema, Map<String, String> allParameters) throws JSONException {
         JSONObject jsonObject = new JSONObject(json);
         String originalContext = null;
         if (jsonObject.has(JsonLdConsts.CONTEXT)) {
@@ -43,8 +37,8 @@ public class SpecificationInterpreter {
             name = jsonObject.getString(SchemaOrgVocabulary.NAME);
         }
         String rootSchema = null;
-        if(schemaReference!=null){
-            rootSchema = nexusConfiguration.getAbsoluteUrl(schemaReference);
+        if(absoluteUrlOfRootSchema!=null){
+            rootSchema = absoluteUrlOfRootSchema;
         }
         else if (jsonObject.has(GraphQueryKeys.GRAPH_QUERY_ROOT_SCHEMA.getFieldName())) {
             rootSchema = jsonObject.getJSONObject(GraphQueryKeys.GRAPH_QUERY_ROOT_SCHEMA.getFieldName()).getString(JsonLdConsts.ID);
@@ -55,6 +49,7 @@ public class SpecificationInterpreter {
         }
         return new Specification(originalContext, name, rootSchema, new JsonDocument(new JsonTransformer().parseToMap(json)), specFields);
     }
+
 
     private List<SpecField> createSpecFields(Object origin, Map<String, String> allParameters) throws JSONException {
         List<SpecField> result = new ArrayList<>();

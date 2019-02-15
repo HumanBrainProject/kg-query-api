@@ -186,7 +186,7 @@ public class SpecificationQuery {
     }
 
 
-    private QueryResult<List<Map>> query(String aqlQuery, String apiName, Pagination pagination){
+    public QueryResult<List<Map>> query(String aqlQuery, String apiName, Pagination pagination){
         QueryResult<List<Map>> result = new QueryResult<>();
         result.setApiName(apiName);
         if(pagination!=null) {

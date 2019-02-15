@@ -64,7 +64,6 @@ public class Structure {
                     Map map = new HashMap();
                     map.put("attribute", r.get("attribute").toString());
                     map.put("simplePropertyName", semanticsToHumanTranslator.extractSimpleAttributeName(r.get("attribute").toString()));
-                    map.put("canBe", new ArrayList<String>());
                     map.put("label", semanticsToHumanTranslator.translateSemanticValueToHumanReadableLabel(r.get("attribute").toString()));
                     if (!outbound) {
                         map.put("reverse", true);
@@ -72,8 +71,12 @@ public class Structure {
                     groupedLinks.put(r.get("attribute").toString(), map);
                     attribute = map;
                 }
+                attribute.computeIfAbsent("canBe", k -> new ArrayList<String>());
                 List<String> canBe = (List<String>) attribute.get("canBe");
-                canBe.add(lookupMap.getNexusSchema(new ArangoCollectionReference(r.get("ref").toString())).getRelativeUrl().getUrl());
+                NexusSchemaReference ref = lookupMap.getNexusSchema(new ArangoCollectionReference(r.get("ref").toString()));
+                if(ref!=null){
+                    canBe.add(ref.getRelativeUrl().getUrl());
+                }
             }
         });
         return groupedLinks;

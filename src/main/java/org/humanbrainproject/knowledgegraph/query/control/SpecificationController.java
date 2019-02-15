@@ -4,10 +4,7 @@ import org.humanbrainproject.knowledgegraph.annotations.Tested;
 import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationContext;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoRepository;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.builders.ArangoMetaQueryBuilder;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.builders.ArangoMetaReflectionQueryBuilder;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.builders.ArangoQueryBuilder;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.builders.ArangoReflectionQueryBuilder;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.builders.*;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.query.SpecificationQuery;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoAlias;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
@@ -61,6 +58,14 @@ public class SpecificationController {
             throw new RuntimeException("Queried the reflection API for a specification document but found multiple return instances.");
         }
     }
+
+
+    public QueryResult<List<Map>> queryBySpecification(Specification spec, Set<ArangoDocumentReference> documentReferences, Pagination pagination, Filter filter){
+        QueryBuilderNew queryBuilderNew = new QueryBuilderNew(spec, authorizationContext.getReadableOrganizations(filter.getRestrictToOrganizations()));
+
+        return null;
+    }
+
 
     public QueryResult<List<Map>> queryForSpecification(Specification spec, Set<ArangoDocumentReference> documentReferences, Pagination pagination, Filter filter) throws JSONException {
         if(documentReferences!=null && documentReferences.isEmpty()){

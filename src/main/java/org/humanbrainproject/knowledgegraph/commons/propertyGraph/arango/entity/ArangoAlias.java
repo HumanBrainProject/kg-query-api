@@ -8,6 +8,8 @@ import java.util.Objects;
 
 @ToBeTested(easy = true)
 public class ArangoAlias {
+    private final String aliasDocPostfix = "_doc";
+
 
     private final String originalName;
 
@@ -23,8 +25,16 @@ public class ArangoAlias {
         return new ArangoAlias(specField.fieldName);
     }
 
+    public ArangoAlias increment(){
+        return new ArangoAlias(this.originalName+"_");
+    }
+
     public static ArangoAlias fromLeafPath(SpecTraverse specTraverse){
         return new ArangoAlias(specTraverse.pathName);
+    }
+
+    public String getArangoDocName(){
+        return getArangoName()+aliasDocPostfix;
     }
 
     public String getArangoName() {

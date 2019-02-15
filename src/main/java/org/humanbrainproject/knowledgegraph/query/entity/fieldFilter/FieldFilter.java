@@ -23,6 +23,10 @@ public class FieldFilter extends Exp{
         return exp;
     }
 
+    public Value getExpAsValue(){
+        return exp instanceof Value ? (Value)exp : null;
+    }
+
     public static FieldFilter fromMap(Map<String, Object> map, Map<String, String> allParameters){
         if(map.get(GraphQueryKeys.GRAPH_QUERY_FILTER_OP.getFieldName()) != null){
             Op op =  Op.valueOf( ((String) map.get(GraphQueryKeys.GRAPH_QUERY_FILTER_OP.getFieldName())).toUpperCase());

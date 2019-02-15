@@ -14,6 +14,7 @@ import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoNamingHelper;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.exceptions.StoredQueryNotFoundException;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.ArangoVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
@@ -74,19 +75,29 @@ public class ArangoQuery {
     ArangoToNexusLookupMap lookupMap;
 
 
+    private String getAbsoluteUrlOfRootSchema(Query query){
+        if(query.getSchemaReference()!=null) {
+            nexusConfiguration.getAbsoluteUrl(query.getSchemaReference());
+        }
+        return null;
+    }
+
     public QueryResult<List<Map>> metaQueryBySpecification(Query query) throws JSONException, IOException {
-        Specification spec = specInterpreter.readSpecification(JsonUtils.toString(standardization.fullyQualify(query.getSpecification())), query.getSchemaReference(), null);
+
+
+
+        Specification spec = specInterpreter.readSpecification(JsonUtils.toString(standardization.fullyQualify(query.getSpecification())), getAbsoluteUrlOfRootSchema(query), null);
         return specificationQuery.metaSpecification(spec);
     }
 
 
     public QueryResult<List<Map>> metaReflectionQueryBySpecification(Query query) throws JSONException, IOException {
-        Specification spec = specInterpreter.readSpecification(JsonUtils.toString(standardization.fullyQualify(query.getSpecification())), query.getSchemaReference(), null);
+        Specification spec = specInterpreter.readSpecification(JsonUtils.toString(standardization.fullyQualify(query.getSpecification())), getAbsoluteUrlOfRootSchema(query), null);
         return specificationQuery.metaReflectionSpecification(spec, query.getFilter());
     }
 
     public Map reflectQueryBySpecification(Query query) throws JSONException, IOException {
-        Specification spec = specInterpreter.readSpecification(JsonUtils.toString(standardization.fullyQualify(query.getSpecification())), query.getSchemaReference(),null);
+        Specification spec = specInterpreter.readSpecification(JsonUtils.toString(standardization.fullyQualify(query.getSpecification())), getAbsoluteUrlOfRootSchema(query),null);
         Map map = specificationQuery.reflectSpecification(spec, query);
         map.put("children", regroup((List<Map>) map.get("children")));
         return map;
@@ -140,7 +151,7 @@ public class ArangoQuery {
             }
             idWhitelist = idsFromSpatialSearch;
         }
-        Specification spec = specInterpreter.readSpecification(JsonUtils.toString(standardization.fullyQualify(query.getSpecification())), query.getSchemaReference(), query.getParameters());
+        Specification spec = specInterpreter.readSpecification(JsonUtils.toString(standardization.fullyQualify(query.getSpecification())),  getAbsoluteUrlOfRootSchema(query), query.getParameters());
         QueryResult<List<Map>> result = specificationQuery.queryForSpecification(spec, idWhitelist, query.getPagination(), query.getFilter());
         if (context != null) {
             result.setResults(standardization.applyContext(result.getResults(), context));
@@ -191,7 +202,11 @@ public class ArangoQuery {
     }
 
     private Query resolveStoredQuery(StoredQuery storedQuery) {
-        return new Query(storedQuery, getQueryPayload(storedQuery.getStoredQueryReference(), String.class));
+        String queryPayload = getQueryPayload(storedQuery.getStoredQueryReference(), String.class);
+        if(queryPayload==null){
+            throw new StoredQueryNotFoundException("Did not find query "+storedQuery.getStoredQueryReference().getName());
+        }
+        return queryPayload==null ? null : new Query(storedQuery, queryPayload);
     }
 
 

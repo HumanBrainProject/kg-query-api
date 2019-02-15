@@ -10,6 +10,7 @@ import org.humanbrainproject.knowledgegraph.commons.api.ParameterConstants;
 import org.humanbrainproject.knowledgegraph.commons.api.RestUtils;
 import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationContext;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.exceptions.RootCollectionNotFoundException;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.exceptions.StoredQueryNotFoundException;
 import org.humanbrainproject.knowledgegraph.context.QueryContext;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
 import org.humanbrainproject.knowledgegraph.query.boundary.ArangoQuery;
@@ -144,6 +145,8 @@ public class QueryAPI {
             Map result = this.query.reflectQueryPropertyGraphByStoredSpecification(query);
 
             return ResponseEntity.ok(result);
+        } catch (StoredQueryNotFoundException e){
+            return ResponseEntity.notFound().build();
         } catch (RootCollectionNotFoundException e) {
             return ResponseEntity.notFound().build();
         } catch (HttpClientErrorException e) {
@@ -160,6 +163,8 @@ public class QueryAPI {
             QueryResult<List<Map>> result = this.query.metaQueryPropertyGraphByStoredSpecification(query);
 
             return ResponseEntity.ok(result);
+        } catch (StoredQueryNotFoundException e){
+            return ResponseEntity.notFound().build();
         } catch (HttpClientErrorException e) {
             return ResponseEntity.status(e.getStatusCode()).build();
         }
@@ -175,6 +180,8 @@ public class QueryAPI {
             QueryResult<List<Map>> result = this.query.metaReflectionQueryPropertyGraphByStoredSpecification(query);
 
             return ResponseEntity.ok(result);
+        } catch (StoredQueryNotFoundException e){
+            return ResponseEntity.notFound().build();
         } catch (HttpClientErrorException e) {
             return ResponseEntity.status(e.getStatusCode()).build();
         }
@@ -196,6 +203,8 @@ public class QueryAPI {
             QueryResult<Map> result = this.query.metaQueryPropertyGraphByStoredSpecificationAndFreemarkerTemplate(query);
 
             return ResponseEntity.ok(RestUtils.toJsonResultIfPossible(result));
+        } catch (StoredQueryNotFoundException e){
+            return ResponseEntity.notFound().build();
         } catch (HttpClientErrorException e) {
             return ResponseEntity.status(e.getStatusCode()).build();
         }
@@ -214,6 +223,8 @@ public class QueryAPI {
             Map result = this.query.queryPropertyGraphByStoredSpecificationAndTemplateWithId(query, template);
 
             return ResponseEntity.ok(result);
+        } catch (StoredQueryNotFoundException e){
+            return ResponseEntity.notFound().build();
         } catch (RootCollectionNotFoundException e) {
             return ResponseEntity.notFound().build();
         } catch (HttpClientErrorException e) {
@@ -236,9 +247,13 @@ public class QueryAPI {
         StoredQuery query = new StoredQuery(new NexusSchemaReference(org, domain, schema, version), queryId, null);
         query.getFilter().restrictToOrganizations(RestUtils.splitCommaSeparatedValues(restrictToOrganizations)).setQueryString(searchTerm);
         query.setTemplateId(templateId).setLibraryId(library).setReturnOriginalJson(includeOriginalJson);
-        QueryResult<List<Map>> result = this.query.queryPropertyGraphByStoredSpecificationAndFreemarkerTemplate(query);
+        try {
+            QueryResult<List<Map>> result = this.query.queryPropertyGraphByStoredSpecificationAndFreemarkerTemplate(query);
 
-        return ResponseEntity.ok(result);
+            return ResponseEntity.ok(result);
+        } catch (StoredQueryNotFoundException e){
+            return ResponseEntity.notFound().build();
+        }
     }
 
     @GetMapping(value ="/{"+ORG+"}/{"+ DOMAIN+"}/{"+SCHEMA+"}/{"+VERSION+"}/{"+QUERY_ID+"}/templates/{"+TEMPLATE_ID+"}/instances/{"+INSTANCE_ID+"}")
@@ -250,9 +265,14 @@ public class QueryAPI {
         query.getFilter().restrictToOrganizations(RestUtils.splitCommaSeparatedValues(restrictToOrganizations)).restrictToSingleId(instanceId);
         query.setTemplateId(templateId).setLibraryId("instances").setReturnOriginalJson(includeOriginalJson);
 
-        Map result = this.query.queryPropertyGraphByStoredSpecificationAndStoredTemplateWithId(query);
+        try {
+            Map result = this.query.queryPropertyGraphByStoredSpecificationAndStoredTemplateWithId(query);
 
-        return ResponseEntity.ok(result);
+            return ResponseEntity.ok(result);
+        }
+        catch (StoredQueryNotFoundException e){
+            return ResponseEntity.notFound().build();
+        }
     }
 
 
@@ -331,6 +351,8 @@ public class QueryAPI {
             QueryResult<List<Map>> result = this.query.queryPropertyGraphByStoredSpecification(query);
 
             return ResponseEntity.ok(result);
+        } catch (StoredQueryNotFoundException e){
+            return ResponseEntity.notFound().build();
         } catch (RootCollectionNotFoundException e) {
             return ResponseEntity.ok(QueryResult.createEmptyResult());
         } catch (HttpClientErrorException e) {
@@ -356,6 +378,8 @@ public class QueryAPI {
             } else {
                 return ResponseEntity.notFound().build();
             }
+        } catch (StoredQueryNotFoundException e){
+            return ResponseEntity.notFound().build();
         } catch (RootCollectionNotFoundException e) {
             return ResponseEntity.notFound().build();
         } catch (HttpClientErrorException e) {

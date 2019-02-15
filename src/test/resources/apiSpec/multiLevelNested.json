@@ -1,0 +1,62 @@
+{
+  "@context": {
+    "@vocab": "https://schema.hbp.eu/graphQuery/",
+    "schema": "http://schema.org/",
+    "minds": "https://schema.hbp.eu/minds/",
+    "query": "https://schema.hbp.eu/query/",
+    "searchUi": "https://schema.hbp.eu/searchUi/",
+    "cscs": "https://schema.hbp.eu/cscs/",
+    "neuroglancer": "https://schema.hbp.eu/neuroglancer/",
+    "brainviewer": "https://schema.hbp.eu/brainviewer/",
+    "fieldname": {
+      "@id": "fieldname",
+      "@type": "@id"
+    },
+    "merge": {
+      "@id": "merge",
+      "@type": "@id"
+    },
+    "relative_path": {
+      "@id": "relative_path",
+      "@type": "@id"
+    }
+  },
+  "schema:name": "Dataset",
+  "fields": [
+    {
+      "fieldname": "query:simple",
+      "relative_path": [
+        "minds:specimen_group",
+        "minds:subjects"
+      ],
+      "fields": [
+        {
+          "fieldname": "query:inner1",
+          "relative_path": "schema:name"
+        },
+        {
+          "fieldname": "query:inner2",
+          "relative_path": "minds:species",
+          "fields": [
+            {
+              "fieldname": "query:inner2_1",
+              "relative_path": "schema:name"
+            },
+            {
+              "fieldname": "query:inner2_2",
+              "relative_path": "schema:identifier"
+            }
+          ]
+        },
+        {
+          "fieldname": "query:inner_3",
+          "label": "Sex",
+          "relative_path": [
+            "minds:sex",
+            "schema:name"
+          ]
+        }
+      ]
+    }
+  ]
+}

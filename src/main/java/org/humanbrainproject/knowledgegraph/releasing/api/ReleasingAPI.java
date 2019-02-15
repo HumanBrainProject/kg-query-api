@@ -5,6 +5,7 @@ import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationContext;
 import org.humanbrainproject.knowledgegraph.commons.authorization.entity.Credential;
 import org.humanbrainproject.knowledgegraph.commons.authorization.entity.OidcAccessToken;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.exceptions.StoredQueryNotFoundException;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.releasing.boundary.Releasing;
 import org.humanbrainproject.knowledgegraph.releasing.entity.ReleaseStatusResponse;
@@ -42,6 +43,8 @@ public class ReleasingAPI {
                 return ResponseEntity.notFound().build();
             }
             return ResponseEntity.ok(releaseStatus);
+        } catch (StoredQueryNotFoundException e){
+            return ResponseEntity.notFound().build();
         } catch (HttpClientErrorException e) {
             return ResponseEntity.status(e.getStatusCode()).build();
         }
@@ -59,6 +62,8 @@ public class ReleasingAPI {
                 return ResponseEntity.ok(collect);
             }
             return ResponseEntity.badRequest().build();
+        } catch (StoredQueryNotFoundException e){
+            return ResponseEntity.notFound().build();
         } catch (HttpClientErrorException e) {
             return ResponseEntity.status(e.getStatusCode()).build();
         }
@@ -76,6 +81,8 @@ public class ReleasingAPI {
             } else {
                 return ResponseEntity.ok(releaseGraph);
             }
+        } catch (StoredQueryNotFoundException e){
+            return ResponseEntity.notFound().build();
         } catch (HttpClientErrorException e) {
             return ResponseEntity.status(e.getStatusCode()).build();
         }

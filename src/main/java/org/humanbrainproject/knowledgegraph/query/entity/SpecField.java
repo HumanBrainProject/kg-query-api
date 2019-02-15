@@ -19,6 +19,8 @@ public class SpecField {
     public boolean ensureOrder;
     public final String groupedInstances;
     public FieldFilter fieldFilter;
+
+
     public SpecField(String fieldName, List<SpecField> fields, List<SpecTraverse> traversePath, String groupedInstances, boolean required, boolean sortAlphabetically, boolean groupby, boolean ensureOrder, FieldFilter fieldFilter) {
         this.fieldName = fieldName;
         this.required = required;
@@ -31,6 +33,17 @@ public class SpecField {
         this.fieldFilter = fieldFilter;
     }
 
+
+
+    public boolean isDirectChild(){
+        return !hasSubFields() && traversePath.size()<2;
+    }
+
+
+    public boolean hasSubFields(){
+        //TODO check how to handle merges
+        return fields!=null && !fields.isEmpty();
+    }
 
 
     public String getGroupedInstances() {

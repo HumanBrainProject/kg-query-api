@@ -1,0 +1,101 @@
+{
+  "@context": {
+    "@vocab": "https://schema.hbp.eu/graphQuery/",
+    "schema": "http://schema.org/",
+    "minds": "https://schema.hbp.eu/minds/",
+    "query": "https://schema.hbp.eu/query/",
+    "cscs": "https://schema.hbp.eu/cscs/",
+    "neuroglancer": "https://schema.hbp.eu/neuroglancer/",
+    "brainviewer": "https://schema.hbp.eu/brainviewer/",
+    "fieldname": {
+      "@id": "fieldname",
+      "@type": "@id"
+    },
+    "merge": {
+      "@id": "merge",
+      "@type": "@id"
+    },
+    "relative_path": {
+      "@id": "relative_path",
+      "@type": "@id"
+    }
+  },
+  "schema:name": "Dataset",
+  "fields": [
+    {
+      "fieldname": "query:simple",
+      "relative_path": [
+        "minds:parcellationRegion",
+        "schema:name"
+      ]
+    },
+    {
+      "fieldname": "query:simpleEnsureOrder",
+      "relative_path": [
+        "minds:parcellationRegion",
+        "schema:name"
+      ],
+      "ensure_order": true
+    },
+    {
+      "fieldname": "query:simpleSortedAndRequired",
+      "relative_path": [
+        "minds:parcellationRegion",
+        "schema:name"
+      ],
+      "sort": true,
+      "required": true
+    },
+    {
+      "fieldname": "query:simpleReverse",
+      "relative_path": [{
+        "@id": "minds:doireference",
+        "reverse": true
+      }, "minds:doi"]
+    },
+    {
+      "fieldname": "query:simpleReverseEnsureOrder",
+      "relative_path": [{
+        "@id": "minds:doireference",
+        "reverse": true
+      }, "minds:doi"],
+      "ensure_order": true
+    },
+    {
+      "fieldname": "query:simpleReverseSortedAndRequired",
+      "relative_path": [{
+        "@id": "minds:doireference",
+        "reverse": true
+      }, "minds:doi"],
+      "required": true,
+      "sort": true
+    },
+    {
+      "fieldname": "query:deepTraverse",
+      "relative_path": [
+        "minds:activity",
+        "minds:protocols",
+        "schema:name"
+      ]
+    },
+    {
+      "fieldname": "query:deepTraverseEnsureOrder",
+      "relative_path": [
+        "minds:activity",
+        "minds:protocols",
+        "schema:name"
+      ],
+      "ensure_order": true
+    },
+    {
+      "fieldname": "query:deepTraverseSortedAndRequired",
+      "relative_path": [
+        "minds:activity",
+        "minds:protocols",
+        "schema:name"
+      ],
+      "sort": true,
+      "required": true
+    }
+  ]
+}
