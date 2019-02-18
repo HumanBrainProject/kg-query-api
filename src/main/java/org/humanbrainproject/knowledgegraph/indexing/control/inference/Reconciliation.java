@@ -143,27 +143,31 @@ public class Reconciliation implements InferenceStrategy, InitializingBean {
             List<Vertex> verticesWithProperty = vertices.stream().filter(v -> v.getQualifiedIndexingMessage().getQualifiedMap().get(currentProperty) != null).collect(Collectors.toList());
             Object result = null;
             Vertex originOfResult = null;
-            Set<Alternative> alternatives = new LinkedHashSet<>();
             Map<Object, Integer> valueCount = new HashMap<>();
+            Map<Object, Set<String>> allAlts = new HashMap<>();
             for (Vertex vertex : verticesWithProperty) {
                 Object valueByName = vertex.getQualifiedIndexingMessage().getQualifiedMap().get(currentProperty);
-                if (overrides(vertex, originOfResult, valueByName, result, valueCount)) {
-                    if (result != null && !result.equals(valueByName) && !JsonLdConsts.ID.equals(currentProperty)) {
-                        Set<String> userid = new HashSet<>();
-                        userid.add((String)vertex.getQualifiedIndexingMessage().getQualifiedMap().get(HBPVocabulary.PROVENANCE_LAST_MODIFICATION_USER_ID));
-                        alternatives.add( new Alternative(result, userid));
+                if(!JsonLdConsts.ID.equals(currentProperty)){
+                    Set<String> userIds = allAlts.get(valueByName);
+                    if(userIds == null){
+                        userIds = new HashSet<>();
                     }
+                    userIds.add((String)vertex.getQualifiedIndexingMessage().getQualifiedMap().get(HBPVocabulary.PROVENANCE_LAST_MODIFICATION_USER_ID));
+                    allAlts.put(valueByName, userIds);
+                }
+
+                if (overrides(vertex, originOfResult, valueByName, result, valueCount)) {
                     result = valueByName;
                     originOfResult = vertex;
-                } else if (valueByName != null && !valueByName.equals(result) && !JsonLdConsts.ID.equals(currentProperty)) {
-                    Set<String> userid = new HashSet<>();
-                    userid.add((String)vertex.getQualifiedIndexingMessage().getQualifiedMap().get(HBPVocabulary.PROVENANCE_LAST_MODIFICATION_USER_ID));
-                    alternatives.add(new Alternative(valueByName, userid));
                 }
             }
             final Object r = result;
-            alternatives = alternatives.stream().filter(p -> !p.getValue().equals(r)).collect(Collectors.toSet());
-            return new Property(currentProperty, result).setAlternatives(alternatives);
+            allAlts.keySet().removeIf(p -> p.equals(r));
+            Set<Alternative> resultingAlts = new LinkedHashSet<>();
+            for(Map.Entry<Object, Set<String>> entry : allAlts.entrySet()){
+                resultingAlts.add(new Alternative(entry.getKey(), entry.getValue()));
+            }
+            return new Property(currentProperty, result).setAlternatives(resultingAlts);
         }
         return null;
     }
