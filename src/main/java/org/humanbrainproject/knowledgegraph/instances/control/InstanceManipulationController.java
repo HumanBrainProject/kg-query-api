@@ -143,7 +143,7 @@ public class InstanceManipulationController {
                 fromUpdate.setRevision(Integer.valueOf(rev.toString()));
             }
 
-            immediateIndexing(payload, fromUpdate, null);
+            immediateIndexing(payload, fromUpdate, clientIdExtension);
             return fromUpdate;
         }
         return null;

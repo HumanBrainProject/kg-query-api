@@ -161,6 +161,8 @@ public class Reconciliation implements InferenceStrategy, InitializingBean {
                     alternatives.add(new Alternative(valueByName, userid));
                 }
             }
+            final Object r = result;
+            alternatives = alternatives.stream().filter(p -> !p.getValue().equals(r)).collect(Collectors.toSet());
             return new Property(currentProperty, result).setAlternatives(alternatives);
         }
         return null;
