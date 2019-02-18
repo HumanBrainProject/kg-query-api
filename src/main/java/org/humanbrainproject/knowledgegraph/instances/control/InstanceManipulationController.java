@@ -11,6 +11,7 @@ import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusClient;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoNativeRepository;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Vertex;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.NexusVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.SchemaOrgVocabulary;
@@ -26,9 +27,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
@@ -70,6 +73,12 @@ public class InstanceManipulationController {
 
     public NexusInstanceReference updateInstance(NexusInstanceReference instanceReference, Map<String, Object> payload, String clientIdExtension) {
         NexusInstanceReference originalId = arangoNativeRepository.findOriginalId(instanceReference);
+        try{
+            Object indexedAt = payload.get(HBPVocabulary.PROVENANCE_MODIFIED_AT);
+            LocalDateTime.parse((String) indexedAt, DateTimeFormatter.ISO_ZONED_DATE_TIME);
+        } catch (DateTimeParseException d)  {
+            throw new RuntimeException(String.format("Could not parse update timestamp for instance: %s", originalId.toString() ));
+        }
         JsonDocument instance = arangoNativeRepository.getInstance(ArangoDocumentReference.fromNexusInstance(originalId));
         if (instance == null) {
             return null;
