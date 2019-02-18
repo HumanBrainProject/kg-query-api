@@ -66,6 +66,8 @@ public class QueryBuilderNew {
         AQL representation = new AQL();
         if (field.isDirectChild()) {
             return representation.add(trust("${parentAlias}.`${originalKey}`")).setParameter("parentAlias", alias.getArangoDocName()).setParameter("originalKey", field.getLeafPath().pathName).build();
+        } else if (field.hasGrouping()) {
+            return representation.add(representation.preventAqlInjection(ArangoAlias.fromSpecField(field).getArangoName() + "_grp")).build();
         } else {
             return representation.add(representation.preventAqlInjection(ArangoAlias.fromSpecField(field).getArangoName())).build();
         }
@@ -98,10 +100,9 @@ public class QueryBuilderNew {
                     aql.add(new TraverseBuilder(parentAlias, mergeField.fields).getTraversedField());
                     AQL merge = new AQL();
                     merge.add(trust("LET ${alias} = "));
-                    if(mergeField.fields.size()==1){
+                    if (mergeField.fields.size() == 1) {
                         merge.add(trust("${alias}_0"));
-                    }
-                    else {
+                    } else {
                         for (int i = 0; i < mergeField.fields.size(); i++) {
                             AQL append = new AQL();
                             if (i < mergeField.fields.size() - 1) {
@@ -144,22 +145,39 @@ public class QueryBuilderNew {
             return fields.stream().filter(SpecField::needsTraversal).filter(f -> !f.isMerge()).collect(Collectors.toList());
         }
 
-        TrustedAqlValue handleTraverse(SpecTraverse traverse, ArangoAlias alias, Stack<ArangoAlias> aliasStack, boolean ensureOrder) {
+        TrustedAqlValue handleTraverse(boolean firstTraverse, SpecTraverse traverse, ArangoAlias alias, Stack<ArangoAlias> aliasStack, boolean ensureOrder) {
             AQL aql = new AQL();
-            aql.add(trust("LET ${alias} = UNIQUE(FLATTEN(FOR ${aliasDoc}"));
+            aql.add(trust("LET ${alias} = "));
+            if (!firstTraverse) {
+                aql.add(trust("UNIQUE("));
+            }
+            aql.add(trust("FLATTEN("));
+
+
+            aql.indent().add(trust("( LET ${aliasDoc}s = ( FOR ${aliasDoc}_traverse "));
             if (ensureOrder) {
-                aql.add(trust(", ${aliasDoc}_e"));
+                aql.add(trust(", ${aliasDoc}_traverse_e"));
             }
             aql.addLine(trust(" IN 1..1 ${direction} ${parentAliasDoc} `${edgeCollection}`"));
-            aql.indent().addDocumentFilterWithWhitelistFilter(alias);
+            aql.indent().addDocumentFilterWithWhitelistFilter(trust(aql.preventAqlInjection(alias.getArangoDocName()).getValue() + "_traverse"));
             if (ensureOrder) {
-                aql.addLine(trust("SORT ${aliasDoc}_e." + ArangoVocabulary.ORDER_NUMBER + " ASC"));
+                aql.addLine(trust("SORT ${aliasDoc}_traverse_e." + ArangoVocabulary.ORDER_NUMBER + " ASC"));
             }
+            aql.addLine(trust("RETURN ${aliasDoc}_traverse )"));
+
+            if (traverse.reverse) {
+                //Reverse connections can not be embedded - we therefore can shortcut the query.
+                aql.addLine(trust("FOR ${aliasDoc} IN ${aliasDoc}s"));
+            } else {
+                aql.addLine(trust("FOR ${aliasDoc} IN APPEND(${aliasDoc}s, FLATTEN([${parentAliasDoc}.`${fieldPath}`]))"));
+            }
+            aql.addLine(trust("FILTER ${aliasDoc} != NULL"));
             aql.setParameter("alias", alias.getArangoName());
             aql.setParameter("aliasDoc", alias.getArangoDocName());
             aql.setParameter("direction", traverse.reverse ? "INBOUND" : "OUTBOUND");
             aql.setParameter("parentAliasDoc", aliasStack.peek().getArangoDocName());
             aql.setParameter("edgeCollection", ArangoCollectionReference.fromSpecTraversal(traverse).getName());
+            aql.setParameter("fieldPath", traverse.pathName);
             return aql.build();
         }
 
@@ -175,7 +193,8 @@ public class QueryBuilderNew {
             if (!traversalFields.isEmpty()) {
                 AQL fields = new AQL();
                 for (SpecField traversalField : traversalFields) {
-                    ArangoAlias alias = ArangoAlias.fromSpecField(traversalField);
+                    ArangoAlias traversalFieldAlias = ArangoAlias.fromSpecField(traversalField);
+                    ArangoAlias alias = traversalFieldAlias;
                     Stack<ArangoAlias> aliasStack = new Stack<>();
                     aliasStack.push(parentAlias);
                     for (SpecTraverse traverse : traversalField.traversePath) {
@@ -185,7 +204,7 @@ public class QueryBuilderNew {
                         } else {
                             lastTraversal = traverse == traversalField.traversePath.get(traversalField.traversePath.size() - 1);
                         }
-                        fields.addLine(handleTraverse(traverse, alias, aliasStack, traversalField.ensureOrder));
+                        fields.addLine(handleTraverse(traverse == traversalField.traversePath.get(0), traverse, alias, aliasStack, traversalField.ensureOrder));
                         aliasStack.push(alias);
                         if (lastTraversal) {
                             if (traversalField.hasSubFields()) {
@@ -205,17 +224,112 @@ public class QueryBuilderNew {
                         ArangoAlias a = aliasStack.pop();
                         fields.addLine(trust("))"));
                         if (aliasStack.size() > 1) {
+                            fields.addLine(trust(")"));
                             AQL returnStructure = new AQL();
+                            if (traversalField.isSortAlphabetically()) {
+                                returnStructure.addLine(trust("SORT ${traverseField} ASC"));
+                            }
                             returnStructure.add(trust("RETURN DISTINCT ${traverseField}"));
                             returnStructure.setParameter("traverseField", a.getArangoName());
                             fields.addLine(returnStructure.build());
                         }
                     }
+                    if (traversalField.hasGrouping()) {
+                        handleGrouping(fields, traversalField, traversalFieldAlias);
+                    }
+
                 }
                 return fields.build();
             } else {
                 //return new ReturnBuilder(parentAlias, fields).getReturnStructure();
                 return null;
+            }
+        }
+
+        private void handleGrouping(AQL fields, SpecField traversalField, ArangoAlias traversalFieldAlias) {
+            AQL group = new AQL();
+            group.addLine(trust("LET ${traverseField}_grp = (FOR ${traverseField}_grp_inst IN ${traverseField}"));
+            group.indent().add(trust("COLLECT "));
+
+            List<SpecField> groupByFields = traversalField.fields.stream().filter(SpecField::isGroupby).collect(Collectors.toList());
+            for (SpecField groupByField : groupByFields) {
+                AQL groupField = new AQL();
+                groupField.add(trust("`${field}` = ${traverseField}_grp_inst.`${field}`"));
+                if (groupByField != groupByFields.get(groupByFields.size() - 1)) {
+                    groupField.addComma();
+                }
+                groupField.setParameter("field", groupByField.fieldName);
+                group.addLine(groupField.build());
+            }
+            group.addLine(trust("INTO ${traverseField}_group"));
+            group.addLine(trust("LET ${traverseField}_instances = ( FOR ${traverseField}_group_el IN ${traverseField}_group"));
+            List<SpecField> notGroupedByFields = traversalField.fields.stream().filter(f -> !f.isGroupby()).collect(Collectors.toList());
+
+            sortNotGroupedFields(group, notGroupedByFields);
+
+            group.addLine(trust("RETURN {"));
+
+            for (SpecField notGroupedByField : notGroupedByFields) {
+                AQL notGroupedField = new AQL();
+                notGroupedField.add(trust("\"${field}\": ${traverseField}_group_el.${traverseField}_grp_inst.`${field}`"));
+                if (notGroupedByField != notGroupedByFields.get(notGroupedByFields.size() - 1)) {
+                    notGroupedField.addComma();
+                }
+                notGroupedField.setParameter("field", notGroupedByField.fieldName);
+                group.addLine(notGroupedField.build());
+            }
+
+            group.addLine(trust("})"));
+
+            sortGroupedFields(group, groupByFields);
+
+            group.addLine(trust("RETURN {"));
+
+            for (SpecField groupByField : groupByFields) {
+                AQL groupField = new AQL();
+                groupField.add(trust("\"${field}\": `${field}`"));
+                groupField.addComma();
+                groupField.setParameter("field", groupByField.fieldName);
+                group.addLine(groupField.build());
+            }
+            group.addLine(trust("\"${collectField}\": ${traverseField}_instances"));
+            group.addLine(trust("})"));
+            group.setParameter("traverseField", traversalFieldAlias.getArangoName());
+            group.setParameter("collectField", traversalField.groupedInstances);
+            fields.addLine(group.build());
+        }
+
+        private void sortGroupedFields(AQL group, List<SpecField> groupByFields) {
+            List<SpecField> groupedSortFields = groupByFields.stream().filter(f -> f.isSortAlphabetically()).collect(Collectors.toList());
+            if (!groupedSortFields.isEmpty()) {
+                group.add(trust("SORT "));
+                for (SpecField specField : groupedSortFields) {
+                    AQL groupSort = new AQL();
+                    groupSort.add(trust("`${field}`"));
+                    if (specField != groupedSortFields.get(groupedSortFields.size() - 1)) {
+                        groupSort.addComma();
+                    }
+                    groupSort.setParameter("field", specField.fieldName);
+                    group.add(groupSort.build());
+                }
+                group.add(trust(" ASC"));
+            }
+        }
+
+        private void sortNotGroupedFields(AQL group, List<SpecField> notGroupedByFields) {
+            List<SpecField> notGroupedSortFields = notGroupedByFields.stream().filter(SpecField::isSortAlphabetically).collect(Collectors.toList());
+            if (!notGroupedSortFields.isEmpty()) {
+                group.add(trust("SORT "));
+                for (SpecField notGroupedSortField : notGroupedSortFields) {
+                    AQL notGroupedSort = new AQL();
+                    notGroupedSort.add(trust("${traverseField}_group_el.${traverseField}_grp_inst.`${field}`"));
+                    if (notGroupedSortField != notGroupedByFields.get(notGroupedByFields.size() - 1)) {
+                        notGroupedSort.addComma();
+                    }
+                    notGroupedSort.setParameter("field", notGroupedSortField.fieldName);
+                    group.add(notGroupedSort.build());
+                }
+                group.addLine(trust(" ASC"));
             }
         }
 
@@ -236,8 +350,26 @@ public class QueryBuilderNew {
 
         TrustedAqlValue getReturnStructure() {
             AQL aql = new AQL();
+
+            if (this.fields == null || this.fields.isEmpty()) {
+                if (this.parentField != null) {
+                    aql.addLine(trust("FILTER ${parentAliasDoc}.`${field}` != NULL"));
+                }
+            } else if (this.parentField != null) {
+                aql.add(trust("FILTER "));
+                for (SpecField field : fields) {
+                    AQL fieldResult = new AQL();
+                    fieldResult.add(trust("(${fieldRepresentation} != NULL AND ${fieldRepresentation} != [])"));
+                    if (field != fields.get(fields.size() - 1)) {
+                        fieldResult.add(trust(" OR "));
+                    }
+                    fieldResult.setTrustedParameter("fieldRepresentation", getRepresentationOfField(parentAlias, field));
+                    aql.addLine(fieldResult.build());
+                }
+            }
+
             aql.add(trust("RETURN "));
-            if(parentField!=null){
+            if (parentField != null) {
                 aql.add(trust("DISTINCT "));
             }
 

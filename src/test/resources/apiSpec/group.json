@@ -48,11 +48,13 @@
       "fields": [
         {
           "fieldname": "query:name",
-          "relative_path": "schema:name"
+          "relative_path": "schema:name",
+          "sort": true
         },
         {
           "fieldname": "query:componentName",
           "group_by": true,
+          "sort": true,
           "relative_path": [
             "minds:component",
             "schema:name"

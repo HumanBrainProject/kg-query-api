@@ -19,6 +19,7 @@ public class QueryBuilderNewTest {
 
     private final static String DATASET_ENDPOINT = "http://test/v0/minds/core/dataset/v1.0.0";
     private final static String SPECIES_ENDPOINT = "http://test/v0/minds/core/species/v1.0.0";
+    private final static String ORGANIZATION_ENDPOINT = "http://test/v0/neuralactivity/core/organization/v0.1.0";
 
 
     private Specification readSpecification(String fileName, String endpoint) throws IOException, JSONException {
@@ -89,5 +90,11 @@ public class QueryBuilderNewTest {
     }
 
 
+    @Test
+    public void buildEmbedded() throws IOException, JSONException {
+        QueryBuilderNew queryBuilderNew = new QueryBuilderNew(readSpecification("embedded.json", ORGANIZATION_ENDPOINT), COLLECTION_WHITELIST);
+        String query = queryBuilderNew.build();
+        System.out.println(query);
+    }
 
 }

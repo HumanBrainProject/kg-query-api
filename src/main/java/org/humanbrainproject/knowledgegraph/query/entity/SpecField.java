@@ -33,8 +33,6 @@ public class SpecField {
         this.fieldFilter = fieldFilter;
     }
 
-
-
     public boolean isDirectChild(){
         return !hasSubFields() && traversePath.size()<2;
     }
@@ -107,6 +105,17 @@ public class SpecField {
         return sortAlphabetically;
     }
 
+
+    public boolean hasGrouping(){
+        if(groupedInstances!=null && !groupedInstances.isEmpty() && fields!=null && !fields.isEmpty()){
+            for (SpecField field : fields) {
+                if(field.isGroupby()){
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 
     public boolean hasNestedGrouping(){
         if(fields!=null && !fields.isEmpty()){
