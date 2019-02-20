@@ -39,6 +39,6 @@ public class SpecificationInterpreterTest {
         Specification specification = interpreter.readSpecification(filterSpecification, null, null);
         assertNotEquals(null, specification.fields.get(0).fieldFilter);
         assertEquals(Op.EQUALS.name(), specification.fields.get(0).fieldFilter.getOp().name());
-        assertEquals(new Value("test"), specification.fields.get(0).fieldFilter.getExp());
+        assertEquals(new Value("test"), specification.fields.get(0).fieldFilter.getValue());
     }
 }

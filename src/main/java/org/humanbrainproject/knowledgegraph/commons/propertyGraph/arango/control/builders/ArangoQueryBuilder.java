@@ -293,7 +293,7 @@ public class ArangoQueryBuilder extends AbstractArangoQueryBuilder {
         AQL subQuery = new AQL();
         Op op = currentField.fieldFilter.getOp();
         String operator;
-        Value value = (Value) currentField.fieldFilter.getExp();
+        Value value = currentField.fieldFilter.getValue();
         if(op == Op.EQUALS){
             subQuery.addLine(new AQL().addLine(trust("FILTER ${alias}.`${field}` == \"${value}\" ")).setParameter("value", value.getValue()).build());
         }else{

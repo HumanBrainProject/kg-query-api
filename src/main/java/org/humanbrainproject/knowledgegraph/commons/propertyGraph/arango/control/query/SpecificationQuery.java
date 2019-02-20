@@ -3,21 +3,24 @@ package org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.contro
 import com.arangodb.ArangoCursor;
 import com.github.jsonldjava.core.JsonLdConsts;
 import org.apache.commons.lang.text.StrSubstitutor;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.builders.AbstractArangoQueryBuilder;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.builders.QueryBuilderNew;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoAlias;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.exceptions.RootCollectionNotFoundException;
 import org.humanbrainproject.knowledgegraph.context.QueryContext;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
-import org.humanbrainproject.knowledgegraph.query.entity.Pagination;
-import org.humanbrainproject.knowledgegraph.query.entity.QueryResult;
-import org.humanbrainproject.knowledgegraph.query.entity.SpecField;
-import org.humanbrainproject.knowledgegraph.query.entity.SpecTraverse;
+import org.humanbrainproject.knowledgegraph.query.control.SpatialSearch;
+import org.humanbrainproject.knowledgegraph.query.entity.*;
+import org.humanbrainproject.knowledgegraph.query.entity.fieldFilter.Op;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -28,6 +31,28 @@ public class SpecificationQuery {
     @Autowired
     QueryContext queryContext;
 
+    @Autowired
+    SpatialSearch spatialSearch;
+
+
+    public QueryResult<List<Map>> queryForData(QueryBuilderNew queryBuilderNew, List<String> restrictedIds, String search) throws IOException, SolrServerException {
+        String query = queryBuilderNew.build(restrictedIds, search);
+        Map<String, Object> filterValues = queryBuilderNew.getFilterValues();
+
+        //Resolve spatial search
+        Specification spec = queryBuilderNew.getSpecification();
+        List<String> definedMbbParameters = spec.getAllFilterParameters().stream().filter(f -> f.getOperation().equals(Op.MBB.getName())).map(f -> f.getParameterName()).filter(k -> filterValues.containsKey(k)).collect(Collectors.toList());
+        for (String definedMbbParameter : definedMbbParameters) {
+            Object boundingBox = filterValues.get(definedMbbParameter);
+            if(boundingBox instanceof String){
+                BoundingBox bbox = BoundingBox.parseBoundingBox((String) boundingBox);
+                Set<ArangoDocumentReference> arangoDocumentReferences = spatialSearch.minimalBoundingBox(bbox);
+                List<String> idRestrictions = QueryBuilderNew.createIdRestriction(arangoDocumentReferences);
+                filterValues.put(definedMbbParameter, idRestrictions);
+            }
+        }
+        return query(query, spec.name, queryBuilderNew.getPagination(), filterValues);
+    }
 
     public QueryResult<List<Map>> query(AbstractArangoQueryBuilder arangoQueryBuilder) throws JSONException {
         handleEdgesAsLeaf(arangoQueryBuilder.getSpecification().fields, arangoQueryBuilder.getExistingArangoCollections());
@@ -187,12 +212,16 @@ public class SpecificationQuery {
 
 
     public QueryResult<List<Map>> query(String aqlQuery, String apiName, Pagination pagination){
+        return query(aqlQuery, apiName, pagination, null);
+    }
+
+    public QueryResult<List<Map>> query(String aqlQuery, String apiName, Pagination pagination, Map<String, Object> bindParameters){
         QueryResult<List<Map>> result = new QueryResult<>();
         result.setApiName(apiName);
         if(pagination!=null) {
             result.setStart((long) pagination.getStart());
         }
-        ArangoCursor<Map> cursor = queryContext.queryDatabase(aqlQuery,true, pagination, Map.class);
+        ArangoCursor<Map> cursor = queryContext.queryDatabase(aqlQuery,true, pagination, Map.class, bindParameters);
         result.setResults(cursor.asListRemaining());
         Long count;
         if (pagination!=null && pagination.getSize() != null) {

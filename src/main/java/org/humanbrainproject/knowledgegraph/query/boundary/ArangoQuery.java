@@ -23,6 +23,7 @@ import org.humanbrainproject.knowledgegraph.query.control.SpatialSearch;
 import org.humanbrainproject.knowledgegraph.query.control.SpecificationController;
 import org.humanbrainproject.knowledgegraph.query.control.SpecificationInterpreter;
 import org.humanbrainproject.knowledgegraph.query.entity.*;
+import org.humanbrainproject.knowledgegraph.query.entity.fieldFilter.ParameterDescription;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.boot.configurationprocessor.json.JSONObject;
@@ -82,10 +83,17 @@ public class ArangoQuery {
         return null;
     }
 
+    public List<ParameterDescription> listQueryParameters(StoredQuery storedQuery) throws IOException, JSONException {
+        return listQueryParameters(resolveStoredQuery(storedQuery));
+    }
+
+
+    public List<ParameterDescription> listQueryParameters(Query query) throws IOException, JSONException {
+        Specification spec = specInterpreter.readSpecification(JsonUtils.toString(standardization.fullyQualify(query.getSpecification())), getAbsoluteUrlOfRootSchema(query), null);
+        return spec.getAllFilterParameters();
+    }
+
     public QueryResult<List<Map>> metaQueryBySpecification(Query query) throws JSONException, IOException {
-
-
-
         Specification spec = specInterpreter.readSpecification(JsonUtils.toString(standardization.fullyQualify(query.getSpecification())), getAbsoluteUrlOfRootSchema(query), null);
         return specificationQuery.metaSpecification(spec);
     }
@@ -134,25 +142,8 @@ public class ArangoQuery {
             context = new LinkedHashMap<>();
             context.put(JsonLdConsts.VOCAB, query.getVocabulary());
         }
-        Set<ArangoDocumentReference> idWhitelist = null;
-        if (query.getFilter().getRestrictToIds() != null) {
-            idWhitelist = query.getDocumentReferenceWhitelist();
-        }
-        if (query.getFilter().getBoundingBox() != null) {
-            //TODO if the document reference is defined, we should make use of it as a filter in the spatial search as well to optimize performance
-            Set<ArangoDocumentReference> idsFromSpatialSearch = spatialSearch.minimalBoundingBox(query.getFilter().getBoundingBox());
-            if (idWhitelist != null) {
-                HashSet<ArangoDocumentReference> whitelistCopy = new HashSet<>(idWhitelist);
-                whitelistCopy.retainAll(idsFromSpatialSearch);
-                if (whitelistCopy.isEmpty()) {
-                    //We're looking for specific documents in a bounding box, but none of them is in there - so we return an empty result
-                    return QueryResult.createEmptyResult();
-                }
-            }
-            idWhitelist = idsFromSpatialSearch;
-        }
         Specification spec = specInterpreter.readSpecification(JsonUtils.toString(standardization.fullyQualify(query.getSpecification())),  getAbsoluteUrlOfRootSchema(query), query.getParameters());
-        QueryResult<List<Map>> result = specificationQuery.queryForSpecification(spec, idWhitelist, query.getPagination(), query.getFilter());
+        QueryResult<List<Map>> result = specificationQuery.queryForSpecification(spec, query.getPagination(), query.getFilter());
         if (context != null) {
             result.setResults(standardization.applyContext(result.getResults(), context));
         }

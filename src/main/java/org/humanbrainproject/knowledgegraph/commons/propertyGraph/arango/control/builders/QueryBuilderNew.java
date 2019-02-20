@@ -5,16 +5,16 @@ import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.aql.TrustedAqlValue;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoAlias;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.ArangoVocabulary;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
+import org.humanbrainproject.knowledgegraph.query.entity.Pagination;
 import org.humanbrainproject.knowledgegraph.query.entity.SpecField;
 import org.humanbrainproject.knowledgegraph.query.entity.SpecTraverse;
 import org.humanbrainproject.knowledgegraph.query.entity.Specification;
 import org.humanbrainproject.knowledgegraph.query.entity.fieldFilter.FieldFilter;
 
-import java.util.List;
-import java.util.Set;
-import java.util.Stack;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.aql.AQL.*;
@@ -22,10 +22,25 @@ import static org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.
 public class QueryBuilderNew {
 
     private final Specification specification;
+    private final Pagination pagination;
     private final AuthorizedArangoQuery q;
+    private final Map<String, Object> filterValues;
+    private final Set<ArangoCollectionReference> existingCollections;
 
 
-    public String build() {
+    public Map<String, Object> getFilterValues() {
+        return filterValues;
+    }
+
+    public Pagination getPagination() {
+        return pagination;
+    }
+
+    public Specification getSpecification() {
+        return specification;
+    }
+
+    public String build(List<String> restrictToIds, String search) {
         //Define the global parameters
         ArangoAlias rootAlias = new ArangoAlias("root");
         q.setParameter("rootFieldName", rootAlias.getArangoName());
@@ -41,10 +56,31 @@ public class QueryBuilderNew {
         q.add(new TraverseBuilder(rootAlias, specification.fields).getTraversedField());
 
         //Define filters
-        q.add(new FilterBuilder(rootAlias, specification.fields).getFilter());
+        q.add(new FilterBuilder(rootAlias, specification.documentFilter, specification.fields).getFilter());
 
-        //Define sorting
-        q.add(new SortBuilder(rootAlias, specification.fields).getSort());
+        q.addDocumentFilterWithWhitelistFilter(rootAlias);
+
+        //FIXME We want to get rid of the static search parameter - this could be done dynamically but we keep it for backwards compatibility right now.
+        if(search!=null){
+            q.addLine(trust("FILTER ${rootFieldName}_doc.`http://schema.org/name` LIKE @searchQuery"));
+            getFilterValues().put("searchQuery", "%"+search+"%");
+        }
+
+        if(restrictToIds!=null && !restrictToIds.isEmpty()){
+            q.addLine(trust("FILTER ${rootFieldName}_doc._key IN @generalIdRestriction"));
+            getFilterValues().put("generalIdRestriction", restrictToIds);
+        }
+        else {
+            //Define sorting
+            q.add(new SortBuilder(rootAlias, specification.fields).getSort());
+
+            //Pagination
+            if (this.pagination != null && this.pagination.getSize() != null) {
+                q.addLine(trust("LIMIT ${paginationStart}, ${paginationSize}"));
+                q.setParameter("paginationSize", String.valueOf(this.pagination.getSize()));
+                q.setParameter("paginationStart", String.valueOf(this.pagination.getStart()));
+            }
+        }
 
         //Define return value
         q.add(new ReturnBuilder(rootAlias, null, specification.fields).getReturnStructure());
@@ -53,9 +89,13 @@ public class QueryBuilderNew {
     }
 
 
-    public QueryBuilderNew(Specification specification, Set<String> permissionGroupsWithReadAccess) {
+    public QueryBuilderNew(Specification specification, Set<String> permissionGroupsWithReadAccess, Pagination pagination, Map<String, Object> filterValues, Set<ArangoCollectionReference> existingCollections) {
         this.q = new AuthorizedArangoQuery(permissionGroupsWithReadAccess);
         this.specification = specification;
+        this.pagination = pagination;
+        this.filterValues = new HashMap<>(filterValues);
+        this.existingCollections = existingCollections;
+
     }
 
     public void defineRootInstance() {
@@ -78,7 +118,8 @@ public class QueryBuilderNew {
         return ArangoCollectionReference.fromNexusSchemaReference(NexusSchemaReference.createFromUrl(specification.rootSchema)).getName();
     }
 
-    private static class MergeBuilder {
+
+    private class MergeBuilder {
 
         private final List<SpecField> fields;
         private final ArangoAlias parentAlias;
@@ -130,7 +171,7 @@ public class QueryBuilderNew {
     }
 
 
-    private static class TraverseBuilder {
+    private class TraverseBuilder {
 
         private final List<SpecField> fields;
         private final ArangoAlias parentAlias;
@@ -153,23 +194,27 @@ public class QueryBuilderNew {
             }
             aql.add(trust("FLATTEN("));
 
+            if (traverseExists(traverse)) {
 
-            aql.indent().add(trust("( LET ${aliasDoc}s = ( FOR ${aliasDoc}_traverse "));
-            if (ensureOrder) {
-                aql.add(trust(", ${aliasDoc}_traverse_e"));
-            }
-            aql.addLine(trust(" IN 1..1 ${direction} ${parentAliasDoc} `${edgeCollection}`"));
-            aql.indent().addDocumentFilterWithWhitelistFilter(trust(aql.preventAqlInjection(alias.getArangoDocName()).getValue() + "_traverse"));
-            if (ensureOrder) {
-                aql.addLine(trust("SORT ${aliasDoc}_traverse_e." + ArangoVocabulary.ORDER_NUMBER + " ASC"));
-            }
-            aql.addLine(trust("RETURN ${aliasDoc}_traverse )"));
-
-            if (traverse.reverse) {
-                //Reverse connections can not be embedded - we therefore can shortcut the query.
-                aql.addLine(trust("FOR ${aliasDoc} IN ${aliasDoc}s"));
+                aql.indent().add(trust("( LET ${aliasDoc}s = ( FOR ${aliasDoc}_traverse "));
+                if (ensureOrder) {
+                    aql.add(trust(", ${aliasDoc}_traverse_e"));
+                }
+                aql.addLine(trust(" IN 1..1 ${direction} ${parentAliasDoc} `${edgeCollection}`"));
+                aql.indent().addDocumentFilterWithWhitelistFilter(trust(aql.preventAqlInjection(alias.getArangoDocName()).getValue() + "_traverse"));
+                if (ensureOrder) {
+                    aql.addLine(trust("SORT ${aliasDoc}_traverse_e." + ArangoVocabulary.ORDER_NUMBER + " ASC"));
+                }
+                aql.addLine(trust("RETURN ${aliasDoc}_traverse )"));
+                if (traverse.reverse) {
+                    //Reverse connections can not be embedded - we therefore can shortcut the query.
+                    aql.addLine(trust("FOR ${aliasDoc} IN ${aliasDoc}s"));
+                } else {
+                    aql.addLine(trust("FOR ${aliasDoc} IN APPEND(${aliasDoc}s, FLATTEN([${parentAliasDoc}.`${fieldPath}`]))"));
+                }
             } else {
-                aql.addLine(trust("FOR ${aliasDoc} IN APPEND(${aliasDoc}s, FLATTEN([${parentAliasDoc}.`${fieldPath}`]))"));
+                // the traverse collection does not exist - we therefore short-cut by only asking for the instances of a potentially embedded document.
+                aql.addLine(trust("( FOR ${aliasDoc} IN FLATTEN([${parentAliasDoc}.`${fieldPath}`])"));
             }
             aql.addLine(trust("FILTER ${aliasDoc} != NULL"));
             aql.setParameter("alias", alias.getArangoName());
@@ -185,6 +230,10 @@ public class QueryBuilderNew {
             AQL aql = new AQL();
             aql.addLine(new TraverseBuilder(aliasStack.peek(), field.fields).getTraversedField());
             return aql.build();
+        }
+
+        boolean traverseExists(SpecTraverse traverse) {
+            return existingCollections.contains(ArangoCollectionReference.fromFieldName(traverse.pathName));
         }
 
 
@@ -217,7 +266,7 @@ public class QueryBuilderNew {
                         alias = alias.increment();
                     }
 
-                    fields.add(new FilterBuilder(alias, traversalField.fields).getFilter());
+                    fields.add(new FilterBuilder(alias, traversalField.fieldFilter, traversalField.fields).getFilter());
                     fields.add(new SortBuilder(alias, traversalField.fields).getSort());
                     fields.addLine(new ReturnBuilder(alias, traversalField, traversalField.fields).getReturnStructure());
                     while (aliasStack.size() > 1) {
@@ -441,33 +490,51 @@ public class QueryBuilderNew {
     }
 
 
-    private static class FilterBuilder {
+    private class FilterBuilder {
 
         private final List<SpecField> fields;
         private final ArangoAlias alias;
+        private final FieldFilter parentFilter;
 
-        public FilterBuilder(ArangoAlias alias, List<SpecField> fields) {
+        public FilterBuilder(ArangoAlias alias, FieldFilter parentFilter, List<SpecField> fields) {
             this.fields = fields;
             this.alias = alias;
+            this.parentFilter = parentFilter;
         }
 
 
         private List<SpecField> fieldsWithFilter() {
-            return fields.stream().filter(f -> f.isRequired() || f.fieldFilter != null).collect(Collectors.toList());
+            return fields.stream().filter(f -> f.isRequired() || (f.fieldFilter != null && f.fieldFilter.getOp()!=null && !f.fieldFilter.getOp().isInstanceFilter())).collect(Collectors.toList());
         }
 
         TrustedAqlValue getFilter() {
+            AQL filter = new AQL();
+            filter.addDocumentFilter(alias);
+            if(parentFilter!=null && parentFilter.getOp()!=null && parentFilter.getOp().isInstanceFilter()){
+                filter.addLine(createInstanceFilter(parentFilter));
+            }
             List<SpecField> fieldsWithFilter = fieldsWithFilter();
             if (!fieldsWithFilter.isEmpty()) {
-                AQL filter = new AQL();
-                filter.addDocumentFilter(alias);
                 for (SpecField specField : fieldsWithFilter) {
                     filter.addLine(createFilter(specField));
                 }
-                return filter.build();
             }
-            return null;
+            return filter.build();
         }
+
+        private TrustedAqlValue createInstanceFilter(FieldFilter filter){
+            AQL aql = new AQL();
+            if (filter != null) {
+                TrustedAqlValue fieldFilter = createFieldFilter(filter);
+                if (fieldFilter != null) {
+                    aql.addLine(trust("AND ${document} ${fieldFilter}"));
+                    aql.setTrustedParameter("fieldFilter", fieldFilter);
+                }
+            }
+            aql.setParameter("document", alias.getArangoDocName());
+            return aql.build();
+        }
+
 
         private TrustedAqlValue createFilter(SpecField field) {
             AQL aql = new AQL();
@@ -476,28 +543,99 @@ public class QueryBuilderNew {
                 aql.addLine(trust("AND ${field} !=\"\""));
                 aql.addLine(trust("AND ${field} !=[]"));
             }
-            if (field.fieldFilter != null && field.fieldFilter.getExpAsValue() != null && field.fieldFilter.getOp() != null) {
-                aql.addLine(trust("AND ${field} ${fieldFilter}"));
-                aql.setTrustedParameter("fieldFilter", createFieldFilter(field));
+            if (field.fieldFilter != null && field.fieldFilter.getOp()!=null && !field.fieldFilter.getOp().isInstanceFilter()) {
+                TrustedAqlValue fieldFilter = createFieldFilter(field.fieldFilter);
+                if (fieldFilter != null) {
+                    aql.addLine(trust("AND ${field}${fieldFilter}"));
+                    aql.setTrustedParameter("fieldFilter", fieldFilter);
+                }
             }
             aql.setTrustedParameter("field", getRepresentationOfField(alias, field));
             return aql.build();
         }
 
-        private TrustedAqlValue createFieldFilter(SpecField field) {
-            FieldFilter fieldFilter = field.fieldFilter;
-            AQL aql = new AQL();
-            switch (fieldFilter.getOp()) {
-                case EQUALS:
-                    aql.add(trust("== \"${value}\""));
-                    aql.setParameter("value", fieldFilter.getExpAsValue().getValue());
-                    break;
-                case LIKE:
-                    aql.add(trust("LIKE \"${value}\""));
-                    aql.setTrustedParameter("value", aql.generateSearchTermQuery(aql.preventAqlInjection(fieldFilter.getExpAsValue().getValue())));
-                    break;
+
+        private TrustedAqlValue createAqlForFilter(FieldFilter fieldFilter, boolean prefixWildcard, boolean postfixWildcard) {
+            String value = null;
+            String key = null;
+            if (fieldFilter.getParameter() != null) {
+                key = fieldFilter.getParameter().getName();
+            } else {
+                key = "staticFilter" + QueryBuilderNew.this.filterValues.size();
             }
-            return aql.build();
+            if (QueryBuilderNew.this.filterValues.containsKey(key)) {
+                Object fromMap = QueryBuilderNew.this.filterValues.get(key);
+                value = fromMap != null ? fromMap.toString() : null;
+            }
+            if (value == null && fieldFilter.getValue() != null) {
+                value = fieldFilter.getValue().getValue();
+            }
+            if (value != null && key != null) {
+                if (prefixWildcard && !value.startsWith("%")) {
+                    value = "%" + value;
+                }
+                if (postfixWildcard && !value.endsWith("%")) {
+                    value = value + "%";
+                }
+                QueryBuilderNew.this.filterValues.put(key, value);
+                AQL aql = new AQL();
+                aql.add(trust("@${field}"));
+                aql.setParameter("field", key);
+                return aql.build();
+            }
+            return null;
         }
+
+
+        private TrustedAqlValue createFieldFilter(FieldFilter fieldFilter) {
+            AQL aql = new AQL();
+            TrustedAqlValue value;
+            switch (fieldFilter.getOp()) {
+                case REGEX:
+                case EQUALS:
+                case MBB:
+                    value = createAqlForFilter(fieldFilter, false, false);
+                    break;
+                case STARTS_WITH:
+                    value = createAqlForFilter(fieldFilter, false, true);
+                    break;
+                case ENDS_WITH:
+                    value = createAqlForFilter(fieldFilter, true, false);
+                    break;
+                case CONTAINS:
+                    value = createAqlForFilter(fieldFilter, true, true);
+                    break;
+                default:
+                    value = null;
+            }
+            if (value != null) {
+                switch (fieldFilter.getOp()) {
+                    case EQUALS:
+                        aql.add(trust(" == " + value.getValue()));
+                        break;
+                    case STARTS_WITH:
+                    case ENDS_WITH:
+                    case CONTAINS:
+                        aql.add(trust(" LIKE " + value.getValue()));
+                        break;
+                    case REGEX:
+                        aql.add(trust(" =~ " + value.getValue()));
+                        break;
+                    case MBB:
+                        aql.add(trust("._id IN " + value.getValue()+" "));
+                        break;
+                }
+                return aql.build();
+            }
+            return null;
+        }
+    }
+
+    public static List<String> createIdRestriction(Set<ArangoDocumentReference> references){
+        if(references==null || references.isEmpty()){
+            return null;
+        }
+        return references.stream().map(ArangoDocumentReference::getId).collect(Collectors.toList());
+
     }
 }

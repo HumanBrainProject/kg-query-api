@@ -92,7 +92,8 @@
           "relative_path": "cscs:absolute_path",
           "required": true
         }
-      ]
+      ],
+      "required": true
     }
   ]
 }

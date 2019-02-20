@@ -1,6 +1,7 @@
 package org.humanbrainproject.knowledgegraph.commons.api;
 
 import org.humanbrainproject.knowledgegraph.annotations.NoTests;
+import org.humanbrainproject.knowledgegraph.query.entity.fieldFilter.ExampleValues;
 
 @NoTests(NoTests.NO_LOGIC)
 public class ParameterConstants {
@@ -34,6 +35,6 @@ public class ParameterConstants {
     public static final String RESTRICTED_ORGANIZATION_DOC = "Restrict the results to explicitly defined organizations - the main use case is if a user with broad access permissions wants to simulate restricted read access (e.g. the indexing functionality of the KG search UI)";
     public static final String SEARCH_DOC = "A search string checking for instances with names which match this term (includes wildcards)";
 
-    public static final String BOUNDING_BOX_DOC = "A minimal bounding box - if defined, only results which are spatially anchored and are part of the given region are returned. Needs to be defined in combination with referenceSpace";
-    public static final String REFERENCE_SPACE_DOC = "The reference space for the defined minimal bounding box (mbb)";
+    public static final String BOUNDING_BOX_DOC = "A minimal bounding box - if defined, only results which are spatially anchored and are part of the given region are returned. Follow the pattern \""+ ExampleValues.MBB_EXAMPLE+"\"";
+
 }
