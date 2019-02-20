@@ -125,8 +125,17 @@ public class Reconciliation implements InferenceStrategy, InitializingBean {
         document.addReference(HBPVocabulary.INFERENCE_OF, nexusConfiguration.getAbsoluteUrl(original.getInstanceReference()));
         document.addType(HBPVocabulary.INFERENCE_TYPE);
         document.put(HBPVocabulary.PROVENANCE_MODIFIED_AT, ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_INSTANT));
+        removeInternalFieldsFromAlternatives(document);
         IndexingMessage indexingMessage = new IndexingMessage(referenceForInferred, transformer.getMapAsJson(document), null, null);
         return messageProcessor.createVertexStructure(messageProcessor.qualify(indexingMessage));
+    }
+
+    private void removeInternalFieldsFromAlternatives(JsonDocument doc){
+        Map<String, Alternative> alternatives = (Map) doc.get(HBPVocabulary.INFERENCE_ALTERNATIVES);
+        if(alternatives != null){
+            alternatives.entrySet().stream().filter(k -> !k.getKey().startsWith("@") && !k.getKey().startsWith("_") && !k.getValue().getUserIds().isEmpty());
+            doc.put(HBPVocabulary.INFERENCE_ALTERNATIVES, alternatives);
+        }
     }
 
     private Property mergeProperty(String currentProperty, Set<? extends Vertex> vertices) {
@@ -134,25 +143,31 @@ public class Reconciliation implements InferenceStrategy, InitializingBean {
             List<Vertex> verticesWithProperty = vertices.stream().filter(v -> v.getQualifiedIndexingMessage().getQualifiedMap().get(currentProperty) != null).collect(Collectors.toList());
             Object result = null;
             Vertex originOfResult = null;
-            Set<Alternative> alternatives = new LinkedHashSet<>();
             Map<Object, Integer> valueCount = new HashMap<>();
+            Map<Object, Set<String>> allAlts = new HashMap<>();
             for (Vertex vertex : verticesWithProperty) {
                 Object valueByName = vertex.getQualifiedIndexingMessage().getQualifiedMap().get(currentProperty);
-                if (overrides(vertex, originOfResult, valueByName, result, valueCount)) {
-                    if (result != null && !result.equals(valueByName) && !JsonLdConsts.ID.equals(currentProperty)) {
-                        Set<String> userid = new HashSet<>();
-                        userid.add(vertex.getQualifiedIndexingMessage().getOriginalMessage().getUserId());
-                        alternatives.add( new Alternative(result, userid));
+                if(!JsonLdConsts.ID.equals(currentProperty)){
+                    Set<String> userIds = allAlts.get(valueByName);
+                    if(userIds == null){
+                        userIds = new HashSet<>();
                     }
+                    userIds.add((String)vertex.getQualifiedIndexingMessage().getQualifiedMap().get(HBPVocabulary.PROVENANCE_LAST_MODIFICATION_USER_ID));
+                    allAlts.put(valueByName, userIds);
+                }
+
+                if (overrides(vertex, originOfResult, valueByName, result, valueCount)) {
                     result = valueByName;
                     originOfResult = vertex;
-                } else if (valueByName != null && !valueByName.equals(result) && !JsonLdConsts.ID.equals(currentProperty)) {
-                    Set<String> userid = new HashSet<>();
-                    userid.add(vertex.getQualifiedIndexingMessage().getOriginalMessage().getUserId());
-                    alternatives.add(new Alternative(valueByName, userid));
                 }
             }
-            return new Property(currentProperty, result).setAlternatives(alternatives);
+            final Object r = result;
+            allAlts.keySet().removeIf(p -> p.equals(r));
+            Set<Alternative> resultingAlts = new LinkedHashSet<>();
+            for(Map.Entry<Object, Set<String>> entry : allAlts.entrySet()){
+                resultingAlts.add(new Alternative(entry.getKey(), entry.getValue()));
+            }
+            return new Property(currentProperty, result).setAlternatives(resultingAlts);
         }
         return null;
     }
@@ -163,7 +178,7 @@ public class Reconciliation implements InferenceStrategy, InitializingBean {
         for (Vertex vertex : vertices) {
             for (Object k : vertex.getQualifiedIndexingMessage().getQualifiedMap().keySet()) {
                 String key = (String) k;
-                if (!handledKeys.contains(key)) {
+                if (!handledKeys.contains(key) && !key.equals(HBPVocabulary.INFERENCE_ALTERNATIVES)) {
                     Property property = mergeProperty(key, vertices);
                     if (property != null) {
                         newDocument.put(key, property.getValue());

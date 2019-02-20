@@ -48,7 +48,9 @@ public class MessageProcessor {
         if(map.get(HBPVocabulary.PROVENANCE_LAST_MODIFICATION_USER_ID) == null && message.getUserId() != null){
             map.put(HBPVocabulary.PROVENANCE_LAST_MODIFICATION_USER_ID, message.getUserId());
         }
-        map.put(HBPVocabulary.PROVENANCE_MODIFIED_AT, message.getTimestamp());
+        if(map.get(HBPVocabulary.PROVENANCE_MODIFIED_AT) == null && message.getTimestamp() != null){
+            map.put(HBPVocabulary.PROVENANCE_MODIFIED_AT, message.getTimestamp());
+        }
         return new QualifiedIndexingMessage(message, map);
     }
 

@@ -93,7 +93,9 @@ public class JsonDocument extends LinkedHashMap<String, Object>{
         }else{
             v = value;
         }
-        addToProperty(propertyName, v, alternatives);
+        if(!value.getUserIds().isEmpty() && !value.getUserIds().stream().allMatch(Objects::isNull)){
+            addToProperty(propertyName, v, alternatives);
+        }
     }
 
     private static void addToProperty(String propertyName, Object value, Map map){
