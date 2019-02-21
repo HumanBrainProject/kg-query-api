@@ -87,7 +87,7 @@ public class PythonGenerator {
         sb.append("        filter = \"\"\n");
         for(int i=0; i<filterParameters.size(); i++){
             sb.append(String.format("        if self._%s is not None:\n", filterParametersPython.get(i)));
-            sb.append(String.format("                filter = filter + \"&%s=\" + self._%s\n", filterParameters.get(i), filterParametersPython.get(i)));
+            sb.append(String.format("                filter = filter + \"&%s=\" + self._%s\n", filterParameters.get(i).getName(), filterParametersPython.get(i)));
         }
         sb.append("        return filter\n\n");
 
