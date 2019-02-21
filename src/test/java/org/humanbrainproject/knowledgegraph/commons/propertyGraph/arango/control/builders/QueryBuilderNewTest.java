@@ -41,8 +41,8 @@ public class QueryBuilderNewTest {
     private void printResult(QueryBuilderNew queryBuilderNew){
         System.out.println(queryBuilderNew.build(null, null));
         System.out.println("Bind parameters:");
-        for (String key : queryBuilderNew.getFilterValues().keySet()) {
-            System.out.println(key+": "+queryBuilderNew.getFilterValues().get(key));
+        for (String key : queryBuilderNew.getProcessedFilterValues().keySet()) {
+            System.out.println(key+": "+queryBuilderNew.getProcessedFilterValues().get(key));
         }
     }
 

@@ -37,7 +37,7 @@ public class SpecificationQuery {
 
     public QueryResult<List<Map>> queryForData(QueryBuilderNew queryBuilderNew, List<String> restrictedIds, String search) throws IOException, SolrServerException {
         String query = queryBuilderNew.build(restrictedIds, search);
-        Map<String, Object> filterValues = queryBuilderNew.getFilterValues();
+        Map<String, Object> filterValues = queryBuilderNew.getProcessedFilterValues();
 
         //Resolve spatial search
         Specification spec = queryBuilderNew.getSpecification();

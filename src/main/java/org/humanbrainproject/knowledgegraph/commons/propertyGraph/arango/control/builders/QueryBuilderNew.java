@@ -24,12 +24,14 @@ public class QueryBuilderNew {
     private final Specification specification;
     private final Pagination pagination;
     private final AuthorizedArangoQuery q;
-    private final Map<String, Object> filterValues;
+    private final Map<String, String> filterValues;
+    private final Map<String, Object> processedFilterValues = new HashMap<>();
+
     private final Set<ArangoCollectionReference> existingCollections;
 
 
-    public Map<String, Object> getFilterValues() {
-        return filterValues;
+    public Map<String, Object> getProcessedFilterValues() {
+        return processedFilterValues;
     }
 
     public Pagination getPagination() {
@@ -63,12 +65,12 @@ public class QueryBuilderNew {
         //FIXME We want to get rid of the static search parameter - this could be done dynamically but we keep it for backwards compatibility right now.
         if(search!=null){
             q.addLine(trust("FILTER ${rootFieldName}_doc.`http://schema.org/name` LIKE @searchQuery"));
-            getFilterValues().put("searchQuery", "%"+search+"%");
+            getProcessedFilterValues().put("searchQuery", "%"+search+"%");
         }
 
         if(restrictToIds!=null && !restrictToIds.isEmpty()){
             q.addLine(trust("FILTER ${rootFieldName}_doc._key IN @generalIdRestriction"));
-            getFilterValues().put("generalIdRestriction", restrictToIds);
+            getProcessedFilterValues().put("generalIdRestriction", restrictToIds);
         }
         else {
             //Define sorting
@@ -561,7 +563,7 @@ public class QueryBuilderNew {
             if (fieldFilter.getParameter() != null) {
                 key = fieldFilter.getParameter().getName();
             } else {
-                key = "staticFilter" + QueryBuilderNew.this.filterValues.size();
+                key = "staticFilter" + QueryBuilderNew.this.processedFilterValues.size();
             }
             if (QueryBuilderNew.this.filterValues.containsKey(key)) {
                 Object fromMap = QueryBuilderNew.this.filterValues.get(key);
@@ -577,7 +579,7 @@ public class QueryBuilderNew {
                 if (postfixWildcard && !value.endsWith("%")) {
                     value = value + "%";
                 }
-                QueryBuilderNew.this.filterValues.put(key, value);
+                QueryBuilderNew.this.processedFilterValues.put(key, value);
                 AQL aql = new AQL();
                 aql.add(trust("@${field}"));
                 aql.setParameter("field", key);
