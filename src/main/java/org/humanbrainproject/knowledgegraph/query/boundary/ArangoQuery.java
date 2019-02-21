@@ -78,7 +78,7 @@ public class ArangoQuery {
 
     private String getAbsoluteUrlOfRootSchema(Query query){
         if(query.getSchemaReference()!=null) {
-            nexusConfiguration.getAbsoluteUrl(query.getSchemaReference());
+            return nexusConfiguration.getAbsoluteUrl(query.getSchemaReference());
         }
         return null;
     }
