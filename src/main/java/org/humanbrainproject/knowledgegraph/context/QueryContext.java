@@ -30,7 +30,7 @@ public class QueryContext {
     @Autowired
     ArangoDatabaseFactory databaseFactory;
 
-    private final Map<String, Object> allParameters = new HashMap<>();
+    private final Map<String, String> allParameters = new HashMap<>();
     private DatabaseScope databaseScope = DatabaseScope.INFERRED;
 
 
@@ -38,11 +38,11 @@ public class QueryContext {
         return databaseScope;
     }
 
-    public Map<String, Object> getAllParameters() {
+    public Map<String, String> getAllParameters() {
         return allParameters;
     }
 
-    public void setAllParameters(Map<String, Object> parameters) {
+    public void setAllParameters(Map<String, String> parameters) {
         allParameters.putAll(parameters);
     }
 

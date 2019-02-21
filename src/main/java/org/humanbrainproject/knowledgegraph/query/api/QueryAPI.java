@@ -345,6 +345,7 @@ public class QueryAPI {
         try {
             authorizationContext.populateAuthorizationContext(authorizationToken);
             queryContext.populateQueryContext(databaseScope);
+            queryContext.setAllParameters(allRequestParams);
 
             StoredQuery query = new StoredQuery(new NexusSchemaReference(org, domain, schema, version), queryId, vocab);
             query.setParameters(allRequestParams);

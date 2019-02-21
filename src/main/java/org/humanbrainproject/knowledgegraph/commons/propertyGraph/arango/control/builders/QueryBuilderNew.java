@@ -89,7 +89,7 @@ public class QueryBuilderNew {
     }
 
 
-    public QueryBuilderNew(Specification specification, Set<String> permissionGroupsWithReadAccess, Pagination pagination, Map<String, Object> filterValues, Set<ArangoCollectionReference> existingCollections) {
+    public QueryBuilderNew(Specification specification, Set<String> permissionGroupsWithReadAccess, Pagination pagination, Map<String, String> filterValues, Set<ArangoCollectionReference> existingCollections) {
         this.q = new AuthorizedArangoQuery(permissionGroupsWithReadAccess);
         this.specification = specification;
         this.pagination = pagination;

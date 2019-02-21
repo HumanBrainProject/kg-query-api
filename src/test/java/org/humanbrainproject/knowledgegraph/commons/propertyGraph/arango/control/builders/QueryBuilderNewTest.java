@@ -28,7 +28,7 @@ public class QueryBuilderNewTest {
 
     Pagination pagination;
 
-    Map<String, Object> parameters;
+    Map<String, String> parameters;
 
     @Before
     public void setup() {
