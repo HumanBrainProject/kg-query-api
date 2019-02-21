@@ -374,7 +374,7 @@ public class QueryBuilderNew {
                 for (SpecField notGroupedSortField : notGroupedSortFields) {
                     AQL notGroupedSort = new AQL();
                     notGroupedSort.add(trust("${traverseField}_group_el.${traverseField}_grp_inst.`${field}`"));
-                    if (notGroupedSortField != notGroupedByFields.get(notGroupedByFields.size() - 1)) {
+                    if (notGroupedSortField != notGroupedSortFields.get(notGroupedSortFields.size() - 1)) {
                         notGroupedSort.addComma();
                     }
                     notGroupedSort.setParameter("field", notGroupedSortField.fieldName);
