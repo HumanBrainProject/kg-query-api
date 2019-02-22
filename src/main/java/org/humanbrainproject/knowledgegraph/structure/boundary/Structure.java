@@ -12,6 +12,9 @@ import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaRef
 import org.humanbrainproject.knowledgegraph.query.boundary.ArangoQuery;
 import org.humanbrainproject.knowledgegraph.query.entity.JsonDocument;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -128,7 +131,29 @@ public class Structure {
         return jsonDocument;
     }
 
-    public JsonDocument getStructure(boolean withLinks) {
+    @Cacheable("structure")
+    public JsonDocument getStructure(){
+        return getStructure(false);
+    }
+
+    @Cacheable("structureWithLinks")
+    public JsonDocument getStructureWithLinks(){
+        return getStructure(true);
+    }
+
+    @CacheEvict(allEntries = true, cacheNames = { "structure"})
+    @Scheduled(fixedDelay = 86400000)
+    public void evictStructureCache(){
+
+    }
+
+    @CacheEvict(allEntries = true, cacheNames = { "structureWithLinks"})
+    @Scheduled(fixedDelay = 86400000)
+    public void evictStructureWithLinksCache(){
+    }
+
+
+    private JsonDocument getStructure(boolean withLinks) {
         Collection<NexusSchemaReference> allSchemas = lookupMap.getLookupTable(false).values();
         JsonDocument jsonDocument = new JsonDocument();
         List<JsonDocument> schemas = new ArrayList<>();
