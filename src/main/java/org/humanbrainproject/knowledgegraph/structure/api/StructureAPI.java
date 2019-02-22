@@ -1,12 +1,16 @@
 package org.humanbrainproject.knowledgegraph.structure.api;
 
+import io.swagger.annotations.ApiOperation;
 import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationContext;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
 import org.humanbrainproject.knowledgegraph.query.entity.JsonDocument;
 import org.humanbrainproject.knowledgegraph.structure.boundary.Structure;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpHeaders;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.*;
 
 import javax.ws.rs.core.MediaType;
@@ -26,9 +30,36 @@ public class StructureAPI {
     Structure structure;
 
     @GetMapping
-    public JsonDocument getStructure(@RequestParam(value = "withLinks", required = false) boolean withLinks, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization){
-        authorizationContext.populateAuthorizationContext(authorization);
-        return structure.getStructure(withLinks);
+    @Cacheable("structure")
+    public JsonDocument getStructure(){
+        authorizationContext.setMasterCredential();
+        return structure.getStructure(false);
+    }
+
+    @ApiOperation(value="Flushes the cache of the structure request. Please note, that additionally, the cache is flushed every 24h.")
+    @CacheEvict(allEntries = true, cacheNames = { "structure"})
+    @Scheduled(fixedDelay = 86400000)
+    @DeleteMapping("/cache")
+    public void structureCacheEvict() {
+        getStructure();
+    }
+
+
+    @GetMapping("/withLinks")
+    @Cacheable("structureWithLinks")
+    public JsonDocument getStructureWithLinks(){
+        authorizationContext.setMasterCredential();
+        return structure.getStructure(true);
+    }
+
+
+
+    @ApiOperation(value="Flushes the cache of the structure with links request. Please note, that additionally, the cache is flushed every 24h.")
+    @CacheEvict(allEntries = true, cacheNames = { "structureWithLinks"})
+    @Scheduled(fixedDelay = 86400000)
+    @DeleteMapping("/withLinks/cache")
+    public void structureWithLinksCacheEvict() {
+        getStructureWithLinks();
     }
 
 
