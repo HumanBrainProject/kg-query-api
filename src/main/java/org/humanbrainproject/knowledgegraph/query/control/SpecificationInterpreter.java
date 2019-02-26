@@ -16,10 +16,7 @@ import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.boot.configurationprocessor.json.JSONObject;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @ToBeTested
 @Component
@@ -113,7 +110,16 @@ public class SpecificationInterpreter {
                             if (originObj.has(GraphQueryKeys.GRAPH_QUERY_FILTER.getFieldName())) {
                                 fieldFilter = createFieldFilter(originObj.getJSONObject(GraphQueryKeys.GRAPH_QUERY_FILTER.getFieldName()));
                             }
-                            fieldsPerRelativePath.add(new SpecField(fieldName, specFields, traversalPath, groupedInstances, required, sortAlphabetically, groupBy, ensureOrder, fieldFilter));
+
+                            Map<String, Object> customDirectives = new LinkedHashMap<>();
+                            Iterator keys = originObj.keys();
+                            while(keys.hasNext()){
+                                Object key = keys.next();
+                                if(key instanceof String && !GraphQueryKeys.isKey((String)key)){
+                                    customDirectives.put((String)key, originObj.get((String)key));
+                                }
+                            }
+                            fieldsPerRelativePath.add(new SpecField(fieldName, specFields, traversalPath, groupedInstances, required, sortAlphabetically, groupBy, ensureOrder, fieldFilter, customDirectives));
                         }
                     }
                 }

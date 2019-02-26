@@ -3,8 +3,6 @@ package org.humanbrainproject.knowledgegraph.releasing.api;
 import io.swagger.annotations.Api;
 import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationContext;
-import org.humanbrainproject.knowledgegraph.commons.authorization.entity.Credential;
-import org.humanbrainproject.knowledgegraph.commons.authorization.entity.OidcAccessToken;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.exceptions.StoredQueryNotFoundException;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.releasing.boundary.Releasing;
@@ -57,7 +55,6 @@ public class ReleasingAPI {
             authorizationContext.populateAuthorizationContext(authorization);
 
             if (relativeNexusIds != null) {
-                Credential credential = new OidcAccessToken().setToken(authorization);
                 List<ReleaseStatusResponse> collect = relativeNexusIds.stream().map(ref -> releasing.getReleaseStatus(NexusInstanceReference.createFromUrl(ref), withChildren)).collect(Collectors.toList());
                 return ResponseEntity.ok(collect);
             }

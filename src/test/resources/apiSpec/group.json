@@ -54,13 +54,51 @@
         {
           "fieldname": "query:componentName",
           "group_by": true,
-          "sort": true,
           "relative_path": [
             "minds:component",
             "schema:name"
           ]
         }
       ]
+    },
+    {
+      "fieldname": "query:datasets",
+      "grouped_instances": "query:instances",
+      "searchUi:hint": "List of datasets in which the subject was used to produce data.",
+      "searchUi:layout": "group",
+      "label": "Datasets",
+      "fields": [
+        {
+          "fieldname": "query:name",
+          "searchUi:count": true,
+          "sort": true,
+          "relative_path": "schema:name",
+          "searchUi:type": "text"
+        },
+        {
+          "fieldname": "query:identifier",
+          "relative_path": "schema:identifier"
+        },
+        {
+          "fieldname": "query:componentName",
+          "group_by": true,
+          "relative_path": [
+            "minds:component",
+            "schema:name"
+          ]
+        }
+      ],
+      "relative_path": [
+        {
+          "@id": "minds:subjects",
+          "reverse": true
+        },
+        {
+          "@id": "minds:specimen_group",
+          "reverse": true
+        }
+      ],
+      "searchUi:type": "text"
     }
   ]
 }

@@ -99,11 +99,6 @@ public class ArangoQuery {
     }
 
 
-    public QueryResult<List<Map>> metaReflectionQueryBySpecification(Query query) throws JSONException, IOException {
-        Specification spec = specInterpreter.readSpecification(JsonUtils.toString(standardization.fullyQualify(query.getSpecification())), getAbsoluteUrlOfRootSchema(query), null);
-        return specificationQuery.metaReflectionSpecification(spec, query.getFilter());
-    }
-
     public Map reflectQueryBySpecification(Query query) throws JSONException, IOException {
         Specification spec = specInterpreter.readSpecification(JsonUtils.toString(standardization.fullyQualify(query.getSpecification())), getAbsoluteUrlOfRootSchema(query),null);
         Map map = specificationQuery.reflectSpecification(spec, query);
@@ -172,10 +167,6 @@ public class ArangoQuery {
         return arangoInternalRepository.getInternalDocumentByKey(new ArangoDocumentReference(SPECIFICATION_QUERIES, queryReference.getName()), clazz);
     }
 
-    public QueryResult<List<Map>> metaReflectionQueryPropertyGraphByStoredSpecification(StoredQuery query) throws
-            IOException, JSONException {
-        return metaReflectionQueryBySpecification(resolveStoredQuery(query));
-    }
 
     public QueryResult<List<Map>> metaQueryPropertyGraphByStoredSpecification(StoredQuery query) throws
             IOException, JSONException {

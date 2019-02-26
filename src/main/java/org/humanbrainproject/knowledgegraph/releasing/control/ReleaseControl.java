@@ -28,7 +28,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.configurationprocessor.json.JSONException;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -101,7 +100,13 @@ public class ReleaseControl {
         try {
             StoredQuery storedQuery = new StoredQuery(instanceReference.getNexusSchema(), "search", null);
             storedQuery.getFilter().restrictToSingleId(instanceReference.getId());
-            Map reflect = query.reflectQueryPropertyGraphByStoredSpecification(storedQuery);
+            Map reflect;
+            try {
+                reflect = query.reflectQueryPropertyGraphByStoredSpecification(storedQuery);
+            }
+            catch(StoredQueryNotFoundException e){
+                reflect = null;
+            }
             return reflect != null ? transformReleaseStatusMap(reflect) : null;
 
         } catch (IOException | JSONException e) {

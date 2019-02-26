@@ -38,4 +38,15 @@ public enum GraphQueryKeys {
     public String getFieldName() {
         return fieldName;
     }
+
+    public static boolean isKey(String key){
+        for (GraphQueryKeys graphQueryKey : values()) {
+            if(graphQueryKey.fieldName.equals(key)){
+                return true;
+            }
+        }
+        return false;
+
+    }
+
 }

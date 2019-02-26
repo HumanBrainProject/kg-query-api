@@ -6,6 +6,7 @@ import org.humanbrainproject.knowledgegraph.query.entity.fieldFilter.FieldFilter
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 @Tested
 public class SpecField {
@@ -19,9 +20,14 @@ public class SpecField {
     public boolean ensureOrder;
     public final String groupedInstances;
     public FieldFilter fieldFilter;
+    public final Map<String, Object> customDirectives;
 
 
     public SpecField(String fieldName, List<SpecField> fields, List<SpecTraverse> traversePath, String groupedInstances, boolean required, boolean sortAlphabetically, boolean groupby, boolean ensureOrder, FieldFilter fieldFilter) {
+        this(fieldName, fields, traversePath, groupedInstances, required, sortAlphabetically, groupby, ensureOrder, fieldFilter, null);
+    }
+
+    public SpecField(String fieldName, List<SpecField> fields, List<SpecTraverse> traversePath, String groupedInstances, boolean required, boolean sortAlphabetically, boolean groupby, boolean ensureOrder, FieldFilter fieldFilter, Map<String, Object> customDirectives) {
         this.fieldName = fieldName;
         this.required = required;
         this.fields = fields != null ? new ArrayList<>(fields) : new ArrayList<>();
@@ -31,6 +37,7 @@ public class SpecField {
         this.groupedInstances = groupedInstances;
         this.ensureOrder = ensureOrder;
         this.fieldFilter = fieldFilter;
+        this.customDirectives = customDirectives;
     }
 
     public boolean isDirectChild(){

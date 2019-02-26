@@ -57,6 +57,17 @@ public class QueryResult<T> {
         this.start = start;
     }
 
+    public static QueryResult<List<Map>> createSingleton(String apiName, Map map){
+        QueryResult<List<Map>> result = new QueryResult<>();
+        result.setApiName(apiName);
+        result.setResults(Collections.singletonList(map));
+        result.setStart(0L);
+        result.setTotal(1L);
+        result.setSize(1L);
+        return result;
+    }
+
+
     public static QueryResult<List<Map>> createEmptyResult(){
         QueryResult<List<Map>> result = new QueryResult<>();
         result.setResults(Collections.emptyList());
