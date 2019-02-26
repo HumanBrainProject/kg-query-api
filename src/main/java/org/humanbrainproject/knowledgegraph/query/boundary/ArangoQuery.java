@@ -17,6 +17,7 @@ import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.exceptions.StoredQueryNotFoundException;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.ArangoVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
+import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
 import org.humanbrainproject.knowledgegraph.query.control.FreemarkerTemplating;
 import org.humanbrainproject.knowledgegraph.query.control.SpatialSearch;
@@ -99,9 +100,9 @@ public class ArangoQuery {
     }
 
 
-    public Map reflectQueryBySpecification(Query query) throws JSONException, IOException {
+    public Map reflectQueryBySpecification(Query query, NexusInstanceReference instanceReference) throws JSONException, IOException {
         Specification spec = specInterpreter.readSpecification(JsonUtils.toString(standardization.fullyQualify(query.getSpecification())), getAbsoluteUrlOfRootSchema(query),null);
-        Map map = specificationQuery.reflectSpecification(spec, query);
+        Map map = specificationQuery.reflectSpecification(spec, query, instanceReference);
         map.put("children", regroup((List<Map>) map.get("children")));
         return map;
     }
@@ -173,9 +174,9 @@ public class ArangoQuery {
         return metaQueryBySpecification(resolveStoredQuery(query));
     }
 
-    public Map reflectQueryPropertyGraphByStoredSpecification(StoredQuery query) throws
+    public Map reflectQueryPropertyGraphByStoredSpecification(StoredQuery query, NexusInstanceReference instanceReference) throws
             IOException, JSONException {
-        return reflectQueryBySpecification(resolveStoredQuery(query));
+        return reflectQueryBySpecification(resolveStoredQuery(query), instanceReference);
     }
 
     public QueryResult<List<Map>> queryPropertyGraphByStoredSpecification(StoredQuery query) throws

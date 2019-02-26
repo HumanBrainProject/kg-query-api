@@ -102,7 +102,7 @@ public class ReleaseControl {
             storedQuery.getFilter().restrictToSingleId(instanceReference.getId());
             Map reflect;
             try {
-                reflect = query.reflectQueryPropertyGraphByStoredSpecification(storedQuery);
+                reflect = query.reflectQueryPropertyGraphByStoredSpecification(storedQuery, instanceReference);
             }
             catch(StoredQueryNotFoundException e){
                 reflect = null;

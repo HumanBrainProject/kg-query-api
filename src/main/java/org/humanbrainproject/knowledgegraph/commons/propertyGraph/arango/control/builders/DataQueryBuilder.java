@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 
 import static org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.aql.AQL.*;
 
-public class QueryBuilderNew {
+public class DataQueryBuilder {
 
     private final Specification specification;
     private final Pagination pagination;
@@ -52,13 +52,13 @@ public class QueryBuilderNew {
         //Setup the root instance
         defineRootInstance();
 
-        q.add(new MergeBuilder(rootAlias, specification.fields).getMergedFields());
+        q.add(new MergeBuilder(rootAlias, specification.getFields()).getMergedFields());
 
         //Define the complex fields (the ones with traversals)
-        q.add(new TraverseBuilder(rootAlias, specification.fields).getTraversedField());
+        q.add(new TraverseBuilder(rootAlias, specification.getFields()).getTraversedField());
 
         //Define filters
-        q.add(new FilterBuilder(rootAlias, specification.documentFilter, specification.fields).getFilter());
+        q.add(new FilterBuilder(rootAlias, specification.getDocumentFilter(), specification.getFields()).getFilter());
 
         q.addDocumentFilterWithWhitelistFilter(rootAlias);
 
@@ -74,7 +74,7 @@ public class QueryBuilderNew {
         }
         else {
             //Define sorting
-            q.add(new SortBuilder(rootAlias, specification.fields).getSort());
+            q.add(new SortBuilder(rootAlias, specification.getFields()).getSort());
 
             //Pagination
             if (this.pagination != null && this.pagination.getSize() != null) {
@@ -85,13 +85,13 @@ public class QueryBuilderNew {
         }
 
         //Define return value
-        q.add(new ReturnBuilder(rootAlias, null, specification.fields).getReturnStructure());
+        q.add(new ReturnBuilder(rootAlias, null, specification.getFields()).getReturnStructure());
 
         return q.build().getValue();
     }
 
 
-    public QueryBuilderNew(Specification specification, Set<String> permissionGroupsWithReadAccess, Pagination pagination, Map<String, String> filterValues, Set<ArangoCollectionReference> existingCollections) {
+    public DataQueryBuilder(Specification specification, Set<String> permissionGroupsWithReadAccess, Pagination pagination, Map<String, String> filterValues, Set<ArangoCollectionReference> existingCollections) {
         this.q = new AuthorizedArangoQuery(permissionGroupsWithReadAccess);
         this.specification = specification;
         this.pagination = pagination;
@@ -117,7 +117,7 @@ public class QueryBuilderNew {
 
 
     private String getRootCollection() {
-        return ArangoCollectionReference.fromNexusSchemaReference(NexusSchemaReference.createFromUrl(specification.rootSchema)).getName();
+        return ArangoCollectionReference.fromNexusSchemaReference(NexusSchemaReference.createFromUrl(specification.getRootSchema())).getName();
     }
 
 
@@ -563,10 +563,10 @@ public class QueryBuilderNew {
             if (fieldFilter.getParameter() != null) {
                 key = fieldFilter.getParameter().getName();
             } else {
-                key = "staticFilter" + QueryBuilderNew.this.processedFilterValues.size();
+                key = "staticFilter" + DataQueryBuilder.this.processedFilterValues.size();
             }
-            if (QueryBuilderNew.this.filterValues.containsKey(key)) {
-                Object fromMap = QueryBuilderNew.this.filterValues.get(key);
+            if (DataQueryBuilder.this.filterValues.containsKey(key)) {
+                Object fromMap = DataQueryBuilder.this.filterValues.get(key);
                 value = fromMap != null ? fromMap.toString() : null;
             }
             if (value == null && fieldFilter.getValue() != null) {
@@ -579,7 +579,7 @@ public class QueryBuilderNew {
                 if (postfixWildcard && !value.endsWith("%")) {
                     value = value + "%";
                 }
-                QueryBuilderNew.this.processedFilterValues.put(key, value);
+                DataQueryBuilder.this.processedFilterValues.put(key, value);
                 AQL aql = new AQL();
                 aql.add(trust("@${field}"));
                 aql.setParameter("field", key);

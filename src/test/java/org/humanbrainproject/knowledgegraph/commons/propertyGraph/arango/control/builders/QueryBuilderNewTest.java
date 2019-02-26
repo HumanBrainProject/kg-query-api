@@ -38,7 +38,7 @@ public class QueryBuilderNewTest {
         this.existingCollections = new HashSet<>();
     }
 
-    private void printResult(QueryBuilderNew queryBuilderNew){
+    private void printResult(DataQueryBuilder queryBuilderNew){
         System.out.println(queryBuilderNew.build(null, null));
         System.out.println("Bind parameters:");
         for (String key : queryBuilderNew.getProcessedFilterValues().keySet()) {
@@ -47,7 +47,7 @@ public class QueryBuilderNewTest {
     }
 
     private Specification ensureAllTraversalFieldsInCollectionList(Specification specification){
-        ensureAllTraversalFieldsInExistingCollections(specification.fields);
+        ensureAllTraversalFieldsInExistingCollections(specification.getFields());
         return specification;
     }
 
@@ -76,7 +76,7 @@ public class QueryBuilderNewTest {
 
     @Test
     public void buildSimple() throws IOException, JSONException {
-        QueryBuilderNew queryBuilderNew = new QueryBuilderNew(readSpecification("simpleFields.json", DATASET_ENDPOINT), COLLECTION_WHITELIST, pagination, parameters, existingCollections);
+        DataQueryBuilder queryBuilderNew = new DataQueryBuilder(readSpecification("simpleFields.json", DATASET_ENDPOINT), COLLECTION_WHITELIST, pagination, parameters, existingCollections);
         printResult(queryBuilderNew);
     }
 
@@ -84,42 +84,42 @@ public class QueryBuilderNewTest {
     @Test
     public void buildSimpleTraverse() throws IOException, JSONException {
         Specification specification = readSpecification("simpleTraverse.json", DATASET_ENDPOINT);
-        QueryBuilderNew queryBuilderNew = new QueryBuilderNew(specification, COLLECTION_WHITELIST, pagination, parameters, existingCollections);
+        DataQueryBuilder queryBuilderNew = new DataQueryBuilder(specification, COLLECTION_WHITELIST, pagination, parameters, existingCollections);
         printResult(queryBuilderNew);
 
     }
 
     @Test
     public void buildSingleLevelNested() throws IOException, JSONException {
-        QueryBuilderNew queryBuilderNew = new QueryBuilderNew(readSpecification("singleLevelNested.json", DATASET_ENDPOINT), COLLECTION_WHITELIST, pagination, parameters, existingCollections);
+        DataQueryBuilder queryBuilderNew = new DataQueryBuilder(readSpecification("singleLevelNested.json", DATASET_ENDPOINT), COLLECTION_WHITELIST, pagination, parameters, existingCollections);
 
         printResult(queryBuilderNew);
     }
 
     @Test
     public void buildMultiLevelNested() throws IOException, JSONException {
-        QueryBuilderNew queryBuilderNew = new QueryBuilderNew(readSpecification("multiLevelNested.json", DATASET_ENDPOINT), COLLECTION_WHITELIST, pagination, parameters, existingCollections);
+        DataQueryBuilder queryBuilderNew = new DataQueryBuilder(readSpecification("multiLevelNested.json", DATASET_ENDPOINT), COLLECTION_WHITELIST, pagination, parameters, existingCollections);
 
         printResult(queryBuilderNew);
     }
 
     @Test
     public void buildMerge() throws IOException, JSONException {
-        QueryBuilderNew queryBuilderNew = new QueryBuilderNew(readSpecification("merge.json", DATASET_ENDPOINT), COLLECTION_WHITELIST, pagination, parameters, existingCollections);
+        DataQueryBuilder queryBuilderNew = new DataQueryBuilder(readSpecification("merge.json", DATASET_ENDPOINT), COLLECTION_WHITELIST, pagination, parameters, existingCollections);
 
         printResult(queryBuilderNew);
     }
 
     @Test
     public void buildMergeWithSubfields() throws IOException, JSONException {
-        QueryBuilderNew queryBuilderNew = new QueryBuilderNew(readSpecification("mergeWithSubfields.json", DATASET_ENDPOINT), COLLECTION_WHITELIST, pagination, parameters, existingCollections);
+        DataQueryBuilder queryBuilderNew = new DataQueryBuilder(readSpecification("mergeWithSubfields.json", DATASET_ENDPOINT), COLLECTION_WHITELIST, pagination, parameters, existingCollections);
 
         printResult(queryBuilderNew);
     }
 
     @Test
     public void buildGroup() throws IOException, JSONException {
-        QueryBuilderNew queryBuilderNew = new QueryBuilderNew(readSpecification("group.json", SPECIES_ENDPOINT), COLLECTION_WHITELIST, pagination, parameters, existingCollections);
+        DataQueryBuilder queryBuilderNew = new DataQueryBuilder(readSpecification("group.json", SPECIES_ENDPOINT), COLLECTION_WHITELIST, pagination, parameters, existingCollections);
 
         printResult(queryBuilderNew);
     }
@@ -127,7 +127,7 @@ public class QueryBuilderNewTest {
 
     @Test
     public void buildEmbedded() throws IOException, JSONException {
-        QueryBuilderNew queryBuilderNew = new QueryBuilderNew(readSpecification("embedded.json", ORGANIZATION_ENDPOINT), COLLECTION_WHITELIST, pagination, parameters, existingCollections);
+        DataQueryBuilder queryBuilderNew = new DataQueryBuilder(readSpecification("embedded.json", ORGANIZATION_ENDPOINT), COLLECTION_WHITELIST, pagination, parameters, existingCollections);
 
         printResult(queryBuilderNew);
     }
@@ -136,7 +136,7 @@ public class QueryBuilderNewTest {
     public void buildFilter() throws IOException, JSONException {
         parameters.put("dynamicRegex", ".*Probab.*");
         parameters.put("dynamicOverride", "Whole.*");
-        QueryBuilderNew queryBuilderNew = new QueryBuilderNew(readSpecification("filter.json", DATASET_ENDPOINT), COLLECTION_WHITELIST, pagination, parameters, existingCollections);
+        DataQueryBuilder queryBuilderNew = new DataQueryBuilder(readSpecification("filter.json", DATASET_ENDPOINT), COLLECTION_WHITELIST, pagination, parameters, existingCollections);
 
         printResult(queryBuilderNew);
     }

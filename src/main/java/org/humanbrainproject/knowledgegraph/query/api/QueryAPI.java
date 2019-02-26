@@ -12,6 +12,7 @@ import org.humanbrainproject.knowledgegraph.commons.authorization.control.Author
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.exceptions.RootCollectionNotFoundException;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.exceptions.StoredQueryNotFoundException;
 import org.humanbrainproject.knowledgegraph.context.QueryContext;
+import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
 import org.humanbrainproject.knowledgegraph.query.boundary.ArangoQuery;
 import org.humanbrainproject.knowledgegraph.query.boundary.CodeGenerator;
@@ -140,11 +141,11 @@ public class QueryAPI {
         try {
             authorizationContext.populateAuthorizationContext(authorizationToken);
 
-            StoredQuery query = new StoredQuery(new NexusSchemaReference(org, domain, schema, version), queryId, vocab);
+            NexusSchemaReference schemaReference = new NexusSchemaReference(org, domain, schema, version);
+            StoredQuery query = new StoredQuery(schemaReference, queryId, vocab);
             query.setParameters(allRequestParams);
-            query.getFilter().restrictToOrganizations(RestUtils.splitCommaSeparatedValues(restrictToOrganizations)).restrictToSingleId(instanceId);
-            Map result = this.query.reflectQueryPropertyGraphByStoredSpecification(query);
-
+            query.getFilter().restrictToOrganizations(RestUtils.splitCommaSeparatedValues(restrictToOrganizations));
+            Map result = this.query.reflectQueryPropertyGraphByStoredSpecification(query, new NexusInstanceReference(schemaReference, instanceId));
             return ResponseEntity.ok(result);
         } catch (StoredQueryNotFoundException e){
             return ResponseEntity.notFound().build();
@@ -159,10 +160,8 @@ public class QueryAPI {
     public ResponseEntity<QueryResult<List<Map>>> executeMetaQuery(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(QUERY_ID) String queryId, @RequestParam(value = VOCAB, required = false) String vocab, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken) throws Exception {
         try {
             authorizationContext.populateAuthorizationContext(authorizationToken);
-
             StoredQuery query = new StoredQuery(new NexusSchemaReference(org, domain, schema, version), queryId, vocab);
             QueryResult<List<Map>> result = this.query.metaQueryPropertyGraphByStoredSpecification(query);
-
             return ResponseEntity.ok(result);
         } catch (StoredQueryNotFoundException e){
             return ResponseEntity.notFound().build();

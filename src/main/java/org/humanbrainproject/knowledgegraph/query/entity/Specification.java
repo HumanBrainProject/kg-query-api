@@ -10,12 +10,29 @@ import java.util.List;
 
 @NoTests(NoTests.TRIVIAL)
 public class Specification {
-    public final String originalContext;
-    public final String name;
-    public final String rootSchema;
-    public final List<SpecField> fields;
-    public final JsonDocument originalDocument;
-    public final FieldFilter documentFilter;
+    private final String originalContext;
+    private final String name;
+    private final String rootSchema;
+    private final List<SpecField> fields;
+    private final JsonDocument originalDocument;
+    private final FieldFilter documentFilter;
+
+
+    public String getName() {
+        return name;
+    }
+
+    public String getRootSchema() {
+        return rootSchema;
+    }
+
+    public List<SpecField> getFields() {
+        return fields;
+    }
+
+    public JsonDocument getOriginalDocument() {
+        return originalDocument;
+    }
 
     private String specificationId;
 
@@ -41,7 +58,7 @@ public class Specification {
     }
 
     public List<ParameterDescription> getAllFilterParameters(){
-        List<ParameterDescription> filterParameters = findFilterParameters(this.fields, new ArrayList<>(), new ArrayList<>());
+        List<ParameterDescription> filterParameters = findFilterParameters(this.getFields(), new ArrayList<>(), new ArrayList<>());
         if(this.documentFilter!=null && this.documentFilter.getParameter()!=null){
             filterParameters.add(new ParameterDescription(documentFilter.getParameter(), documentFilter.getOp(), Collections.emptyList()));
         }
@@ -61,5 +78,10 @@ public class Specification {
         }
         return parameters;
     }
+
+
+
+
+
 
 }

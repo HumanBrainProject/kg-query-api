@@ -37,7 +37,7 @@ public class PythonGenerator {
         List<PythonClass> pythonClasses = new ArrayList<>();
         List<Parameter> filterParameters = new ArrayList<>();
 
-        extractPythonClasses(pythonClasses, specification.fields, filterParameters, schemaReference.getSchema());
+        extractPythonClasses(pythonClasses, specification.getFields(), filterParameters, schemaReference.getSchema());
 
 
 

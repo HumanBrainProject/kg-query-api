@@ -34,36 +34,24 @@ public class SpecificationControllerTest {
     }
 
 
-    @Test
-    public void reflectSpecificationWithSingleResponse() throws JSONException {
-        QueryResult fakeResult = Mockito.mock(QueryResult.class);
-        Mockito.doReturn(Collections.singletonList(new HashMap<>())).when(fakeResult).getResults();
-        Query query = new Query("foo", TestObjectFactory.fooInstanceReference().getNexusSchema(), "fooVocab");
-        Mockito.doReturn(fakeResult).when(this.specificationController.specificationQuery).query(Mockito.any());
-
-        Map map = this.specificationController.reflectSpecification(Mockito.mock(Specification.class), query);
-        Assert.assertTrue(map.isEmpty());
-    }
-
-
     @Test(expected = RuntimeException.class)
     public void reflectSpecificationWithMultipleResponses() throws JSONException {
-        QueryResult fakeResult = Mockito.mock(QueryResult.class);
-        Mockito.doReturn(Arrays.asList(new HashMap<>(), new HashMap<>())).when(fakeResult).getResults();
+        Map fakeResult = Mockito.mock(Map.class);
         Query query = new Query("foo", TestObjectFactory.fooInstanceReference().getNexusSchema(), "fooVocab");
-        Mockito.doReturn(fakeResult).when(this.specificationController.specificationQuery).query(Mockito.any());
-        this.specificationController.reflectSpecification(Mockito.mock(Specification.class), query);
+        Mockito.doReturn(Collections.singletonList(fakeResult)).when(this.specificationController.specificationQuery).queryForSimpleMap(Mockito.any());
+        this.specificationController.reflectSpecification(Mockito.mock(Specification.class), query, null);
     }
 
 
     @Test
     public void reflectSpecification() throws JSONException {
-        QueryResult fakeResult = Mockito.mock(QueryResult.class);
+        Map fakeResult = Mockito.mock(Map.class);
         Query query = new Query("foo", TestObjectFactory.fooInstanceReference().getNexusSchema(), "fooVocab");
-        Mockito.doReturn(fakeResult).when(this.specificationController.specificationQuery).query(Mockito.any());
-
-        Map map = this.specificationController.reflectSpecification(Mockito.mock(Specification.class), query);
-        Assert.assertNull(map);
+        Mockito.doReturn(Collections.singletonList(fakeResult)).when(this.specificationController.specificationQuery).queryForSimpleMap(Mockito.any());
+        Specification mock = Mockito.mock(Specification.class);
+        Mockito.doReturn(TestObjectFactory.fooInstanceReference().getNexusSchema().getRelativeUrl().getUrl()).when(mock).getRootSchema();
+        Map map = this.specificationController.reflectSpecification(mock, query, TestObjectFactory.fooInstanceReference());
+        Assert.assertEquals(fakeResult, map);
     }
 
 

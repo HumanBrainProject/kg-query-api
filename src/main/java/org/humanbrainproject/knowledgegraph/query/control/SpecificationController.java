@@ -5,12 +5,12 @@ import org.humanbrainproject.knowledgegraph.annotations.Tested;
 import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationContext;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoRepository;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.builders.ArangoReflectionQueryBuilder;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.builders.QueryBuilderNew;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.builders.DataQueryBuilder;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.builders.ReflectionBuilder;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.query.SpecificationQuery;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoAlias;
-import org.humanbrainproject.knowledgegraph.commons.vocabulary.ArangoVocabulary;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
 import org.humanbrainproject.knowledgegraph.context.QueryContext;
+import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.query.entity.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.configurationprocessor.json.JSONException;
@@ -41,15 +41,15 @@ public class SpecificationController {
     ArangoRepository repository;
 
     public QueryResult<List<Map>> metaSpecification(Specification spec) {
-        JsonDocument fields = buildMetaSpecification(spec.fields);
+        JsonDocument fields = buildMetaSpecification(spec.getFields());
         JsonDocument specificationInfo = new JsonDocument();
-        for (String firstLevelKey : spec.originalDocument.keySet()) {
+        for (String firstLevelKey : spec.getOriginalDocument().keySet()) {
             if(!firstLevelKey.startsWith("_") && !GraphQueryKeys.isKey(firstLevelKey)){
-                specificationInfo.put(firstLevelKey, spec.originalDocument.get(firstLevelKey));
+                specificationInfo.put(firstLevelKey, spec.getOriginalDocument().get(firstLevelKey));
             }
         }
         fields.addToProperty(GraphQueryKeys.GRAPH_QUERY_SPECIFICATION.getFieldName(), specificationInfo);
-        return  QueryResult.createSingleton(spec.name, fields);
+        return  QueryResult.createSingleton(spec.getName(), fields);
     }
 
     private JsonDocument buildMetaSpecification(List<SpecField> specFields) {
@@ -83,22 +83,18 @@ public class SpecificationController {
         return inner;
     }
 
-
-    public Map reflectSpecification(Specification spec, Query query) throws JSONException {
-        QueryResult<List<Map>> result = specificationQuery.query(new ArangoReflectionQueryBuilder(spec, new ArangoAlias(ArangoVocabulary.PERMISSION_GROUP), authorizationContext.getReadableOrganizations(query.getFilter().getRestrictToOrganizations()), query.getDocumentReferenceWhitelist(), queryContext.getExistingCollections(), configuration.getNexusBase(NexusConfiguration.ResourceType.DATA)));
-        if (result == null || result.getResults() == null || result.getResults().isEmpty()) {
+    public Map reflectSpecification(Specification spec, Query query, NexusInstanceReference instanceReference) throws JSONException {
+        ReflectionBuilder builder = new ReflectionBuilder(spec, authorizationContext.getReadableOrganizations(query.getFilter().getRestrictToOrganizations()), ArangoDocumentReference.fromNexusInstance(instanceReference), queryContext.getExistingCollections(), configuration.getNexusBase(NexusConfiguration.ResourceType.DATA));
+        List<Map> results = specificationQuery.queryForSimpleMap(builder.build());
+        if(results==null || results.isEmpty()){
             return null;
-        } else if (result.getResults().size() == 1) {
-            return result.getResults().get(0);
-        } else {
-            throw new RuntimeException("Queried the reflection API for a specification document but found multiple return instances.");
         }
+        return results.get(0);
     }
 
     public QueryResult<List<Map>> queryForSpecification(Specification spec, Pagination pagination, Filter filter) throws IOException, SolrServerException {
-        QueryBuilderNew queryBuilderNew = new QueryBuilderNew(spec, authorizationContext.getReadableOrganizations(filter.getRestrictToOrganizations()), pagination, queryContext.getAllParameters(), queryContext.getExistingCollections());
+        DataQueryBuilder queryBuilderNew = new DataQueryBuilder(spec, authorizationContext.getReadableOrganizations(filter.getRestrictToOrganizations()), pagination, queryContext.getAllParameters(), queryContext.getExistingCollections());
         return specificationQuery.queryForData(queryBuilderNew, filter.getRestrictToIds(), filter.getQueryString());
     }
-
 
 }
