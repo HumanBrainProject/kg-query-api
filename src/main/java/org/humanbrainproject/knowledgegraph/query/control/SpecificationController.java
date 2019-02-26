@@ -6,7 +6,8 @@ import org.humanbrainproject.knowledgegraph.commons.authorization.control.Author
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoRepository;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.builders.DataQueryBuilder;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.builders.ReflectionBuilder;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.builders.DefaultReleaseTreeBuilder;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.builders.SpecificationBasedReleaseTreeBuilder;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.query.SpecificationQuery;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
@@ -85,14 +86,24 @@ public class SpecificationController {
         return inner;
     }
 
-    public Map reflectSpecification(Specification spec, Query query, NexusInstanceReference instanceReference) throws JSONException {
-        ReflectionBuilder builder = new ReflectionBuilder(spec, authorizationContext.getReadableOrganizations(query.getFilter().getRestrictToOrganizations()), ArangoDocumentReference.fromNexusInstance(instanceReference), queryContext.getExistingCollections(), configuration.getNexusBase(NexusConfiguration.ResourceType.DATA));
+    public Map releaseTreeBySpecification(Specification spec, Query query, NexusInstanceReference instanceReference) throws JSONException {
+        SpecificationBasedReleaseTreeBuilder builder = new SpecificationBasedReleaseTreeBuilder(spec, authorizationContext.getReadableOrganizations(query.getFilter().getRestrictToOrganizations()), ArangoDocumentReference.fromNexusInstance(instanceReference), queryContext.getExistingCollections(), configuration.getNexusBase(NexusConfiguration.ResourceType.DATA));
         List<Map> results = specificationQuery.queryForSimpleMap(builder.build());
         if(results==null || results.isEmpty()){
             return null;
         }
         return results.get(0);
     }
+
+    public Map defaultReleaseTree(NexusInstanceReference instanceReference){
+        DefaultReleaseTreeBuilder builder = new DefaultReleaseTreeBuilder(authorizationContext.getReadableOrganizations(null), ArangoDocumentReference.fromNexusInstance(instanceReference), configuration.getNexusBase(NexusConfiguration.ResourceType.DATA));
+        List<Map> results = specificationQuery.queryForSimpleMap(builder.build());
+        if(results==null || results.isEmpty()){
+            return null;
+        }
+        return results.get(0);
+    }
+
 
     public QueryResult<List<Map>> queryForSpecification(Specification spec, Pagination pagination, Filter filter) throws IOException, SolrServerException {
         Set<ArangoCollectionReference> existingCollections = queryContext.getExistingCollections();

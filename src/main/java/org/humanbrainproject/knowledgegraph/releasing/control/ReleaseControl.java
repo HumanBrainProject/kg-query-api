@@ -10,7 +10,6 @@ import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoRepository;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.exceptions.StoredQueryNotFoundException;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.ArangoVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.SchemaOrgVocabulary;
@@ -100,14 +99,8 @@ public class ReleaseControl {
         try {
             StoredQuery storedQuery = new StoredQuery(instanceReference.getNexusSchema(), "search", null);
             storedQuery.getFilter().restrictToSingleId(instanceReference.getId());
-            Map reflect;
-            try {
-                reflect = query.reflectQueryPropertyGraphByStoredSpecification(storedQuery, instanceReference);
-            }
-            catch(StoredQueryNotFoundException e){
-                reflect = null;
-            }
-            return reflect != null ? transformReleaseStatusMap(reflect) : null;
+            Map releaseTree = query.queryReleaseTree(storedQuery, instanceReference);
+            return releaseTree != null ? transformReleaseStatusMap(releaseTree) : null;
 
         } catch (IOException | JSONException e) {
             logger.error("Was not able to request the release graph ", e);

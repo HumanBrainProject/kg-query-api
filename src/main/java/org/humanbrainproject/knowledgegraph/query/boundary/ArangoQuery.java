@@ -100,9 +100,15 @@ public class ArangoQuery {
     }
 
 
-    public Map reflectQueryBySpecification(Query query, NexusInstanceReference instanceReference) throws JSONException, IOException {
-        Specification spec = specInterpreter.readSpecification(JsonUtils.toString(standardization.fullyQualify(query.getSpecification())), getAbsoluteUrlOfRootSchema(query),null);
-        Map map = specificationQuery.reflectSpecification(spec, query, instanceReference);
+    public Map queryReleaseTree(Query query, NexusInstanceReference instanceReference) throws JSONException, IOException {
+        Map map;
+        if(query == null ||  query.getSpecification() == null){
+            map = specificationQuery.defaultReleaseTree(instanceReference);
+        }
+        else {
+            Specification spec = specInterpreter.readSpecification(JsonUtils.toString(standardization.fullyQualify(query.getSpecification())), getAbsoluteUrlOfRootSchema(query), null);
+            map = specificationQuery.releaseTreeBySpecification(spec, query, instanceReference);
+        }
         map.put("children", regroup((List<Map>) map.get("children")));
         return map;
     }
@@ -174,9 +180,16 @@ public class ArangoQuery {
         return metaQueryBySpecification(resolveStoredQuery(query));
     }
 
-    public Map reflectQueryPropertyGraphByStoredSpecification(StoredQuery query, NexusInstanceReference instanceReference) throws
+    public Map queryReleaseTree(StoredQuery query, NexusInstanceReference instanceReference) throws
             IOException, JSONException {
-        return reflectQueryBySpecification(resolveStoredQuery(query), instanceReference);
+        Query resolvedQuery;
+        try {
+            resolvedQuery = resolveStoredQuery(query);
+        }
+        catch(StoredQueryNotFoundException e){
+            resolvedQuery = null;
+        }
+        return queryReleaseTree(resolvedQuery, instanceReference);
     }
 
     public QueryResult<List<Map>> queryPropertyGraphByStoredSpecification(StoredQuery query) throws

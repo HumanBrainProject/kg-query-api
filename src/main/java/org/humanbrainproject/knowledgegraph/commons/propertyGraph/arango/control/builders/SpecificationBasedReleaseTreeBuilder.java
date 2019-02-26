@@ -6,14 +6,11 @@ import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoAlias;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
-import org.humanbrainproject.knowledgegraph.commons.vocabulary.ArangoVocabulary;
-import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.SchemaOrgVocabulary;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
 import org.humanbrainproject.knowledgegraph.query.entity.SpecField;
 import org.humanbrainproject.knowledgegraph.query.entity.SpecTraverse;
 import org.humanbrainproject.knowledgegraph.query.entity.Specification;
-import org.humanbrainproject.knowledgegraph.releasing.entity.ReleaseStatus;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,12 +19,11 @@ import java.util.Stack;
 
 import static org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.aql.AQL.*;
 
-public class ReflectionBuilder {
+public class SpecificationBasedReleaseTreeBuilder extends AbstractReleaseTreeBuilder {
 
     private final Specification specification;
     private final ArangoDocumentReference instanceId;
     private final AuthorizedArangoQuery q;
-    private final Stack<ArangoAlias> aliasStack;
     private final String nexusInstanceBase;
 
     private final Set<ArangoCollectionReference> existingCollections;
@@ -35,12 +31,11 @@ public class ReflectionBuilder {
     private int internalFieldCounter = 0;
     private final ArangoAlias rootAlias = new ArangoAlias("root");
 
-    public ReflectionBuilder(Specification specification, Set<String> permissionGroupsWithReadAccess, ArangoDocumentReference instanceId, Set<ArangoCollectionReference> existingCollections, String nexusInstanceBase) {
+    public SpecificationBasedReleaseTreeBuilder(Specification specification, Set<String> permissionGroupsWithReadAccess, ArangoDocumentReference instanceId, Set<ArangoCollectionReference> existingCollections, String nexusInstanceBase) {
         this.q = new AuthorizedArangoQuery(permissionGroupsWithReadAccess);
         this.specification = specification;
         this.instanceId = instanceId;
         this.existingCollections = existingCollections;
-        this.aliasStack = new Stack<>();
         this.nexusInstanceBase = nexusInstanceBase;
     }
 
@@ -56,7 +51,7 @@ public class ReflectionBuilder {
         q.addLine(trust(""));
         q.addLine(trust("FOR ${rootDoc} IN `${collection}`")).indent();
         q.addDocumentFilter(rootAlias);
-        q.addLine(createReleaseStatusQuery(rootAlias).build());
+        q.addLine(createReleaseStatusQuery(rootAlias, nexusInstanceBase).build());
         q.addLine(trust("FILTER ${rootDoc}._id == \"${id}\""));
         List<ArangoAlias> fieldAliases = processFields(rootAlias, specification.getFields());
         q.addLine(trust("RETURN {"));
@@ -74,25 +69,6 @@ public class ReflectionBuilder {
 
 
 
-    private AQL createReleaseStatusQuery(ArangoAlias alias) {
-        AQL releaseStatusQuery = new AQL();
-        releaseStatusQuery.addLine(trust("LET ${name}_release = (FOR ${name}_status_doc IN 1..1 INBOUND ${name}_doc `${releaseInstanceRelation}`"));
-        releaseStatusQuery.addLine(trust("LET ${name}_release_instance = SUBSTITUTE(CONCAT(${name}_status_doc.`${releaseInstanceProperty}`.`" + JsonLdConsts.ID + "`, \"?rev=\", ${name}_status_doc.`${releaseRevisionProperty}`), \"${nexusBaseForInstances}/\", \"\")"));
-        releaseStatusQuery.addLine(trust("RETURN ${name}_release_instance==${name}_doc.${originalId} ? \"${releasedValue}\" : \"${changedValue}\""));
-        releaseStatusQuery.addLine(trust(")"));
-        releaseStatusQuery.addLine(trust("LET ${name}_doc_status = LENGTH(${name}_release)>0 ? ${name}_release[0] : \"${notReleasedValue}\""));
-        releaseStatusQuery.setParameter("name", alias.getArangoName());
-        releaseStatusQuery.setParameter("releaseInstanceRelation", ArangoCollectionReference.fromFieldName(HBPVocabulary.RELEASE_INSTANCE).getName());
-        releaseStatusQuery.setParameter("releaseInstanceProperty", HBPVocabulary.RELEASE_INSTANCE);
-        releaseStatusQuery.setParameter("releaseRevisionProperty", HBPVocabulary.RELEASE_REVISION);
-        releaseStatusQuery.setParameter("nexusBaseForInstances", nexusInstanceBase);
-        releaseStatusQuery.setParameter("originalId", ArangoVocabulary.NEXUS_RELATIVE_URL_WITH_REV);
-        releaseStatusQuery.setParameter("releasedValue", ReleaseStatus.RELEASED.name());
-        releaseStatusQuery.setParameter("changedValue", ReleaseStatus.HAS_CHANGED.name());
-        releaseStatusQuery.setParameter("notReleasedValue", ReleaseStatus.NOT_RELEASED.name());
-        return releaseStatusQuery;
-    }
-
 
     private List<ArangoAlias> processFields(ArangoAlias originalAlias, List<SpecField> fields) {
         List<ArangoAlias> result = new ArrayList<>();
@@ -108,7 +84,7 @@ public class ReflectionBuilder {
                         subQuery.addLine(trust("//Adding ${alias}"));
                         subQuery.addLine(trust("LET ${alias} = ("));
                         subQuery.addLine(trust("FOR ${aliasDoc} IN 1..1 ${inOutBound} ${previousDoc} `${relation}`"));
-                        subQuery.addLine(createReleaseStatusQuery(alias).build());
+                        subQuery.addLine(createReleaseStatusQuery(alias, nexusInstanceBase).build());
                         subQuery.setParameter("alias", alias.getArangoName());
                         subQuery.setParameter("aliasDoc", alias.getArangoDocName());
                         subQuery.setParameter("inOutBound", traverse.reverse ? "INBOUND" : "OUTBOUND");

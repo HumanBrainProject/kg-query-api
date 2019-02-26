@@ -136,7 +136,7 @@ public class QueryAPI {
     }
 
 
-    @GetMapping("/{"+ORG+"}/{"+ DOMAIN+"}/{"+SCHEMA+"}/{"+VERSION+"}/{"+QUERY_ID+"}/instances/reflect/{"+INSTANCE_ID+"}")
+    @GetMapping("/{"+ORG+"}/{"+ DOMAIN+"}/{"+SCHEMA+"}/{"+VERSION+"}/{"+QUERY_ID+"}/instances/releaseTree/{"+INSTANCE_ID+"}")
     public ResponseEntity<Map> executeStoredReflectionQuery(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(QUERY_ID) String queryId, @PathVariable(INSTANCE_ID) String instanceId, @RequestParam(value = RESTRICT_TO_ORGANIZATIONS, required = false) String restrictToOrganizations, @RequestParam(value = VOCAB, required = false) String vocab, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken, @ApiIgnore @RequestParam Map<String, String> allRequestParams) throws Exception {
         try {
             authorizationContext.populateAuthorizationContext(authorizationToken);
@@ -145,7 +145,7 @@ public class QueryAPI {
             StoredQuery query = new StoredQuery(schemaReference, queryId, vocab);
             query.setParameters(allRequestParams);
             query.getFilter().restrictToOrganizations(RestUtils.splitCommaSeparatedValues(restrictToOrganizations));
-            Map result = this.query.reflectQueryPropertyGraphByStoredSpecification(query, new NexusInstanceReference(schemaReference, instanceId));
+            Map result = this.query.queryReleaseTree(query, new NexusInstanceReference(schemaReference, instanceId));
             return ResponseEntity.ok(result);
         } catch (StoredQueryNotFoundException e){
             return ResponseEntity.notFound().build();

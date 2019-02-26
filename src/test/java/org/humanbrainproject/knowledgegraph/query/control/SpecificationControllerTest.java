@@ -39,7 +39,7 @@ public class SpecificationControllerTest {
         Map fakeResult = Mockito.mock(Map.class);
         Query query = new Query("foo", TestObjectFactory.fooInstanceReference().getNexusSchema(), "fooVocab");
         Mockito.doReturn(Collections.singletonList(fakeResult)).when(this.specificationController.specificationQuery).queryForSimpleMap(Mockito.any());
-        this.specificationController.reflectSpecification(Mockito.mock(Specification.class), query, null);
+        this.specificationController.releaseTreeBySpecification(Mockito.mock(Specification.class), query, null);
     }
 
 
@@ -50,7 +50,7 @@ public class SpecificationControllerTest {
         Mockito.doReturn(Collections.singletonList(fakeResult)).when(this.specificationController.specificationQuery).queryForSimpleMap(Mockito.any());
         Specification mock = Mockito.mock(Specification.class);
         Mockito.doReturn(TestObjectFactory.fooInstanceReference().getNexusSchema().getRelativeUrl().getUrl()).when(mock).getRootSchema();
-        Map map = this.specificationController.reflectSpecification(mock, query, TestObjectFactory.fooInstanceReference());
+        Map map = this.specificationController.releaseTreeBySpecification(mock, query, TestObjectFactory.fooInstanceReference());
         Assert.assertEquals(fakeResult, map);
     }
 
