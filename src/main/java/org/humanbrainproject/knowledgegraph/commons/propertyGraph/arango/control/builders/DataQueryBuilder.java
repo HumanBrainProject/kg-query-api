@@ -42,11 +42,16 @@ public class DataQueryBuilder {
         return specification;
     }
 
+    public boolean existsRootSchema(){
+        return existingCollections.contains(getRootCollection());
+    }
+
+
     public String build(List<String> restrictToIds, String search) {
         //Define the global parameters
         ArangoAlias rootAlias = new ArangoAlias("root");
         q.setParameter("rootFieldName", rootAlias.getArangoName());
-        q.setParameter("collection", getRootCollection());
+        q.setParameter("collection", getRootCollection().getName());
 
 
         //Setup the root instance
@@ -116,8 +121,8 @@ public class DataQueryBuilder {
     }
 
 
-    private String getRootCollection() {
-        return ArangoCollectionReference.fromNexusSchemaReference(NexusSchemaReference.createFromUrl(specification.getRootSchema())).getName();
+    private ArangoCollectionReference getRootCollection() {
+        return ArangoCollectionReference.fromNexusSchemaReference(NexusSchemaReference.createFromUrl(specification.getRootSchema()));
     }
 
 

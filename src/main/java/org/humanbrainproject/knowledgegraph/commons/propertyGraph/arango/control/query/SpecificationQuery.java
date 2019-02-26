@@ -33,6 +33,9 @@ public class SpecificationQuery {
 
 
     public QueryResult<List<Map>> queryForData(DataQueryBuilder queryBuilderNew, List<String> restrictedIds, String search) throws IOException, SolrServerException {
+        if(!queryBuilderNew.existsRootSchema()){
+            return QueryResult.createEmptyResult();
+        }
         String query = queryBuilderNew.build(restrictedIds, search);
         Map<String, Object> filterValues = queryBuilderNew.getProcessedFilterValues();
 
