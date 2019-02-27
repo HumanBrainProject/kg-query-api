@@ -56,6 +56,11 @@ public class DefaultAuthorizationContext implements AuthorizationContext {
     }
 
     @Override
+    public Set<String> getReadableOrganizations(Credential credential, List<String> whitelistedOrganizations){
+        return authorizationController.getReadableOrganizations(credential, whitelistedOrganizations);
+    }
+
+    @Override
     public Set<String> getReadableOrganizations(List<String> whitelistedOrganizations) {
         return authorizationController.getReadableOrganizations(getCredential(), whitelistedOrganizations);
     }

@@ -3,6 +3,7 @@ package org.humanbrainproject.knowledgegraph.query.control;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.humanbrainproject.knowledgegraph.annotations.Tested;
 import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationContext;
+import org.humanbrainproject.knowledgegraph.commons.authorization.entity.InternalMasterKey;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoRepository;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.builders.DataQueryBuilder;
@@ -19,9 +20,7 @@ import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Tested
@@ -106,8 +105,20 @@ public class SpecificationController {
 
 
     public QueryResult<List<Map>> queryForSpecification(Specification spec, Pagination pagination, Filter filter) throws IOException, SolrServerException {
+        Set<String> readableOrganizations;
+        if(authorizationContext.getCredential() == null){
+            //This is anonymous access - this is only allowed on the released instance
+            queryContext.setDatabaseScope(DatabaseScope.RELEASED);
+
+            //FIXME do we have to restrict the organizations or do we follow the approach that everything which is released is publicly accessible?
+            //readableOrganizations = new HashSet<>(Arrays.asList("minds", "cscs"));
+            readableOrganizations = authorizationContext.getReadableOrganizations(new InternalMasterKey(), null);
+        }
+        else{
+            readableOrganizations = authorizationContext.getReadableOrganizations(filter.getRestrictToOrganizations());
+        }
         Set<ArangoCollectionReference> existingCollections = queryContext.getExistingCollections();
-        DataQueryBuilder queryBuilderNew = new DataQueryBuilder(spec, authorizationContext.getReadableOrganizations(filter.getRestrictToOrganizations()), pagination, queryContext.getAllParameters(), existingCollections);
+        DataQueryBuilder queryBuilderNew = new DataQueryBuilder(spec, readableOrganizations, pagination, queryContext.getAllParameters(), existingCollections);
         return specificationQuery.queryForData(queryBuilderNew, filter.getRestrictToIds(), filter.getQueryString());
     }
 

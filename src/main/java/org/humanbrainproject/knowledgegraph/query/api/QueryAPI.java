@@ -260,10 +260,11 @@ public class QueryAPI {
 
 
     @ExternalApi
-    @ApiOperation(value="Execute query from payload", notes="Execute the query (in payload) against the instances of the given schema")
+    @ApiOperation(value="For test purposes only!!! Execute query from payload", notes="Execute the query (in payload) against the instances of the given schema. Please note, that this is thought to be for test purposes only! If you're happy with your query, you should register it in the graph. To help you with actually doing this, we've introduced an artificial delay (2secs right now, if this doesn't help, we increase it). :)")
     @PostMapping(value = "/{"+ORG+"}/{"+ DOMAIN+"}/{"+SCHEMA+"}/{"+VERSION+"}/instances", consumes = {MediaType.APPLICATION_JSON, RestUtils.APPLICATION_LD_JSON})
     public ResponseEntity<QueryResult> queryPropertyGraphBySpecification(@RequestBody String payload, @PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @ApiParam(VOCAB_DOC) @RequestParam(value = VOCAB, required = false) String vocab, @ApiParam(SIZE_DOC) @RequestParam(value = SIZE, required = false) Integer size,  @ApiParam(START_DOC) @RequestParam(value = START, required = false) Integer start, @ApiParam(RESTRICTED_ORGANIZATION_DOC) @RequestParam(value = ORGS, required = false) String organizations, @RequestParam(value = DATABASE_SCOPE, required = false) ExposedDatabaseScope databaseScope, @ApiParam(SEARCH_DOC) @RequestParam(value = SEARCH, required = false) String searchTerm,  @ApiParam(value = ParameterConstants.AUTHORIZATION_DOC)  @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken, @ApiIgnore @RequestParam Map<String, String> allRequestParams) throws Exception {
         try {
+            Thread.sleep(2000);
             authorizationContext.populateAuthorizationContext(authorizationToken);
             queryContext.populateQueryContext(databaseScope);
             Query query = new Query(payload, new NexusSchemaReference(org, domain, schema, version), vocab);
@@ -271,6 +272,7 @@ public class QueryAPI {
             query.getFilter().restrictToOrganizations(RestUtils.splitCommaSeparatedValues(organizations)).setQueryString(searchTerm);
             query.getPagination().setStart(start).setSize(size);
             QueryResult<List<Map>> result = this.query.queryPropertyGraphBySpecification(query);
+            result.setImportantMessage("This query is executed with a mode thought for query testing only (with throttled performance). Please register your query if you're happy with it. It's easy and you gain speed ;)!");
             return ResponseEntity.ok(result);
         } catch (RootCollectionNotFoundException e) {
             return ResponseEntity.ok(QueryResult.createEmptyResult());
@@ -279,11 +281,11 @@ public class QueryAPI {
         }
     }
 
-    @ExternalApi
-    @ApiOperation(value="Execute query from payload for a single instance", notes="Execute the query (in payload) against a single instance (by id) of the given schema")
+    @ApiOperation(value="For test purposes only!!! Execute query from payload for a single instance", notes="Execute the query (in payload) against the instances of the given schema. Please note, that this is thought to be for test purposes only! If you're happy with your query, you should register it in the graph. To help you with actually doing this, we've introduced an artificial delay (2secs right now, if this doesn't help, we increase it). :)")
     @PostMapping(value = "/{"+ORG+"}/{"+ DOMAIN+"}/{"+SCHEMA+"}/{"+VERSION+"}/instances/{"+INSTANCE_ID+"}", consumes = {MediaType.APPLICATION_JSON, RestUtils.APPLICATION_LD_JSON})
     public ResponseEntity<Map> queryPropertyGraphBySpecificationWithId(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(INSTANCE_ID) String instanceId, @RequestBody String payload, @ApiParam(VOCAB_DOC) @RequestParam(value = VOCAB, required = false) String vocab, @ApiParam(RESTRICTED_ORGANIZATION_DOC) @RequestParam(value = RESTRICT_TO_ORGANIZATIONS, required = false) String restrictToOrganizations, @RequestParam(value = DATABASE_SCOPE, required = false) ExposedDatabaseScope databaseScope,  @ApiParam(value = ParameterConstants.AUTHORIZATION_DOC) @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken,  @ApiIgnore @RequestParam Map<String, String> allRequestParams) throws Exception {
         try {
+            Thread.sleep(2000);
             authorizationContext.populateAuthorizationContext(authorizationToken);
             queryContext.populateQueryContext(databaseScope);
 
@@ -293,7 +295,9 @@ public class QueryAPI {
             QueryResult<List<Map>> result = this.query.queryPropertyGraphBySpecification(query);
 
             if (result.getResults().size() >= 1) {
-                return ResponseEntity.ok(result.getResults().get(0));
+                Map body = result.getResults().get(0);
+                body.put("importantMessage", "This query is executed with a mode thought for query testing only (with throttled performance). Please register your query if you're happy with it. It's easy and you gain speed ;)!");
+                return ResponseEntity.ok(body);
             } else {
                 return ResponseEntity.notFound().build();
             }
@@ -321,7 +325,6 @@ public class QueryAPI {
 
     @ApiOperation(value="Execute a stored query and fetch the corresponding instances")
     @Deprecated
-    @ExternalApi
     @GetMapping("/{"+ORG+"}/{"+ DOMAIN+"}/{"+SCHEMA+"}/{"+VERSION+"}/{"+QUERY_ID+"}/instances/deprecated")
     public ResponseEntity<QueryResult> executeStoredQuery(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(QUERY_ID) String queryId, @ApiParam(SIZE_DOC) @RequestParam(value = SIZE, required = false) Integer size, @ApiParam(START_DOC) @RequestParam(value = START, required = false) Integer start, @RequestParam(value = DATABASE_SCOPE, required = false) ExposedDatabaseScope databaseScope, @ApiParam(SEARCH_DOC) @RequestParam(value = SEARCH, required = false) String searchTerm, @ApiParam(VOCAB_DOC) @RequestParam(value = VOCAB, required = false) String vocab, @ApiParam(RESTRICTED_ORGANIZATION_DOC) @RequestParam(value = RESTRICT_TO_ORGANIZATIONS, required = false) String restrictToOrganizations,  @ApiParam(value = ParameterConstants.AUTHORIZATION_DOC) @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken, @ApiIgnore @RequestParam Map<String, String> allRequestParams) throws Exception {
         try {
@@ -368,6 +371,26 @@ public class QueryAPI {
         }
     }
 
+    @ApiOperation(value="Execute a stored query for public instances (and therefore anonymously)")
+    @ExternalApi
+    @GetMapping("/{"+ORG+"}/{"+ DOMAIN+"}/{"+SCHEMA+"}/{"+VERSION+"}/{"+QUERY_ID+"}/instances/public")
+    public ResponseEntity<QueryResult> executeAnonymousStoredQuery(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(QUERY_ID) String queryId, @ApiParam(SIZE_DOC) @RequestParam(value = SIZE, required = false) Integer size, @ApiParam(START_DOC) @RequestParam(value = START, required = false) Integer start, @ApiParam(VOCAB_DOC) @RequestParam(value = VOCAB, required = false) String vocab, @ApiIgnore @RequestParam Map<String, String> allRequestParams) throws Exception {
+        try {
+            queryContext.setAllParameters(allRequestParams);
+
+            StoredQuery query = new StoredQuery(new NexusSchemaReference(org, domain, schema, version), queryId, vocab);
+            query.setParameters(allRequestParams);
+            query.getPagination().setStart(start).setSize(size);
+            QueryResult<List<Map>> result = this.query.queryPropertyGraphByStoredSpecification(query);
+            return ResponseEntity.ok(result);
+        } catch (StoredQueryNotFoundException e){
+            return ResponseEntity.notFound().build();
+        } catch (RootCollectionNotFoundException e) {
+            return ResponseEntity.ok(QueryResult.createEmptyResult());
+        } catch (HttpClientErrorException e) {
+            return ResponseEntity.status(e.getStatusCode()).build();
+        }
+    }
 
     @ApiOperation(value="Execute a stored query for a specific instance identified by its id")
     @ExternalApi

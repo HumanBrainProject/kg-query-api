@@ -8,6 +8,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.web.context.request.RequestContextListener;
 
 
@@ -15,6 +17,8 @@ import org.springframework.web.context.request.RequestContextListener;
 @ComponentScan("org.humanbrainproject.knowledgegraph")
 @NoTests(NoTests.NO_LOGIC)
 @EnableCaching
+@EnableScheduling
+@EnableAsync
 public class KgQueryApplication {
 
 	public static void main(String[] args) {

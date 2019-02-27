@@ -192,6 +192,7 @@ public class ArangoQuery {
         return queryReleaseTree(resolvedQuery, instanceReference);
     }
 
+
     public QueryResult<List<Map>> queryPropertyGraphByStoredSpecification(StoredQuery query) throws
             IOException, JSONException, SolrServerException {
         return queryPropertyGraphBySpecification(resolveStoredQuery(query));

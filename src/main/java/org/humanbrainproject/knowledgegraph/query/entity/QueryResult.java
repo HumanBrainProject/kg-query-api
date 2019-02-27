@@ -11,11 +11,20 @@ import java.util.Map;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class QueryResult<T> {
 
+    private String importantMessage;
     private String apiName;
     private T results;
     private Long total;
     private Long size;
     private Long start;
+
+    public String getImportantMessage() {
+        return importantMessage;
+    }
+
+    public void setImportantMessage(String importantMessage) {
+        this.importantMessage = importantMessage;
+    }
 
     public String getApiName() {
         return apiName;
