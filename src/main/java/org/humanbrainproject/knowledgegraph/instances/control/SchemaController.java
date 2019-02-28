@@ -88,8 +88,10 @@ public class SchemaController {
         nexusClient.patch(new NexusRelativeUrl(NexusConfiguration.ResourceType.SCHEMA, String.format("%s/config", nexusSchemaReference.getRelativeUrl().getUrl())), revision, payload, credential);
     }
 
+
+
     public void createSchema(NexusSchemaReference nexusSchemaReference) {
-        createSchema(nexusSchemaReference, createSimpleSchema(nexusSchemaReference), authorizationContext.getCredential());
+        createSchema(nexusSchemaReference, createSimpleSchema(nexusSchemaReference), nexusSchemaReference.isInSubSpace(SubSpace.INFERRED) ? new InternalMasterKey() : authorizationContext.getCredential());
         if(!nexusSchemaReference.isInSubSpace(SubSpace.INFERRED)) {
             NexusSchemaReference inferredSchema = nexusSchemaReference.toSubSpace(SubSpace.INFERRED);
             createSchema(inferredSchema, createSimpleSchema(inferredSchema), new InternalMasterKey());
