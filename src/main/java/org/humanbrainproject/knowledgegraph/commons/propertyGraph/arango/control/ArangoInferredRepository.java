@@ -166,14 +166,14 @@ public class ArangoInferredRepository {
         return result.asListRemaining();
     }
 
-    public Map findInstanceBySchemaAndFilter(NexusSchemaReference schema, String filterKey, String filterValue){
+    public List<Map> findInstanceBySchemaAndFilter(NexusSchemaReference schema, String filterKey, String filterValue){
         String query = queryFactory.queryInstanceBySchemaAndFilter(ArangoCollectionReference.fromNexusSchemaReference(schema), filterKey, filterValue, authorizationContext.getReadableOrganizations());
         ArangoCursor<Map> result = databaseFactory.getInferredDB().getOrCreateDB().query(query, null, new AqlQueryOptions(), Map.class);
         List<Map> l = result.asListRemaining();
         if(l.isEmpty()){
             return null;
         }else{
-            return l.get(0);
+            return l;
         }
     }
 

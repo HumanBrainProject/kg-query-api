@@ -49,8 +49,9 @@ public class SuggestionController {
     }
 
     public NexusInstanceReference createSuggestionInstanceForUser(NexusInstanceReference ref, String userId, String clientIdExtension) throws NotFoundException {
-        Map m = this.findInstanceBySchemaAndFilter(new NexusSchemaReference("hbpkg", "core", "user", "v0.0.1"), "https://schema.hbp.eu/hbpkg/userId", userId);
-        if(m != null){
+        List<Map> ms = this.findInstanceBySchemaAndFilter(new NexusSchemaReference("hbpkg", "core", "user", "v0.0.1"), "https://schema.hbp.eu/hbpkg/userId", userId);
+        if(ms != null){
+            Map m = ms.get(0);
             Map<String, Object> payload = new HashMap<>();
             Map<String, Object> original = new HashMap<>();
             original.put(JsonLdConsts.ID,  nexusConfiguration.getAbsoluteUrl(ref));
@@ -68,8 +69,9 @@ public class SuggestionController {
     }
 
     public Map getUserSuggestionOfSpecificInstance(NexusInstanceReference instanceReference, String userId) throws NotFoundException {
-        Map m = this.findInstanceBySchemaAndFilter(new NexusSchemaReference("hbpkg", "core", "user", "v0.0.1"), "https://schema.hbp.eu/hbpkg/userId", userId);
-        if(m != null) {
+        List<Map> ms = this.findInstanceBySchemaAndFilter(new NexusSchemaReference("hbpkg", "core", "user", "v0.0.1"), "https://schema.hbp.eu/hbpkg/userId", userId);
+        if(ms != null) {
+            Map m = ms.get(0);
             NexusInstanceReference userRef = NexusInstanceReference.createFromUrl((String) m.get(JsonLdConsts.ID));
             return repository.getUserSuggestionOfSpecificInstance(instanceReference, userRef);
         }else{
@@ -79,13 +81,14 @@ public class SuggestionController {
 
     }
 
-    private Map findInstanceBySchemaAndFilter(NexusSchemaReference schema, String filterKey, String filterValue){
+    private List<Map> findInstanceBySchemaAndFilter(NexusSchemaReference schema, String filterKey, String filterValue){
         return repository.findInstanceBySchemaAndFilter(schema, filterKey, filterValue);
     }
 
     public List<Map> getUserSuggestions(String userId, SuggestionStatus status) throws NotFoundException{
-        Map m = this.findInstanceBySchemaAndFilter(new NexusSchemaReference("hbpkg", "core", "user", "v0.0.1"), "https://schema.hbp.eu/hbpkg/userId", userId);
-        if(m != null){
+        List<Map> ms = this.findInstanceBySchemaAndFilter(new NexusSchemaReference("hbpkg", "core", "user", "v0.0.1"), "https://schema.hbp.eu/hbpkg/userId", userId);
+        if(ms != null){
+            Map m = ms.get(0);
             NexusInstanceReference ref = NexusInstanceReference.createFromUrl( (String) m.get(JsonLdConsts.ID));
             return repository.getSuggestionsByUser(ref, status);
         }else{
