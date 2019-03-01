@@ -146,7 +146,7 @@ public class Reconciliation implements InferenceStrategy, InitializingBean {
             Map<Object, Set<String>> allAlts = new HashMap<>();
             for (Vertex vertex : verticesWithProperty) {
                 Object valueByName = vertex.getQualifiedIndexingMessage().getQualifiedMap().get(currentProperty);
-                if(!JsonLdConsts.ID.equals(currentProperty)){
+                if(!currentProperty.startsWith("@") && !currentProperty.startsWith("_")){
                     Set<String> userIds = allAlts.get(valueByName);
                     if(userIds == null){
                         userIds = new HashSet<>();
@@ -161,10 +161,10 @@ public class Reconciliation implements InferenceStrategy, InitializingBean {
                 }
             }
             final Object r = result;
-            allAlts.keySet().removeIf(p -> p.equals(r));
             Set<Alternative> resultingAlts = new LinkedHashSet<>();
             for(Map.Entry<Object, Set<String>> entry : allAlts.entrySet()){
-                resultingAlts.add(new Alternative(entry.getKey(), entry.getValue()));
+                Alternative  a = new Alternative(entry.getKey(), entry.getValue(), entry.getKey().equals(r));
+                resultingAlts.add(a);
             }
             return new Property(currentProperty, result).setAlternatives(resultingAlts);
         }
