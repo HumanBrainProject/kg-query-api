@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Tested
 public class SpecField {
@@ -134,4 +135,13 @@ public class SpecField {
         }
         return false;
     }
+
+    public List<SpecField> getSubFieldsWithSort(){
+        if(fields!=null && !fields.isEmpty()){
+            return fields.stream().filter(SpecField::isSortAlphabetically).collect(Collectors.toList());
+        }
+        return Collections.emptyList();
+
+    }
+
 }

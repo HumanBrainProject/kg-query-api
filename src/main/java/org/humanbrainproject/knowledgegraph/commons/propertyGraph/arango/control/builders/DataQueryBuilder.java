@@ -140,6 +140,21 @@ public class DataQueryBuilder {
             return fields.stream().filter(SpecField::isMerge).collect(Collectors.toList());
         }
 
+
+        List<SpecField> getSortFieldsForMerge(SpecField mergeField){
+            List<SpecField> specFields = new ArrayList<>();
+            if(mergeField.fields!=null && !mergeField.fields.isEmpty()) {
+                for (SpecField field : mergeField.fields) {
+                    if (field.isSortAlphabetically()) {
+                        specFields.add(field);
+                    }
+                    specFields.addAll(field.getSubFieldsWithSort());
+                }
+            }
+            return specFields;
+        }
+
+
         TrustedAqlValue getMergedFields() {
             List<SpecField> mergeFields = fieldsWithMerge();
             if (!mergeFields.isEmpty()) {
@@ -148,9 +163,15 @@ public class DataQueryBuilder {
                     aql.add(new TraverseBuilder(parentAlias, mergeField.fields).getTraversedField());
                     AQL merge = new AQL();
                     merge.add(trust("LET ${alias} = "));
+
+                    List<SpecField> sortFieldsForMerge = getSortFieldsForMerge(mergeField);
                     if (mergeField.fields.size() == 1) {
                         merge.add(trust("${alias}_0"));
                     } else {
+                        if(!sortFieldsForMerge.isEmpty()){
+                            merge.add(trust("(FOR ${alias}_sort IN "));
+                        }
+
                         for (int i = 0; i < mergeField.fields.size(); i++) {
                             AQL append = new AQL();
                             if (i < mergeField.fields.size() - 1) {
@@ -162,6 +183,25 @@ public class DataQueryBuilder {
                             merge.add(append.build());
                         }
                         for (SpecField field : mergeField.fields) {
+                            if(field!=mergeField.fields.get(mergeField.fields.size()-1)){
+                                merge.add(trust(", true"));
+                            }
+                            merge.add(trust(")"));
+                        }
+                        if(!sortFieldsForMerge.isEmpty()){
+                            merge.addLine(trust(""));
+                            Set<String> duplicateTracker = new HashSet<>();
+                            for (SpecField specField : sortFieldsForMerge) {
+                                if(!duplicateTracker.contains(specField.fieldName)) {
+                                    duplicateTracker.add(specField.fieldName);
+                                    AQL sort = new AQL();
+                                    sort.addLine(trust("SORT ${alias}_sort.`${targetField}` ASC"));
+                                    sort.setParameter("alias", ArangoAlias.fromSpecField(mergeField).getArangoName());
+                                    sort.setParameter("targetField", specField.fieldName);
+                                    merge.add(sort.build());
+                                }
+                            }
+                            merge.addLine(trust("RETURN ${alias}_sort"));
                             merge.add(trust(")"));
                         }
                     }
@@ -193,14 +233,10 @@ public class DataQueryBuilder {
             return fields.stream().filter(SpecField::needsTraversal).filter(f -> !f.isMerge()).collect(Collectors.toList());
         }
 
-        TrustedAqlValue handleTraverse(boolean firstTraverse, SpecTraverse traverse, ArangoAlias alias, Stack<ArangoAlias> aliasStack, boolean ensureOrder) {
+        TrustedAqlValue handleTraverse(SpecTraverse traverse, ArangoAlias alias, Stack<ArangoAlias> aliasStack, boolean ensureOrder) {
             AQL aql = new AQL();
             aql.add(trust("LET ${alias} = "));
-            if (!firstTraverse) {
-                aql.add(trust("UNIQUE("));
-            }
             aql.add(trust("FLATTEN("));
-
             if (traverseExists(traverse)) {
 
                 aql.indent().add(trust("( LET ${aliasDoc}s = ( FOR ${aliasDoc}_traverse "));
@@ -217,7 +253,7 @@ public class DataQueryBuilder {
                     //Reverse connections can not be embedded - we therefore can shortcut the query.
                     aql.addLine(trust("FOR ${aliasDoc} IN ${aliasDoc}s"));
                 } else {
-                    aql.addLine(trust("FOR ${aliasDoc} IN APPEND(${aliasDoc}s, FLATTEN([${parentAliasDoc}.`${fieldPath}`]))"));
+                    aql.addLine(trust("FOR ${aliasDoc} IN APPEND(${aliasDoc}s, FLATTEN([${parentAliasDoc}.`${fieldPath}`]), true)"));
                 }
             } else {
                 // the traverse collection does not exist - we therefore short-cut by only asking for the instances of a potentially embedded document.
@@ -260,7 +296,7 @@ public class DataQueryBuilder {
                         } else {
                             lastTraversal = traverse == traversalField.traversePath.get(traversalField.traversePath.size() - 1);
                         }
-                        fields.addLine(handleTraverse(traverse == traversalField.traversePath.get(0), traverse, alias, aliasStack, traversalField.ensureOrder));
+                        fields.addLine(handleTraverse(traverse, alias, aliasStack, traversalField.ensureOrder));
                         aliasStack.push(alias);
                         if (lastTraversal) {
                             if (traversalField.hasSubFields()) {
@@ -274,18 +310,23 @@ public class DataQueryBuilder {
                     }
 
                     fields.add(new FilterBuilder(alias, traversalField.fieldFilter, traversalField.fields).getFilter());
-                    fields.add(new SortBuilder(alias, traversalField.fields).getSort());
+                    //fields.add(new SortBuilder(alias, traversalField.fields).getSort());
                     fields.addLine(new ReturnBuilder(alias, traversalField, traversalField.fields).getReturnStructure());
                     while (aliasStack.size() > 1) {
                         ArangoAlias a = aliasStack.pop();
                         fields.addLine(trust("))"));
                         if (aliasStack.size() > 1) {
-                            fields.addLine(trust(")"));
                             AQL returnStructure = new AQL();
+                            returnStructure.add(trust("RETURN DISTINCT "));
                             if (traversalField.isSortAlphabetically()) {
-                                returnStructure.addLine(trust("SORT ${traverseField} ASC"));
+                                returnStructure.addLine(trust("(FOR ${traverseField}_sort IN ${traverseField}"));
+                                returnStructure.indent().addLine(trust("SORT ${traverseField}_sort ASC"));
+                                returnStructure.addLine(trust("RETURN ${traverseField}_sort")).outdent();
+                                returnStructure.addLine(trust(")"));
                             }
-                            returnStructure.add(trust("RETURN DISTINCT ${traverseField}"));
+                            else{
+                                returnStructure.add(trust("${traverseField}"));
+                            }
                             returnStructure.setParameter("traverseField", a.getArangoName());
                             fields.addLine(returnStructure.build());
                         }
