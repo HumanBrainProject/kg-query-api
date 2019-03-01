@@ -310,7 +310,7 @@ public class DataQueryBuilder {
                     }
 
                     fields.add(new FilterBuilder(alias, traversalField.fieldFilter, traversalField.fields).getFilter());
-                    //fields.add(new SortBuilder(alias, traversalField.fields).getSort());
+                    fields.add(new SortBuilder(alias, traversalField.fields).getSort());
                     fields.addLine(new ReturnBuilder(alias, traversalField, traversalField.fields).getReturnStructure());
                     while (aliasStack.size() > 1) {
                         ArangoAlias a = aliasStack.pop();
