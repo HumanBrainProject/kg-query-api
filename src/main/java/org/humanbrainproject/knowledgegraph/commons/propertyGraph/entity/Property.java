@@ -26,14 +26,7 @@ public class Property {
     }
 
     public Property setAlternatives(Set<Alternative> alternatives) {
-        Map<Object, List<Alternative>> m = alternatives.stream().collect(Collectors.groupingBy(Alternative::getValue));
-        Set<Alternative> alt = new HashSet<>();
-        for(Map.Entry<Object, List<Alternative>> entry : m.entrySet()){
-            Set<String> l = entry.getValue().stream().map(Alternative::getUserIds).collect(HashSet::new, Set::addAll, Set::addAll);
-            Alternative a = new Alternative(entry.getKey(), l);
-            alt.add(a);
-        }
-        this.alternatives = alt;
+        this.alternatives = alternatives;
         return this;
     }
 
