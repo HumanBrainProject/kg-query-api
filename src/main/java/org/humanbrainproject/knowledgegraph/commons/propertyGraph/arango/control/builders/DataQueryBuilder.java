@@ -233,9 +233,12 @@ public class DataQueryBuilder {
             return fields.stream().filter(SpecField::needsTraversal).filter(f -> !f.isMerge()).collect(Collectors.toList());
         }
 
-        TrustedAqlValue handleTraverse(SpecTraverse traverse, ArangoAlias alias, Stack<ArangoAlias> aliasStack, boolean ensureOrder) {
+        TrustedAqlValue handleTraverse(boolean hasSort, SpecTraverse traverse, ArangoAlias alias, Stack<ArangoAlias> aliasStack, boolean ensureOrder) {
             AQL aql = new AQL();
             aql.add(trust("LET ${alias} = "));
+            if(aliasStack.size()==1 && hasSort){
+                aql.add(trust("(FOR ${alias}_sort IN "));
+            }
             aql.add(trust("FLATTEN("));
             if (traverseExists(traverse)) {
 
@@ -289,6 +292,7 @@ public class DataQueryBuilder {
                     ArangoAlias alias = traversalFieldAlias;
                     Stack<ArangoAlias> aliasStack = new Stack<>();
                     aliasStack.push(parentAlias);
+                    List<SpecField> subFieldsWithSort = traversalField.getSubFieldsWithSort();
                     for (SpecTraverse traverse : traversalField.traversePath) {
                         boolean lastTraversal;
                         if (!traversalField.hasSubFields()) {
@@ -296,7 +300,7 @@ public class DataQueryBuilder {
                         } else {
                             lastTraversal = traverse == traversalField.traversePath.get(traversalField.traversePath.size() - 1);
                         }
-                        fields.addLine(handleTraverse(traverse, alias, aliasStack, traversalField.ensureOrder));
+                        fields.addLine(handleTraverse(traversalField.isSortAlphabetically() || !subFieldsWithSort.isEmpty(), traverse, alias, aliasStack, traversalField.ensureOrder));
                         aliasStack.push(alias);
                         if (lastTraversal) {
                             if (traversalField.hasSubFields()) {
@@ -310,25 +314,36 @@ public class DataQueryBuilder {
                     }
 
                     fields.add(new FilterBuilder(alias, traversalField.fieldFilter, traversalField.fields).getFilter());
-                    fields.add(new SortBuilder(alias, traversalField.fields).getSort());
+                    //fields.add(new SortBuilder(alias, traversalField.fields).getSort());
                     fields.addLine(new ReturnBuilder(alias, traversalField, traversalField.fields).getReturnStructure());
                     while (aliasStack.size() > 1) {
                         ArangoAlias a = aliasStack.pop();
                         fields.addLine(trust("))"));
                         if (aliasStack.size() > 1) {
                             AQL returnStructure = new AQL();
-                            returnStructure.add(trust("RETURN DISTINCT "));
-                            if (traversalField.isSortAlphabetically()) {
-                                returnStructure.addLine(trust("(FOR ${traverseField}_sort IN ${traverseField}"));
-                                returnStructure.indent().addLine(trust("SORT ${traverseField}_sort ASC"));
-                                returnStructure.addLine(trust("RETURN ${traverseField}_sort")).outdent();
-                                returnStructure.addLine(trust(")"));
-                            }
-                            else{
-                                returnStructure.add(trust("${traverseField}"));
-                            }
+                            returnStructure.add(trust("RETURN DISTINCT ${traverseField}"));
                             returnStructure.setParameter("traverseField", a.getArangoName());
                             fields.addLine(returnStructure.build());
+                        }
+                        else if (aliasStack.size() == 1){
+                            if(traversalField.isSortAlphabetically() || !subFieldsWithSort.isEmpty()){
+                                AQL sortStructure = new AQL();
+                                if(traversalField.isSortAlphabetically()) {
+                                    sortStructure.indent().addLine(trust("SORT ${traverseField}_sort ASC"));
+                                }
+                                for (SpecField specField : subFieldsWithSort) {
+                                    if(specField.isSortAlphabetically()){
+                                        AQL subFieldSort = new AQL();
+                                        subFieldSort.addLine(trust("SORT ${traverseField}_sort.`${fieldName}` ASC"));
+                                        subFieldSort.setParameter("fieldName", specField.fieldName);
+                                        sortStructure.addLine(subFieldSort.build());
+                                    }
+                                }
+                                sortStructure.addLine(trust("RETURN ${traverseField}_sort")).outdent();
+                                sortStructure.addLine(trust(")"));
+                                sortStructure.setParameter("traverseField", a.getArangoName());
+                                fields.addLine(sortStructure.build());
+                            }
                         }
                     }
                     if (traversalField.hasGrouping()) {
