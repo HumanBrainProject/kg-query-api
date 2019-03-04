@@ -10,6 +10,7 @@ import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Propert
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.SubSpace;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Vertex;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
+import org.humanbrainproject.knowledgegraph.commons.vocabulary.SchemaOrgVocabulary;
 import org.humanbrainproject.knowledgegraph.indexing.control.MessageProcessor;
 import org.humanbrainproject.knowledgegraph.indexing.control.nexusToArango.NexusToArangoIndexingProvider;
 import org.humanbrainproject.knowledgegraph.indexing.entity.Alternative;
@@ -118,6 +119,8 @@ public class Reconciliation implements InferenceStrategy, InitializingBean {
 
     private Vertex mergeInstances(Vertex original, List<Vertex> additionalInstances, Set<NexusInstanceReference> inferredInstances) {
         JsonDocument document = new JsonDocument();
+        // Setting the original identifier
+        document.put(SchemaOrgVocabulary.IDENTIFIER,original.getQualifiedIndexingMessage().getQualifiedMap().get(SchemaOrgVocabulary.IDENTIFIER));
         NexusInstanceReference referenceForInferred = getInstanceReferenceForInferred(original.getInstanceReference(), inferredInstances);
         Set<Vertex> allVertices = new HashSet<>(additionalInstances);
         allVertices.add(original);
@@ -178,7 +181,7 @@ public class Reconciliation implements InferenceStrategy, InitializingBean {
         for (Vertex vertex : vertices) {
             for (Object k : vertex.getQualifiedIndexingMessage().getQualifiedMap().keySet()) {
                 String key = (String) k;
-                if (!handledKeys.contains(key) && !key.equals(HBPVocabulary.INFERENCE_ALTERNATIVES)) {
+                if (!handledKeys.contains(key) && !key.equals(HBPVocabulary.INFERENCE_ALTERNATIVES) && !key.equals(SchemaOrgVocabulary.IDENTIFIER) ) {
                     Property property = mergeProperty(key, vertices);
                     if (property != null) {
                         newDocument.put(key, property.getValue());
