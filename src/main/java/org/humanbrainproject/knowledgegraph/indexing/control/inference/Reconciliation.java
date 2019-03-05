@@ -75,7 +75,6 @@ public class Reconciliation implements InferenceStrategy, InitializingBean {
         //We collect all instances from the default space
         NexusInstanceReference originalId = message.getOriginalId();
         boolean isOriginal = originalId.equals(message.getOriginalMessage().getInstanceReference());
-
         NexusInstanceReference resolveOriginalId = nativeRepository.findOriginalId(originalId);
         Set<NexusInstanceReference> relativeInstances = indexingProvider.findInstancesWithLinkTo(HBPVocabulary.INFERENCE_EXTENDS, resolveOriginalId);
         Set<NexusInstanceReference> inferredInstances = indexingProvider.findInstancesWithLinkTo(HBPVocabulary.INFERENCE_OF, resolveOriginalId);

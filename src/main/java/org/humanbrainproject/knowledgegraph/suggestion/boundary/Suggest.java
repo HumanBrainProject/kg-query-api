@@ -32,7 +32,7 @@ public class Suggest {
         return suggestionController.getUserSuggestionOfSpecificInstance(ref, userId);
     }
 
-    public List<Map> getUserSuggestions(String userId, SuggestionStatus status) throws NotFoundException{
+    public List<String> getUserSuggestions(String userId, SuggestionStatus status) throws NotFoundException{
         return suggestionController.getUserSuggestions(userId, status);
     }
 

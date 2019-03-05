@@ -160,9 +160,9 @@ public class ArangoInferredRepository {
         }
     }
 
-    public List<Map> getSuggestionsByUser(NexusInstanceReference ref, SuggestionStatus status){
+    public List<String> getSuggestionsByUser(NexusInstanceReference ref, SuggestionStatus status){
         String query = queryFactory.querySuggestionsByUser(ref, status, authorizationContext.getReadableOrganizations());
-        ArangoCursor<Map> result = databaseFactory.getInferredDB().getOrCreateDB().query(query, null, new AqlQueryOptions(), Map.class);
+        ArangoCursor<String> result = databaseFactory.getInferredDB().getOrCreateDB().query(query, null, new AqlQueryOptions(), String.class);
         return result.asListRemaining();
     }
 

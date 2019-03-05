@@ -84,11 +84,11 @@ public class SuggestionAPI {
     }
 
     @GetMapping(value="/user", consumes = {MediaType.APPLICATION_JSON, RestUtils.APPLICATION_LD_JSON, MediaType.WILDCARD}, produces = MediaType.APPLICATION_JSON)
-    public ResponseEntity<List<Map>> getSuggestionOfUser(@RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization, @RequestHeader(value = CLIENT, required = false) Client client, @RequestParam(value = "status") SuggestionStatus status) throws Exception{
+    public ResponseEntity<List<String>> getSuggestionOfUser(@RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization, @RequestHeader(value = CLIENT, required = false) Client client, @RequestParam(value = "status") SuggestionStatus status) throws Exception{
         authorizationContext.populateAuthorizationContext(authorization, client);
         Map user = OIDCclient.getUserInfo(new OidcAccessToken().setToken(authorization));
         String userId = (String) user.get("sub");
-        List<Map> instances = suggest.getUserSuggestions(userId, status);
+        List<String> instances = suggest.getUserSuggestions(userId, status);
         if(instances != null){
             return ResponseEntity.ok(instances);
         }else {

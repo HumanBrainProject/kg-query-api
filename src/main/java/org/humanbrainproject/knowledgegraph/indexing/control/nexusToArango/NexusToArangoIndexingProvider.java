@@ -59,18 +59,23 @@ public class NexusToArangoIndexingProvider {
     }
 
     public Vertex mapToOriginalSpace(Vertex vertex, NexusInstanceReference originalId) {
-        QualifiedIndexingMessage newMessage = new QualifiedIndexingMessage(vertex.getQualifiedIndexingMessage().getOriginalMessage(), new LinkedHashMap(vertex.getQualifiedIndexingMessage().getQualifiedMap()));
-        Vertex newVertex = messageProcessor.createVertexStructure(newMessage);
-        Map<NexusInstanceReference, NexusInstanceReference> toOriginalIdMap = new HashMap<>();
-        for (Edge edge : newVertex.getEdges()) {
-            NexusInstanceReference relatedOriginalId = nativeRepository.findOriginalId(edge.getReference());
-            relatedOriginalId = relatedOriginalId.toSubSpace(SubSpace.MAIN);
-            toOriginalIdMap.put(edge.getReference(), relatedOriginalId);
-            edge.setReference(relatedOriginalId);
+        boolean isSuggestion = vertex.getQualifiedIndexingMessage().getOriginalMessage().getInstanceReference().getSubspace().equals(SubSpace.SUGGESTION);
+        if(!isSuggestion){
+            QualifiedIndexingMessage newMessage = new QualifiedIndexingMessage(vertex.getQualifiedIndexingMessage().getOriginalMessage(), new LinkedHashMap(vertex.getQualifiedIndexingMessage().getQualifiedMap()));
+            Vertex newVertex = messageProcessor.createVertexStructure(newMessage);
+            Map<NexusInstanceReference, NexusInstanceReference> toOriginalIdMap = new HashMap<>();
+            for (Edge edge : newVertex.getEdges()) {
+                NexusInstanceReference relatedOriginalId = nativeRepository.findOriginalId(edge.getReference());
+                relatedOriginalId = relatedOriginalId.toSubSpace(SubSpace.MAIN);
+                toOriginalIdMap.put(edge.getReference(), relatedOriginalId);
+                edge.setReference(relatedOriginalId);
+            }
+            newVertex.setInstanceReference(originalId);
+            newVertex.toSubSpace(SubSpace.MAIN);
+            return newVertex;
+        }else {
+            return vertex;
         }
-        newVertex.setInstanceReference(originalId);
-        newVertex.toSubSpace(SubSpace.MAIN);
-        return newVertex;
     }
 
 

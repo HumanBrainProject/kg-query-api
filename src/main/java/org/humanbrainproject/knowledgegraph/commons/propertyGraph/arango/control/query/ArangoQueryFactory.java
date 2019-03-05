@@ -374,7 +374,7 @@ public class ArangoQueryFactory {
         query.addLine("FOR v IN 1..1 INBOUND doc `schema_hbp_eu-suggestion-user`");
         query.addDocumentFilter(new TrustedAqlValue(("v")));
         query.addLine("FILTER v.`" + HBPVocabulary.SUGGESTION_STATUS + "` == \"" + status.name() + "\"");
-        query.addLine("RETURN v");
+        query.addLine("RETURN v.`" + HBPVocabulary.RELATIVE_URL_OF_INTERNAL_LINK + "`");
         return query.build().getValue();
     }
 

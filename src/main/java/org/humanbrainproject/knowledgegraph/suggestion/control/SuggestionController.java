@@ -85,7 +85,7 @@ public class SuggestionController {
         return repository.findInstanceBySchemaAndFilter(schema, filterKey, filterValue);
     }
 
-    public List<Map> getUserSuggestions(String userId, SuggestionStatus status) throws NotFoundException{
+    public List<String> getUserSuggestions(String userId, SuggestionStatus status) throws NotFoundException{
         List<Map> ms = this.findInstanceBySchemaAndFilter(new NexusSchemaReference("hbpkg", "core", "user", "v0.0.1"), "https://schema.hbp.eu/hbpkg/userId", userId);
         if(ms != null){
             Map m = ms.get(0);
