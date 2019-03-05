@@ -2,16 +2,24 @@ package org.humanbrainproject.knowledgegraph.structure.boundary;
 
 import com.arangodb.ArangoDBException;
 import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
-import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationContext;
 import org.humanbrainproject.knowledgegraph.commons.labels.SemanticsToHumanTranslator;
-import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusClient;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.*;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoInferredRepository;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoInternalRepository;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoStructureRepository;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoToNexusLookupMap;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.SubSpace;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
 import org.humanbrainproject.knowledgegraph.query.boundary.ArangoQuery;
 import org.humanbrainproject.knowledgegraph.query.entity.JsonDocument;
+import org.humanbrainproject.knowledgegraph.structure.exceptions.AsynchronousStartupDelay;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -21,11 +29,6 @@ import java.util.stream.Collectors;
 @Component
 public class Structure {
 
-    @Autowired
-    AuthorizationContext authorizationContext;
-
-    @Autowired
-    ArangoRepository repository;
 
     @Autowired
     ArangoStructureRepository structureRepository;
@@ -37,23 +40,18 @@ public class Structure {
     ArangoInferredRepository inferredRepository;
 
     @Autowired
-    ArangoDatabaseFactory databaseFactory;
-
-    @Autowired
-    NexusClient nexusClient;
-
-
-    @Autowired
     SemanticsToHumanTranslator semanticsToHumanTranslator;
 
     @Autowired
     ArangoToNexusLookupMap lookupMap;
 
+    @Autowired
+    CacheManager cacheManager;
 
-    public Set<NexusSchemaReference> getAllSchemasInMainSpace() {
-        Set<NexusSchemaReference> allSchemas = nexusClient.getAllSchemas(null, null, authorizationContext.getInterceptor());
-        return allSchemas.stream().map(s -> s.toSubSpace(SubSpace.MAIN)).collect(Collectors.toSet());
-    }
+    protected Logger logger = LoggerFactory.getLogger(Structure.class);
+
+    private static boolean STRUCTURE_LOCK = false;
+
 
     private Map<String, Map> groupDirectReferences(List<Map> relations, boolean outbound) {
         Map<String, Map> groupedLinks = new HashMap<>();
@@ -64,7 +62,6 @@ public class Structure {
                     Map map = new HashMap();
                     map.put("attribute", r.get("attribute").toString());
                     map.put("simplePropertyName", semanticsToHumanTranslator.extractSimpleAttributeName(r.get("attribute").toString()));
-                    map.put("canBe", new ArrayList<String>());
                     map.put("label", semanticsToHumanTranslator.translateSemanticValueToHumanReadableLabel(r.get("attribute").toString()));
                     if (!outbound) {
                         map.put("reverse", true);
@@ -72,8 +69,12 @@ public class Structure {
                     groupedLinks.put(r.get("attribute").toString(), map);
                     attribute = map;
                 }
+                attribute.computeIfAbsent("canBe", k -> new ArrayList<String>());
                 List<String> canBe = (List<String>) attribute.get("canBe");
-                canBe.add(lookupMap.getNexusSchema(new ArangoCollectionReference(r.get("ref").toString())).getRelativeUrl().getUrl());
+                NexusSchemaReference ref = lookupMap.getNexusSchema(new ArangoCollectionReference(r.get("ref").toString()));
+                if(ref!=null){
+                    canBe.add(ref.getRelativeUrl().getUrl());
+                }
             }
         });
         return groupedLinks;
@@ -125,14 +126,63 @@ public class Structure {
         return jsonDocument;
     }
 
-    public JsonDocument getStructure(boolean withLinks) {
+    @Cacheable(value="structure", key="#withLinks")
+    public JsonDocument getCachedStructure(boolean withLinks){
+        if(STRUCTURE_LOCK){
+            throw new AsynchronousStartupDelay();
+        }
+        return getStructure(withLinks);
+    }
+
+
+    @CachePut(value="structure", key="#withLinks")
+    public JsonDocument refreshStructureCache(boolean withLinks){
+        if(STRUCTURE_LOCK){
+            throw new AsynchronousStartupDelay();
+        }
+        logger.info(String.format("Refreshing the cache for structure queries %s", withLinks ? "with links" : "without links"));
+        JsonDocument structure = getStructure(withLinks);
+        logger.info(String.format("Done refreshing the cache for structure queries %s", withLinks ? "with links" : "without links"));
+        return structure;
+    }
+
+    private static final int DAY_IN_MS = 24*60*60*1000;
+
+    @Scheduled(fixedDelay = DAY_IN_MS)
+    public void refreshStructureCachesEveryDay(){
+        try {
+            logger.info("CRON: Refreshing the cache for structure queries");
+            refreshStructureCache(false);
+            refreshStructureCache(true);
+            logger.info("CRON: Done refreshing the cache for structure queries");
+        }
+        catch(AsynchronousStartupDelay e){
+            logger.info("CRON: Waiting for initial cache population to end");
+
+        }
+    }
+
+    @Async
+    public void refreshStructuredCachesAtStartup(){
+        STRUCTURE_LOCK = true;
+        logger.info("Initial population of the cache for structure queries started");
+
+        cacheManager.getCache("structure").put(false, getStructure(false));
+        cacheManager.getCache("structure").put(true, getStructure(true));
+
+        logger.info("Done with initial population of the cache for structure queries");
+        STRUCTURE_LOCK = false;
+    }
+
+
+    private JsonDocument getStructure(boolean withLinks) {
         Collection<NexusSchemaReference> allSchemas = lookupMap.getLookupTable(false).values();
         JsonDocument jsonDocument = new JsonDocument();
         List<JsonDocument> schemas = new ArrayList<>();
         jsonDocument.put("schemas", schemas);
         for (NexusSchemaReference schemaReference : allSchemas) {
             try {
-
+                logger.debug(String.format("fetching structure from schema %s", schemaReference.getRelativeUrl().getUrl()));
                 JsonDocument structureForSchema = getStructureForSchema(schemaReference, withLinks);
                 if (structureForSchema != null) {
                     schemas.add(structureForSchema);

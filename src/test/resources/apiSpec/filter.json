@@ -1,0 +1,87 @@
+{
+  "@context": {
+    "@vocab": "https://schema.hbp.eu/graphQuery/",
+    "schema": "http://schema.org/",
+    "minds": "https://schema.hbp.eu/minds/",
+    "query": "https://schema.hbp.eu/query/",
+    "searchUi": "https://schema.hbp.eu/searchUi/",
+    "cscs": "https://schema.hbp.eu/cscs/",
+    "neuroglancer": "https://schema.hbp.eu/neuroglancer/",
+    "brainviewer": "https://schema.hbp.eu/brainviewer/",
+    "fieldname": {
+      "@id": "fieldname",
+      "@type": "@id"
+    },
+    "merge": {
+      "@id": "merge",
+      "@type": "@id"
+    },
+    "relative_path": {
+      "@id": "relative_path",
+      "@type": "@id"
+    }
+  },
+  "schema:name": "Dataset",
+  "fields": [
+    {
+      "fieldname": "query:simpleStartsWith",
+      "relative_path": "schema:name",
+      "filter":{
+        "op": "starts_with",
+        "value": "Probabilistic"
+      }
+    },
+    {
+      "fieldname": "query:simpleStartsWith",
+      "relative_path": "schema:name",
+      "filter":{
+        "op": "ends_with",
+        "value": "Cortex"
+      }
+    },
+    {
+      "fieldname": "query:simple",
+      "relative_path": "schema:name",
+      "filter":{
+        "op": "contains",
+        "value": "cytoarchitectonic"
+      }
+    },
+    {
+      "fieldname": "query:simple",
+      "relative_path": "schema:name",
+      "filter":{
+        "op": "regex",
+        "value": ".*Probab.*cytoar.*Cortex"
+      }
+    },
+    {
+      "fieldname": "query:simpleDynamicRegex",
+      "relative_path": "schema:name",
+      "filter":{
+        "op": "regex",
+        "parameter": "dynamicRegex"
+      }
+    },
+    {
+      "fieldname": "query:nestedDynamicOverride",
+      "relative_path": "minds:component",
+      "fields": [
+        {
+          "fieldname": "query:innerA",
+          "relative_path": "schema:identifier"
+        },
+        {
+          "fieldname": "query:innerB",
+          "relative_path": "schema:name",
+          "filter":{
+            "op": "regex",
+            "value": "Probab.*",
+            "parameter": "dynamicOverride"
+          }
+        }
+      ],
+      "required": true
+    }
+  ]
+}

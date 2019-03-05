@@ -40,5 +40,9 @@ public class Suggest {
         return suggestionController.changeSuggestionStatus(ref, status, clientIdExtension);
     }
 
+    public boolean deleteSuggestion(NexusInstanceReference ref) throws NotFoundException{
+        return suggestionController.deleteSuggestion(ref);
+    }
+
 
 }

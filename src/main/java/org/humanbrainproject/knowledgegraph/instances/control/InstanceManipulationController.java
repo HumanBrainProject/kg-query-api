@@ -11,6 +11,7 @@ import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusClient;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoNativeRepository;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.SubSpace;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Vertex;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.NexusVocabulary;
@@ -96,7 +97,7 @@ public class InstanceManipulationController {
                 throw new RuntimeException(String.format("Found instance without identifier: %s", instanceReference.getRelativeUrl().getUrl()));
             }
         }
-        if (clientIdExtension != null || (authorizationContext.getSubspace() != originalId.getSubspace())) {
+        if (clientIdExtension != null || (authorizationContext.getSubspace() != originalId.getSubspace()) ) {
             document.addReference(HBPVocabulary.INFERENCE_EXTENDS, nexusConfiguration.getAbsoluteUrl(originalId));
         }
         primaryIdentifier = lookupController.constructIdentifierWithClientIdExtension(primaryIdentifier, clientIdExtension);

@@ -4,13 +4,16 @@ import com.github.jsonldjava.core.JsonLdConsts;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoInferredRepository;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoNativeRepository;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoRepository;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.SubSpace;
 import org.humanbrainproject.knowledgegraph.commons.suggestion.SuggestionStatus;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.humanbrainproject.knowledgegraph.context.QueryContext;
+import org.humanbrainproject.knowledgegraph.indexing.boundary.GraphIndexing;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
+import org.humanbrainproject.knowledgegraph.instances.boundary.Instances;
 import org.humanbrainproject.knowledgegraph.instances.control.InstanceManipulationController;
 import org.humanbrainproject.knowledgegraph.query.entity.DatabaseScope;
 import org.humanbrainproject.knowledgegraph.query.entity.JsonDocument;
@@ -38,10 +41,16 @@ public class SuggestionController {
     ArangoNativeRepository arangoNativeRepository;
 
     @Autowired
+    ArangoRepository arangoRepository;
+
+    @Autowired
     QueryContext queryContext;
 
     @Autowired
     NexusConfiguration nexusConfiguration;
+
+    @Autowired
+    GraphIndexing graphIndexing;
 
     public QueryResult<List<Map>> simpleSuggestByField(NexusSchemaReference originalSchema, String field, String search, Pagination pagination){
         return repository.getSuggestionsByField(originalSchema, field, search, pagination);
@@ -111,5 +120,14 @@ public class SuggestionController {
         }else{
             throw new NotFoundException("Instance not found");
         }
+    }
+
+    public boolean deleteSuggestion(NexusInstanceReference ref) throws NotFoundException{
+        queryContext.setDatabaseScope(DatabaseScope.INFERRED);
+        JsonDocument doc = arangoRepository.getInstance(ArangoDocumentReference.fromNexusInstance(ref), queryContext.getDatabaseConnection());
+        if(doc != null){
+            return instanceManipulationController.removeInstance(ref);
+        }
+        throw new BadRequestException("Instance not found or already deprecated");
     }
 }

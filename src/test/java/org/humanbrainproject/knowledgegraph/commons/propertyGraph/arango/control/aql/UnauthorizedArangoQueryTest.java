@@ -7,11 +7,11 @@ import static org.junit.Assert.*;
 
 public class UnauthorizedArangoQueryTest {
 
-    UnauthorizedArangoQuery q;
+    AQL q;
 
     @Before
     public void setup(){
-        q = new UnauthorizedArangoQuery();
+        q = new AQL();
     }
 
     @Test

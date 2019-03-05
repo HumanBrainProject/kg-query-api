@@ -1,0 +1,63 @@
+LET whitelist=["minds","bar","foo","neuralactivity","cscs"]
+FOR root_doc IN `minds-core-species-v1_0_0`
+LET https___schema_hbp_eu_query_grouped = UNIQUE(FLATTEN(( LET https___schema_hbp_eu_query_grouped_docs = ( FOR https___schema_hbp_eu_query_grouped_doc_traverse     IN 1..1 INBOUND root_doc `schema_hbp_eu-minds-species`
+      FILTER https___schema_hbp_eu_query_grouped_doc_traverse != NULL
+      FILTER https___schema_hbp_eu_query_grouped_doc_traverse._permissionGroup IN whitelist
+      RETURN https___schema_hbp_eu_query_grouped_doc_traverse )
+      FOR https___schema_hbp_eu_query_grouped_doc IN https___schema_hbp_eu_query_grouped_docs
+      FILTER https___schema_hbp_eu_query_grouped_doc != NULL
+
+LET https___schema_hbp_eu_query_grouped_ = UNIQUE(FLATTEN(( LET https___schema_hbp_eu_query_grouped__docs = ( FOR https___schema_hbp_eu_query_grouped__doc_traverse     IN 1..1 INBOUND https___schema_hbp_eu_query_grouped_doc `schema_hbp_eu-minds-subjects`
+      FILTER https___schema_hbp_eu_query_grouped__doc_traverse != NULL
+      FILTER https___schema_hbp_eu_query_grouped__doc_traverse._permissionGroup IN whitelist
+      RETURN https___schema_hbp_eu_query_grouped__doc_traverse )
+      FOR https___schema_hbp_eu_query_grouped__doc IN https___schema_hbp_eu_query_grouped__docs
+      FILTER https___schema_hbp_eu_query_grouped__doc != NULL
+
+LET https___schema_hbp_eu_query_grouped__ = UNIQUE(FLATTEN(( LET https___schema_hbp_eu_query_grouped___docs = ( FOR https___schema_hbp_eu_query_grouped___doc_traverse     IN 1..1 INBOUND https___schema_hbp_eu_query_grouped__doc `schema_hbp_eu-minds-specimen_group`
+      FILTER https___schema_hbp_eu_query_grouped___doc_traverse != NULL
+      FILTER https___schema_hbp_eu_query_grouped___doc_traverse._permissionGroup IN whitelist
+      RETURN https___schema_hbp_eu_query_grouped___doc_traverse )
+      FOR https___schema_hbp_eu_query_grouped___doc IN https___schema_hbp_eu_query_grouped___docs
+      FILTER https___schema_hbp_eu_query_grouped___doc != NULL
+
+LET https___schema_hbp_eu_query_componentName = UNIQUE(FLATTEN(( LET https___schema_hbp_eu_query_componentName_docs = ( FOR https___schema_hbp_eu_query_componentName_doc_traverse     IN 1..1 OUTBOUND https___schema_hbp_eu_query_grouped___doc `schema_hbp_eu-minds-component`
+      FILTER https___schema_hbp_eu_query_componentName_doc_traverse != NULL
+      FILTER https___schema_hbp_eu_query_componentName_doc_traverse._permissionGroup IN whitelist
+      RETURN https___schema_hbp_eu_query_componentName_doc_traverse )
+      FOR https___schema_hbp_eu_query_componentName_doc IN APPEND(https___schema_hbp_eu_query_componentName_docs, FLATTEN([https___schema_hbp_eu_query_grouped___doc.`https://schema.hbp.eu/minds/component`]))
+      FILTER https___schema_hbp_eu_query_componentName_doc != NULL
+
+FILTER https___schema_hbp_eu_query_componentName_doc.`http://schema.org/name` != NULL
+RETURN DISTINCT https___schema_hbp_eu_query_componentName_doc.`http://schema.org/name`
+)))
+
+FILTER (https___schema_hbp_eu_query_grouped___doc.`http://schema.org/name` != NULL AND https___schema_hbp_eu_query_grouped___doc.`http://schema.org/name` != []) OR
+(https___schema_hbp_eu_query_componentName != NULL AND https___schema_hbp_eu_query_componentName != [])
+RETURN DISTINCT {   "https://schema.hbp.eu/query/name": https___schema_hbp_eu_query_grouped___doc.`http://schema.org/name`,
+   "https://schema.hbp.eu/query/componentName": https___schema_hbp_eu_query_componentName
+}
+
+)))
+RETURN DISTINCT https___schema_hbp_eu_query_grouped__
+)))
+RETURN DISTINCT https___schema_hbp_eu_query_grouped_
+)))
+
+LET https___schema_hbp_eu_query_grouped = (FOR grp IN https___schema_hbp_eu_query_grouped
+
+    COLLECT `https://schema.hbp.eu/query/componentName` = grp.`https://schema.hbp.eu/query/componentName`
+    INTO group
+    LET instances = (FOR el IN group RETURN {
+        "https://schema.hbp.eu/query/name":  el.grp.`https://schema.hbp.eu/query/name`,
+        "https://schema.hbp.eu/query/identifier":  el.grp.`https://schema.hbp.eu/query/identifier`
+    })
+    RETURN {
+    "https://schema.hbp.eu/query/componentName": `https://schema.hbp.eu/query/componentName`,
+    "https://schema.hbp.eu/query/instances": instances
+    }
+)
+
+
+RETURN {   "https://schema.hbp.eu/query/grouped": https___schema_hbp_eu_query_grouped_grp
+}

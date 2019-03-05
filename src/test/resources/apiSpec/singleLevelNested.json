@@ -1,0 +1,196 @@
+{
+  "@context": {
+    "@vocab": "https://schema.hbp.eu/graphQuery/",
+    "schema": "http://schema.org/",
+    "minds": "https://schema.hbp.eu/minds/",
+    "query": "https://schema.hbp.eu/query/",
+    "searchUi": "https://schema.hbp.eu/searchUi/",
+    "cscs": "https://schema.hbp.eu/cscs/",
+    "neuroglancer": "https://schema.hbp.eu/neuroglancer/",
+    "brainviewer": "https://schema.hbp.eu/brainviewer/",
+    "fieldname": {
+      "@id": "fieldname",
+      "@type": "@id"
+    },
+    "merge": {
+      "@id": "merge",
+      "@type": "@id"
+    },
+    "relative_path": {
+      "@id": "relative_path",
+      "@type": "@id"
+    }
+  },
+  "schema:name": "Dataset",
+  "fields": [
+    {
+      "fieldname": "query:simple",
+      "relative_path": "minds:component",
+      "fields": [
+        {
+          "fieldname": "query:innerA",
+          "relative_path": "schema:identifier"
+        },
+        {
+          "fieldname": "query:innerB",
+          "relative_path": "schema:name"
+        }
+      ]
+    },
+    {
+      "fieldname": "query:simpleEnsureOrder",
+      "relative_path": "minds:component",
+      "fields": [
+        {
+          "fieldname": "query:innerA",
+          "relative_path": "schema:identifier"
+        },
+        {
+          "fieldname": "query:innerB",
+          "relative_path": "schema:name"
+        }
+      ],
+      "ensure_order": true
+    },
+    {
+      "fieldname": "query:simpleRequiredAndSorted",
+      "relative_path": "minds:component",
+      "fields": [
+        {
+          "fieldname": "query:innerA",
+          "relative_path": "schema:identifier"
+        },
+        {
+          "fieldname": "query:innerB",
+          "relative_path": "schema:name"
+        }
+      ],
+      "required": true,
+      "sort": true
+    },
+
+    {
+      "fieldname": "query:simpleInnerEnsureOrder",
+      "relative_path": "minds:component",
+      "fields": [
+        {
+          "fieldname": "query:innerA",
+          "relative_path": "schema:identifier",
+          "ensure_order": true
+        },
+        {
+          "fieldname": "query:innerB",
+          "relative_path": "schema:name"
+        }
+      ]
+    },
+    {
+      "fieldname": "query:simpleInnerRequiredAndSorted",
+      "relative_path": "minds:component",
+      "fields": [
+        {
+          "fieldname": "query:innerA",
+          "relative_path": "schema:identifier",
+          "required": true,
+          "sort": true
+        },
+        {
+          "fieldname": "query:innerB",
+          "relative_path": "schema:name"
+        }
+      ]
+    },
+    {
+      "fieldname": "query:reverse",
+      "relative_path": {
+        "@id": "minds:doireference",
+        "reverse": true
+      },
+      "fields": [
+        {
+          "fieldname": "query:innerA",
+          "relative_path": "minds:doi"
+        },
+        {
+          "fieldname": "query:innerB",
+          "relative_path": "minds:citation"
+        }
+      ]
+    },
+    {
+      "fieldname": "query:reverseEnsureOrder",
+      "relative_path": {
+        "@id": "minds:doireference",
+        "reverse": true
+      },
+      "fields": [
+        {
+          "fieldname": "query:innerA",
+          "relative_path": "minds:doi"
+        },
+        {
+          "fieldname": "query:innerB",
+          "relative_path": "minds:citation"
+        }
+      ],
+      "ensure_order": true
+    },
+    {
+      "fieldname": "query:reverseRequiredAndSorted",
+      "relative_path": {
+        "@id": "minds:doireference",
+        "reverse": true
+      },
+      "fields": [
+        {
+          "fieldname": "query:innerA",
+          "relative_path": "minds:doi"
+        },
+        {
+          "fieldname": "query:innerB",
+          "relative_path": "minds:citation"
+        }
+      ],
+      "required": true,
+      "sort": true
+    },
+
+    {
+      "fieldname": "query:reverseInnerEnsureOrder",
+      "relative_path": {
+        "@id": "minds:doireference",
+        "reverse": true
+      },
+      "fields": [
+        {
+          "fieldname": "query:innerA",
+          "relative_path": "minds:doi",
+          "ensure_order": true
+        },
+        {
+          "fieldname": "query:innerB",
+          "relative_path": "minds:citation"
+        }
+      ]
+    },
+    {
+      "fieldname": "query:reverseInnerRequiredAndSorted",
+      "relative_path": {
+        "@id": "minds:doireference",
+        "reverse": true
+      },
+      "fields": [
+        {
+          "fieldname": "query:innerA",
+          "relative_path": "minds:doi",
+          "sort": true,
+          "required": true
+        },
+        {
+          "fieldname": "query:innerB",
+          "relative_path": "minds:citation"
+        }
+      ]
+    }
+  ]
+}

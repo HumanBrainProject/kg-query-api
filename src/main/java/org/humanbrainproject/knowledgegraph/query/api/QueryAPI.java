@@ -10,11 +10,14 @@ import org.humanbrainproject.knowledgegraph.commons.api.ParameterConstants;
 import org.humanbrainproject.knowledgegraph.commons.api.RestUtils;
 import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationContext;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.exceptions.RootCollectionNotFoundException;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.exceptions.StoredQueryNotFoundException;
 import org.humanbrainproject.knowledgegraph.context.QueryContext;
+import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
 import org.humanbrainproject.knowledgegraph.query.boundary.ArangoQuery;
 import org.humanbrainproject.knowledgegraph.query.boundary.CodeGenerator;
 import org.humanbrainproject.knowledgegraph.query.entity.*;
+import org.humanbrainproject.knowledgegraph.query.entity.fieldFilter.ParameterDescription;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.http.HttpHeaders;
@@ -133,17 +136,19 @@ public class QueryAPI {
     }
 
 
-    @GetMapping("/{"+ORG+"}/{"+ DOMAIN+"}/{"+SCHEMA+"}/{"+VERSION+"}/{"+QUERY_ID+"}/instances/reflect/{"+INSTANCE_ID+"}")
+    @GetMapping("/{"+ORG+"}/{"+ DOMAIN+"}/{"+SCHEMA+"}/{"+VERSION+"}/{"+QUERY_ID+"}/instances/releaseTree/{"+INSTANCE_ID+"}")
     public ResponseEntity<Map> executeStoredReflectionQuery(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(QUERY_ID) String queryId, @PathVariable(INSTANCE_ID) String instanceId, @RequestParam(value = RESTRICT_TO_ORGANIZATIONS, required = false) String restrictToOrganizations, @RequestParam(value = VOCAB, required = false) String vocab, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken, @ApiIgnore @RequestParam Map<String, String> allRequestParams) throws Exception {
         try {
             authorizationContext.populateAuthorizationContext(authorizationToken);
 
-            StoredQuery query = new StoredQuery(new NexusSchemaReference(org, domain, schema, version), queryId, vocab);
+            NexusSchemaReference schemaReference = new NexusSchemaReference(org, domain, schema, version);
+            StoredQuery query = new StoredQuery(schemaReference, queryId, vocab);
             query.setParameters(allRequestParams);
-            query.getFilter().restrictToOrganizations(RestUtils.splitCommaSeparatedValues(restrictToOrganizations)).restrictToSingleId(instanceId);
-            Map result = this.query.reflectQueryPropertyGraphByStoredSpecification(query);
-
+            query.getFilter().restrictToOrganizations(RestUtils.splitCommaSeparatedValues(restrictToOrganizations));
+            Map result = this.query.queryReleaseTree(query, new NexusInstanceReference(schemaReference, instanceId));
             return ResponseEntity.ok(result);
+        } catch (StoredQueryNotFoundException e){
+            return ResponseEntity.notFound().build();
         } catch (RootCollectionNotFoundException e) {
             return ResponseEntity.notFound().build();
         } catch (HttpClientErrorException e) {
@@ -152,29 +157,14 @@ public class QueryAPI {
     }
 
     @GetMapping("/{"+ORG+"}/{"+ DOMAIN+"}/{"+SCHEMA+"}/{"+VERSION+"}/{"+QUERY_ID+"}/meta")
-    public ResponseEntity<QueryResult> executeMetaQuery(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(QUERY_ID) String queryId, @RequestParam(value = VOCAB, required = false) String vocab, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken) throws Exception {
+    public ResponseEntity<QueryResult<List<Map>>> executeMetaQuery(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(QUERY_ID) String queryId, @RequestParam(value = VOCAB, required = false) String vocab, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken) throws Exception {
         try {
             authorizationContext.populateAuthorizationContext(authorizationToken);
-
             StoredQuery query = new StoredQuery(new NexusSchemaReference(org, domain, schema, version), queryId, vocab);
             QueryResult<List<Map>> result = this.query.metaQueryPropertyGraphByStoredSpecification(query);
-
             return ResponseEntity.ok(result);
-        } catch (HttpClientErrorException e) {
-            return ResponseEntity.status(e.getStatusCode()).build();
-        }
-    }
-
-
-    @GetMapping("/{"+ORG+"}/{"+ DOMAIN+"}/{"+SCHEMA+"}/{"+VERSION+"}/{"+QUERY_ID+"}/meta/reflect")
-    public ResponseEntity<QueryResult> executeMetaReflectionQuery(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(QUERY_ID) String queryId, @RequestParam(value = VOCAB, required = false) String vocab, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken) throws Exception {
-        try {
-            authorizationContext.populateAuthorizationContext(authorizationToken);
-
-            StoredQuery query = new StoredQuery(new NexusSchemaReference(org, domain, schema, version), queryId, vocab);
-            QueryResult<List<Map>> result = this.query.metaReflectionQueryPropertyGraphByStoredSpecification(query);
-
-            return ResponseEntity.ok(result);
+        } catch (StoredQueryNotFoundException e){
+            return ResponseEntity.notFound().build();
         } catch (HttpClientErrorException e) {
             return ResponseEntity.status(e.getStatusCode()).build();
         }
@@ -196,6 +186,8 @@ public class QueryAPI {
             QueryResult<Map> result = this.query.metaQueryPropertyGraphByStoredSpecificationAndFreemarkerTemplate(query);
 
             return ResponseEntity.ok(RestUtils.toJsonResultIfPossible(result));
+        } catch (StoredQueryNotFoundException e){
+            return ResponseEntity.notFound().build();
         } catch (HttpClientErrorException e) {
             return ResponseEntity.status(e.getStatusCode()).build();
         }
@@ -214,6 +206,8 @@ public class QueryAPI {
             Map result = this.query.queryPropertyGraphByStoredSpecificationAndTemplateWithId(query, template);
 
             return ResponseEntity.ok(result);
+        } catch (StoredQueryNotFoundException e){
+            return ResponseEntity.notFound().build();
         } catch (RootCollectionNotFoundException e) {
             return ResponseEntity.notFound().build();
         } catch (HttpClientErrorException e) {
@@ -236,9 +230,13 @@ public class QueryAPI {
         StoredQuery query = new StoredQuery(new NexusSchemaReference(org, domain, schema, version), queryId, null);
         query.getFilter().restrictToOrganizations(RestUtils.splitCommaSeparatedValues(restrictToOrganizations)).setQueryString(searchTerm);
         query.setTemplateId(templateId).setLibraryId(library).setReturnOriginalJson(includeOriginalJson);
-        QueryResult<List<Map>> result = this.query.queryPropertyGraphByStoredSpecificationAndFreemarkerTemplate(query);
+        try {
+            QueryResult<List<Map>> result = this.query.queryPropertyGraphByStoredSpecificationAndFreemarkerTemplate(query);
 
-        return ResponseEntity.ok(result);
+            return ResponseEntity.ok(result);
+        } catch (StoredQueryNotFoundException e){
+            return ResponseEntity.notFound().build();
+        }
     }
 
     @GetMapping(value ="/{"+ORG+"}/{"+ DOMAIN+"}/{"+SCHEMA+"}/{"+VERSION+"}/{"+QUERY_ID+"}/templates/{"+TEMPLATE_ID+"}/instances/{"+INSTANCE_ID+"}")
@@ -250,17 +248,23 @@ public class QueryAPI {
         query.getFilter().restrictToOrganizations(RestUtils.splitCommaSeparatedValues(restrictToOrganizations)).restrictToSingleId(instanceId);
         query.setTemplateId(templateId).setLibraryId("instances").setReturnOriginalJson(includeOriginalJson);
 
-        Map result = this.query.queryPropertyGraphByStoredSpecificationAndStoredTemplateWithId(query);
+        try {
+            Map result = this.query.queryPropertyGraphByStoredSpecificationAndStoredTemplateWithId(query);
 
-        return ResponseEntity.ok(result);
+            return ResponseEntity.ok(result);
+        }
+        catch (StoredQueryNotFoundException e){
+            return ResponseEntity.notFound().build();
+        }
     }
 
 
     @ExternalApi
-    @ApiOperation(value="Execute query from payload", notes="Execute the query (in payload) against the instances of the given schema")
+    @ApiOperation(value="For test purposes only!!! Execute query from payload", notes="Execute the query (in payload) against the instances of the given schema. Please note, that this is thought to be for test purposes only! If you're happy with your query, you should register it in the graph. To help you with actually doing this, we've introduced an artificial delay (2secs right now, if this doesn't help, we increase it). :)")
     @PostMapping(value = "/{"+ORG+"}/{"+ DOMAIN+"}/{"+SCHEMA+"}/{"+VERSION+"}/instances", consumes = {MediaType.APPLICATION_JSON, RestUtils.APPLICATION_LD_JSON})
-    public ResponseEntity<QueryResult> queryPropertyGraphBySpecification(@RequestBody String payload, @PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @ApiParam(VOCAB_DOC) @RequestParam(value = VOCAB, required = false) String vocab, @ApiParam(SIZE_DOC) @RequestParam(value = SIZE, required = false) Integer size,  @ApiParam(START_DOC) @RequestParam(value = START, required = false) Integer start, @ApiParam(RESTRICTED_ORGANIZATION_DOC) @RequestParam(value = ORGS, required = false) String organizations, @RequestParam(value = DATABASE_SCOPE, required = false) ExposedDatabaseScope databaseScope, @ApiParam(SEARCH_DOC) @RequestParam(value = SEARCH, required = false) String searchTerm, @ApiParam(BOUNDING_BOX_DOC) @RequestParam(value = "mbb", required = false) String boundingBox, @ApiParam(REFERENCE_SPACE_DOC) @RequestParam(value = "referenceSpace", required = false) String referenceSpace,  @ApiParam(value = ParameterConstants.AUTHORIZATION_DOC)  @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken, @ApiIgnore @RequestParam Map<String, String> allRequestParams) throws Exception {
+    public ResponseEntity<QueryResult> queryPropertyGraphBySpecification(@RequestBody String payload, @PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @ApiParam(VOCAB_DOC) @RequestParam(value = VOCAB, required = false) String vocab, @ApiParam(SIZE_DOC) @RequestParam(value = SIZE, required = false) Integer size,  @ApiParam(START_DOC) @RequestParam(value = START, required = false) Integer start, @ApiParam(RESTRICTED_ORGANIZATION_DOC) @RequestParam(value = ORGS, required = false) String organizations, @RequestParam(value = DATABASE_SCOPE, required = false) ExposedDatabaseScope databaseScope, @ApiParam(SEARCH_DOC) @RequestParam(value = SEARCH, required = false) String searchTerm,  @ApiParam(value = ParameterConstants.AUTHORIZATION_DOC)  @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken, @ApiIgnore @RequestParam Map<String, String> allRequestParams) throws Exception {
         try {
+            //Thread.sleep(2000);
             authorizationContext.populateAuthorizationContext(authorizationToken);
             queryContext.populateQueryContext(databaseScope);
             Query query = new Query(payload, new NexusSchemaReference(org, domain, schema, version), vocab);
@@ -268,6 +272,7 @@ public class QueryAPI {
             query.getFilter().restrictToOrganizations(RestUtils.splitCommaSeparatedValues(organizations)).setQueryString(searchTerm);
             query.getPagination().setStart(start).setSize(size);
             QueryResult<List<Map>> result = this.query.queryPropertyGraphBySpecification(query);
+            result.setImportantMessage("This query is executed with a mode thought for query testing only (with throttled performance). Please register your query if you're happy with it. It's easy and you gain speed ;)!");
             return ResponseEntity.ok(result);
         } catch (RootCollectionNotFoundException e) {
             return ResponseEntity.ok(QueryResult.createEmptyResult());
@@ -276,11 +281,11 @@ public class QueryAPI {
         }
     }
 
-    @ExternalApi
-    @ApiOperation(value="Execute query from payload for a single instance", notes="Execute the query (in payload) against a single instance (by id) of the given schema")
+    @ApiOperation(value="For test purposes only!!! Execute query from payload for a single instance", notes="Execute the query (in payload) against the instances of the given schema. Please note, that this is thought to be for test purposes only! If you're happy with your query, you should register it in the graph. To help you with actually doing this, we've introduced an artificial delay (2secs right now, if this doesn't help, we increase it). :)")
     @PostMapping(value = "/{"+ORG+"}/{"+ DOMAIN+"}/{"+SCHEMA+"}/{"+VERSION+"}/instances/{"+INSTANCE_ID+"}", consumes = {MediaType.APPLICATION_JSON, RestUtils.APPLICATION_LD_JSON})
     public ResponseEntity<Map> queryPropertyGraphBySpecificationWithId(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(INSTANCE_ID) String instanceId, @RequestBody String payload, @ApiParam(VOCAB_DOC) @RequestParam(value = VOCAB, required = false) String vocab, @ApiParam(RESTRICTED_ORGANIZATION_DOC) @RequestParam(value = RESTRICT_TO_ORGANIZATIONS, required = false) String restrictToOrganizations, @RequestParam(value = DATABASE_SCOPE, required = false) ExposedDatabaseScope databaseScope,  @ApiParam(value = ParameterConstants.AUTHORIZATION_DOC) @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken,  @ApiIgnore @RequestParam Map<String, String> allRequestParams) throws Exception {
         try {
+            //Thread.sleep(2000);
             authorizationContext.populateAuthorizationContext(authorizationToken);
             queryContext.populateQueryContext(databaseScope);
 
@@ -290,7 +295,9 @@ public class QueryAPI {
             QueryResult<List<Map>> result = this.query.queryPropertyGraphBySpecification(query);
 
             if (result.getResults().size() >= 1) {
-                return ResponseEntity.ok(result.getResults().get(0));
+                Map body = result.getResults().get(0);
+                body.put("importantMessage", "This query is executed with a mode thought for query testing only (with throttled performance). Please register your query if you're happy with it. It's easy and you gain speed ;)!");
+                return ResponseEntity.ok(body);
             } else {
                 return ResponseEntity.notFound().build();
             }
@@ -317,20 +324,67 @@ public class QueryAPI {
     }
 
     @ApiOperation(value="Execute a stored query and fetch the corresponding instances")
-    @ExternalApi
-    @GetMapping("/{"+ORG+"}/{"+ DOMAIN+"}/{"+SCHEMA+"}/{"+VERSION+"}/{"+QUERY_ID+"}/instances")
-    public ResponseEntity<QueryResult> executeStoredQuery(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(QUERY_ID) String queryId, @ApiParam(SIZE_DOC) @RequestParam(value = SIZE, required = false) Integer size, @ApiParam(START_DOC) @RequestParam(value = START, required = false) Integer start, @RequestParam(value = DATABASE_SCOPE, required = false) ExposedDatabaseScope databaseScope, @ApiParam(SEARCH_DOC) @RequestParam(value = SEARCH, required = false) String searchTerm, @ApiParam(VOCAB_DOC) @RequestParam(value = VOCAB, required = false) String vocab, @ApiParam(RESTRICTED_ORGANIZATION_DOC) @RequestParam(value = RESTRICT_TO_ORGANIZATIONS, required = false) String restrictToOrganizations,  @ApiParam(BOUNDING_BOX_DOC) @RequestParam(value = "mbb", required = false) String minimalBoundingBox, @ApiParam(REFERENCE_SPACE_DOC) @RequestParam(value = "referenceSpace", required = false) String referenceSpace,  @ApiParam(value = ParameterConstants.AUTHORIZATION_DOC) @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken, @ApiIgnore @RequestParam Map<String, String> allRequestParams) throws Exception {
+    @Deprecated
+    @GetMapping("/{"+ORG+"}/{"+ DOMAIN+"}/{"+SCHEMA+"}/{"+VERSION+"}/{"+QUERY_ID+"}/instances/deprecated")
+    public ResponseEntity<QueryResult> executeStoredQuery(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(QUERY_ID) String queryId, @ApiParam(SIZE_DOC) @RequestParam(value = SIZE, required = false) Integer size, @ApiParam(START_DOC) @RequestParam(value = START, required = false) Integer start, @RequestParam(value = DATABASE_SCOPE, required = false) ExposedDatabaseScope databaseScope, @ApiParam(SEARCH_DOC) @RequestParam(value = SEARCH, required = false) String searchTerm, @ApiParam(VOCAB_DOC) @RequestParam(value = VOCAB, required = false) String vocab, @ApiParam(RESTRICTED_ORGANIZATION_DOC) @RequestParam(value = RESTRICT_TO_ORGANIZATIONS, required = false) String restrictToOrganizations,  @ApiParam(value = ParameterConstants.AUTHORIZATION_DOC) @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken, @ApiIgnore @RequestParam Map<String, String> allRequestParams) throws Exception {
         try {
             authorizationContext.populateAuthorizationContext(authorizationToken);
             queryContext.populateQueryContext(databaseScope);
+            queryContext.setAllParameters(allRequestParams);
 
             StoredQuery query = new StoredQuery(new NexusSchemaReference(org, domain, schema, version), queryId, vocab);
             query.setParameters(allRequestParams);
-            query.getFilter().restrictToOrganizations(RestUtils.splitCommaSeparatedValues(restrictToOrganizations)).setQueryString(searchTerm).setBoundingBox(BoundingBox.parseBoundingBox(minimalBoundingBox, referenceSpace));
+            query.getFilter().restrictToOrganizations(RestUtils.splitCommaSeparatedValues(restrictToOrganizations)).setQueryString(searchTerm);
             query.getPagination().setStart(start).setSize(size);
             QueryResult<List<Map>> result = this.query.queryPropertyGraphByStoredSpecification(query);
 
             return ResponseEntity.ok(result);
+        } catch (StoredQueryNotFoundException e){
+            return ResponseEntity.notFound().build();
+        } catch (RootCollectionNotFoundException e) {
+            return ResponseEntity.ok(QueryResult.createEmptyResult());
+        } catch (HttpClientErrorException e) {
+            return ResponseEntity.status(e.getStatusCode()).build();
+        }
+    }
+
+    @ApiOperation(value="Execute a stored query and fetch the corresponding instances")
+    @ExternalApi
+    @GetMapping("/{"+ORG+"}/{"+ DOMAIN+"}/{"+SCHEMA+"}/{"+VERSION+"}/{"+QUERY_ID+"}/instances")
+    public ResponseEntity<QueryResult> executeStoredQuery(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(QUERY_ID) String queryId, @ApiParam(SIZE_DOC) @RequestParam(value = SIZE, required = false) Integer size, @ApiParam(START_DOC) @RequestParam(value = START, required = false) Integer start, @RequestParam(value = DATABASE_SCOPE, required = false) ExposedDatabaseScope databaseScope, @ApiParam(VOCAB_DOC) @RequestParam(value = VOCAB, required = false) String vocab, @ApiParam(RESTRICTED_ORGANIZATION_DOC) @RequestParam(value = RESTRICT_TO_ORGANIZATIONS, required = false) String restrictToOrganizations,  @ApiParam(value = ParameterConstants.AUTHORIZATION_DOC) @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken, @ApiIgnore @RequestParam Map<String, String> allRequestParams) throws Exception {
+      return executeStoredQuery(org, domain, schema, version, queryId, size, start, databaseScope, null, vocab, restrictToOrganizations, authorizationToken, allRequestParams);
+    }
+
+
+    @ApiOperation(value="List the filter parameters of a stored query")
+    @ExternalApi
+    @GetMapping("/{"+ORG+"}/{"+ DOMAIN+"}/{"+SCHEMA+"}/{"+VERSION+"}/{"+QUERY_ID+"}/parameters")
+    public ResponseEntity<List<ParameterDescription>> listFilterParameters(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(QUERY_ID) String queryId) throws Exception {
+        try {
+            StoredQuery q = new StoredQuery(new NexusSchemaReference(org, domain, schema, version), queryId, null);
+            List<ParameterDescription> parameters = query.listQueryParameters(q);
+            return ResponseEntity.ok(parameters);
+        } catch (StoredQueryNotFoundException e){
+            return ResponseEntity.notFound().build();
+        } catch (HttpClientErrorException e) {
+            return ResponseEntity.status(e.getStatusCode()).build();
+        }
+    }
+
+    @ApiOperation(value="Execute a stored query for public instances (and therefore anonymously)")
+    @ExternalApi
+    @GetMapping("/{"+ORG+"}/{"+ DOMAIN+"}/{"+SCHEMA+"}/{"+VERSION+"}/{"+QUERY_ID+"}/instances/public")
+    public ResponseEntity<QueryResult> executeAnonymousStoredQuery(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(QUERY_ID) String queryId, @ApiParam(SIZE_DOC) @RequestParam(value = SIZE, required = false) Integer size, @ApiParam(START_DOC) @RequestParam(value = START, required = false) Integer start, @ApiParam(VOCAB_DOC) @RequestParam(value = VOCAB, required = false) String vocab, @ApiIgnore @RequestParam Map<String, String> allRequestParams) throws Exception {
+        try {
+            queryContext.setAllParameters(allRequestParams);
+
+            StoredQuery query = new StoredQuery(new NexusSchemaReference(org, domain, schema, version), queryId, vocab);
+            query.setParameters(allRequestParams);
+            query.getPagination().setStart(start).setSize(size);
+            QueryResult<List<Map>> result = this.query.queryPropertyGraphByStoredSpecification(query);
+            return ResponseEntity.ok(result);
+        } catch (StoredQueryNotFoundException e){
+            return ResponseEntity.notFound().build();
         } catch (RootCollectionNotFoundException e) {
             return ResponseEntity.ok(QueryResult.createEmptyResult());
         } catch (HttpClientErrorException e) {
@@ -356,6 +410,8 @@ public class QueryAPI {
             } else {
                 return ResponseEntity.notFound().build();
             }
+        } catch (StoredQueryNotFoundException e){
+            return ResponseEntity.notFound().build();
         } catch (RootCollectionNotFoundException e) {
             return ResponseEntity.notFound().build();
         } catch (HttpClientErrorException e) {

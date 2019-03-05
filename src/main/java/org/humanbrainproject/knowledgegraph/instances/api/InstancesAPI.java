@@ -3,9 +3,11 @@ package org.humanbrainproject.knowledgegraph.instances.api;
 import io.swagger.annotations.Api;
 import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationContext;
+import org.humanbrainproject.knowledgegraph.context.QueryContext;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.instances.boundary.Instances;
 import org.humanbrainproject.knowledgegraph.query.boundary.ArangoGraph;
+import org.humanbrainproject.knowledgegraph.query.entity.DatabaseScope;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -32,6 +34,9 @@ public class InstancesAPI {
 
     @Autowired
     AuthorizationContext authorizationContext;
+
+    @Autowired
+    QueryContext queryContext;
 
 
     @GetMapping(value = "/{org}/{domain}/{schema}/{version}/{id}/graph")

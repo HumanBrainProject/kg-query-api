@@ -11,11 +11,20 @@ import java.util.Map;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class QueryResult<T> {
 
+    private String importantMessage;
     private String apiName;
     private T results;
     private Long total;
     private Long size;
     private Long start;
+
+    public String getImportantMessage() {
+        return importantMessage;
+    }
+
+    public void setImportantMessage(String importantMessage) {
+        this.importantMessage = importantMessage;
+    }
 
     public String getApiName() {
         return apiName;
@@ -56,6 +65,17 @@ public class QueryResult<T> {
     public void setStart(Long start) {
         this.start = start;
     }
+
+    public static QueryResult<List<Map>> createSingleton(String apiName, Map map){
+        QueryResult<List<Map>> result = new QueryResult<>();
+        result.setApiName(apiName);
+        result.setResults(Collections.singletonList(map));
+        result.setStart(0L);
+        result.setTotal(1L);
+        result.setSize(1L);
+        return result;
+    }
+
 
     public static QueryResult<List<Map>> createEmptyResult(){
         QueryResult<List<Map>> result = new QueryResult<>();

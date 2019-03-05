@@ -6,6 +6,7 @@ import org.humanbrainproject.knowledgegraph.indexing.control.IndexingController;
 import org.humanbrainproject.knowledgegraph.indexing.control.MessageProcessor;
 import org.humanbrainproject.knowledgegraph.indexing.control.basic.BasicIndexingController;
 import org.humanbrainproject.knowledgegraph.indexing.control.inference.InferenceController;
+import org.humanbrainproject.knowledgegraph.indexing.control.suggestion.SuggestionInferenceController;
 import org.humanbrainproject.knowledgegraph.indexing.control.nexusToArango.RelevanceChecker;
 import org.humanbrainproject.knowledgegraph.indexing.control.releasing.ReleasingController;
 import org.humanbrainproject.knowledgegraph.indexing.control.spatial.SpatialController;
@@ -46,11 +47,14 @@ public class GraphIndexing {
     @Autowired
     RelevanceChecker relevanceChecker;
 
+    @Autowired
+    SuggestionInferenceController suggestionController;
+
 
     private Logger logger = LoggerFactory.getLogger(GraphIndexing.class);
 
     private List<IndexingController> getIndexingControllers() {
-        return Arrays.asList(defaultIndexingController, releasingController, inferenceController, spatialController);
+        return Arrays.asList(defaultIndexingController, releasingController, inferenceController, spatialController, suggestionController);
     }
 
     public TodoList insert(IndexingMessage message) {

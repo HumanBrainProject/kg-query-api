@@ -6,6 +6,7 @@ import org.humanbrainproject.knowledgegraph.commons.api.RestUtils;
 import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationContext;
 import org.humanbrainproject.knowledgegraph.commons.authorization.control.SystemOidcClient;
 import org.humanbrainproject.knowledgegraph.commons.authorization.entity.OidcAccessToken;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.SubSpace;
 import org.humanbrainproject.knowledgegraph.commons.suggestion.SuggestionStatus;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
@@ -131,6 +132,27 @@ public class SuggestionAPI {
         }catch (HttpClientErrorException e) {
             return ResponseEntity.status(e.getStatusCode()).build();
         }
+    }
+
+    @DeleteMapping(value="/{"+ ORG+"}/{"+DOMAIN+"}/{"+SCHEMA+"}/{"+VERSION+"}/{"+ INSTANCE_ID +"}", consumes = {MediaType.APPLICATION_JSON, RestUtils.APPLICATION_LD_JSON, MediaType.WILDCARD}, produces = MediaType.APPLICATION_JSON)
+    public ResponseEntity<List<Map>> deleteSuggestionInstance(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(INSTANCE_ID) String instanceId, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization, @RequestHeader(value = CLIENT, required = false) Client client) throws HttpClientErrorException{
+        authorizationContext.populateAuthorizationContext(authorization, client);
+        NexusInstanceReference suggestionInstanceRef = new NexusInstanceReference(org, domain, schema, version, instanceId);
+        if(!suggestionInstanceRef.getSubspace().equals(SubSpace.SUGGESTION)){
+            return ResponseEntity.badRequest().build();
+        } else {
+            try {
+                boolean success = suggest.deleteSuggestion(suggestionInstanceRef);
+                if(success){
+                    return ResponseEntity.ok().build();
+                }else{
+                    throw new InternalServerErrorException("Could not delete suggestion");
+                }
+            }catch (HttpClientErrorException e) {
+                return ResponseEntity.status(e.getStatusCode()).build();
+            }
+        }
+
     }
 
 

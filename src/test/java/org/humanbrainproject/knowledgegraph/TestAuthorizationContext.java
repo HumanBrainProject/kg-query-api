@@ -70,4 +70,9 @@ public class TestAuthorizationContext implements AuthorizationContext {
     public String getUserId() {
         return null;
     }
+
+    @Override
+    public Set<String> getReadableOrganizations(Credential credential, List<String> whitelistedOrganizations) {
+        return null;
+    }
 }

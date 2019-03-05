@@ -99,8 +99,8 @@ public class ReleaseControl {
         try {
             StoredQuery storedQuery = new StoredQuery(instanceReference.getNexusSchema(), "search", null);
             storedQuery.getFilter().restrictToSingleId(instanceReference.getId());
-            Map reflect = query.reflectQueryPropertyGraphByStoredSpecification(storedQuery);
-            return reflect != null ? transformReleaseStatusMap(reflect) : null;
+            Map releaseTree = query.queryReleaseTree(storedQuery, instanceReference);
+            return releaseTree != null ? transformReleaseStatusMap(releaseTree) : null;
 
         } catch (IOException | JSONException e) {
             logger.error("Was not able to request the release graph ", e);
