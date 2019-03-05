@@ -1,0 +1,125 @@
+{
+  "@context": {
+    "@vocab": "https://schema.hbp.eu/graphQuery/",
+    "schema": "http://schema.org/",
+    "minds": "https://schema.hbp.eu/minds/",
+    "query": "https://schema.hbp.eu/query/",
+    "searchUi": "https://schema.hbp.eu/searchUi/",
+    "cscs": "https://schema.hbp.eu/cscs/",
+    "neuroglancer": "https://schema.hbp.eu/neuroglancer/",
+    "brainviewer": "https://schema.hbp.eu/brainviewer/",
+    "fieldname": {
+      "@id": "fieldname",
+      "@type": "@id"
+    },
+    "merge": {
+      "@id": "merge",
+      "@type": "@id"
+    },
+    "relative_path": {
+      "@id": "relative_path",
+      "@type": "@id"
+    }
+  },
+  "schema:name": "Dataset",
+  "fields": [
+    {
+      "fieldname": "query:simple",
+      "merge": [
+        {
+          "relative_path": [
+            "minds:activity",
+            "minds:methods",
+            "schema:name"
+          ]
+        },
+        {
+          "relative_path": [
+            "minds:specimen_group",
+            "minds:subjects",
+            "minds:samples",
+            "minds:methods",
+            "schema:name"
+          ]
+        }
+      ]
+    },
+    {
+      "fieldname": "query:simpleSortedAndRequired",
+      "merge": [
+        {
+          "relative_path": [
+            "minds:activity",
+            "minds:methods",
+            "schema:name"
+          ]
+        },
+        {
+          "relative_path": [
+            "minds:specimen_group",
+            "minds:subjects",
+            "minds:samples",
+            "minds:methods",
+            "schema:name"
+          ]
+        }
+      ],
+      "sort": true,
+      "required": true
+    },
+    {
+      "fieldname": "query:reverse",
+      "merge": [
+        {
+          "relative_path": [
+            {
+              "@id": "cscs/core/fileassociation/v1.0.0",
+              "reverse": true
+            },
+            "schema:name"
+          ]
+        },
+        {
+          "relative_path": [
+            "minds:specimen_group",
+            "minds:subjects",
+            "minds:samples",
+            {
+              "@id": "cscs/core/fileassociation/v1.0.0",
+              "reverse": true
+            },
+            "schema:name"
+          ]
+        }
+      ]
+    },
+    {
+      "fieldname": "query:reverseRequiredAndSorted",
+      "merge": [
+        {
+          "relative_path": [
+            {
+              "@id": "cscs/core/fileassociation/v1.0.0",
+              "reverse": true
+            },
+            "schema:name"
+          ]
+        },
+        {
+          "relative_path": [
+            "minds:specimen_group",
+            "minds:subjects",
+            "minds:samples",
+            {
+              "@id": "cscs/core/fileassociation/v1.0.0",
+              "reverse": true
+            },
+            "schema:name"
+          ]
+        }
+      ],
+      "required": true,
+      "sort": true
+    }
+  ]
+}

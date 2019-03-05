@@ -1,0 +1,133 @@
+LET whitelist=["neurosciencegraph","nexus"]
+FOR root_doc IN `minds-core-species-v1_0_0`
+
+FILTER root_doc != NULL
+FILTER root_doc._permissionGroup IN whitelist
+LET https___schema_hbp_eu_search_identifier =
+   ( FOR https___schema_hbp_eu_search_identifier_doc
+   IN 1..1 OUTBOUND root_doc `schema_org-identifier`
+
+FILTER https___schema_hbp_eu_search_identifier_doc != null
+
+FILTER https___schema_hbp_eu_search_identifier_doc != NULL
+FILTER https___schema_hbp_eu_search_identifier_doc._permissionGroup IN whitelist
+AND https___schema_hbp_eu_search_identifier_doc.`@id` != null
+AND https___schema_hbp_eu_search_identifier_doc.`@id` != ""
+AND https___schema_hbp_eu_search_identifier_doc.`@id` != []
+
+RETURN DISTINCT {
+   "@id": https___schema_hbp_eu_search_identifier_doc.`@id`
+
+   }
+)
+LET https___schema_hbp_eu_search_datasetExists =
+   ( FOR https___schema_hbp_eu_search_datasetExists_doc
+   IN 4..4 INBOUND root_doc `schema_hbp_eu-minds-species`
+
+, INBOUND `schema_hbp_eu-minds-subjects`
+
+, INBOUND `schema_hbp_eu-minds-specimen_group`
+
+, OUTBOUND `schema_org-identifier`
+
+FILTER https___schema_hbp_eu_search_datasetExists_doc != null
+
+FILTER https___schema_hbp_eu_search_datasetExists_doc != NULL
+FILTER https___schema_hbp_eu_search_datasetExists_doc._permissionGroup IN whitelist
+AND https___schema_hbp_eu_search_datasetExists_doc.`@id` != null
+AND https___schema_hbp_eu_search_datasetExists_doc.`@id` != ""
+AND https___schema_hbp_eu_search_datasetExists_doc.`@id` != []
+
+RETURN DISTINCT {
+   "@id": https___schema_hbp_eu_search_datasetExists_doc.`@id`
+
+   }
+)
+LET https___schema_hbp_eu_search_datasets =
+   ( FOR grp IN
+      ( FOR https___schema_hbp_eu_search_datasets_doc
+      IN 3..3 INBOUND root_doc `schema_hbp_eu-minds-species`
+
+, INBOUND `schema_hbp_eu-minds-subjects`
+
+, INBOUND `schema_hbp_eu-minds-specimen_group`
+
+FILTER https___schema_hbp_eu_search_datasets_doc != null
+
+LET https___schema_hbp_eu_search_identifier =
+   ( FOR https___schema_hbp_eu_search_identifier_doc
+   IN 1..1 OUTBOUND https___schema_hbp_eu_search_datasets_doc `schema_org-identifier`
+
+FILTER https___schema_hbp_eu_search_identifier_doc != null
+
+FILTER https___schema_hbp_eu_search_identifier_doc != NULL
+FILTER https___schema_hbp_eu_search_identifier_doc._permissionGroup IN whitelist
+AND https___schema_hbp_eu_search_identifier_doc.`@id` != null
+AND https___schema_hbp_eu_search_identifier_doc.`@id` != ""
+AND https___schema_hbp_eu_search_identifier_doc.`@id` != []
+
+RETURN DISTINCT {
+   "@id": https___schema_hbp_eu_search_identifier_doc.`@id`
+
+   }
+)
+LET https___schema_hbp_eu_search_componentName =
+   ( FOR https___schema_hbp_eu_search_componentName_doc
+   IN 1..1 OUTBOUND https___schema_hbp_eu_search_datasets_doc `schema_hbp_eu-minds-component`
+
+FILTER https___schema_hbp_eu_search_componentName_doc != null
+
+RETURN DISTINCT https___schema_hbp_eu_search_componentName_doc.`http://schema.org/name`
+
+)
+FILTER https___schema_hbp_eu_search_datasets_doc != NULL
+FILTER https___schema_hbp_eu_search_datasets_doc._permissionGroup IN whitelist
+RETURN DISTINCT {
+   "https://schema.hbp.eu/search/name": https___schema_hbp_eu_search_datasets_doc.`http://schema.org/name`
+
+,    "https://schema.hbp.eu/search/identifier": https___schema_hbp_eu_search_identifier
+
+,    "https://schema.hbp.eu/search/componentName": https___schema_hbp_eu_search_componentName
+
+   }
+)
+COLLECT
+`https://schema.hbp.eu/search/componentName` = grp.`https://schema.hbp.eu/search/componentName`
+
+INTO group
+LET instances = (FOR el IN group RETURN {
+"https://schema.hbp.eu/search/name":  el.grp.`https://schema.hbp.eu/search/name`
+
+, "https://schema.hbp.eu/search/identifier":  el.grp.`https://schema.hbp.eu/search/identifier`
+
+} )
+RETURN {
+"https://schema.hbp.eu/search/componentName": `https://schema.hbp.eu/search/componentName`
+
+, "https://schema.hbp.eu/search/instances": instances
+} )
+
+FILTER root_doc != NULL
+FILTER root_doc._permissionGroup IN whitelist
+AND https___schema_hbp_eu_search_identifier != null
+AND https___schema_hbp_eu_search_identifier != ""
+AND https___schema_hbp_eu_search_identifier != []
+
+AND root_doc.`http://schema.org/name` != null
+AND root_doc.`http://schema.org/name` != ""
+AND root_doc.`http://schema.org/name` != []
+
+AND https___schema_hbp_eu_search_datasets != null
+AND https___schema_hbp_eu_search_datasets != ""
+AND https___schema_hbp_eu_search_datasets != []
+
+RETURN {
+   "https://schema.hbp.eu/search/identifier": https___schema_hbp_eu_search_identifier
+
+,    "https://schema.hbp.eu/search/title": root_doc.`http://schema.org/name`
+
+,    "https://schema.hbp.eu/search/datasetExists": https___schema_hbp_eu_search_datasetExists
+
+,    "https://schema.hbp.eu/search/datasets": https___schema_hbp_eu_search_datasets
+
+   }

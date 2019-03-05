@@ -40,7 +40,7 @@ public class TestObjectFactory {
             traverses.add(new SpecTraverse(s, false));
         }
 
-        return new SpecField(name, null, traverses,null, false, false, false, false, null);
+        return new SpecField(name, null, traverses,null, false, false, false, false, null, null);
     }
 
 

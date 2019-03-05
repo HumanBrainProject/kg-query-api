@@ -3,12 +3,10 @@ package org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.contro
 import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
-import org.humanbrainproject.knowledgegraph.structure.boundary.Structure;
+import org.humanbrainproject.knowledgegraph.structure.boundary.StructureFromNexus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
@@ -17,30 +15,16 @@ import java.util.Map;
 
 @Component
 @ToBeTested
-public class ArangoToNexusLookupMap implements InitializingBean {
+public class ArangoToNexusLookupMap {
 
     @Autowired
-    Structure structure;
-
-    @Value("${org.humanbrainproject.knowledgegraph.cache.populate}")
-    boolean populateCache = true;
-
+    StructureFromNexus structureFromNexus;
 
     protected Logger logger = LoggerFactory.getLogger(ArangoToNexusLookupMap.class);
 
-    @Override
-    public void afterPropertiesSet() {
-        try {
-            if(populateCache) {
-                refetch();
-            }
-        }
-        catch(Exception e){
-            logger.error("Failed to load schema cache", e);
-        }
-    }
-
     private static final Map<String, NexusSchemaReference> schemaReferenceMap = Collections.synchronizedMap(new HashMap<>());
+    private static boolean initialFetch = false;
+
 
     public static void addToSchemaReferenceMap(ArangoCollectionReference arangoName, NexusSchemaReference schemaReference){
         if(!schemaReferenceMap.containsKey(arangoName.getName())) {
@@ -59,18 +43,18 @@ public class ArangoToNexusLookupMap implements InitializingBean {
     }
 
     private void refetch(){
+        initialFetch = true;
         logger.info("Start fetching schemas - cache population in process");
-        structure.getAllSchemasInMainSpace().forEach(ArangoCollectionReference::fromNexusSchemaReference);
+        structureFromNexus.getAllSchemasInMainSpace().forEach(ArangoCollectionReference::fromNexusSchemaReference);
         logger.info("Done fetching schemas - the cache is populated");
     }
 
+
     public Map<String, NexusSchemaReference> getLookupTable(boolean refetch){
-        if(schemaReferenceMap.isEmpty() || refetch){
+        if(!initialFetch || schemaReferenceMap.isEmpty() || refetch){
             refetch();
         }
         return schemaReferenceMap;
     }
-
-
 
 }
