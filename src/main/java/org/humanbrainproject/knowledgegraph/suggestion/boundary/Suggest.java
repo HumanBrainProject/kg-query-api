@@ -1,5 +1,6 @@
 package org.humanbrainproject.knowledgegraph.suggestion.boundary;
 
+import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoRepository;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
 import org.humanbrainproject.knowledgegraph.commons.suggestion.SuggestionStatus;
@@ -13,6 +14,7 @@ import org.humanbrainproject.knowledgegraph.suggestion.control.SuggestionControl
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.json.Json;
 import javax.ws.rs.NotFoundException;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +30,9 @@ public class Suggest {
 
     @Autowired
     ArangoRepository arangoRepository;
+
+    @Autowired
+    JsonTransformer jsonTransformer;
 
     public QueryResult<List<Map>> suggestByField(NexusSchemaReference schemaReference, String field, String search, Pagination pagination){
         return suggestionController.simpleSuggestByField(schemaReference, field, search, pagination);
@@ -54,6 +59,10 @@ public class Suggest {
     }
     public List<String> getUserReviewRequested(String userId) {
         return suggestionController.getUserReviewRequested(userId);
+    }
+
+    public JsonDocument updateInstance(NexusInstanceReference ref, String content, String clientIdExtension) throws NotFoundException{
+        return suggestionController.updateInstance(ref, jsonTransformer.parseToMap(content), clientIdExtension);
     }
 
     public Map getInstance(NexusInstanceReference ref) {

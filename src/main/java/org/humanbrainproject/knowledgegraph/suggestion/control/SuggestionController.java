@@ -115,7 +115,7 @@ public class SuggestionController {
             }else{
                 doc.put(HBPVocabulary.SUGGESTION_STATUS, status);
                 doc.put(HBPVocabulary.SUGGESTION_STATUS_CHANGED_BY, clientIdExtension);
-                return instanceManipulationController.directInstanceUpdate(ref, doc.getNexusRevision(), doc,  null);
+                return instanceManipulationController.directInstanceUpdate(ref, doc.getNexusRevision(), doc,  null, clientIdExtension);
             }
         }else{
             throw new NotFoundException("Instance not found");
@@ -134,5 +134,25 @@ public class SuggestionController {
     public List<String> getUserReviewRequested(String userId) {
         queryContext.setDatabaseScope(DatabaseScope.INFERRED);
         return arangoInferredRepository.getUserReviewRequested(userId);
+    }
+
+    public JsonDocument updateInstance(NexusInstanceReference ref, Map modifications, String clientIdExtension) {
+        queryContext.setDatabaseScope(DatabaseScope.NATIVE);
+        JsonDocument update = new JsonDocument(modifications);
+        JsonDocument doc = arangoNativeRepository.getInstance(ArangoDocumentReference.fromNexusInstance(ref));
+        if(doc != null){
+            if(doc.get(HBPVocabulary.SUGGESTION_STATUS).equals(SuggestionStatus.ACCEPTED) ||
+                    doc.get(HBPVocabulary.SUGGESTION_STATUS).equals(SuggestionStatus.REJECTED)
+            ){
+                throw new BadRequestException("Status is " + doc.get(HBPVocabulary.SUGGESTION_STATUS) );
+            }else{
+                update.put(HBPVocabulary.SUGGESTION_STATUS, SuggestionStatus.EDITED);
+                update.put(HBPVocabulary.SUGGESTION_STATUS_CHANGED_BY, clientIdExtension);
+                update.removeAllInternalKeys();
+                return instanceManipulationController.directInstanceUpdate(ref, doc.getNexusRevision(), update,  null, clientIdExtension);
+            }
+        }else{
+            throw new NotFoundException("Instance not found");
+        }
     }
 }

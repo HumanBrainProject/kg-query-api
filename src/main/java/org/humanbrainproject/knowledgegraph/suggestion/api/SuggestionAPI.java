@@ -184,6 +184,23 @@ public class SuggestionAPI {
         }
     }
 
+    @PutMapping(value = "/{"+ORG+"}/{"+DOMAIN+"}/{"+SCHEMA+"}/{"+VERSION+"}/{"+ID+"}", consumes = {MediaType.APPLICATION_JSON, RestUtils.APPLICATION_LD_JSON, MediaType.WILDCARD}, produces = MediaType.APPLICATION_JSON)
+    public ResponseEntity<Map> updateInstance(@RequestBody(required = false) String payload, @PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(ID) String id, @ApiParam(DATABASE_SCOPE_DOC) @RequestParam(value = DATABASE_SCOPE, required = false) DatabaseScope databaseScope, @ApiParam(CLIENT_EXTENSION_DOC) @RequestParam(value = CLIENT_ID_EXTENSION, required = false) String clientIdExtension, @RequestHeader(value = CLIENT, required = false) Client client, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken) {
+        try {
+            authorizationContext.populateAuthorizationContext(authorizationToken, client);
+
+            //We set the database scope directly, because this is an internal API and therefore it is allowed to have a "Native" scope as well.
+            queryContext.setDatabaseScope(DatabaseScope.INFERRED);
+            NexusInstanceReference instanceReference = new NexusInstanceReference(org, domain, schema, version, id);
+            Map instance = suggest.updateInstance(instanceReference, payload, clientIdExtension);
+            return instance != null ? ResponseEntity.ok(instance) : ResponseEntity.notFound().build();
+        } catch (HttpClientErrorException e) {
+            return ResponseEntity.status(e.getStatusCode()).build();
+        }
+    }
+
+
+
 
 
 }
