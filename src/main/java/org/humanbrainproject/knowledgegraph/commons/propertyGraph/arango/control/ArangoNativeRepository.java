@@ -84,7 +84,8 @@ public class ArangoNativeRepository {
         if (document != null) {
             Object rev = document.get(ArangoVocabulary.NEXUS_RELATIVE_URL_WITH_REV);
             if (rev != null) {
-                return Integer.parseInt(rev.toString());
+                String revStr = rev.toString().substring(rev.toString().indexOf("?rev=") + 5);
+                return Integer.parseInt(revStr.trim());
             }
         }
         return null;
