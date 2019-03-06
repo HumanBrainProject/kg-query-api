@@ -1,6 +1,9 @@
 package org.humanbrainproject.knowledgegraph.suggestion.boundary;
 
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoRepository;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
 import org.humanbrainproject.knowledgegraph.commons.suggestion.SuggestionStatus;
+import org.humanbrainproject.knowledgegraph.context.QueryContext;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
 import org.humanbrainproject.knowledgegraph.query.entity.JsonDocument;
@@ -19,6 +22,12 @@ public class Suggest {
 
     @Autowired
     SuggestionController suggestionController;
+
+    @Autowired
+    QueryContext queryContext;
+
+    @Autowired
+    ArangoRepository arangoRepository;
 
     public QueryResult<List<Map>> suggestByField(NexusSchemaReference schemaReference, String field, String search, Pagination pagination){
         return suggestionController.simpleSuggestByField(schemaReference, field, search, pagination);
@@ -45,6 +54,10 @@ public class Suggest {
     }
     public List<String> getUserReviewRequested(String userId) {
         return suggestionController.getUserReviewRequested(userId);
+    }
+
+    public Map getInstance(NexusInstanceReference ref) {
+       return arangoRepository.getInstance(ArangoDocumentReference.fromNexusInstance(ref), queryContext.getDatabaseConnection());
     }
 
 

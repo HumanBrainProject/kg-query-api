@@ -1,5 +1,6 @@
 package org.humanbrainproject.knowledgegraph.suggestion.api;
 
+import io.swagger.annotations.ApiParam;
 import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.commons.api.Client;
 import org.humanbrainproject.knowledgegraph.commons.api.RestUtils;
@@ -8,11 +9,11 @@ import org.humanbrainproject.knowledgegraph.commons.authorization.control.System
 import org.humanbrainproject.knowledgegraph.commons.authorization.entity.OidcAccessToken;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.SubSpace;
 import org.humanbrainproject.knowledgegraph.commons.suggestion.SuggestionStatus;
+import org.humanbrainproject.knowledgegraph.context.QueryContext;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
-import org.humanbrainproject.knowledgegraph.query.entity.JsonDocument;
-import org.humanbrainproject.knowledgegraph.query.entity.Pagination;
-import org.humanbrainproject.knowledgegraph.query.entity.QueryResult;
+import org.humanbrainproject.knowledgegraph.instances.boundary.Instances;
+import org.humanbrainproject.knowledgegraph.query.entity.*;
 import org.humanbrainproject.knowledgegraph.suggestion.boundary.Suggest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,6 +46,8 @@ public class SuggestionAPI {
     @Autowired
     SystemOidcClient OIDCclient;
 
+    @Autowired
+    QueryContext queryContext;
 
     private Logger logger = LoggerFactory.getLogger(SuggestionAPI.class);
 
@@ -166,6 +169,20 @@ public class SuggestionAPI {
         }
     }
 
+    @GetMapping(value = "/{"+ORG+"}/{"+DOMAIN+"}/{"+SCHEMA+"}/{"+VERSION+"}/{"+ID+"}")
+    public ResponseEntity<Map> getInstance(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(ID) String id, @ApiParam(DATABASE_SCOPE_DOC) @RequestParam(value = DATABASE_SCOPE, required = false) DatabaseScope databaseScope, @ApiParam(CLIENT_EXTENSION_DOC) @RequestParam(value = CLIENT_ID_EXTENSION, required = false) String clientIdExtension, @RequestHeader(value = CLIENT, required = false) Client client, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken) {
+        try {
+            authorizationContext.populateAuthorizationContext(authorizationToken, client);
+
+            //We set the database scope directly, because this is an internal API and therefore it is allowed to have a "Native" scope as well.
+            queryContext.setDatabaseScope(DatabaseScope.INFERRED);
+            NexusInstanceReference instanceReference = new NexusInstanceReference(org, domain, schema, version, id);
+            Map instance = suggest.getInstance(instanceReference);
+            return instance != null ? ResponseEntity.ok(instance) : ResponseEntity.notFound().build();
+        } catch (HttpClientErrorException e) {
+            return ResponseEntity.status(e.getStatusCode()).build();
+        }
+    }
 
 
 
