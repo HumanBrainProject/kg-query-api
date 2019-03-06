@@ -41,6 +41,9 @@ public class SuggestionController {
     ArangoNativeRepository arangoNativeRepository;
 
     @Autowired
+    ArangoInferredRepository arangoInferredRepository;
+
+    @Autowired
     ArangoRepository arangoRepository;
 
     @Autowired
@@ -48,9 +51,6 @@ public class SuggestionController {
 
     @Autowired
     NexusConfiguration nexusConfiguration;
-
-    @Autowired
-    GraphIndexing graphIndexing;
 
     public QueryResult<List<Map>> simpleSuggestByField(NexusSchemaReference originalSchema, String field, String search, Pagination pagination){
         return repository.getSuggestionsByField(originalSchema, field, search, pagination);
@@ -129,5 +129,10 @@ public class SuggestionController {
             return instanceManipulationController.removeInstance(ref);
         }
         throw new BadRequestException("Instance not found or already deprecated");
+    }
+
+    public List<String> getUserReviewRequested(String userId) {
+        queryContext.setDatabaseScope(DatabaseScope.INFERRED);
+        return arangoInferredRepository.getUserReviewRequested(userId);
     }
 }

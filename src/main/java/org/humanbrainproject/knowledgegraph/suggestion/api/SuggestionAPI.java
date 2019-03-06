@@ -155,6 +155,17 @@ public class SuggestionAPI {
 
     }
 
+    @GetMapping(value="/{userid}/requested", consumes = {MediaType.APPLICATION_JSON, RestUtils.APPLICATION_LD_JSON, MediaType.WILDCARD}, produces = MediaType.APPLICATION_JSON)
+    public ResponseEntity<List<String>> getUserReviewRequested(@RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization, @RequestHeader(value = CLIENT, required = false) Client client, @PathVariable("userid") String userId) throws Exception{
+        authorizationContext.populateAuthorizationContext(authorization, client);
+        List<String> instances = suggest.getUserReviewRequested(userId);
+        if(instances != null){
+            return ResponseEntity.ok(instances);
+        }else {
+            throw new NotFoundException("Suggestion not found");
+        }
+    }
+
 
 
 

@@ -43,6 +43,9 @@ public class Suggest {
     public boolean deleteSuggestion(NexusInstanceReference ref) throws NotFoundException{
         return suggestionController.deleteSuggestion(ref);
     }
+    public List<String> getUserReviewRequested(String userId) {
+        return suggestionController.getUserReviewRequested(userId);
+    }
 
 
 }

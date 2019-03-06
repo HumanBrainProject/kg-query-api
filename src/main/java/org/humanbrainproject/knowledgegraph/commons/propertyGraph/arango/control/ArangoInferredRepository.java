@@ -184,5 +184,11 @@ public class ArangoInferredRepository {
     }
 
 
+    public List<String> getUserReviewRequested(String userId) {
+        String query = queryFactory.userReviewRequested(userId, authorizationContext.getReadableOrganizations());
+        ArangoCursor<String> result = databaseFactory.getInferredDB().getOrCreateDB().query(query, null, new AqlQueryOptions(), String.class);
+        return result.asListRemaining();
+    }
+
 
 }

@@ -15,6 +15,7 @@ import org.humanbrainproject.knowledgegraph.commons.vocabulary.ArangoVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.SchemaOrgVocabulary;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
+import org.humanbrainproject.knowledgegraph.query.entity.Filter;
 import org.humanbrainproject.knowledgegraph.releasing.entity.ReleaseStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -480,6 +481,24 @@ public class ArangoQueryFactory {
         query.addLine(trust("LET status = LENGTH(release)>0 ? release[0] : \"${notReleasedValue}\""));
         query.addLine(trust("RETURN {\"doc\": v, \"status\":status}"));
         return query.build().getValue();
+    }
+
+    public String userReviewRequested(String userid, Set<String> permissionGroupsWithReadAccess) {
+        AuthorizedArangoQuery query = new AuthorizedArangoQuery(permissionGroupsWithReadAccess);
+          query.setParameter("userid", userid)
+                .setParameter("createdBy", HBPVocabulary.PROVENANCE_CREATED_BY)
+                .setParameter("suggestionOf", HBPVocabulary.SUGGESTION_OF);
+        query.addLine(trust("LET ids = (FOR doc IN `schema_hbp_eu-suggestion-suggestionOf` RETURN doc._from)"));
+        query.addLine(trust("FOR id IN ids"));
+        query.indent();
+        query.addLine(trust("LET doc = DOCUMENT(id)"));
+        query.addLine(trust("FILTER doc.`${createdBy}` == \"${userid}\" AND"));
+        query.addLine(trust("doc.`${suggestionOf}` != null AND"));
+        query.addLine(trust("doc.`${suggestionOf}` != \"\" AND"));
+        query.addLine(trust("doc.`${suggestionOf}` != []"));
+        query.outdent();
+        query.addLine(trust("RETURN doc.`${suggestionOf}`.`@id`"));
+        return  query.build().getValue();
     }
 
 }
