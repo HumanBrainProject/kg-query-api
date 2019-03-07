@@ -375,7 +375,6 @@ public class ArangoQueryFactory {
         query.addLine(trust("LET doc = DOCUMENT(\"${documentId}\")"));
         query.addLine(trust("FOR v IN 1..1 INBOUND doc `schema_hbp_eu-suggestion-user`"));
         query.addDocumentFilter(trust(("v")));
-        query.addLine(trust("FILTER v.`" + HBPVocabulary.SUGGESTION_STATUS + "` == \"" + status.name() + "\""));
         query.addLine(trust("RETURN v`" + HBPVocabulary.RELATIVE_URL_OF_INTERNAL_LINK + "`"));
         return query.build().getValue();
     }

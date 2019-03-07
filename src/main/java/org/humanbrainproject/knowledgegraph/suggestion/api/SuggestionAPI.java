@@ -19,9 +19,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.server.ResponseStatusException;
 
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.InternalServerErrorException;
@@ -69,21 +71,17 @@ public class SuggestionAPI {
     @PostMapping(value="/{"+ ORG+"}/{"+DOMAIN+"}/{"+SCHEMA+"}/{"+VERSION+"}/{"+ INSTANCE_ID +"}/instance/{userId}", consumes = {MediaType.APPLICATION_JSON, RestUtils.APPLICATION_LD_JSON, MediaType.WILDCARD}, produces = MediaType.APPLICATION_JSON)
     public ResponseEntity<Map> createSuggestionInstanceForUser(@RequestBody(required = false) String payload, @PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(INSTANCE_ID) String instanceId, @PathVariable("userId") String userId, @RequestParam(value = CLIENT_ID_EXTENSION, required = true) String clientIdExtension, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization, @RequestHeader(value = CLIENT, required = false) Client client) throws HttpClientErrorException{
         authorizationContext.populateAuthorizationContext(authorization, client);
-        try{
-            NexusInstanceReference instanceReference = new NexusInstanceReference(org, domain, schema, version, instanceId);
-            Map instance = suggest.getUserSuggestionOfSpecificInstance(instanceReference, userId);
-            if(instance == null){
-                NexusInstanceReference created = suggest.createSuggestionInstanceForUser(instanceReference, userId, clientIdExtension);
-                if(created != null){
-                    return ResponseEntity.ok().build();
-                }else{
-                    throw new InternalServerErrorException("Could not created instance");
-                }
+        NexusInstanceReference instanceReference = new NexusInstanceReference(org, domain, schema, version, instanceId);
+        Map instance = suggest.getUserSuggestionOfSpecificInstance(instanceReference, userId);
+        if(instance == null){
+            NexusInstanceReference created = suggest.createSuggestionInstanceForUser(instanceReference, userId, clientIdExtension);
+            if(created != null){
+                return ResponseEntity.ok().build();
             }else{
-                throw new BadRequestException("User already added to this instance");
+                throw new InternalServerErrorException("Could not created instance");
             }
-        }catch (HttpClientErrorException e) {
-            return ResponseEntity.status(e.getStatusCode()).build();
+        }else{
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "User already added to this instance");
         }
     }
 
@@ -96,45 +94,20 @@ public class SuggestionAPI {
         if(instances != null){
             return ResponseEntity.ok(instances);
         }else {
-            throw new NotFoundException("Suggestion not found");
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Suggestion not found");
         }
     }
 
     @PostMapping(value="/{"+ ORG+"}/{"+DOMAIN+"}/{"+SCHEMA+"}/{"+VERSION+"}/{"+ INSTANCE_ID +"}/accept", consumes = {MediaType.APPLICATION_JSON, RestUtils.APPLICATION_LD_JSON, MediaType.WILDCARD}, produces = MediaType.APPLICATION_JSON)
-    public ResponseEntity<List<Map>> acceptSuggestion(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(INSTANCE_ID) String instanceId, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization, @RequestHeader(value = CLIENT, required = false) Client client) throws HttpClientErrorException{
-        authorizationContext.populateAuthorizationContext(authorization, client);
-        Map user = OIDCclient.getUserInfo(new OidcAccessToken().setToken(authorization));
-        String userId = (String) user.get("sub");
-        NexusInstanceReference suggestionInstanceRef = new NexusInstanceReference(org, domain, schema, version, instanceId);
-        try {
-
-           JsonDocument m = suggest.changeSuggestionStatus(suggestionInstanceRef, SuggestionStatus.ACCEPTED, userId);
-           if(m != null){
-               return ResponseEntity.ok().build();
-           }else{
-               throw new InternalServerErrorException("Could not accept suggestion");
-           }
-        }catch (HttpClientErrorException e) {
-            return ResponseEntity.status(e.getStatusCode()).build();
-        }
+    public ResponseEntity<Map> acceptSuggestion(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(INSTANCE_ID) String instanceId, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization, @RequestHeader(value = CLIENT, required = false) Client client) throws HttpClientErrorException{
+        NexusInstanceReference suggestionInstanceRef = new NexusInstanceReference(org, domain, schema, version, INSTANCE_ID);
+        return changeStatus(suggestionInstanceRef, client, authorization, SuggestionStatus.ACCEPTED);
     }
 
     @PostMapping(value="/{"+ ORG+"}/{"+DOMAIN+"}/{"+SCHEMA+"}/{"+VERSION+"}/{"+ INSTANCE_ID +"}/reject", consumes = {MediaType.APPLICATION_JSON, RestUtils.APPLICATION_LD_JSON, MediaType.WILDCARD}, produces = MediaType.APPLICATION_JSON)
-    public ResponseEntity<List<Map>> rejectSuggestion(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(INSTANCE_ID) String instanceId, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization, @RequestHeader(value = CLIENT, required = false) Client client) throws HttpClientErrorException{
-        authorizationContext.populateAuthorizationContext(authorization, client);
-        Map user = OIDCclient.getUserInfo(new OidcAccessToken().setToken(authorization));
-        String userId = (String) user.get("sub");
-        NexusInstanceReference suggestionInstanceRef = new NexusInstanceReference(org, domain, schema, version, instanceId);
-        try {
-            JsonDocument m = suggest.changeSuggestionStatus(suggestionInstanceRef, SuggestionStatus.REJECTED, userId);
-            if(m != null){
-                return ResponseEntity.ok().build();
-            }else{
-                throw new InternalServerErrorException("Could not accept suggestion");
-            }
-        }catch (HttpClientErrorException e) {
-            return ResponseEntity.status(e.getStatusCode()).build();
-        }
+    public ResponseEntity<Map> rejectSuggestion(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(INSTANCE_ID) String instanceId, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization, @RequestHeader(value = CLIENT, required = false) Client client) throws HttpClientErrorException{
+        NexusInstanceReference suggestionInstanceRef = new NexusInstanceReference(org, domain, schema, version, INSTANCE_ID);
+        return changeStatus(suggestionInstanceRef, client, authorization, SuggestionStatus.REJECTED);
     }
 
     @DeleteMapping(value="/{"+ ORG+"}/{"+DOMAIN+"}/{"+SCHEMA+"}/{"+VERSION+"}/{"+ INSTANCE_ID +"}", consumes = {MediaType.APPLICATION_JSON, RestUtils.APPLICATION_LD_JSON, MediaType.WILDCARD}, produces = MediaType.APPLICATION_JSON)
@@ -144,15 +117,11 @@ public class SuggestionAPI {
         if(!suggestionInstanceRef.getSubspace().equals(SubSpace.SUGGESTION)){
             return ResponseEntity.badRequest().build();
         } else {
-            try {
-                boolean success = suggest.deleteSuggestion(suggestionInstanceRef);
-                if(success){
-                    return ResponseEntity.ok().build();
-                }else{
-                    throw new InternalServerErrorException("Could not delete suggestion");
-                }
-            }catch (HttpClientErrorException e) {
-                return ResponseEntity.status(e.getStatusCode()).build();
+            boolean success = suggest.deleteSuggestion(suggestionInstanceRef);
+            if(success){
+                return ResponseEntity.ok().build();
+            }else{
+                throw new InternalServerErrorException("Could not delete suggestion");
             }
         }
 
@@ -171,33 +140,43 @@ public class SuggestionAPI {
 
     @GetMapping(value = "/{"+ORG+"}/{"+DOMAIN+"}/{"+SCHEMA+"}/{"+VERSION+"}/{"+ID+"}")
     public ResponseEntity<Map> getInstance(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(ID) String id, @ApiParam(DATABASE_SCOPE_DOC) @RequestParam(value = DATABASE_SCOPE, required = false) DatabaseScope databaseScope, @ApiParam(CLIENT_EXTENSION_DOC) @RequestParam(value = CLIENT_ID_EXTENSION, required = false) String clientIdExtension, @RequestHeader(value = CLIENT, required = false) Client client, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken) {
-        try {
-            authorizationContext.populateAuthorizationContext(authorizationToken, client);
+        authorizationContext.populateAuthorizationContext(authorizationToken, client);
 
-            //We set the database scope directly, because this is an internal API and therefore it is allowed to have a "Native" scope as well.
-            queryContext.setDatabaseScope(DatabaseScope.INFERRED);
-            NexusInstanceReference instanceReference = new NexusInstanceReference(org, domain, schema, version, id);
-            Map instance = suggest.getInstance(instanceReference);
-            return instance != null ? ResponseEntity.ok(instance) : ResponseEntity.notFound().build();
-        } catch (HttpClientErrorException e) {
-            return ResponseEntity.status(e.getStatusCode()).build();
-        }
+        //We set the database scope directly, because this is an internal API and therefore it is allowed to have a "Native" scope as well.
+        queryContext.setDatabaseScope(DatabaseScope.INFERRED);
+        NexusInstanceReference instanceReference = new NexusInstanceReference(org, domain, schema, version, id);
+        Map instance = suggest.getInstance(instanceReference);
+        return instance != null ? ResponseEntity.ok(instance) : ResponseEntity.notFound().build();
     }
 
     @PutMapping(value = "/{"+ORG+"}/{"+DOMAIN+"}/{"+SCHEMA+"}/{"+VERSION+"}/{"+ID+"}", consumes = {MediaType.APPLICATION_JSON, RestUtils.APPLICATION_LD_JSON, MediaType.WILDCARD}, produces = MediaType.APPLICATION_JSON)
-    public ResponseEntity<Map> updateInstance(@RequestBody(required = false) String payload, @PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(ID) String id, @ApiParam(DATABASE_SCOPE_DOC) @RequestParam(value = DATABASE_SCOPE, required = false) DatabaseScope databaseScope, @ApiParam(CLIENT_EXTENSION_DOC) @RequestParam(value = CLIENT_ID_EXTENSION, required = false) String clientIdExtension, @RequestHeader(value = CLIENT, required = false) Client client, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken) {
-        try {
-            authorizationContext.populateAuthorizationContext(authorizationToken, client);
+    public ResponseEntity<String> updateInstance(@RequestBody(required = false) String payload, @PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(ID) String id, @ApiParam(DATABASE_SCOPE_DOC) @RequestParam(value = DATABASE_SCOPE, required = false) DatabaseScope databaseScope, @ApiParam(CLIENT_EXTENSION_DOC) @RequestParam(value = CLIENT_ID_EXTENSION, required = false) String clientIdExtension, @RequestHeader(value = CLIENT, required = false) Client client, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken) {
+        authorizationContext.populateAuthorizationContext(authorizationToken, client);
 
-            //We set the database scope directly, because this is an internal API and therefore it is allowed to have a "Native" scope as well.
-            queryContext.setDatabaseScope(DatabaseScope.INFERRED);
-            NexusInstanceReference instanceReference = new NexusInstanceReference(org, domain, schema, version, id);
-            Map instance = suggest.updateInstance(instanceReference, payload, clientIdExtension);
-            return instance != null ? ResponseEntity.ok(instance) : ResponseEntity.notFound().build();
-        } catch (HttpClientErrorException e) {
-            return ResponseEntity.status(e.getStatusCode()).build();
+        //We set the database scope directly, because this is an internal API and therefore it is allowed to have a "Native" scope as well.
+        NexusInstanceReference instanceReference = new NexusInstanceReference(org, domain, schema, version, id);
+        NexusInstanceReference instanceRef = suggest.updateInstance(instanceReference, payload, clientIdExtension);
+        return instanceRef != null ? ResponseEntity.ok(instanceRef.toString()) : ResponseEntity.notFound().build();
+    }
+
+    @PutMapping(value = "/{"+ORG+"}/{"+DOMAIN+"}/{"+SCHEMA+"}/{"+VERSION+"}/{"+ID+"}/mergerequested", consumes = {MediaType.APPLICATION_JSON, RestUtils.APPLICATION_LD_JSON, MediaType.WILDCARD}, produces = MediaType.APPLICATION_JSON)
+    public ResponseEntity<Map> mergeRequested(@RequestBody(required = false) String payload, @PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(ID) String id, @RequestHeader(value = CLIENT, required = false) Client client, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization) {
+        NexusInstanceReference suggestionInstanceRef = new NexusInstanceReference(org, domain, schema, version, id);
+        return changeStatus(suggestionInstanceRef, client, authorization, SuggestionStatus.MERGE_REQUESTED);
+    }
+
+    private ResponseEntity<Map> changeStatus(NexusInstanceReference suggestionInstanceRef, Client client, String authorization, SuggestionStatus status) {
+        authorizationContext.populateAuthorizationContext(authorization, client);
+        Map user = OIDCclient.getUserInfo(new OidcAccessToken().setToken(authorization));
+        String userId = (String) user.get("sub");
+        NexusInstanceReference m = suggest.changeSuggestionStatus(suggestionInstanceRef, status, userId);
+        if(m != null){
+            return ResponseEntity.ok().build();
+        }else{
+            throw new InternalServerErrorException("Could not change suggestion status");
         }
     }
+
 
 
 

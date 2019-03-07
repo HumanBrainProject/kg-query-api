@@ -8,19 +8,23 @@ import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.SubSpace;
 import org.humanbrainproject.knowledgegraph.commons.suggestion.SuggestionStatus;
+import org.humanbrainproject.knowledgegraph.commons.vocabulary.ArangoVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.humanbrainproject.knowledgegraph.context.QueryContext;
 import org.humanbrainproject.knowledgegraph.indexing.boundary.GraphIndexing;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
 import org.humanbrainproject.knowledgegraph.instances.boundary.Instances;
+import org.humanbrainproject.knowledgegraph.instances.control.InstanceLookupController;
 import org.humanbrainproject.knowledgegraph.instances.control.InstanceManipulationController;
 import org.humanbrainproject.knowledgegraph.query.entity.DatabaseScope;
 import org.humanbrainproject.knowledgegraph.query.entity.JsonDocument;
 import org.humanbrainproject.knowledgegraph.query.entity.Pagination;
 import org.humanbrainproject.knowledgegraph.query.entity.QueryResult;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
+import org.springframework.web.server.ResponseStatusException;
 
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.NotFoundException;
@@ -44,6 +48,9 @@ public class SuggestionController {
     ArangoInferredRepository arangoInferredRepository;
 
     @Autowired
+    InstanceLookupController instanceLookupController;
+
+    @Autowired
     ArangoRepository arangoRepository;
 
     @Autowired
@@ -57,7 +64,7 @@ public class SuggestionController {
 
     }
 
-    public NexusInstanceReference createSuggestionInstanceForUser(NexusInstanceReference ref, String userId, String clientIdExtension) throws NotFoundException {
+    public NexusInstanceReference createSuggestionInstanceForUser(NexusInstanceReference ref, String userId, String clientIdExtension) throws ResponseStatusException {
         List<Map> ms = this.findInstanceBySchemaAndFilter(new NexusSchemaReference("hbpkg", "core", "user", "v0.0.1"), "https://schema.hbp.eu/hbpkg/userId", userId);
         if(ms != null){
             Map m = ms.get(0);
@@ -73,18 +80,18 @@ public class SuggestionController {
             NexusSchemaReference schemaRef = ref.getNexusSchema();
             return instanceManipulationController.createNewInstance(schemaRef.toSubSpace(SubSpace.SUGGESTION), payload, clientIdExtension);
         }else{
-            throw new NotFoundException("User not found");
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found" );
         }
     }
 
-    public Map getUserSuggestionOfSpecificInstance(NexusInstanceReference instanceReference, String userId) throws NotFoundException {
+    public Map getUserSuggestionOfSpecificInstance(NexusInstanceReference instanceReference, String userId) throws ResponseStatusException {
         List<Map> ms = this.findInstanceBySchemaAndFilter(new NexusSchemaReference("hbpkg", "core", "user", "v0.0.1"), "https://schema.hbp.eu/hbpkg/userId", userId);
         if(ms != null) {
             Map m = ms.get(0);
             NexusInstanceReference userRef = NexusInstanceReference.createFromUrl((String) m.get(JsonLdConsts.ID));
             return repository.getUserSuggestionOfSpecificInstance(instanceReference, userRef);
         }else{
-            throw new NotFoundException(("User not found"));
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found" );
         }
 
 
@@ -94,41 +101,41 @@ public class SuggestionController {
         return repository.findInstanceBySchemaAndFilter(schema, filterKey, filterValue);
     }
 
-    public List<String> getUserSuggestions(String userId, SuggestionStatus status) throws NotFoundException{
+    public List<String> getUserSuggestions(String userId, SuggestionStatus status) throws ResponseStatusException{
         List<Map> ms = this.findInstanceBySchemaAndFilter(new NexusSchemaReference("hbpkg", "core", "user", "v0.0.1"), "https://schema.hbp.eu/hbpkg/userId", userId);
         if(ms != null){
             Map m = ms.get(0);
             NexusInstanceReference ref = NexusInstanceReference.createFromUrl( (String) m.get(JsonLdConsts.ID));
             return repository.getSuggestionsByUser(ref, status);
         }else{
-            throw new  NotFoundException(("User not found"));
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found" );
         }
     }
 
-    public JsonDocument changeSuggestionStatus(NexusInstanceReference ref, SuggestionStatus status, String clientIdExtension) throws NotFoundException{
+    public NexusInstanceReference changeSuggestionStatus(NexusInstanceReference ref, SuggestionStatus status, String clientIdExtension) throws ResponseStatusException{
         queryContext.setDatabaseScope(DatabaseScope.NATIVE);
-
         JsonDocument doc = arangoNativeRepository.getInstance(ArangoDocumentReference.fromNexusInstance(ref));
         if(doc != null){
             if(doc.get(HBPVocabulary.SUGGESTION_STATUS).equals(status.name())){
-               throw new BadRequestException("Status already is " + status );
+               throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Status already is " + status );
             }else{
                 doc.put(HBPVocabulary.SUGGESTION_STATUS, status);
                 doc.put(HBPVocabulary.SUGGESTION_STATUS_CHANGED_BY, clientIdExtension);
-                return instanceManipulationController.directInstanceUpdate(ref, doc.getNexusRevision(), doc,  null, clientIdExtension);
+                doc.removeAllInternalKeys();
+                return instanceManipulationController.updateInstance(ref, doc, null);
             }
         }else{
-            throw new NotFoundException("Instance not found");
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Instance not found" );
         }
     }
 
-    public boolean deleteSuggestion(NexusInstanceReference ref) throws NotFoundException{
+    public boolean deleteSuggestion(NexusInstanceReference ref) throws ResponseStatusException{
         queryContext.setDatabaseScope(DatabaseScope.INFERRED);
         JsonDocument doc = arangoRepository.getInstance(ArangoDocumentReference.fromNexusInstance(ref), queryContext.getDatabaseConnection());
         if(doc != null){
             return instanceManipulationController.removeInstance(ref);
         }
-        throw new BadRequestException("Instance not found or already deprecated");
+        throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Instance not found or already deprecated");
     }
 
     public List<String> getUserReviewRequested(String userId) {
@@ -136,23 +143,23 @@ public class SuggestionController {
         return arangoInferredRepository.getUserReviewRequested(userId);
     }
 
-    public JsonDocument updateInstance(NexusInstanceReference ref, Map modifications, String clientIdExtension) {
-        queryContext.setDatabaseScope(DatabaseScope.NATIVE);
+    public NexusInstanceReference updateInstance(NexusInstanceReference ref, Map modifications, String clientIdExtension) throws ResponseStatusException {
         JsonDocument update = new JsonDocument(modifications);
-        JsonDocument doc = arangoNativeRepository.getInstance(ArangoDocumentReference.fromNexusInstance(ref));
+        queryContext.setDatabaseScope(DatabaseScope.INFERRED);
+        JsonDocument doc = instanceLookupController.getInstance(ref);
         if(doc != null){
             if(doc.get(HBPVocabulary.SUGGESTION_STATUS).equals(SuggestionStatus.ACCEPTED) ||
                     doc.get(HBPVocabulary.SUGGESTION_STATUS).equals(SuggestionStatus.REJECTED)
             ){
-                throw new BadRequestException("Status is " + doc.get(HBPVocabulary.SUGGESTION_STATUS) );
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Status is " + doc.get(HBPVocabulary.SUGGESTION_STATUS) );
             }else{
                 update.put(HBPVocabulary.SUGGESTION_STATUS, SuggestionStatus.EDITED);
                 update.put(HBPVocabulary.SUGGESTION_STATUS_CHANGED_BY, clientIdExtension);
                 update.removeAllInternalKeys();
-                return instanceManipulationController.directInstanceUpdate(ref, doc.getNexusRevision(), update,  null, clientIdExtension);
+                return instanceManipulationController.updateInstance(ref, update,  null);
             }
         }else{
-            throw new NotFoundException("Instance not found");
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Instance not found" );
         }
     }
 }

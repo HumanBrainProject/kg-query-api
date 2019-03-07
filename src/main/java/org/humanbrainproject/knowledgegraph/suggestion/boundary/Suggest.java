@@ -13,8 +13,10 @@ import org.humanbrainproject.knowledgegraph.query.entity.QueryResult;
 import org.humanbrainproject.knowledgegraph.suggestion.control.SuggestionController;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.web.server.ResponseStatusException;
 
 import javax.json.Json;
+import javax.ws.rs.BadRequestException;
 import javax.ws.rs.NotFoundException;
 import java.util.List;
 import java.util.Map;
@@ -38,30 +40,30 @@ public class Suggest {
         return suggestionController.simpleSuggestByField(schemaReference, field, search, pagination);
     }
 
-    public NexusInstanceReference createSuggestionInstanceForUser(NexusInstanceReference ref, String userId, String clientIdExtension) throws NotFoundException{
+    public NexusInstanceReference createSuggestionInstanceForUser(NexusInstanceReference ref, String userId, String clientIdExtension) throws ResponseStatusException{
         return suggestionController.createSuggestionInstanceForUser(ref, userId, clientIdExtension);
     }
 
-    public Map getUserSuggestionOfSpecificInstance(NexusInstanceReference ref, String userId) throws NotFoundException {
+    public Map getUserSuggestionOfSpecificInstance(NexusInstanceReference ref, String userId) throws ResponseStatusException {
         return suggestionController.getUserSuggestionOfSpecificInstance(ref, userId);
     }
 
-    public List<String> getUserSuggestions(String userId, SuggestionStatus status) throws NotFoundException{
+    public List<String> getUserSuggestions(String userId, SuggestionStatus status) throws ResponseStatusException{
         return suggestionController.getUserSuggestions(userId, status);
     }
 
-    public JsonDocument changeSuggestionStatus(NexusInstanceReference ref, SuggestionStatus status, String clientIdExtension) throws NotFoundException{
+    public NexusInstanceReference changeSuggestionStatus(NexusInstanceReference ref, SuggestionStatus status, String clientIdExtension) throws ResponseStatusException {
         return suggestionController.changeSuggestionStatus(ref, status, clientIdExtension);
     }
 
-    public boolean deleteSuggestion(NexusInstanceReference ref) throws NotFoundException{
+    public boolean deleteSuggestion(NexusInstanceReference ref) throws ResponseStatusException{
         return suggestionController.deleteSuggestion(ref);
     }
     public List<String> getUserReviewRequested(String userId) {
         return suggestionController.getUserReviewRequested(userId);
     }
 
-    public JsonDocument updateInstance(NexusInstanceReference ref, String content, String clientIdExtension) throws NotFoundException{
+    public NexusInstanceReference updateInstance(NexusInstanceReference ref, String content, String clientIdExtension) throws ResponseStatusException{
         return suggestionController.updateInstance(ref, jsonTransformer.parseToMap(content), clientIdExtension);
     }
 

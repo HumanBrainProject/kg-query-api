@@ -242,14 +242,4 @@ public class InstanceManipulationController {
         return deprecateInstanceByNexusId(arangoNativeRepository.findOriginalId(nexusInstanceReference));
     }
 
-    public JsonDocument directInstanceUpdate(NexusInstanceReference ref, Integer revision, JsonDocument payload,  Credential credential, String clientIdExtension){
-        if(credential==null){
-            credential = authorizationContext.getCredential();
-        }
-        ClientHttpRequestInterceptor interceptor = authorizationController.getInterceptor(credential);
-        immediateIndexing(payload, ref, clientIdExtension);
-        return nexusClient.put(ref.getRelativeUrl(), revision, payload, interceptor);
-    }
-
-
 }
