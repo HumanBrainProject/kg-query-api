@@ -4,8 +4,10 @@ import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Vertex;
 import org.humanbrainproject.knowledgegraph.indexing.control.IndexingController;
 import org.humanbrainproject.knowledgegraph.indexing.control.MessageProcessor;
+import org.humanbrainproject.knowledgegraph.indexing.control.PID;
 import org.humanbrainproject.knowledgegraph.indexing.control.nexusToArango.NexusToArangoIndexingProvider;
-import org.humanbrainproject.knowledgegraph.indexing.entity.*;
+import org.humanbrainproject.knowledgegraph.indexing.entity.QualifiedIndexingMessage;
+import org.humanbrainproject.knowledgegraph.indexing.entity.TargetDatabase;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.todo.DeleteTodoItem;
 import org.humanbrainproject.knowledgegraph.indexing.entity.todo.InsertTodoItem;
@@ -26,9 +28,13 @@ public class BasicIndexingController implements IndexingController {
     @Autowired
     NexusToArangoIndexingProvider indexingProvider;
 
+    @Autowired
+    PID pid;
+
 
     @Override
     public TodoList insert(QualifiedIndexingMessage message, TodoList todoList){
+        pid.createOrUpdatePid(message, todoList);
         Vertex vertex = messageProcessor.createVertexStructure(message);
         InsertTodoItem insertTodoItem = new InsertTodoItem(vertex, indexingProvider.getConnection(TargetDatabase.NATIVE));
         todoList.addTodoItem(insertTodoItem);
@@ -38,6 +44,7 @@ public class BasicIndexingController implements IndexingController {
     @Override
     public TodoList update(QualifiedIndexingMessage message, TodoList todoList){
         //TODO transfer information about creation / previous authors to new message?
+        pid.createOrUpdatePid(message, todoList);
         insert(message, todoList);
         return todoList;
     }

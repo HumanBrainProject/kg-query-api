@@ -4,7 +4,8 @@ import org.humanbrainproject.knowledgegraph.commons.authorization.entity.Credent
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusClient;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
-import org.humanbrainproject.knowledgegraph.indexing.api.IndexingInternalAPI;
+import org.humanbrainproject.knowledgegraph.indexing.boundary.GraphIndexing;
+import org.humanbrainproject.knowledgegraph.indexing.entity.IndexingMessage;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusRelativeUrl;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
@@ -33,7 +34,7 @@ public class NexusMockClient extends NexusClient {
     JsonTransformer jsonTransformer = new JsonTransformer();
 
     @Autowired
-    IndexingInternalAPI indexingAPI;
+    GraphIndexing indexing;
 
 
     @Override
@@ -46,7 +47,7 @@ public class NexusMockClient extends NexusClient {
         return schemas;
     }
 
-    private void updateDocument(NexusRelativeUrl url, Integer revision, Map payload){
+    private void updateDocument(NexusRelativeUrl url, Integer revision, Map payload) {
         documents.put(url, payload);
         revisions.put(url, revision);
     }
@@ -54,28 +55,30 @@ public class NexusMockClient extends NexusClient {
 
     @Async
     public CompletableFuture<ResponseEntity<String>> indexInstanceUpdate(NexusInstanceReference reference, Map payload) {
-        ResponseEntity<String> result = indexingAPI.updateInstance(jsonTransformer.getMapAsJson(payload), reference.getNexusSchema().getOrganization(), reference.getNexusSchema().getDomain(), reference.getNexusSchema().getSchema(), reference.getNexusSchema().getSchemaVersion(), reference.getId(), reference.getRevision(), "author", ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_INSTANT));
-        return CompletableFuture.completedFuture(result);
+        IndexingMessage message = new IndexingMessage(reference, jsonTransformer.getMapAsJson(payload), ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_INSTANT), "integrationTest");
+        indexing.update(message);
+        return CompletableFuture.completedFuture(ResponseEntity.ok(null));
     }
 
     @Async
     public CompletableFuture<ResponseEntity<String>> indexInstanceDeletion(NexusInstanceReference reference) {
-        ResponseEntity<String> result = indexingAPI.deleteInstance(reference.getNexusSchema().getOrganization(), reference.getNexusSchema().getDomain(), reference.getNexusSchema().getSchema(), reference.getNexusSchema().getSchemaVersion(), reference.getId(), reference.getRevision(), "author", ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_INSTANT));
-        return CompletableFuture.completedFuture(result);
+        indexing.delete(reference);
+        return CompletableFuture.completedFuture(ResponseEntity.ok(null));
     }
 
     @Async
     public CompletableFuture<ResponseEntity<String>> indexInstanceInsertion(NexusInstanceReference reference, Map payload) {
-        ResponseEntity<String> result = indexingAPI.addInstance(jsonTransformer.getMapAsJson(payload), reference.getNexusSchema().getOrganization(), reference.getNexusSchema().getDomain(), reference.getNexusSchema().getSchema(), reference.getNexusSchema().getSchemaVersion(), reference.getId(), "author", ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_INSTANT));
-        return CompletableFuture.completedFuture(result);
+        IndexingMessage message = new IndexingMessage(reference, jsonTransformer.getMapAsJson(payload), ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_INSTANT), "integrationTest");
+        indexing.insert(message);
+        return CompletableFuture.completedFuture(ResponseEntity.ok(null));
     }
 
 
     @Override
     public JsonDocument put(NexusRelativeUrl url, Integer revision, Map payload, Credential oidc) {
-       updateDocument(url, revision, payload);
+        updateDocument(url, revision, payload);
         //TODO simulate payload changes
-        if(url.getResourceType()== NexusConfiguration.ResourceType.DATA) {
+        if (url.getResourceType() == NexusConfiguration.ResourceType.DATA) {
             NexusInstanceReference fromUrl = NexusInstanceReference.createFromUrl(url.getUrl());
             fromUrl.setRevision(revision);
             //trigger indexing
@@ -87,14 +90,14 @@ public class NexusMockClient extends NexusClient {
 
     @Override
     public JsonDocument put(NexusRelativeUrl url, Integer revision, Map payload, ClientHttpRequestInterceptor oidc) {
-       return this.put(url, revision, payload, (Credential)null);
+        return this.put(url, revision, payload, (Credential) null);
     }
 
     @Override
     public boolean delete(NexusRelativeUrl url, Integer revision, Credential credential) {
         documents.remove(url);
         revisions.remove(url);
-        if(url.getResourceType()== NexusConfiguration.ResourceType.DATA) {
+        if (url.getResourceType() == NexusConfiguration.ResourceType.DATA) {
             NexusInstanceReference fromUrl = NexusInstanceReference.createFromUrl(url.getUrl());
             fromUrl.setRevision(revision);
             //trigger indexing
@@ -105,7 +108,7 @@ public class NexusMockClient extends NexusClient {
 
     @Override
     public boolean delete(NexusRelativeUrl url, Integer revision, ClientHttpRequestInterceptor oidc) {
-        delete(url, revision, (Credential)null);
+        delete(url, revision, (Credential) null);
         return true;
     }
 
@@ -113,7 +116,7 @@ public class NexusMockClient extends NexusClient {
     public JsonDocument post(NexusRelativeUrl url, Integer revision, Map payload, Credential credential) {
         updateDocument(url, revision, payload);
         //TODO simulate payload changes
-        if(url.getResourceType()== NexusConfiguration.ResourceType.DATA) {
+        if (url.getResourceType() == NexusConfiguration.ResourceType.DATA) {
             NexusInstanceReference fromUrl = NexusInstanceReference.createFromUrl(url.getUrl());
             //trigger indexing
             indexInstanceInsertion(fromUrl, payload);
@@ -123,7 +126,7 @@ public class NexusMockClient extends NexusClient {
 
     @Override
     public JsonDocument post(NexusRelativeUrl url, Integer revision, Map payload, ClientHttpRequestInterceptor oidc) {
-        return post(url, revision, payload, (Credential)null);
+        return post(url, revision, payload, (Credential) null);
     }
 
     @Override
@@ -145,19 +148,18 @@ public class NexusMockClient extends NexusClient {
 
     @Override
     public <T> T get(NexusRelativeUrl url, Credential credential, Class<T> resultClass) {
-        if(resultClass==String.class){
+        if (resultClass == String.class) {
             return (T) new JsonTransformer().getMapAsJson(get(url, credential));
-        }
-        else if(resultClass==Map.class){
+        } else if (resultClass == Map.class) {
             return (T) documents.get(url);
         }
-        throw new IllegalArgumentException("Was not able to transform a document into class "+resultClass);
+        throw new IllegalArgumentException("Was not able to transform a document into class " + resultClass);
     }
 
     @Override
     public List<JsonDocument> list(NexusRelativeUrl relativeUrl, Credential credential, boolean followPages) {
         Set<NexusRelativeUrl> matchingKeys = documents.keySet().stream().filter(s -> s.getUrl().startsWith(relativeUrl.getUrl())).collect(Collectors.toSet());
-        return (List<JsonDocument>)matchingKeys.stream().map(k -> documents.get(k)).map(JsonDocument::new).collect(Collectors.toList());
+        return (List<JsonDocument>) matchingKeys.stream().map(k -> documents.get(k)).map(JsonDocument::new).collect(Collectors.toList());
     }
 
     @Override

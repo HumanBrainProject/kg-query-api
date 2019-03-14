@@ -26,6 +26,9 @@ public class DefaultAuthorizationContext implements AuthorizationContext {
     @Autowired
     AuthorizationController authorizationController;
 
+    @Autowired
+    AccessControl accessControl;
+
     private Credential credential;
 
     private Client client;
@@ -47,22 +50,22 @@ public class DefaultAuthorizationContext implements AuthorizationContext {
 
     @Override
     public String getUserId(){
-        return authorizationController.getUserId(getCredential());
+        return accessControl.getUserId(getCredential());
     }
 
     @Override
     public Set<String> getReadableOrganizations(){
-        return authorizationController.getReadableOrganizations(getCredential(), null);
+        return accessControl.getReadableOrganizations(getCredential(), null);
     }
 
     @Override
     public Set<String> getReadableOrganizations(Credential credential, List<String> whitelistedOrganizations){
-        return authorizationController.getReadableOrganizations(credential, whitelistedOrganizations);
+        return accessControl.getReadableOrganizations(credential, whitelistedOrganizations);
     }
 
     @Override
     public Set<String> getReadableOrganizations(List<String> whitelistedOrganizations) {
-        return authorizationController.getReadableOrganizations(getCredential(), whitelistedOrganizations);
+        return accessControl.getReadableOrganizations(getCredential(), whitelistedOrganizations);
     }
 
     @Override
@@ -88,7 +91,7 @@ public class DefaultAuthorizationContext implements AuthorizationContext {
 
     @Override
     public boolean isReadable(Map data) {
-        return authorizationController.isReadable(data, getCredential());
+        return accessControl.isReadable(data, getCredential());
     }
 
     @Override

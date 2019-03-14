@@ -11,8 +11,11 @@ import org.humanbrainproject.knowledgegraph.commons.propertyGraph.AuthorizedAcce
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.query.ArangoQueryFactory;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.exceptions.UnexpectedNumberOfResults;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.ArangoVocabulary;
+import org.humanbrainproject.knowledgegraph.indexing.control.PID;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
+import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
 import org.humanbrainproject.knowledgegraph.query.entity.JsonDocument;
 import org.humanbrainproject.knowledgegraph.query.entity.QueryResult;
 import org.slf4j.Logger;
@@ -34,6 +37,28 @@ public class ArangoRepository {
 
     @Autowired
     ArangoQueryFactory queryFactory;
+
+    public Map findPid(String type, Set<String> identifiers, ArangoConnection connection) {
+        NexusSchemaReference nexusSchemaReference = PID.createNexusSchemaReference(type);
+        ArangoDatabase db = connection.getOrCreateDB();
+        ArangoCollection collection = db.collection(ArangoCollectionReference.fromNexusSchemaReference(nexusSchemaReference).getName());
+        if (collection.exists()) {
+            String query = queryFactory.queryByIdentifierArray(nexusSchemaReference, authorizationContext.getReadableOrganizations());
+            Map<String, Object> parameters = new HashMap<>();
+            parameters.put("identifiers", identifiers);
+            List<Map> results = db.query(query, parameters, new AqlQueryOptions(), Map.class).asListRemaining();
+            if (results == null || results.isEmpty()) {
+                return null;
+            }
+            if (results.size() == 1) {
+                return results.get(0);
+            }
+            throw new UnexpectedNumberOfResults(String.format("Expected no or one results for PID query - there were %d results", results.size()));
+        } else {
+            return null;
+        }
+    }
+
 
     <T> T getDocumentByKey(ArangoDocumentReference document, Class<T> clazz, ArangoConnection connection) {
         Map doc = getDocument(document, connection);
@@ -117,9 +142,8 @@ public class ArangoRepository {
     }
 
 
-
     @AuthorizedAccess
-    public List<Map> getLinkingInstances(ArangoDocumentReference fromInstance, ArangoDocumentReference toInstance, ArangoCollectionReference reference, ArangoConnection driver){
+    public List<Map> getLinkingInstances(ArangoDocumentReference fromInstance, ArangoDocumentReference toInstance, ArangoCollectionReference reference, ArangoConnection driver) {
         ArangoDatabase db = driver.getOrCreateDB();
         String query = queryFactory.queryLinkingInstanceBetweenVertices(fromInstance, toInstance, reference, authorizationContext.getReadableOrganizations());
         ArangoCursor<Map> q = db.query(query, null, new AqlQueryOptions(), Map.class);

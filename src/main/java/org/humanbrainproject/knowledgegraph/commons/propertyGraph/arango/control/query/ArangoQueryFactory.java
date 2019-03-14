@@ -4,9 +4,9 @@ import com.github.jsonldjava.core.JsonLdConsts;
 import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.UnauthorizedAccess;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.aql.AQL;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.aql.AuthorizedArangoQuery;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.aql.TrustedAqlValue;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.aql.AQL;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoNamingHelper;
@@ -15,6 +15,7 @@ import org.humanbrainproject.knowledgegraph.commons.vocabulary.ArangoVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.SchemaOrgVocabulary;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
+import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
 import org.humanbrainproject.knowledgegraph.releasing.entity.ReleaseStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -480,6 +481,21 @@ public class ArangoQueryFactory {
         query.addLine(trust("LET status = LENGTH(release)>0 ? release[0] : \"${notReleasedValue}\""));
         query.addLine(trust("RETURN {\"doc\": v, \"status\":status}"));
         return query.build().getValue();
+    }
+
+
+    public String queryByIdentifierArray(NexusSchemaReference schemaReference, Set<String> permissionGroupsWithReadAccess){
+        AuthorizedArangoQuery query = new AuthorizedArangoQuery(permissionGroupsWithReadAccess);
+        query.addLine(trust("FOR d IN `${type}`"));
+        query.addDocumentFilter(trust("d"));
+        query.addLine(trust("FILTER d.`${schemaIdentifier}`!= NULL"));
+        query.addLine(trust("FILTER d.`${schemaIdentifier}`!= []"));
+        query.addLine(trust("FILTER INTERSECTION(FLATTEN([d.`${schemaIdentifier}`]), @identifiers)!=[]"));
+        query.addLine(trust("RETURN d"));
+        query.setParameter("type", ArangoCollectionReference.fromNexusSchemaReference(schemaReference).getName());
+        query.setParameter("schemaIdentifier", SchemaOrgVocabulary.IDENTIFIER);
+        return query.build().getValue();
+
     }
 
 }

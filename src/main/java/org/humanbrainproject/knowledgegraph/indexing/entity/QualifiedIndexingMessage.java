@@ -5,6 +5,7 @@ import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.ArangoVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.NexusVocabulary;
+import org.humanbrainproject.knowledgegraph.commons.vocabulary.SchemaOrgVocabulary;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 
 import java.util.*;
@@ -53,6 +54,18 @@ public class QualifiedIndexingMessage {
     public Map getQualifiedMap() {
         return qualifiedMap;
     }
+
+    public Set<String> getIdentifiers(){
+        Object identifier = this.qualifiedMap.get(SchemaOrgVocabulary.IDENTIFIER);
+        if(identifier!=null) {
+            if (identifier instanceof List) {
+                return new HashSet<>((List) identifier);
+            }
+            return Collections.singleton(String.valueOf(identifier));
+        }
+        return Collections.emptySet();
+    }
+
 
     public NexusInstanceReference getOriginalId(){
         Object originalParent = qualifiedMap.get(HBPVocabulary.INFERENCE_EXTENDS);

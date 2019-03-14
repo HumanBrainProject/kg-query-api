@@ -9,6 +9,7 @@ public class HBPVocabulary {
     public static final String NAMESPACE = "https://schema.hbp.eu/";
     public static final String GRAPH_QUERY = NAMESPACE+"graphQuery/";
     public static final String RELATIVE_URL_OF_INTERNAL_LINK = NAMESPACE+"relativeUrl";
+    public final static String PID = NAMESPACE+"pid";
 
     // FOR LINKING
     public static final String LINKING_INSTANCE_TYPE = NAMESPACE+"LinkingInstance";
@@ -41,6 +42,7 @@ public class HBPVocabulary {
     /**
      * declares the relationship of e.g. an editor instance which extends another (original) entity
      */
+    public final static String INFERENCE_EXTENDED_BY = INFERENCE_TYPE.toLowerCase()+"/extendedBy";
     public final static String INFERENCE_EXTENDS = INFERENCE_TYPE.toLowerCase()+"/extends";
     public final static String INFERENCE_ALTERNATIVES = INFERENCE_TYPE.toLowerCase()+"/alternatives";
     public final static String INFERENCE_ALTERNATIVES_VALUE = INFERENCE_ALTERNATIVES.toLowerCase()+"/value";

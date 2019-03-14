@@ -1,5 +1,6 @@
 package org.humanbrainproject.knowledgegraph.indexing.entity.nexus;
 
+import org.apache.commons.lang3.StringUtils;
 import org.humanbrainproject.knowledgegraph.annotations.Tested;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.SubSpace;
@@ -123,4 +124,8 @@ public class NexusSchemaReference {
         return new NexusSchemaReference(organization, subSpace, domain, schema, schemaVersion);
     }
 
+
+    public String getType(){
+        return String.format("https://schema.hbp.eu/%s/%s", domain, StringUtils.capitalize(schema));
+    }
 }
