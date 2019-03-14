@@ -99,11 +99,11 @@ public class SchemaController {
 
     }
 
-    String getOrganization(NexusSchemaReference schemaReference) {
+    static String getOrganization(NexusSchemaReference schemaReference) {
         return String.format("%s%s/", HBPVocabulary.NAMESPACE, schemaReference.getOrganization());
     }
 
-    public String getTargetClass(NexusSchemaReference schemaReference) {
+    public static String getTargetClass(NexusSchemaReference schemaReference) {
         return String.format("%s%s", getOrganization(schemaReference), StringUtils.capitalize(schemaReference.getSchema()));
     }
 

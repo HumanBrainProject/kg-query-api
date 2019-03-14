@@ -11,7 +11,6 @@ import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusClient;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoNativeRepository;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Vertex;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.NexusVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.SchemaOrgVocabulary;
@@ -136,7 +135,7 @@ public class InstanceManipulationController {
         } else {
             payload = new JsonDocument();
         }
-        payload.addType(schemaController.getTargetClass(nexusSchemaReference));
+        payload.addType(SchemaController.getTargetClass(nexusSchemaReference));
         payload.addToProperty(SchemaOrgVocabulary.IDENTIFIER, "");
         payload.addToProperty(HBPVocabulary.PROVENANCE_CREATED_AT, ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_INSTANT));
         payload.addToProperty(HBPVocabulary.PROVENANCE_CREATED_BY, clientIdExtension);
@@ -178,7 +177,7 @@ public class InstanceManipulationController {
 
         schemaController.createSchema(nexusSchemaReference);
         Object type = payload.get(JsonLdConsts.TYPE);
-        String targetClass = schemaController.getTargetClass(nexusSchemaReference);
+        String targetClass = SchemaController.getTargetClass(nexusSchemaReference);
         if (type == null) {
             payload.put(JsonLdConsts.TYPE, targetClass);
         } else if (type instanceof Collection) {

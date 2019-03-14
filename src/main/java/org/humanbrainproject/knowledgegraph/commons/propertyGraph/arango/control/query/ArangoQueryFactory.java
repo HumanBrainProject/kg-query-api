@@ -484,16 +484,20 @@ public class ArangoQueryFactory {
     }
 
 
-    public String queryByIdentifierArray(NexusSchemaReference schemaReference, Set<String> permissionGroupsWithReadAccess){
+    public String queryByIdentifierArrayAndType(NexusSchemaReference schemaReference, Set<String> permissionGroupsWithReadAccess){
         AuthorizedArangoQuery query = new AuthorizedArangoQuery(permissionGroupsWithReadAccess);
-        query.addLine(trust("FOR d IN `${type}`"));
+        query.addLine(trust("FOR d IN `${collection}`"));
         query.addDocumentFilter(trust("d"));
         query.addLine(trust("FILTER d.`${schemaIdentifier}`!= NULL"));
         query.addLine(trust("FILTER d.`${schemaIdentifier}`!= []"));
-        query.addLine(trust("FILTER INTERSECTION(FLATTEN([d.`${schemaIdentifier}`]), @identifiers)!=[]"));
+        query.addLine(trust("FILTER d.`${type}`!= @type"));
+        query.addLine(trust("LET intersect = INTERSECTION(FLATTEN([d.`${schemaIdentifier}`]), @identifiers)"));
+        query.addLine(trust("FILTER intersect != []"));
+        query.addLine(trust("FILTER intersect != NULL"));
         query.addLine(trust("RETURN d"));
-        query.setParameter("type", ArangoCollectionReference.fromNexusSchemaReference(schemaReference).getName());
+        query.setParameter("collection", ArangoCollectionReference.fromNexusSchemaReference(schemaReference).getName());
         query.setParameter("schemaIdentifier", SchemaOrgVocabulary.IDENTIFIER);
+        query.setParameter("type", JsonLdConsts.TYPE);
         return query.build().getValue();
 
     }

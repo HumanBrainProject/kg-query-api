@@ -14,6 +14,7 @@ import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceR
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.todo.InsertOrUpdateInPrimaryStoreTodoItem;
 import org.humanbrainproject.knowledgegraph.indexing.entity.todo.TodoList;
+import org.humanbrainproject.knowledgegraph.instances.control.SchemaController;
 import org.humanbrainproject.knowledgegraph.query.entity.JsonDocument;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -26,6 +27,8 @@ import java.util.Set;
 @ToBeTested
 @Component
 public class PID {
+
+    public static final NexusSchemaReference PID_SCHEMA_REFERENCE = new NexusSchemaReference("global", "core", "pid", "v1.0.0");
 
     @Autowired
     MessageProcessor messageProcessor;
@@ -43,13 +46,8 @@ public class PID {
     NexusConfiguration nexusConfiguration;
 
 
-    public static NexusSchemaReference createNexusSchemaReference(String type){
-        return new NexusSchemaReference("global", "pid", type, "v1.0.0");
-    }
-
-
     public void createOrUpdatePid(QualifiedIndexingMessage indexingMessage, TodoList todoList){
-        if(indexingMessage!=null){
+        if(indexingMessage!=null && !indexingMessage.isOfType(SchemaController.getTargetClass(PID_SCHEMA_REFERENCE))){
             Set<String> types = indexingMessage.getTypes();
             Set<String> identifiers = indexingMessage.getIdentifiers();
             for (String type : types) {
@@ -61,22 +59,27 @@ public class PID {
     private void createOrUpdatePidByType(NexusInstanceReference instanceReference, String type, Set<String> identifiers, TodoList todoList){
         Map pid = repository.findPid(type, identifiers, databaseFactory.getInferredDB());
         JsonDocument jsonDocument;
-        NexusSchemaReference schemaReferenceByType = createNexusSchemaReference(type);
         if(pid==null){
             jsonDocument = new JsonDocument();
             String staticId = identifiers.isEmpty() ? instanceReference.getId() : identifiers.iterator().next();
             jsonDocument.put(HBPVocabulary.PID, staticId);
             jsonDocument.put(SchemaOrgVocabulary.IDENTIFIER, identifiers);
-            jsonDocument.addType(schemaReferenceByType.getType());
+            jsonDocument.addType(type);
         }
         else{
             jsonDocument = new JsonDocument(pid);
             Set<String> mergedIdentifiers = new HashSet<>(identifiers);
-            mergedIdentifiers.addAll((Collection<String>)  pid.get(SchemaOrgVocabulary.IDENTIFIER));
+            Object identifier = pid.get(SchemaOrgVocabulary.IDENTIFIER);
+            if(identifier instanceof String){
+                mergedIdentifiers.add((String)identifier);
+            }
+            else if(identifier instanceof Collection) {
+                mergedIdentifiers.addAll((Collection<String>) identifier);
+            }
             jsonDocument.put(SchemaOrgVocabulary.IDENTIFIER, mergedIdentifiers);
         }
         jsonDocument.addReference(HBPVocabulary.INFERENCE_EXTENDED_BY, nexusConfiguration.getAbsoluteUrl(instanceReference));
-        IndexingMessage indexingMessage = new IndexingMessage(new NexusInstanceReference(schemaReferenceByType, null), jsonTransformer.getMapAsJson(jsonDocument), null, null);
+        IndexingMessage indexingMessage = new IndexingMessage(new NexusInstanceReference(PID_SCHEMA_REFERENCE, null), jsonTransformer.getMapAsJson(jsonDocument), null, null);
         Vertex vertex = messageProcessor.createVertexStructure(messageProcessor.qualify(indexingMessage));
         todoList.addTodoItem(new InsertOrUpdateInPrimaryStoreTodoItem(vertex));
     }

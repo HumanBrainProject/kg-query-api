@@ -15,7 +15,6 @@ import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.excepti
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.ArangoVocabulary;
 import org.humanbrainproject.knowledgegraph.indexing.control.PID;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
-import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
 import org.humanbrainproject.knowledgegraph.query.entity.JsonDocument;
 import org.humanbrainproject.knowledgegraph.query.entity.QueryResult;
 import org.slf4j.Logger;
@@ -39,13 +38,13 @@ public class ArangoRepository {
     ArangoQueryFactory queryFactory;
 
     public Map findPid(String type, Set<String> identifiers, ArangoConnection connection) {
-        NexusSchemaReference nexusSchemaReference = PID.createNexusSchemaReference(type);
         ArangoDatabase db = connection.getOrCreateDB();
-        ArangoCollection collection = db.collection(ArangoCollectionReference.fromNexusSchemaReference(nexusSchemaReference).getName());
+        ArangoCollection collection = db.collection(ArangoCollectionReference.fromNexusSchemaReference(PID.PID_SCHEMA_REFERENCE).getName());
         if (collection.exists()) {
-            String query = queryFactory.queryByIdentifierArray(nexusSchemaReference, authorizationContext.getReadableOrganizations());
+            String query = queryFactory.queryByIdentifierArrayAndType(PID.PID_SCHEMA_REFERENCE, authorizationContext.getReadableOrganizations());
             Map<String, Object> parameters = new HashMap<>();
             parameters.put("identifiers", identifiers);
+            parameters.put("type", type);
             List<Map> results = db.query(query, parameters, new AqlQueryOptions(), Map.class).asListRemaining();
             if (results == null || results.isEmpty()) {
                 return null;

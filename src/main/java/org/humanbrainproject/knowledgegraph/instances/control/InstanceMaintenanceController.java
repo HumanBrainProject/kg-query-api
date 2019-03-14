@@ -34,9 +34,6 @@ public class InstanceMaintenanceController {
     NexusClient nexusClient;
 
     @Autowired
-    SchemaController schemaController;
-
-    @Autowired
     GraphIndexing graphIndexing;
 
     @Autowired
@@ -61,7 +58,7 @@ public class InstanceMaintenanceController {
         for (NexusInstanceReference instanceReference : allInstancesForSchema) {
             JsonDocument fromNexusById = lookupController.getFromNexusById(instanceReference);
             //Ensure the right type
-            fromNexusById.addType(schemaController.getTargetClass(originalSchema));
+            fromNexusById.addType(SchemaController.getTargetClass(originalSchema));
             //Redirect links
             JsonDocument redirectedJson = pointLinksToSchema(fromNexusById, newVersion);
             NexusSchemaReference schemaReference = new NexusSchemaReference(originalSchema.getOrganization(), originalSchema.getDomain(), originalSchema.getSchema(), newVersion);
