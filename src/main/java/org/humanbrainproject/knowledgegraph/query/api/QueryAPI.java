@@ -371,26 +371,6 @@ public class QueryAPI {
         }
     }
 
-    @ApiOperation(value="Execute a stored query for public instances (and therefore anonymously)")
-    @ExternalApi
-    @GetMapping("/{"+ORG+"}/{"+ DOMAIN+"}/{"+SCHEMA+"}/{"+VERSION+"}/{"+QUERY_ID+"}/instances/public")
-    public ResponseEntity<QueryResult> executeAnonymousStoredQuery(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(QUERY_ID) String queryId, @ApiParam(SIZE_DOC) @RequestParam(value = SIZE, required = false) Integer size, @ApiParam(START_DOC) @RequestParam(value = START, required = false) Integer start, @ApiParam(VOCAB_DOC) @RequestParam(value = VOCAB, required = false) String vocab, @ApiIgnore @RequestParam Map<String, String> allRequestParams) throws Exception {
-        try {
-            queryContext.setAllParameters(allRequestParams);
-
-            StoredQuery query = new StoredQuery(new NexusSchemaReference(org, domain, schema, version), queryId, vocab);
-            query.setParameters(allRequestParams);
-            query.getPagination().setStart(start).setSize(size);
-            QueryResult<List<Map>> result = this.query.queryPropertyGraphByStoredSpecification(query);
-            return ResponseEntity.ok(result);
-        } catch (StoredQueryNotFoundException e){
-            return ResponseEntity.notFound().build();
-        } catch (RootCollectionNotFoundException e) {
-            return ResponseEntity.ok(QueryResult.createEmptyResult());
-        } catch (HttpClientErrorException e) {
-            return ResponseEntity.status(e.getStatusCode()).build();
-        }
-    }
 
     @ApiOperation(value="Execute a stored query for a specific instance identified by its id")
     @ExternalApi
