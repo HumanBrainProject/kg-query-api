@@ -231,6 +231,11 @@ public class ArangoQuery {
         arangoInternalRepository.insertOrUpdateDocument(document, jsonObject.toString());
     }
 
+    public void removeSpecificationInDb(StoredQueryReference queryReference) throws IllegalAccessException {
+        ArangoDocumentReference documentRef = new ArangoDocumentReference(SPECIFICATION_QUERIES, queryReference.getName());
+        arangoInternalRepository.removeInternalDocument(documentRef);
+    }
+
     public QueryResult<List<Map>> queryPropertyGraphByStoredSpecificationAndFreemarkerTemplate(StoredQuery storedQuery) throws IOException, JSONException, SolrServerException {
         QueryResult<List<Map>> queryResult = queryPropertyGraphByStoredSpecification(storedQuery);
         String templatePayload = templating.getTemplateById(storedQuery.getStoredTemplateReference()).getTemplateContent();
