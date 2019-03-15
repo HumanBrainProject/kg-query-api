@@ -332,6 +332,8 @@ public class QueryAPI {
             authorizationContext.populateAuthorizationContext(authorization);
             query.removeSpecificationInDb(new StoredQueryReference(new NexusSchemaReference(org, domain, schema, version), id));
             return ResponseEntity.ok("Deleted specification from database");
+        } catch (StoredQueryNotFoundException e){
+            return ResponseEntity.notFound().build();
         } catch (HttpClientErrorException e) {
             return ResponseEntity.status(e.getStatusCode()).build();
         } catch (IllegalAccessException e){
