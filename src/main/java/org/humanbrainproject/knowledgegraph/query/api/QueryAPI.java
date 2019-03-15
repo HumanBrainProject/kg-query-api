@@ -324,6 +324,21 @@ public class QueryAPI {
         }
     }
 
+    @ExternalApi
+    @ApiOperation(value="Delete a query specification in KG")
+    @DeleteMapping(value = "/{"+ORG+"}/{"+ DOMAIN+"}/{"+SCHEMA+"}/{"+VERSION+"}/{"+QUERY_ID+"}", produces=MediaType.TEXT_PLAIN)
+    public ResponseEntity<String> removeSpecificationToDB(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @ApiParam(value = "Freely defined alias for the query. Please note that only the user who has created the specification initially can update it. If an alias is already occupied, please use another one.", required = true) @PathVariable(QUERY_ID) String id, @ApiParam(value = ParameterConstants.AUTHORIZATION_DOC, required = true) @RequestHeader(value = HttpHeaders.AUTHORIZATION) String authorization) throws Exception {
+        try {
+            authorizationContext.populateAuthorizationContext(authorization);
+            query.removeSpecificationInDb(new StoredQueryReference(new NexusSchemaReference(org, domain, schema, version), id));
+            return ResponseEntity.ok("Deleted specification from database");
+        } catch (HttpClientErrorException e) {
+            return ResponseEntity.status(e.getStatusCode()).build();
+        } catch (IllegalAccessException e){
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
+        }
+    }
+
     @ApiOperation(value="Execute a stored query and fetch the corresponding instances")
     @Deprecated
     @GetMapping("/{"+ORG+"}/{"+ DOMAIN+"}/{"+SCHEMA+"}/{"+VERSION+"}/{"+QUERY_ID+"}/instances/deprecated")

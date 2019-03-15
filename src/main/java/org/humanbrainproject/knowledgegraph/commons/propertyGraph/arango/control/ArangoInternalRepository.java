@@ -126,4 +126,16 @@ public class ArangoInternalRepository {
         }
         return false;
     }
+
+    public void removeInternalDocument(ArangoDocumentReference document) throws IllegalAccessException {
+        String userId = authorizationContext.getUserId();
+        if(userId==null){
+            throw new IllegalAccessException("You have to be authenticated if you want to execute this operation");
+        }
+        ArangoDatabase db = getDB();
+        ArangoCollection collection = db.collection(document.getCollection().getName());
+        if (collection.documentExists(document.getKey())) {
+            collection.deleteDocument(document.getKey());
+        }
+    }
 }
