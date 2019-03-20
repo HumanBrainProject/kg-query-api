@@ -26,8 +26,8 @@ public enum GraphQueryKeys {
     GRAPH_QUERY_ARANGO_KEY(ArangoVocabulary.KEY),
     GRAPH_QUERY_FILTER("filter"),
     GRAPH_QUERY_FILTER_OP("op"),
-    GRAPH_QUERY_FILTER_VALUE("value");
-
+    GRAPH_QUERY_FILTER_VALUE("value"),
+    GRAPH_QUERY_FILTER_PARAM("parameter");
 
     private final String fieldName;
 
@@ -38,4 +38,15 @@ public enum GraphQueryKeys {
     public String getFieldName() {
         return fieldName;
     }
+
+    public static boolean isKey(String key){
+        for (GraphQueryKeys graphQueryKey : values()) {
+            if(graphQueryKey.fieldName.equals(key)){
+                return true;
+            }
+        }
+        return false;
+
+    }
+
 }

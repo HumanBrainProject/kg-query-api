@@ -172,7 +172,7 @@ public class JsonLdStandardization {
      * @throws IOException
      */
     public Map fullyQualify(String jsonPayload) {
-        return fullyQualify(jsonTransformer.parseToMap(jsonPayload));
+        return jsonPayload == null ? null : fullyQualify(jsonTransformer.parseToMap(jsonPayload));
     }
 
     /**

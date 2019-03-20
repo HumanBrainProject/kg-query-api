@@ -5,6 +5,7 @@ import org.humanbrainproject.knowledgegraph.annotations.NoTests;
 @NoTests(NoTests.NO_LOGIC)
 public class TrustedAqlValue {
 
+
     private final String value;
 
     public TrustedAqlValue(String value) {

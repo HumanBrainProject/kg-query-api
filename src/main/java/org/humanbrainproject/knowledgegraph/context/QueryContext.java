@@ -30,7 +30,7 @@ public class QueryContext {
     @Autowired
     ArangoDatabaseFactory databaseFactory;
 
-    private final Map<String, Object> allParameters = new HashMap<>();
+    private final Map<String, String> allParameters = new HashMap<>();
     private DatabaseScope databaseScope = DatabaseScope.INFERRED;
 
 
@@ -38,11 +38,11 @@ public class QueryContext {
         return databaseScope;
     }
 
-    public Map<String, Object> getAllParameters() {
+    public Map<String, String> getAllParameters() {
         return allParameters;
     }
 
-    public void setAllParameters(Map<String, Object> parameters) {
+    public void setAllParameters(Map<String, String> parameters) {
         allParameters.putAll(parameters);
     }
 
@@ -67,7 +67,7 @@ public class QueryContext {
     }
 
 
-    public <T> ArangoCursor<T> queryDatabase(String aqlQuery, boolean count, Pagination pagination, Class<T> returnType, Map<String,Object> searchAndFilterParameters) {
+    public <T> ArangoCursor<T> queryDatabase(String aqlQuery, boolean count, Pagination pagination, Class<T> returnType, Map<String, Object> bindParameters) {
         AqlQueryOptions options = new AqlQueryOptions();
         if (count) {
             if (pagination != null && pagination.getSize()!=null) {
@@ -76,7 +76,7 @@ public class QueryContext {
                 options.count(true);
             }
         }
-        return getDatabase().query(aqlQuery, searchAndFilterParameters, options, returnType);
+        return getDatabase().query(aqlQuery, bindParameters, options, returnType);
     }
 
     private transient Set<ArangoCollectionReference> existingCollections;

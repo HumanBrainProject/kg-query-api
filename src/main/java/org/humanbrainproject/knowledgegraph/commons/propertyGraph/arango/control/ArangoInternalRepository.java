@@ -12,12 +12,14 @@ import org.humanbrainproject.knowledgegraph.commons.propertyGraph.UnauthorizedAc
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.query.ArangoQueryFactory;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.exceptions.StoredQueryNotFoundException;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.ArangoVocabulary;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.ws.rs.NotFoundException;
 import java.util.List;
 import java.util.Map;
 
@@ -125,5 +127,19 @@ public class ArangoInternalRepository {
             return collection.documentExists(documentReference.getKey());
         }
         return false;
+    }
+
+    public void removeInternalDocument(ArangoDocumentReference document) throws IllegalAccessException, StoredQueryNotFoundException {
+        String userId = authorizationContext.getUserId();
+        if(userId==null){
+            throw new IllegalAccessException("You have to be authenticated if you want to execute this operation");
+        }
+        ArangoDatabase db = getDB();
+        ArangoCollection collection = db.collection(document.getCollection().getName());
+        if ( collection.exists() && collection.documentExists(document.getKey())) {
+            collection.deleteDocument(document.getKey());
+        } else {
+            throw new StoredQueryNotFoundException("Query not found");
+        }
     }
 }

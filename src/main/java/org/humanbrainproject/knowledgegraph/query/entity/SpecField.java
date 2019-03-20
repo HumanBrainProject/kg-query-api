@@ -6,6 +6,8 @@ import org.humanbrainproject.knowledgegraph.query.entity.fieldFilter.FieldFilter
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Tested
 public class SpecField {
@@ -19,7 +21,14 @@ public class SpecField {
     public boolean ensureOrder;
     public final String groupedInstances;
     public FieldFilter fieldFilter;
+    public final Map<String, Object> customDirectives;
+
+
     public SpecField(String fieldName, List<SpecField> fields, List<SpecTraverse> traversePath, String groupedInstances, boolean required, boolean sortAlphabetically, boolean groupby, boolean ensureOrder, FieldFilter fieldFilter) {
+        this(fieldName, fields, traversePath, groupedInstances, required, sortAlphabetically, groupby, ensureOrder, fieldFilter, null);
+    }
+
+    public SpecField(String fieldName, List<SpecField> fields, List<SpecTraverse> traversePath, String groupedInstances, boolean required, boolean sortAlphabetically, boolean groupby, boolean ensureOrder, FieldFilter fieldFilter, Map<String, Object> customDirectives) {
         this.fieldName = fieldName;
         this.required = required;
         this.fields = fields != null ? new ArrayList<>(fields) : new ArrayList<>();
@@ -29,8 +38,18 @@ public class SpecField {
         this.groupedInstances = groupedInstances;
         this.ensureOrder = ensureOrder;
         this.fieldFilter = fieldFilter;
+        this.customDirectives = customDirectives;
     }
 
+    public boolean isDirectChild(){
+        return !hasSubFields() && traversePath.size()<2;
+    }
+
+
+    public boolean hasSubFields(){
+        //TODO check how to handle merges
+        return fields!=null && !fields.isEmpty();
+    }
 
 
     public String getGroupedInstances() {
@@ -95,6 +114,17 @@ public class SpecField {
     }
 
 
+    public boolean hasGrouping(){
+        if(groupedInstances!=null && !groupedInstances.isEmpty() && fields!=null && !fields.isEmpty()){
+            for (SpecField field : fields) {
+                if(field.isGroupby()){
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     public boolean hasNestedGrouping(){
         if(fields!=null && !fields.isEmpty()){
             for (SpecField field : fields) {
@@ -105,4 +135,13 @@ public class SpecField {
         }
         return false;
     }
+
+    public List<SpecField> getSubFieldsWithSort(){
+        if(fields!=null && !fields.isEmpty()){
+            return fields.stream().filter(SpecField::isSortAlphabetically).collect(Collectors.toList());
+        }
+        return Collections.emptyList();
+
+    }
+
 }

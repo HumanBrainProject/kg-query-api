@@ -45,6 +45,7 @@ public class HBPVocabulary {
     public final static String INFERENCE_ALTERNATIVES = INFERENCE_TYPE.toLowerCase()+"/alternatives";
     public final static String INFERENCE_ALTERNATIVES_VALUE = INFERENCE_ALTERNATIVES.toLowerCase()+"/value";
     public final static String INFERENCE_ALTERNATIVES_USERIDS = INFERENCE_ALTERNATIVES.toLowerCase()+"/userIds";
+    public final static String INFERENCE_ALTERNATIVES_SELECTED = INFERENCE_ALTERNATIVES.toLowerCase()+"/selected";
 
 
     //FOR SPATIAL
