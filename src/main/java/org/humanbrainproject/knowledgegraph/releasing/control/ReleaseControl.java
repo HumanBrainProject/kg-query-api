@@ -218,7 +218,7 @@ public class ReleaseControl {
                 //Find release instance
                 Set<NexusInstanceReference> releases = nativeRepository.findOriginalIdsWithLinkTo(ArangoDocumentReference.fromNexusInstance(fromUrl), ArangoCollectionReference.fromFieldName(HBPVocabulary.RELEASE_INSTANCE));
                 for (NexusInstanceReference nexusInstanceReference : releases) {
-                    Integer currentRevision = nativeRepository.getCurrentRevision(ArangoDocumentReference.fromNexusInstance(fromUrl));
+                    Integer currentRevision = nativeRepository.getCurrentRevision(ArangoDocumentReference.fromNexusInstance(nexusInstanceReference));
                     nexusInstanceReference.setRevision(currentRevision);
                     instanceManipulationController.deprecateInstanceByNexusId(nexusInstanceReference);
                 }
