@@ -203,8 +203,9 @@ public class ReleaseControl {
         payload.addReference(HBPVocabulary.RELEASE_INSTANCE, configuration.getAbsoluteUrl(instanceReference));
         payload.put(HBPVocabulary.RELEASE_REVISION, revision);
         payload.addType(HBPVocabulary.RELEASE_TYPE);
+        NexusInstanceReference originalId = nativeRepository.findOriginalId(instanceReference);
         NexusSchemaReference releaseSchema = new NexusSchemaReference("releasing", "prov", "release", "v0.0.2");
-        NexusInstanceReference instance = instanceManipulationController.createInstanceByIdentifier(releaseSchema, instanceReference.getFullId(false), payload, null);
+        NexusInstanceReference instance = instanceManipulationController.createInstanceByIdentifier(releaseSchema, originalId.getFullId(false), payload, null);
         return new IndexingMessage(instance, jsonTransformer.getMapAsJson(payload), null, null);
     }
 
@@ -215,8 +216,9 @@ public class ReleaseControl {
             Object relativeUrl = document.get(ArangoVocabulary.NEXUS_RELATIVE_URL);
             if (relativeUrl != null) {
                 NexusInstanceReference fromUrl = NexusInstanceReference.createFromUrl((String) relativeUrl);
+                NexusInstanceReference originalFrom = nativeRepository.findOriginalId(fromUrl);
                 //Find release instance
-                Set<NexusInstanceReference> releases = nativeRepository.findOriginalIdsWithLinkTo(ArangoDocumentReference.fromNexusInstance(fromUrl), ArangoCollectionReference.fromFieldName(HBPVocabulary.RELEASE_INSTANCE));
+                Set<NexusInstanceReference> releases = nativeRepository.findOriginalIdsWithLinkTo(databaseFactory.getInferredDB(), ArangoDocumentReference.fromNexusInstance(originalFrom), ArangoCollectionReference.fromFieldName(HBPVocabulary.RELEASE_INSTANCE));
                 for (NexusInstanceReference nexusInstanceReference : releases) {
                     Integer currentRevision = nativeRepository.getCurrentRevision(ArangoDocumentReference.fromNexusInstance(nexusInstanceReference));
                     nexusInstanceReference.setRevision(currentRevision);
