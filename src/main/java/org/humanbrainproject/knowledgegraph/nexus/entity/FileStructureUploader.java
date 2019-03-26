@@ -1,192 +1,169 @@
 package org.humanbrainproject.knowledgegraph.nexus.entity;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.solr.client.solrj.SolrServerException;
-import org.glassfish.jersey.internal.guava.Predicates;
 import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationContext;
+import org.humanbrainproject.knowledgegraph.commons.authorization.control.DefaultAuthorizationContext;
+import org.humanbrainproject.knowledgegraph.commons.authorization.entity.Credential;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusClient;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusRelativeUrl;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
 import org.humanbrainproject.knowledgegraph.instances.control.SchemaController;
-import org.humanbrainproject.knowledgegraph.query.boundary.ArangoQuery;
 import org.humanbrainproject.knowledgegraph.query.entity.JsonDocument;
-import org.humanbrainproject.knowledgegraph.query.entity.Query;
-import org.humanbrainproject.knowledgegraph.query.entity.QueryResult;
-import org.springframework.boot.configurationprocessor.json.JSONException;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 
-import javax.ws.rs.BadRequestException;
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.logging.Logger;
 
 public class FileStructureUploader {
 
-    private FileStructureData data;
+    private final UploadStatus status;
+    private NexusDataStructure data;
     private NexusClient nexusClient;
     private SchemaController schemaController;
-    private ArangoQuery arangoQuery;
-    private AuthorizationContext authorizationContext;
 
-    private List<String> toDelete = new ArrayList<>();
-    private Map<NexusSchemaReference, List<File>> toCreate = new HashMap<>();
-    private Map<String, File> toUpdate = new HashMap<>();
+    private Credential credential;
+    private boolean noDeletion;
+    private FileStructureDataExtractor fileStructureDataExtractor;
+    private final Integer MAX_TRIES = 5;
 
-    private Set<NexusSchemaReference> schemasConcerned = new HashSet(); // Redundant?
-    private Map<NexusSchemaReference, Set<File>> filesToHandle = new HashMap();
+    private org.slf4j.Logger logger = LoggerFactory.getLogger(FileStructureUploader.class);
 
-    private Query query(NexusSchemaReference ref){
-        return new Query("{" +
-                "  \"@context\": {" +
-                "    \"@vocab\": \"https://schema.hbp.eu/graphQuery/\"," +
-                "    \"query\": \"https://schema.hbp.eu/myQuery/\"," +
-                "    \"fieldname\": {" +
-                "      \"@id\": \"fieldname\"," +
-                "      \"@type\": \"@id\"" +
-                "    }," +
-                "    \"relative_path\": {" +
-                "      \"@id\": \"relative_path\"," +
-                "      \"@type\": \"@id\"" +
-                "    }" +
-                "  }," +
-                "  \"fields\": [" +
-                "    {" +
-                "      \"fieldname\": \"query:identifier\"," +
-                "      \"relative_path\": {" +
-                "        \"@id\": \"http://schema.org/identifier\"" +
-                "      }," +
-                "      \"required\":true" +
-                "    }," +
-                "    {" +
-                "      \"fieldname\": \"query:uuid\"," +
-                "      \"relative_path\": {" +
-                "        \"@id\": \"https://schema.hbp.eu/relativeUrl\"" +
-                "      }," +
-                "      \"required\":true" +
-                "    }" +
-                "  ]" +
-                "}", ref, "https://schema.hbp.eu/myQuery/");
-    }
-
-
-
-    // TODO Add retry mechanism
-    public FileStructureUploader(FileStructureData data, NexusClient nexusClient, SchemaController schemaController,
-                                 ArangoQuery arangoQuery, AuthorizationContext authorizationContext){
+    public FileStructureUploader(NexusDataStructure data, SchemaController schemaController, NexusClient nexusClient,
+                                 Credential credential,FileStructureDataExtractor fileStructureDataExtractor, boolean noDeletion ){
         this.data = data;
-        this.nexusClient = nexusClient;
         this.schemaController = schemaController;
-        this.arangoQuery = arangoQuery;
-        this.authorizationContext = authorizationContext;
+        this.nexusClient = nexusClient;
+        this.credential = credential;
+        this.noDeletion = noDeletion;
+        this.fileStructureDataExtractor = fileStructureDataExtractor;
+        this.status = new UploadStatus();
     }
 
-    public void uploadData() throws IOException, JSONException, SolrServerException {
-        File[] files = this.data.listFiles();
-        for (File file : files) {
-            handleOrgDirectory(file);
+    public void uploadData() throws IOException, InterruptedException {
+        this.status.setInitial(this.data.getToDelete().size(), this.data.getToCreate().entrySet()
+                .stream().mapToInt(entry -> entry.getValue().size()).sum(), this.data.getToUpdate().size());
+        for(NexusSchemaReference s: this.data.getSchemasConcerned()){
+            this.schemaController.createSchema(s, this.schemaController.createSimpleSchema(s), this.credential);
         }
-        // Creating map id
-        this.fetchingCurrentIdentifiers();
-        for(NexusSchemaReference s: this.schemasConcerned){
-            this.schemaController.createSchema(s);
+        this.status.setStatus(UploadStatus.Status.PROCESSING);
+        if(!this.noDeletion) {
+            this.withRetry(0, this.data.getToDelete(), this::executeDelete, true);
         }
+        this.withRetry(0, this.data.getToUpdate(), this::executeUpdate, true);
+        this.withRetry(0, this.data.getToCreate(), this::executeCreate, true);
+        this.status.setStatus(UploadStatus.Status.DONE);
+    }
 
-        if(!data.isNoDeletion()){
-            for(String s: this.toDelete){
-                NexusRelativeUrl url = new NexusRelativeUrl(NexusConfiguration.ResourceType.DATA, s);
-                JsonDocument doc = this.nexusClient.get(url, this.authorizationContext.getCredential());
-                Integer rev = doc.getNexusRevision();
-                this.nexusClient.delete(url, rev,this.authorizationContext.getCredential());
+    public UploadStatus getStatus(){
+        return this.status;
+    }
+
+    public FileStructureDataExtractor getFileStructureDataExtractor() {
+        return fileStructureDataExtractor;
+    }
+
+
+    @FunctionalInterface
+    public interface CheckedFunction<T, R> {
+        R apply(T t, int f) throws IOException;
+    }
+
+    protected <T> T withRetry(Integer tries, T listToExecute, CheckedFunction<T, T> execute, boolean hasRetryDelay)  throws IOException, InterruptedException{
+        boolean shouldContinue = true;
+        T errors = null;
+        while(tries < this.MAX_TRIES && shouldContinue) {
+            errors = execute.apply(listToExecute, 0);
+            if(errors == null){
+                shouldContinue = false;
+            }else{
+                listToExecute = errors;
+                tries += 1;
+            }
+            if(hasRetryDelay){
+                logger.debug("Retrying in " + 6 * tries + " seconds");
+                Thread.sleep(6000 * tries);
             }
         }
+        return errors;
+    }
 
-        for(Map.Entry<String, File> el: this.toUpdate.entrySet()){
+    protected final List<String> executeDelete(List<String> toDelete, int successfullyProcessed){
+        List<String> errors = new ArrayList<>();
+        for(String s: toDelete){
+            NexusRelativeUrl url = new NexusRelativeUrl(NexusConfiguration.ResourceType.DATA, s);
+            JsonDocument doc = this.nexusClient.get(url, this.credential);
+            Integer rev = doc.getNexusRevision();
+            boolean result = this.nexusClient.delete(url, rev,this.credential);
+            if(!result){
+                errors.add(s);
+            }else{
+                successfullyProcessed += 1;
+            }
+            this.status.setCurrentToDelete(successfullyProcessed, errors.size());
+        }
+        if(errors.isEmpty()){
+            return null;
+        }else{
+            return errors;
+        }
+    }
+
+    protected final Map<String, File> executeUpdate(Map <String, File> toUpdate, int successfullyProcessed) throws IOException {
+        Map<String, File> errors = new HashMap<>();
+        for(Map.Entry<String, File> el: toUpdate.entrySet()){
             NexusRelativeUrl url = new NexusRelativeUrl(NexusConfiguration.ResourceType.DATA, el.getKey());
-            JsonDocument doc = this.nexusClient.get(url, this.authorizationContext.getCredential());
+            JsonDocument doc = this.nexusClient.get(url, this.credential);
             Integer rev = doc.getNexusRevision();
             ObjectMapper mapper = new ObjectMapper();
             Map<String, Object> json = mapper.readValue(el.getValue(), Map.class);
-            this.nexusClient.put(url, rev, json, this.authorizationContext.getCredential());
+            JsonDocument res = this.nexusClient.put(url, rev, json, this.credential);
+            if(res == null){
+                errors.put(el.getKey(), el.getValue());
+            }else{
+                successfullyProcessed += 1;
+            }
+            this.status.setCurrentToUpdate(successfullyProcessed, errors.size());
         }
+        if(errors.isEmpty()){
+            return null;
+        }else{
+            return errors;
+        }
+    }
 
-        for(Map.Entry<NexusSchemaReference, List<File>> el: this.toCreate.entrySet()){
-            for(File f: el.getValue()){
+    protected final Map<NexusSchemaReference, List<File>> executeCreate(Map<NexusSchemaReference, List<File>> toCreate, int successfullyProcessed) throws IOException{
+        Map<NexusSchemaReference, List<File>> errors = new HashMap<>();
+        for(Map.Entry<NexusSchemaReference, List<File>> el: toCreate.entrySet()) {
+            List<File> fileErrors = new ArrayList<>();
+            for (File f : el.getValue()) {
                 NexusRelativeUrl url = new NexusRelativeUrl(NexusConfiguration.ResourceType.DATA, el.getKey().toString());
                 ObjectMapper mapper = new ObjectMapper();
                 Map<String, Object> json = mapper.readValue(f, Map.class);
-                this.nexusClient.post(url, null, json, this.authorizationContext.getCredential());
-            }
-        }
-    }
-
-    // TODO Optimize all filters can be done in one pass par schema
-    protected void fetchingCurrentIdentifiers() throws JSONException, SolrServerException, IOException {
-        for(NexusSchemaReference r: this.schemasConcerned){
-            QueryResult<List<Map>> result = this.arangoQuery.queryPropertyGraphBySpecification(this.query(r));
-            Map<String, String> elements = new HashMap<>();
-            result.getResults().stream().forEach(i -> elements.put( (String) i.get("identifier"), (String) i.get("uuid")));
-            this.toDelete.addAll(elements.keySet().stream().filter(Predicates.in(
-                    new HashSet<>(this.filesToHandle.get(r).stream().map(file -> file.getName().replace(".json", ""))
-                            .collect(Collectors.toList()))).negate()).map(elements::get).collect(Collectors.toList()));
-            this.toCreate.put(r, this.filesToHandle.get(r).stream().filter( f -> !elements.containsKey(f.getName().replace(".json", ""))).collect(Collectors.toList()));
-            this.filesToHandle.get(r).stream().filter( f -> elements.containsKey(f.getName().replace(".json", ""))).forEach(e -> this.toUpdate.put(elements.get(e.getName().replace(".json", "") ), e));
-        }
-    }
-
-    protected void handleOrgDirectory(File file){
-        if(file.isDirectory()){
-            for(File projectFolder : file.listFiles()){
-                handleProjectFolder(projectFolder, file.getName());
-            }
-        } else {
-            throw new BadRequestException("Cannot interprete organization folder structure");
-        }
-    }
-
-    protected void handleProjectFolder(File file, String org){
-        if(file.isDirectory()){
-            for(File schemaFolder : file.listFiles()){
-                handleSchemaFolder(schemaFolder, org, file.getName());
-            }
-        } else {
-            throw new BadRequestException("Cannot interprete project folder structure");
-        }
-    }
-
-    protected void handleSchemaFolder(File file, String org, String project){
-        if(file.isDirectory()){
-            if(file.getName().equals("_")) {
-                throw new NotImplementedException();
-            }else {
-                for (File schemaVersionOrFile : file.listFiles()) {
-                    if (schemaVersionOrFile.isDirectory()) {
-                        NexusSchemaReference ref = new NexusSchemaReference(org, project,file.getName(), schemaVersionOrFile.getName());
-                        schemasConcerned.add(ref);
-                        File schemaJsonFile = Arrays.stream(schemaVersionOrFile.listFiles()).filter(f -> f.getName().equals("schema.json")).findAny().orElse(null);
-                        handleSchemaUpload(schemaJsonFile, ref);
-                        for (File jsonFile : schemaVersionOrFile.listFiles()) {
-                            if(!jsonFile.getName().equals("schema.json")){
-                                handleJsonFile(jsonFile, ref);
-                            }
-                        }
-                    } else {
-                        throw new NotImplementedException();
-                    }
+                JsonDocument res = this.nexusClient.post(url, null, json, this.credential);
+                if (res == null) {
+                    fileErrors.add(f);
+                } else {
+                    successfullyProcessed += 1;
                 }
+                this.status.setCurrentToCreate(successfullyProcessed, errors.size());
             }
-        } else {
-            throw new BadRequestException("Cannot interprete schema folder structure");
+            if (!fileErrors.isEmpty()) {
+                errors.put(el.getKey(), fileErrors);
+            }
+        }
+        if(errors.isEmpty()){
+            return null;
+        }else{
+            return errors;
         }
     }
-    protected void handleSchemaUpload(File file, NexusSchemaReference ref){
 
-    }
 
-    protected void handleJsonFile(File file, NexusSchemaReference ref){
-        Set<File> s = this.filesToHandle.getOrDefault(ref, new HashSet());
-        s.add(file);
-        filesToHandle.put(ref, s);
-    }
 }

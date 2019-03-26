@@ -26,3 +26,23 @@ GoDownALevel[Go down a level in the structure];
 UploadFiles[Upload all *.json];
 ```
 
+## Actor Management
+
+### Requesting an upload
+```mermaid
+sequenceDiagram;
+
+ApiUploadRequest->>ActorManager: Create new upload actor;
+ActorManager->>UploadActor: Init(uuid: String);
+ActorManager-->>ApiUploadRequest: Created new endpoint with uuid;
+```
+
+### Requesting a status
+```mermaid
+sequenceDiagram;
+
+ApiStatusRequest->>ActorManager: Fetch status by uuid;
+ActorManager->>UplaodActor: Request status;
+UplaodActor-->>ActorManager: status;
+ActorManager-->>ApiStatusRequest: status;
+```

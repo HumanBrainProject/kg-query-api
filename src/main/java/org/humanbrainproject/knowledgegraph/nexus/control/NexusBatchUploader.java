@@ -1,66 +1,59 @@
 package org.humanbrainproject.knowledgegraph.nexus.control;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.solr.client.solrj.SolrServerException;
-import org.glassfish.jersey.internal.guava.Predicates;
-import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationContext;
-import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusClient;
-import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
-import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusRelativeUrl;
-import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
-import org.humanbrainproject.knowledgegraph.instances.control.SchemaController;
-import org.humanbrainproject.knowledgegraph.nexus.entity.FileStructureData;
+import akka.actor.ActorRef;
+import akka.actor.ActorSystem;
+import akka.pattern.Patterns;
+import akka.util.Timeout;
 import org.humanbrainproject.knowledgegraph.nexus.entity.FileStructureUploader;
-import org.humanbrainproject.knowledgegraph.query.boundary.ArangoQuery;
-import org.humanbrainproject.knowledgegraph.query.entity.JsonDocument;
-import org.humanbrainproject.knowledgegraph.query.entity.Query;
-import org.humanbrainproject.knowledgegraph.query.entity.QueryResult;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.humanbrainproject.knowledgegraph.nexus.entity.UploadActorManager;
+import org.humanbrainproject.knowledgegraph.nexus.entity.UploadStatus;
+import org.humanbrainproject.knowledgegraph.nexus.entity.actormsg.CacheEviction;
+import org.humanbrainproject.knowledgegraph.nexus.entity.actormsg.CreateUploadActorMsg;
+import org.humanbrainproject.knowledgegraph.nexus.entity.actormsg.GetStatusMsg;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.configurationprocessor.json.JSONException;
+import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
+import scala.concurrent.Await;
+import scala.concurrent.Future;
 
-import javax.ws.rs.BadRequestException;
-import javax.ws.rs.InternalServerErrorException;
-import java.io.File;
-import java.io.IOException;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.time.Duration;
+import java.util.UUID;
 
 @Component
+@EnableScheduling
 public class NexusBatchUploader {
 
     @Autowired
-    AuthorizationContext authorizationContext;
+    private ActorSystem actorSystem;
 
-    @Autowired
-    ArangoQuery arangoQuery;
+    private ActorRef actorManager = null;
 
-    @Autowired
-    NexusClient nexusClient;
-
-    @Autowired
-    SchemaController schemaController;
-
-    private Logger log = LoggerFactory.getLogger(NexusBatchUploader.class);
-
-    public void uploadFileStructure(FileStructureData data){
-        try{
-            new FileStructureUploader(data, nexusClient, schemaController, arangoQuery, authorizationContext).uploadData();
-        } catch (IOException e){
-            log.error(String.format("Could not save zip structure %s", e.getMessage() ));
-            throw new InternalServerErrorException("Could not upload file");
-        } catch (JSONException e){
-            throw new InternalServerErrorException("Could not execute query");
-        } catch (SolrServerException e){
-            throw new InternalServerErrorException("Could not properly fetch data");
+    private ActorRef getActorManager(){
+        if(actorManager == null){
+            actorManager = actorSystem.actorOf(UploadActorManager.props(), "UploadActorManager");
         }
-
-
+        return actorManager;
     }
 
+    public void uploadFileStructure(UUID uuid, FileStructureUploader uploader) {
+        getActorManager().tell(new CreateUploadActorMsg(uuid, uploader), ActorRef.noSender());
+    }
 
+    public UploadStatus retrieveStatus(UUID uuid) throws Exception {
+        Timeout timeout = Timeout.create(Duration.ofSeconds(5));
+        Future<Object> future = Patterns.ask(getActorManager(), new GetStatusMsg(uuid), timeout);
+        Object o = Await.result(future, timeout.duration());
+        if(o instanceof UploadStatus){
+            return (UploadStatus) o;
+        }else{
+            return null;
+        }
+    }
+
+    @Scheduled(fixedDelay = 10 * 60 * 1000, initialDelay = 5000)
+    public void evictCache(){
+        getActorManager().tell(new CacheEviction(), ActorRef.noSender());
+    }
 
 }

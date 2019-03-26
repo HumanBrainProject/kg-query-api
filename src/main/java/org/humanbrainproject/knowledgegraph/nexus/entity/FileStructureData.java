@@ -15,13 +15,12 @@ import java.util.zip.ZipInputStream;
 public class FileStructureData {
 
     private final ZipInputStream data;
-    private final boolean noDeletion;
     private final Path tmpPath;
+    private final UUID generatedId;
 
-    public FileStructureData(ZipInputStream data,  boolean noDeletion){
+    public FileStructureData(ZipInputStream data){
         this.data = data;
-        this.noDeletion = noDeletion;
-        UUID generatedId = UUID.randomUUID();
+        generatedId = UUID.randomUUID();
         this.tmpPath = Paths.get(String.format("/tmp/nexusUpload/%s", generatedId.toString()));
     }
 
@@ -61,6 +60,10 @@ public class FileStructureData {
         return this.tmpPath.toFile().listFiles();
     }
 
+    public UUID getGeneratedId() {
+        return generatedId;
+    }
+
     public void cleanData() throws IOException{
         Files.walk(this.tmpPath)
                 .sorted(Comparator.reverseOrder())
@@ -68,7 +71,4 @@ public class FileStructureData {
                 .forEach(File::delete);
     }
 
-    public boolean isNoDeletion() {
-        return noDeletion;
-    }
 }

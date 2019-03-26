@@ -58,7 +58,7 @@ public class FileStructureDataTest {
             Files.createDirectories(Paths.get(zipDirectory));
             zipFolder(Paths.get(directory).toFile(), outputFile.toFile());
             FileInputStream fStream = new FileInputStream(outputFile.toFile());
-            FileStructureData fs = new FileStructureData(new ZipInputStream(fStream), false);
+            FileStructureData fs = new FileStructureData(new ZipInputStream(fStream));
             File[] files = fs.listFiles();
             assert files.length == 1;
             fs.cleanData();
