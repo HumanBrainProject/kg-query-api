@@ -150,7 +150,7 @@ public class InstancesInternalAPI {
         }
     }
 
-    @GetMapping(value = "/{"+ORG+"}/{"+DOMAIN+"}/{"+SCHEMA+"}/{"+VERSION+"}/links/{linked"+ORG+"}/{linked"+ DOMAIN+"}/{linked"+SCHEMA+"}/{linked"+VERSION+"}/{linked"+ID+"}/{link"+ORG+"}/{link"+DOMAIN+"}/{link"+SCHEMA+"}/{link"+VERSION+"}")
+    @GetMapping(value = "/{"+ORG+"}/{"+DOMAIN+"}/{"+SCHEMA+"}/{"+VERSION+"}/{"+ID+"}/links/{linked"+ORG+"}/{linked"+ DOMAIN+"}/{linked"+SCHEMA+"}/{linked"+VERSION+"}/{linked"+ID+"}/{link"+ORG+"}/{link"+DOMAIN+"}/{link"+SCHEMA+"}/{link"+VERSION+"}")
     public ResponseEntity<List<Map>> getLinkingInstances(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(ID) String id, @PathVariable("linked"+ORG) String linkedOrg, @PathVariable("linked"+DOMAIN) String linkedDomain, @PathVariable("linked"+SCHEMA) String linkedSchema, @PathVariable("linked"+VERSION) String linkedVersion, @PathVariable("linked"+ID) String linkedId, @PathVariable("link"+ORG) String linkOrg, @PathVariable("link"+DOMAIN) String linkDomain, @PathVariable("link"+SCHEMA) String linkSchema, @PathVariable("link"+VERSION) String linkVersion, @ApiParam(DATABASE_SCOPE_DOC) @RequestParam(value = DATABASE_SCOPE, required = false) DatabaseScope databaseScope, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken) {
         try {
             authorizationContext.populateAuthorizationContext(authorizationToken);

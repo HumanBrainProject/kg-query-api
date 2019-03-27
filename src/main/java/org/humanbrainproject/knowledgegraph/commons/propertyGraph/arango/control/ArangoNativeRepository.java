@@ -21,8 +21,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Component
@@ -43,11 +41,11 @@ public class ArangoNativeRepository {
     @Autowired
     ArangoRepository arangoRepository;
 
-    public Set<NexusInstanceReference> findOriginalIdsWithLinkTo(ArangoDocumentReference instanceReference, ArangoCollectionReference collectionReference) {
-        Set<ArangoCollectionReference> collections = databaseFactory.getDefaultDB().getCollections();
+    public Set<NexusInstanceReference> findOriginalIdsWithLinkTo(ArangoConnection connection, ArangoDocumentReference instanceReference, ArangoCollectionReference collectionReference) {
+        Set<ArangoCollectionReference> collections = connection.getCollections();
         if (collections.contains(instanceReference.getCollection()) && collections.contains(collectionReference)) {
             String query = queryFactory.queryOriginalIdForLink(instanceReference, collectionReference, authorizationContext.getReadableOrganizations());
-            List<String> ids = databaseFactory.getDefaultDB().getOrCreateDB().query(query, null, new AqlQueryOptions(), String.class).asListRemaining();
+            List<String> ids = connection.getOrCreateDB().query(query, null, new AqlQueryOptions(), String.class).asListRemaining();
             return ids.stream().filter(Objects::nonNull).map(NexusInstanceReference::createFromUrl).collect(Collectors.toSet());
         }
         return Collections.emptySet();
