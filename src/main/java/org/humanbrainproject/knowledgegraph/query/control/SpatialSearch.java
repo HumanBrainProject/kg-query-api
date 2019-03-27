@@ -7,23 +7,35 @@ import org.humanbrainproject.knowledgegraph.commons.solr.Solr;
 import org.humanbrainproject.knowledgegraph.query.entity.BoundingBox;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.web.context.annotation.RequestScope;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 @Component
+@RequestScope
 @Tested
 public class SpatialSearch {
 
     @Autowired
     Solr solr;
 
-    public Set<ArangoDocumentReference> minimalBoundingBox(BoundingBox box) throws IOException, SolrServerException {
-        List<String> ids = solr.queryIdsOfMinimalBoundingBox(box);
-        return ids.stream().map(ArangoDocumentReference::fromId).collect(Collectors.toSet());
-    }
+    private Map<BoundingBox, Set<ArangoDocumentReference>> cache = new HashMap<>();
 
+    public Set<ArangoDocumentReference> minimalBoundingBox(BoundingBox box) throws IOException, SolrServerException {
+        if(cache.get(box)!=null){
+            return cache.get(box);
+        }
+        else {
+            List<String> ids = solr.queryIdsOfMinimalBoundingBox(box);
+            Set<ArangoDocumentReference> references = ids.stream().map(ArangoDocumentReference::fromId).collect(Collectors.toSet());
+            cache.put(box, references);
+            return references;
+        }
+    }
 
 }

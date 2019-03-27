@@ -12,7 +12,6 @@ public class Filter {
 
     private List<String> restrictToOrganizations;
     private List<String> restrictToIds;
-    private BoundingBox boundingBox;
 
     private String queryString;
 
@@ -49,14 +48,6 @@ public class Filter {
         return restrictToIds;
     }
 
-    public BoundingBox getBoundingBox() {
-        return boundingBox;
-    }
-
-    public Filter setBoundingBox(BoundingBox boundingBox) {
-        this.boundingBox = boundingBox;
-        return this;
-    }
 
 
 }

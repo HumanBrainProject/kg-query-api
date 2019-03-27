@@ -17,6 +17,7 @@ import java.text.ParseException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class ReconciliationTest {
 
@@ -77,9 +78,9 @@ public class ReconciliationTest {
         Map alternatives = (HashMap) doc.get(HBPVocabulary.INFERENCE_ALTERNATIVES);
         List<Alternative> altNames = (List<Alternative>) alternatives.get("name");
         List<Alternative> alts = (List<Alternative>) alternatives.get("desc");
-        Assert.assertEquals( null, alternatives.get("activity"));
-        Assert.assertEquals(2, alts.size());
-        Assert.assertEquals(1, altNames.size());
+        Assert.assertNotEquals( null, alternatives.get("activity"));
+        Assert.assertEquals(3, alts.size());
+        Assert.assertEquals(2, altNames.size());
 
     }
 
@@ -118,7 +119,7 @@ public class ReconciliationTest {
         Assert.assertNotEquals(doc, null);
         Assert.assertEquals( "test 2", doc.get("name"));
         Map alternatives = (HashMap) doc.get(HBPVocabulary.INFERENCE_ALTERNATIVES);
-        List<Alternative> altNames = (List<Alternative>) alternatives.get("name");
+        List<Alternative> altNames = ((List<Alternative>) alternatives.get("name")).stream().filter(al -> !al.getIsSelected()).collect(Collectors.toList());
         Assert.assertEquals(1, altNames.size());
         Assert.assertEquals("test 1",  altNames.get(0).getValue());
         Assert.assertEquals(1,  altNames.get(0).getUserIds().size());
@@ -189,7 +190,7 @@ public class ReconciliationTest {
         Assert.assertNotEquals(doc, null);
         Assert.assertEquals( "test 1", doc.get("name"));
         Map alternatives = (HashMap) doc.get(HBPVocabulary.INFERENCE_ALTERNATIVES);
-        List<Alternative> altNames = (List<Alternative>) alternatives.get("name");
+        List<Alternative> altNames = ((List<Alternative>) alternatives.get("name")).stream().filter(al -> !al.getIsSelected()).collect(Collectors.toList());
         Assert.assertEquals(1, altNames.size());
         Alternative a = altNames.get(0);
         Assert.assertEquals("test 2", a.getValue());

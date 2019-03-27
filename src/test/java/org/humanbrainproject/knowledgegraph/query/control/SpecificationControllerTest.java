@@ -1,10 +1,9 @@
 package org.humanbrainproject.knowledgegraph.query.control;
 
+import org.apache.solr.client.solrj.SolrServerException;
 import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationContext;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoRepository;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.query.SpecificationQuery;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
 import org.humanbrainproject.knowledgegraph.context.QueryContext;
 import org.humanbrainproject.knowledgegraph.query.entity.Filter;
 import org.humanbrainproject.knowledgegraph.query.entity.Query;
@@ -17,6 +16,7 @@ import org.junit.Test;
 import org.mockito.Mockito;
 import org.springframework.boot.configurationprocessor.json.JSONException;
 
+import java.io.IOException;
 import java.util.*;
 
 public class SpecificationControllerTest {
@@ -34,53 +34,32 @@ public class SpecificationControllerTest {
     }
 
 
-    @Test
-    public void reflectSpecificationWithSingleResponse() throws JSONException {
-        QueryResult fakeResult = Mockito.mock(QueryResult.class);
-        Mockito.doReturn(Collections.singletonList(new HashMap<>())).when(fakeResult).getResults();
-        Query query = new Query("foo", TestObjectFactory.fooInstanceReference().getNexusSchema(), "fooVocab");
-        Mockito.doReturn(fakeResult).when(this.specificationController.specificationQuery).query(Mockito.any());
-
-        Map map = this.specificationController.reflectSpecification(Mockito.mock(Specification.class), query);
-        Assert.assertTrue(map.isEmpty());
-    }
-
-
     @Test(expected = RuntimeException.class)
     public void reflectSpecificationWithMultipleResponses() throws JSONException {
-        QueryResult fakeResult = Mockito.mock(QueryResult.class);
-        Mockito.doReturn(Arrays.asList(new HashMap<>(), new HashMap<>())).when(fakeResult).getResults();
+        Map fakeResult = Mockito.mock(Map.class);
         Query query = new Query("foo", TestObjectFactory.fooInstanceReference().getNexusSchema(), "fooVocab");
-        Mockito.doReturn(fakeResult).when(this.specificationController.specificationQuery).query(Mockito.any());
-        this.specificationController.reflectSpecification(Mockito.mock(Specification.class), query);
+        Mockito.doReturn(Collections.singletonList(fakeResult)).when(this.specificationController.specificationQuery).queryForSimpleMap(Mockito.any());
+        this.specificationController.releaseTreeBySpecification(Mockito.mock(Specification.class), query, null);
     }
 
 
     @Test
     public void reflectSpecification() throws JSONException {
-        QueryResult fakeResult = Mockito.mock(QueryResult.class);
+        Map fakeResult = Mockito.mock(Map.class);
         Query query = new Query("foo", TestObjectFactory.fooInstanceReference().getNexusSchema(), "fooVocab");
-        Mockito.doReturn(fakeResult).when(this.specificationController.specificationQuery).query(Mockito.any());
-
-        Map map = this.specificationController.reflectSpecification(Mockito.mock(Specification.class), query);
-        Assert.assertNull(map);
+        Mockito.doReturn(Collections.singletonList(fakeResult)).when(this.specificationController.specificationQuery).queryForSimpleMap(Mockito.any());
+        Specification mock = Mockito.mock(Specification.class);
+        Mockito.doReturn(TestObjectFactory.fooInstanceReference().getNexusSchema().getRelativeUrl().getUrl()).when(mock).getRootSchema();
+        Map map = this.specificationController.releaseTreeBySpecification(mock, query, TestObjectFactory.fooInstanceReference());
+        Assert.assertEquals(fakeResult, map);
     }
 
 
     @Test
-    public void queryForSpecificationWithDocumentReferences() throws JSONException {
+    public void queryForSpecification() throws IOException, SolrServerException {
         QueryResult fakeResult = Mockito.mock(QueryResult.class);
-        Mockito.doReturn(fakeResult).when(this.specificationController.specificationQuery).query(Mockito.any());
-        QueryResult<List<Map>> listQueryResult = this.specificationController.queryForSpecification(Mockito.mock(Specification.class), Collections.singleton(new ArangoDocumentReference(new ArangoCollectionReference("foo"), "bar")), null, new Filter());
+        Mockito.doReturn(fakeResult).when(this.specificationController.specificationQuery).queryForData(Mockito.any(), Mockito.any(), Mockito.any());
+        QueryResult<List<Map>> listQueryResult = this.specificationController.queryForSpecification(Mockito.mock(Specification.class), null, new Filter());
         Assert.assertEquals(fakeResult, listQueryResult);
-    }
-
-    @Test
-    public void queryForSpecificationWithEmptyDocumentReferences() throws JSONException {
-        QueryResult<List<Map>> listQueryResult = this.specificationController.queryForSpecification(Mockito.mock(Specification.class), Collections.emptySet(), null, null);
-
-        Assert.assertTrue(listQueryResult.getSize()==0);
-        Assert.assertTrue(listQueryResult.getTotal()==0);
-        Assert.assertTrue(listQueryResult.getResults().isEmpty());
     }
 }

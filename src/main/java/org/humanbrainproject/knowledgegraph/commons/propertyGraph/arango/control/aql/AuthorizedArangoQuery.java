@@ -1,13 +1,13 @@
 package org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.aql;
 
 import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
+import org.humanbrainproject.knowledgegraph.commons.vocabulary.ArangoVocabulary;
 
 import java.util.Set;
 
 @ToBeTested(easy = true)
-public class AuthorizedArangoQuery extends UnauthorizedArangoQuery {
+public class AuthorizedArangoQuery extends AQL {
 
-    public final String WHITELIST_ALIAS = "whitelist";
 
     public AuthorizedArangoQuery(Set<String> permissionGroupsWithReadAccess){
         this(permissionGroupsWithReadAccess, false);
@@ -15,7 +15,7 @@ public class AuthorizedArangoQuery extends UnauthorizedArangoQuery {
 
     public AuthorizedArangoQuery(Set<String> permissionGroupsWithReadAccess, boolean subQuery) {
         if(!subQuery){
-            addLine("LET "+WHITELIST_ALIAS+"=[${"+WHITELIST_ALIAS+"}]");
+            addLine(trust("LET "+WHITELIST_ALIAS+"=[${"+WHITELIST_ALIAS+"}]"));
             setTrustedParameter(WHITELIST_ALIAS, listValues(permissionGroupsWithReadAccess));
         }
     }
@@ -23,7 +23,7 @@ public class AuthorizedArangoQuery extends UnauthorizedArangoQuery {
     @Override
     public AuthorizedArangoQuery addDocumentFilter(TrustedAqlValue documentAlias) {
         super.addDocumentFilter(documentAlias);
-        addLine("FILTER "+documentAlias.getValue()+"._permissionGroup IN "+WHITELIST_ALIAS);
+        addLine(trust("FILTER "+documentAlias.getValue()+"."+ ArangoVocabulary.PERMISSION_GROUP+" IN "+WHITELIST_ALIAS));
         return this;
     }
 }
