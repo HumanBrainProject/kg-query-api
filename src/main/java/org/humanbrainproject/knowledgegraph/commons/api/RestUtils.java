@@ -13,7 +13,6 @@ import java.util.Arrays;
 public class RestUtils {
 
     public static final String APPLICATION_LD_JSON = "application/ld+json";
-    public static final String APPLICATION_ZIP = "application/zip";
 
     public static String[] splitCommaSeparatedValues(String original){
         return original!=null ? Arrays.stream(original.split(",")).map(String::trim).toArray(String[]::new) : null;

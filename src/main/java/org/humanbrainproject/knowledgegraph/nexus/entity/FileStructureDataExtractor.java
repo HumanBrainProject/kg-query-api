@@ -1,27 +1,38 @@
 package org.humanbrainproject.knowledgegraph.nexus.entity;
 
-import com.typesafe.config.ConfigException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.glassfish.jersey.internal.guava.Predicates;
+import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonLdStandardization;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Tuple;
+import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
+import org.humanbrainproject.knowledgegraph.commons.vocabulary.SchemaOrgVocabulary;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
 import org.humanbrainproject.knowledgegraph.query.boundary.ArangoQuery;
 import org.humanbrainproject.knowledgegraph.query.entity.Query;
 import org.humanbrainproject.knowledgegraph.query.entity.QueryResult;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.configurationprocessor.json.JSONException;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import javax.ws.rs.BadRequestException;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class FileStructureDataExtractor {
 
+    private org.slf4j.Logger logger = LoggerFactory.getLogger(FileStructureUploader.class);
     private FileStructureData data;
-    private ArangoQuery arangoQuery;
     private Map<NexusSchemaReference, Set<File>> filesToHandle = new HashMap();
     private NexusDataStructure nexusDataStructure = new NexusDataStructure();
+    private ObjectMapper mapper = new ObjectMapper();
+
+
+
 
     private Query query(NexusSchemaReference ref){
         return new Query("{" +
@@ -51,42 +62,127 @@ public class FileStructureDataExtractor {
                 "        \"@id\": \"https://schema.hbp.eu/relativeUrl\"" +
                 "      }," +
                 "      \"required\":true" +
+                "    }," +
+                "    {" +
+                "      \"fieldname\": \"query:hashcode\"," +
+                "      \"relative_path\": {" +
+                "        \"@id\": \"https://schema.hbp.eu/internal/hashcode\"" +
+                "      }" +
                 "    }" +
                 "  ]" +
                 "}", ref, "https://schema.hbp.eu/myQuery/");
     }
 
 
-    public FileStructureDataExtractor(FileStructureData data, ArangoQuery arangoQuery){
+    public FileStructureDataExtractor(FileStructureData data){
         this.data = data;
-        this.arangoQuery = arangoQuery;
     }
 
-    public NexusDataStructure extractFile() throws IOException, SolrServerException, JSONException {
+    public NexusDataStructure extractFile(ArangoQuery query, JsonLdStandardization standardization) throws IOException, SolrServerException, JSONException, NoSuchAlgorithmException {
         File[] files = this.data.listFiles();
         for (File file : files) {
             handleOrgDirectory(file);
         }
         // Creating map id
-        this.fetchingCurrentIdentifiers();
-
+        this.fetchingCurrentIdentifiers(query, standardization);
         return this.nexusDataStructure;
 
     }
 
     // TODO Optimize all filters can be done in one pass par schema
-    protected void fetchingCurrentIdentifiers() throws JSONException, SolrServerException, IOException {
+    protected void fetchingCurrentIdentifiers(ArangoQuery query, JsonLdStandardization standardization) throws IOException, SolrServerException, JSONException, NoSuchAlgorithmException {
+
         for(NexusSchemaReference r: this.nexusDataStructure.getSchemasConcerned()){
-            QueryResult<List<Map>> result = this.arangoQuery.queryPropertyGraphBySpecification(this.query(r));
-            Map<String, String> elements = new HashMap<>();
-            result.getResults().stream().forEach(i -> elements.put( (String) i.get("identifier"), (String) i.get("uuid")));
-            elements.keySet().stream().filter(Predicates.in(
-                    new HashSet<>(this.filesToHandle.get(r).stream().map(file -> file.getName().replace(".json", ""))
-                            .collect(Collectors.toList()))).negate()).map(elements::get).forEach(e -> this.nexusDataStructure.addToDelete(e));
-            this.nexusDataStructure.addToCreate(r, this.filesToHandle.get(r).stream().filter( f -> !elements.containsKey(f.getName().replace(".json", ""))).collect(Collectors.toList()));
-            this.filesToHandle.get(r).stream().filter( f -> elements.containsKey(f.getName().replace(".json", ""))).forEach(e -> this.nexusDataStructure.addToUpdate(elements.get(e.getName().replace(".json", "") ), e));
+            QueryResult<List<Map>> result = query.queryPropertyGraphBySpecification(this.query(r));
+            Map<String, Tuple<String, String>> idToUUIDMap = new HashMap<>();
+            result.getResults().stream().forEach(i -> {
+                List<String> identifiers;
+                if(i.get("identifier") instanceof List){
+                    identifiers = (List<String>) i.get("identifier");
+                }else{
+                    identifiers = Collections.singletonList((String) i.get("identifier"));
+                }
+                identifiers.forEach(el -> idToUUIDMap.put( el, new Tuple((String) i.get("uuid"), (String) i.get("hashcode"))) );
+
+            });
+
+            List<String> identifierLocal = fillCreateAndUpdateList(this.filesToHandle, idToUUIDMap, r, standardization);
+            idToUUIDMap.entrySet().stream().forEach( entry -> {
+                if(!identifierLocal.contains(entry.getKey())){
+                    this.nexusDataStructure.addToDelete(entry.getValue().getValue1());
+                }
+            });
         }
     }
+
+    protected List<String> fillCreateAndUpdateList( Map<NexusSchemaReference, Set<File>> filesToHandle, Map<String, Tuple<String, String>> idToUUIDMap,
+                                                    NexusSchemaReference ref, JsonLdStandardization standardization) throws NoSuchAlgorithmException{
+        MessageDigest md = MessageDigest.getInstance("MD5");
+        List<String> identifierLocal = new ArrayList<>();
+        filesToHandle.getOrDefault(ref, new HashSet<File>()).stream().forEach( file -> {
+            try{
+                Map<String, Object> json = mapper.readValue(file, Map.class);
+                Map<String, Object> fullyQualifiedJson = standardization.fullyQualify(json);
+
+                Object identifier = fullyQualifiedJson.get(SchemaOrgVocabulary.IDENTIFIER);
+                List<String> identifierList;
+                if(identifier instanceof List){
+                    identifierList = (List<String>) identifier;
+                }else{
+                    identifierList = Collections.singletonList((String) identifier);
+                }
+                identifierLocal.addAll(identifierList);
+                String uuid = null;
+                String hashcode = null;
+                for(String id: identifierList){
+                    if(idToUUIDMap.get(id) != null){
+                        Tuple<String, String> t = idToUUIDMap.get(id);
+                        uuid = t.getValue1();
+                        hashcode = t.getValue2();
+                        break;
+                    }
+                }
+                String fileContent = fullyQualifiedJson.toString();
+                md.update(fileContent.getBytes());
+                // bytes to hex
+                StringBuilder checksum = new StringBuilder();
+                for (byte b : md.digest()) {
+                    checksum.append(String.format("%02x", b));
+                }
+                Gson gson = new Gson();
+                json.put(HBPVocabulary.INTERNAL_HASHCODE, checksum);
+                FileWriter fileWriter = null;
+                String content = gson.toJson(json);
+                try {
+                    fileWriter = new FileWriter(file);
+                    fileWriter.write(content);
+                } catch (Exception e){
+                    e.printStackTrace();
+                }finally {
+                    try {
+                        if (fileWriter != null) {
+                            fileWriter.flush();
+                            fileWriter.close();
+                        }
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+                if(uuid != null ){
+                    if(!checksum.toString().equals(hashcode)){
+                        this.nexusDataStructure.addToUpdate(uuid, file);
+                    }
+                }else{
+                    this.nexusDataStructure.addToCreate(ref, file);
+                }
+            } catch (IOException e){
+                e.printStackTrace();
+                logger.error("Could not open the file " + e.getMessage());
+            }
+        });
+        return identifierLocal;
+    }
+
     protected void handleOrgDirectory(File file){
         if(file.isDirectory()){
             for(File projectFolder : file.listFiles()){

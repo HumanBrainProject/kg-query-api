@@ -1,8 +1,6 @@
 package org.humanbrainproject.knowledgegraph.nexus.entity;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationContext;
-import org.humanbrainproject.knowledgegraph.commons.authorization.control.DefaultAuthorizationContext;
 import org.humanbrainproject.knowledgegraph.commons.authorization.entity.Credential;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusClient;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
@@ -11,7 +9,7 @@ import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaRef
 import org.humanbrainproject.knowledgegraph.instances.control.SchemaController;
 import org.humanbrainproject.knowledgegraph.query.entity.JsonDocument;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.client.HttpClientErrorException;
 
 import java.io.File;
 import java.io.IOException;
@@ -19,7 +17,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
 
 public class FileStructureUploader {
 
@@ -36,29 +33,43 @@ public class FileStructureUploader {
     private org.slf4j.Logger logger = LoggerFactory.getLogger(FileStructureUploader.class);
 
     public FileStructureUploader(NexusDataStructure data, SchemaController schemaController, NexusClient nexusClient,
-                                 Credential credential,FileStructureDataExtractor fileStructureDataExtractor, boolean noDeletion ){
+                                 Credential credential,FileStructureDataExtractor fileStructureDataExtractor, boolean noDeletion, boolean isSimulation){
         this.data = data;
         this.schemaController = schemaController;
         this.nexusClient = nexusClient;
         this.credential = credential;
         this.noDeletion = noDeletion;
         this.fileStructureDataExtractor = fileStructureDataExtractor;
-        this.status = new UploadStatus();
+        this.status = new UploadStatus(isSimulation);
     }
 
-    public void uploadData() throws IOException, InterruptedException {
-        this.status.setInitial(this.data.getToDelete().size(), this.data.getToCreate().entrySet()
-                .stream().mapToInt(entry -> entry.getValue().size()).sum(), this.data.getToUpdate().size());
-        for(NexusSchemaReference s: this.data.getSchemasConcerned()){
-            this.schemaController.createSchema(s, this.schemaController.createSimpleSchema(s), this.credential);
+    public void uploadData() throws IOException {
+        try {
+            this.status.setInitial(this.data.getToDelete().size(), this.data.getToCreate().values()
+                    .stream().mapToInt(List<File>::size).sum(), this.data.getToUpdate().size());
+            if(!this.status.isSimulation()){
+                for(NexusSchemaReference s: this.data.getSchemasConcerned()){
+                    this.schemaController.createSchema(s, this.schemaController.createSimpleSchema(s), this.credential);
+                }
+            }
+            this.status.setStatus(UploadStatus.Status.PROCESSING);
+            if(!this.noDeletion) {
+                this.withRetry(0, this.data.getToDelete(), this::executeDelete, true);
+            }
+            this.withRetry(0, this.data.getToUpdate(), this::executeUpdate, true);
+            this.withRetry(0, this.data.getToCreate(), this::executeCreate, true);
+            if(this.status.isSimulation()){
+                this.status.setMessage("Simulation successful");
+            }
+            this.status.setStatus(UploadStatus.Status.DONE);
+            this.status.setFinishedAt();
+
+        } catch (Exception e){
+            this.status.setStatus(UploadStatus.Status.FAILED);
+            logger.error(e.getMessage());
+            this.status.setMessage(e.getMessage());
+            this.fileStructureDataExtractor.cleanData();
         }
-        this.status.setStatus(UploadStatus.Status.PROCESSING);
-        if(!this.noDeletion) {
-            this.withRetry(0, this.data.getToDelete(), this::executeDelete, true);
-        }
-        this.withRetry(0, this.data.getToUpdate(), this::executeUpdate, true);
-        this.withRetry(0, this.data.getToCreate(), this::executeCreate, true);
-        this.status.setStatus(UploadStatus.Status.DONE);
     }
 
     public UploadStatus getStatus(){
@@ -68,7 +79,6 @@ public class FileStructureUploader {
     public FileStructureDataExtractor getFileStructureDataExtractor() {
         return fileStructureDataExtractor;
     }
-
 
     @FunctionalInterface
     public interface CheckedFunction<T, R> {
@@ -100,7 +110,12 @@ public class FileStructureUploader {
             NexusRelativeUrl url = new NexusRelativeUrl(NexusConfiguration.ResourceType.DATA, s);
             JsonDocument doc = this.nexusClient.get(url, this.credential);
             Integer rev = doc.getNexusRevision();
-            boolean result = this.nexusClient.delete(url, rev,this.credential);
+            boolean result = false;
+            if(!this.status.isSimulation()){
+                result = this.nexusClient.delete(url, rev,this.credential);
+            }else{
+                result = true;
+            }
             if(!result){
                 errors.add(s);
             }else{
@@ -123,7 +138,16 @@ public class FileStructureUploader {
             Integer rev = doc.getNexusRevision();
             ObjectMapper mapper = new ObjectMapper();
             Map<String, Object> json = mapper.readValue(el.getValue(), Map.class);
-            JsonDocument res = this.nexusClient.put(url, rev, json, this.credential);
+            JsonDocument res = null;
+            if(!this.status.isSimulation()){
+                try{
+                    res =this.nexusClient.put(url, rev, json, this.credential);
+                } catch (HttpClientErrorException e){
+                    res = null;
+                }
+            }else{
+                res = new JsonDocument();
+            }
             if(res == null){
                 errors.put(el.getKey(), el.getValue());
             }else{
@@ -146,7 +170,16 @@ public class FileStructureUploader {
                 NexusRelativeUrl url = new NexusRelativeUrl(NexusConfiguration.ResourceType.DATA, el.getKey().toString());
                 ObjectMapper mapper = new ObjectMapper();
                 Map<String, Object> json = mapper.readValue(f, Map.class);
-                JsonDocument res = this.nexusClient.post(url, null, json, this.credential);
+                JsonDocument res = null;
+                if(!this.status.isSimulation()) {
+                    try{
+                        res = this.nexusClient.post(url, null, json, this.credential);
+                    } catch (HttpClientErrorException e){
+                        res = null;
+                    }
+                }else{
+                    res = new JsonDocument();
+                }
                 if (res == null) {
                     fileErrors.add(f);
                 } else {

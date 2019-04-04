@@ -12,7 +12,7 @@ public class FileStructureUploaderTest {
     @Test
     public void retry(){
         NexusDataStructure data = new NexusDataStructure();
-        FileStructureUploader fu = new FileStructureUploader(data, null,null,null,null, false);
+        FileStructureUploader fu = new FileStructureUploader(data, null,null,null,null, false, false);
         List<String> s = new ArrayList<>();
         s.add("Test");
         String result = "FailedTest";

@@ -26,8 +26,14 @@ public class NexusDataStructure {
         return toCreate;
     }
 
-    public void addToCreate(NexusSchemaReference ref, List<File> toCreate) {
-        this.toCreate.put(ref, toCreate);
+    public void addToCreate(NexusSchemaReference ref, File toCreate) {
+        List<File> r = this.toCreate.getOrDefault(ref, new ArrayList<File>());
+        if(r == null){
+            this.toCreate.put(ref, Collections.singletonList(toCreate));
+        }else{
+            r.add(toCreate);
+            this.toCreate.put(ref, r);
+        }
     }
 
     public Map<String, File> getToUpdate() {

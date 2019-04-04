@@ -1,5 +1,9 @@
 package org.humanbrainproject.knowledgegraph.nexus.entity;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+
+import java.util.Date;
+
 public class UploadStatus {
     public Status getStatus() {
         return status;
@@ -41,13 +45,32 @@ public class UploadStatus {
         return failedToCreate;
     }
 
+    public boolean isSimulation() {
+        return isSimulation;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
+    }
+
+    public void setFinishedAt() {
+        this.finishedAt = new Date();
+    }
+
     enum Status {
         INITIALIZING,
         PROCESSING,
-        DONE
+        DONE,
+        FAILED
     }
 
     private Status status;
+    private boolean isSimulation;
+    private String message = "";
 
     private int numberToDelete = 0;
     private int numberToCreate = 0;
@@ -61,7 +84,16 @@ public class UploadStatus {
     private int failedToCreate = 0;
     private int failedToUpdate = 0;
 
-    public UploadStatus() {
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern="yyyy-MM-dd@HH:mm:ss")
+    private Date startedAt = null;
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern="yyyy-MM-dd@HH:mm:ss")
+    private Date finishedAt = null;
+
+
+
+    public UploadStatus(boolean isSimulation) {
+        this.isSimulation = isSimulation;
         this.status = Status.INITIALIZING;
     }
 
@@ -69,6 +101,7 @@ public class UploadStatus {
         this.numberToCreate = toCreate;
         this.numberToDelete = toDel;
         this.numberToUpdate = toUpdate;
+        this.startedAt = new Date();
     }
 
     public void setCurrentToDelete(int succefullyDeleted, int failedToDeleted){

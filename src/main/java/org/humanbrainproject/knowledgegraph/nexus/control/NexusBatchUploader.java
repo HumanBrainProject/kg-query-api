@@ -3,10 +3,8 @@ package org.humanbrainproject.knowledgegraph.nexus.control;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.pattern.Patterns;
-import akka.util.Timeout;
 import org.humanbrainproject.knowledgegraph.nexus.entity.FileStructureUploader;
 import org.humanbrainproject.knowledgegraph.nexus.entity.UploadActorManager;
-import org.humanbrainproject.knowledgegraph.nexus.entity.UploadStatus;
 import org.humanbrainproject.knowledgegraph.nexus.entity.actormsg.CacheEviction;
 import org.humanbrainproject.knowledgegraph.nexus.entity.actormsg.CreateUploadActorMsg;
 import org.humanbrainproject.knowledgegraph.nexus.entity.actormsg.GetStatusMsg;
@@ -14,11 +12,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import scala.concurrent.Await;
-import scala.concurrent.Future;
 
 import java.time.Duration;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 @Component
 @EnableScheduling
@@ -40,15 +37,10 @@ public class NexusBatchUploader {
         getActorManager().tell(new CreateUploadActorMsg(uuid, uploader), ActorRef.noSender());
     }
 
-    public UploadStatus retrieveStatus(UUID uuid) throws Exception {
-        Timeout timeout = Timeout.create(Duration.ofSeconds(5));
-        Future<Object> future = Patterns.ask(getActorManager(), new GetStatusMsg(uuid), timeout);
-        Object o = Await.result(future, timeout.duration());
-        if(o instanceof UploadStatus){
-            return (UploadStatus) o;
-        }else{
-            return null;
-        }
+    public CompletableFuture<Object> retrieveStatus(UUID uuid) {
+        Duration timeout = Duration.ofSeconds(25);
+        CompletableFuture<Object> future = Patterns.ask(getActorManager(), new GetStatusMsg(uuid), timeout).toCompletableFuture();
+        return future;
     }
 
     @Scheduled(fixedDelay = 10 * 60 * 1000, initialDelay = 5000)

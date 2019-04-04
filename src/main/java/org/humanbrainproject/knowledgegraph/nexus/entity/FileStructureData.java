@@ -1,10 +1,12 @@
 package org.humanbrainproject.knowledgegraph.nexus.entity;
 
+import org.slf4j.LoggerFactory;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Comparator;
@@ -14,6 +16,7 @@ import java.util.zip.ZipInputStream;
 
 public class FileStructureData {
 
+    private org.slf4j.Logger logger = LoggerFactory.getLogger(FileStructureUploader.class);
     private final ZipInputStream data;
     private final Path tmpPath;
     private final UUID generatedId;
@@ -65,10 +68,14 @@ public class FileStructureData {
     }
 
     public void cleanData() throws IOException{
-        Files.walk(this.tmpPath)
-                .sorted(Comparator.reverseOrder())
-                .map(Path::toFile)
-                .forEach(File::delete);
+        try {
+            Files.walk(this.tmpPath)
+                    .sorted(Comparator.reverseOrder())
+                    .map(Path::toFile)
+                    .forEach(File::delete);
+        }catch (NoSuchFileException e){
+            logger.info("File not found during eviction. It has already been removed");
+        }
     }
 
 }
