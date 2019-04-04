@@ -11,7 +11,6 @@ import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusClient;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoNativeRepository;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Vertex;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.NexusVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.SchemaOrgVocabulary;
@@ -140,7 +139,7 @@ public class InstanceManipulationController {
         payload.addToProperty(SchemaOrgVocabulary.IDENTIFIER, "");
         payload.addToProperty(HBPVocabulary.PROVENANCE_CREATED_AT, ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_INSTANT));
         payload.addToProperty(HBPVocabulary.PROVENANCE_CREATED_BY, clientIdExtension);
-        JsonDocument response = nexusClient.post(new NexusRelativeUrl(NexusConfiguration.ResourceType.DATA, nexusSchemaReference.getRelativeUrl().getUrl()), null, payload, authorizationContext.getCredential());
+        JsonDocument response = nexusClient.post(new NexusRelativeUrl(NexusConfiguration.ResourceType.RESOURCES, nexusSchemaReference.getRelativeUrl().getUrl()), null, payload, authorizationContext.getCredential());
         if (response != null) {
             NexusInstanceReference idFromNexus = response.getReference();
             //We're replacing the previously set identifier with the id we got from Nexus.
@@ -198,7 +197,7 @@ public class InstanceManipulationController {
             Map map = nexusClient.get(nexusInstanceReference.getRelativeUrl(), credential);
 
             if (map == null) {
-                Map post = nexusClient.post(new NexusRelativeUrl(NexusConfiguration.ResourceType.DATA, nexusInstanceReference.getNexusSchema().getRelativeUrl().getUrl()), null, payload, interceptor);
+                Map post = nexusClient.post(new NexusRelativeUrl(NexusConfiguration.ResourceType.RESOURCES, nexusInstanceReference.getNexusSchema().getRelativeUrl().getUrl()), null, payload, interceptor);
                 if (post != null && post.containsKey(JsonLdConsts.ID)) {
                     NexusInstanceReference fromUrl = NexusInstanceReference.createFromUrl((String) post.get(JsonLdConsts.ID));
                     fromUrl.setRevision((Integer) post.get(NexusVocabulary.REVISION_ALIAS));

@@ -11,7 +11,7 @@ public class NexusRelativeUrlTest {
 
     @Before
     public void setUp() throws Exception {
-        this.relativeUrl = new NexusRelativeUrl(NexusConfiguration.ResourceType.DATA, "foo");
+        this.relativeUrl = new NexusRelativeUrl(NexusConfiguration.ResourceType.RESOURCES, "foo");
     }
 
     @Test

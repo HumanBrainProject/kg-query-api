@@ -200,7 +200,7 @@ public class ArangoQueryFactory {
                 .setParameter("schemaOrgName", SchemaOrgVocabulary.NAME)
                 .setParameter("releaseInstanceProperty", HBPVocabulary.RELEASE_INSTANCE)
                 .setParameter("releaseRevisionProperty", HBPVocabulary.RELEASE_REVISION)
-                .setParameter("nexusBaseForInstances", configuration.getNexusBase(NexusConfiguration.ResourceType.DATA))
+                .setParameter("nexusBaseForInstances", configuration.getNexusBase(NexusConfiguration.ResourceType.RESOURCES))
                 .setParameter("originalId", ArangoVocabulary.NEXUS_RELATIVE_URL_WITH_REV)
                 .setParameter("releasedValue", ReleaseStatus.RELEASED.name())
                 .setParameter("changedValue", ReleaseStatus.HAS_CHANGED.name())
@@ -461,7 +461,7 @@ public class ArangoQueryFactory {
         query.setParameter("documentId", ArangoNamingHelper.createCompatibleId(ref.getNexusSchema().getRelativeUrl().getUrl()) + "/" + ref.getId());
         query.setParameter("releaseCollection", ArangoCollectionReference.fromFieldName(HBPVocabulary.RELEASE_INSTANCE).getName());
         query.setParameter("releaseRevisionProperty", HBPVocabulary.RELEASE_REVISION)
-                .setParameter("nexusBaseForInstances", configuration.getNexusBase(NexusConfiguration.ResourceType.DATA))
+                .setParameter("nexusBaseForInstances", configuration.getNexusBase(NexusConfiguration.ResourceType.RESOURCES))
                 .setParameter("originalId", ArangoVocabulary.NEXUS_RELATIVE_URL_WITH_REV)
                 .setParameter("releasedValue", ReleaseStatus.RELEASED.name())
                 .setParameter("changedValue", ReleaseStatus.HAS_CHANGED.name())

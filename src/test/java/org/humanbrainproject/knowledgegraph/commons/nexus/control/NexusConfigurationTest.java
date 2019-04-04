@@ -20,20 +20,20 @@ public class NexusConfigurationTest {
 
     @Test
     public void getNexusBaseForResourceType() {
-        String nexusBase = this.nexusConfiguration.getNexusBase(NexusConfiguration.ResourceType.DATA);
+        String nexusBase = this.nexusConfiguration.getNexusBase(NexusConfiguration.ResourceType.RESOURCES);
         assertEquals("http://foo/v0/data", nexusBase);
     }
 
     @Test
     public void getEndpointForResourceType() {
-        String nexusEndpoint = this.nexusConfiguration.getEndpoint(NexusConfiguration.ResourceType.DATA);
+        String nexusEndpoint = this.nexusConfiguration.getNexusEndpoint(NexusConfiguration.ResourceType.RESOURCES);
         assertEquals("http://bar/v0/data", nexusEndpoint);
     }
 
     @Test
     public void getEndpointByRelativeUrl() {
-        NexusRelativeUrl relativeUrl = new NexusRelativeUrl(NexusConfiguration.ResourceType.DATA, "foobar");
-        String endpoint = this.nexusConfiguration.getEndpoint(relativeUrl);
+        NexusRelativeUrl relativeUrl = new NexusRelativeUrl(NexusConfiguration.ResourceType.RESOURCES, "foobar");
+        String endpoint = this.nexusConfiguration.getNexusEndpoint(relativeUrl);
         assertEquals("http://bar/v0/data/foobar", endpoint);
     }
 

@@ -148,7 +148,7 @@ public class Structure {
 
     private static final int DAY_IN_MS = 24*60*60*1000;
 
-    @Scheduled(fixedDelay = DAY_IN_MS)
+    //@Scheduled(fixedDelay = DAY_IN_MS)
     public void refreshStructureCachesEveryDay(){
         try {
             logger.info("CRON: Refreshing the cache for structure queries");

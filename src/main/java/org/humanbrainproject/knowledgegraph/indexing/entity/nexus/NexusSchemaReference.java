@@ -70,7 +70,7 @@ public class NexusSchemaReference {
     }
 
     public NexusRelativeUrl getRelativeUrlForDomain(){
-        return new NexusRelativeUrl(NexusConfiguration.ResourceType.DOMAIN, String.format("%s/%s", getRelativeUrlForOrganization().getUrl(), getDomain()));
+        return new NexusRelativeUrl(NexusConfiguration.ResourceType.PROJECTS, String.format("%s/%s", getRelativeUrlForOrganization().getUrl(), getDomain()));
     }
 
     public NexusRelativeUrl getRelativeUrl() {

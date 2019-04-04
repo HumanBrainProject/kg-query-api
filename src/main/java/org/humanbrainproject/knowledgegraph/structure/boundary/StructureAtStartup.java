@@ -12,6 +12,6 @@ public class StructureAtStartup implements InitializingBean {
 
     @Override
     public void afterPropertiesSet() throws Exception {
-        structure.refreshStructuredCachesAtStartup();
+        //structure.refreshStructuredCachesAtStartup();
     }
 }

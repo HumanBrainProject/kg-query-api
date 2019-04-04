@@ -74,7 +74,7 @@ public class NexusTest {
             return null;
         }).when(databaseTransaction).execute(Mockito.any(TodoList.class));
 
-        nexusClient.post(new NexusRelativeUrl(NexusConfiguration.ResourceType.DATA, "test/core/foo/v1.0.0/foobar"), 1, jsonDocument, new InternalMasterKey());
+        nexusClient.post(new NexusRelativeUrl(NexusConfiguration.ResourceType.RESOURCES, "test/core/foo/v1.0.0/foobar"), 1, jsonDocument, new InternalMasterKey());
     }
 
 
@@ -106,7 +106,7 @@ public class NexusTest {
             return null;
         }).when(databaseTransaction).execute(Mockito.any(TodoList.class));
 
-        nexusClient.post(new NexusRelativeUrl(NexusConfiguration.ResourceType.DATA, "test/core/foo/v1.0.0/foobar"), 1, jsonDocument, new InternalMasterKey());
+        nexusClient.post(new NexusRelativeUrl(NexusConfiguration.ResourceType.RESOURCES, "test/core/foo/v1.0.0/foobar"), 1, jsonDocument, new InternalMasterKey());
 
         //Assure that solr indexing is triggered
         Mockito.verify(solr).registerPoints(Mockito.anyString(), Mockito.anyString(), Mockito.anyCollection());
@@ -139,7 +139,7 @@ public class NexusTest {
             return null;
         }).when(databaseTransaction).execute(Mockito.any(TodoList.class));
 
-        nexusClient.post(new NexusRelativeUrl(NexusConfiguration.ResourceType.DATA, "test/core/foo/v1.0.0/foobar"), 1, jsonDocument, new InternalMasterKey());
+        nexusClient.post(new NexusRelativeUrl(NexusConfiguration.ResourceType.RESOURCES, "test/core/foo/v1.0.0/foobar"), 1, jsonDocument, new InternalMasterKey());
 
         //Assure that the databaseTransaction execution is triggered
         Mockito.verify(databaseTransaction).execute(Mockito.any(TodoList.class));
@@ -156,7 +156,7 @@ public class NexusTest {
             return null;
         }).when(databaseTransaction).execute(Mockito.any(TodoList.class));
 
-        nexusClient.put(new NexusRelativeUrl(NexusConfiguration.ResourceType.DATA, "test/core/foo/v1.0.0/foobar"), 2, jsonDocument, new InternalMasterKey());
+        nexusClient.put(new NexusRelativeUrl(NexusConfiguration.ResourceType.RESOURCES, "test/core/foo/v1.0.0/foobar"), 2, jsonDocument, new InternalMasterKey());
     }
 
 
@@ -214,7 +214,7 @@ public class NexusTest {
             return null;
         }).when(databaseTransaction).execute(Mockito.any(TodoList.class));
 
-        nexusClient.post(new NexusRelativeUrl(NexusConfiguration.ResourceType.DATA, "test"+ SubSpace.EDITOR.getPostFix()+"/core/foo/v1.0.0/barfoo"), 1, jsonDocument, new InternalMasterKey());
+        nexusClient.post(new NexusRelativeUrl(NexusConfiguration.ResourceType.RESOURCES, "test"+ SubSpace.EDITOR.getPostFix()+"/core/foo/v1.0.0/barfoo"), 1, jsonDocument, new InternalMasterKey());
     }
 
 
@@ -230,7 +230,7 @@ public class NexusTest {
             return null;
         }).when(databaseTransaction).execute(Mockito.any(TodoList.class));
 
-        nexusClient.delete(new NexusRelativeUrl(NexusConfiguration.ResourceType.DATA, "test/core/foo/v1.0.0/foobar"), 2, new InternalMasterKey());
+        nexusClient.delete(new NexusRelativeUrl(NexusConfiguration.ResourceType.RESOURCES, "test/core/foo/v1.0.0/foobar"), 2, new InternalMasterKey());
     }
 
     private void assertHasBlacklistItems(List<InsertTodoItem> todoItems, String database, boolean hasBlacklistItems){

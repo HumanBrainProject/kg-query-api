@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 public class NexusConfiguration {
 
     public enum ResourceType {
-        DATA("data"), SCHEMA("schemas"), ORGANIZATION("organizations"), DOMAIN("domains");
+        RESOURCES("resources"), SCHEMA("schemas"), ORGANIZATION("orgs"), PROJECTS("projects"), IAM("acls"), RESOLVERS("resolvers");
 
         private final String urlDeclaration;
 
@@ -51,23 +51,35 @@ public class NexusConfiguration {
     }
 
     public String getNexusBase(ResourceType resourceType){
-        return String.format("%s/v0/%s", getNexusBase(), resourceType.urlDeclaration);
+        return String.format("%s/%s", getNexusBase(), resourceType.urlDeclaration);
     }
 
-    public String getEndpoint(ResourceType resourceType){
-        return String.format("%s/v0/%s", getNexusEndpoint(), resourceType.urlDeclaration);
+    public String getNexusEndpoint(ResourceType resourceType){
+        return String.format("%s/%s", getNexusEndpoint(), resourceType.urlDeclaration);
     }
 
-    public String getEndpoint(NexusRelativeUrl relativeUrl) {
-        return String.format("%s%s", getEndpoint(relativeUrl.getResourceType()), relativeUrl.getUrl() != null ? String.format("/%s", relativeUrl.getUrl()) : "");
+    public String getIamEndpoint(ResourceType resourceType){
+        return String.format("%s/%s", iamEndpoint, resourceType.urlDeclaration);
+    }
+
+    public String getNexusEndpoint(NexusRelativeUrl relativeUrl) {
+        String endpoint;
+
+        if(relativeUrl.getResourceType()==ResourceType.IAM){
+            endpoint = getIamEndpoint(relativeUrl.getResourceType());
+        }
+        else{
+            endpoint = getNexusEndpoint(relativeUrl.getResourceType());
+        }
+        return String.format("%s%s", endpoint, relativeUrl.getUrl() != null ? String.format("/%s", relativeUrl.getUrl()) : "");
     }
 
     public String getAbsoluteUrl(NexusSchemaReference schemaReference){
-        return String.format("%s%s", getNexusBase(schemaReference.getRelativeUrl().getResourceType()), schemaReference.getRelativeUrl().getUrl() != null ? String.format("/%s", schemaReference.getRelativeUrl().getUrl()) : "");
+        return String.format("%s%s", getNexusEndpoint(schemaReference.getRelativeUrl().getResourceType()), schemaReference.getRelativeUrl().getUrl() != null ? String.format("/%s", schemaReference.getRelativeUrl().getUrl()) : "");
     }
 
     public String getAbsoluteUrl(NexusInstanceReference instanceReference) {
-        return String.format("%s%s", getNexusBase(instanceReference.getRelativeUrl().getResourceType()), instanceReference.getRelativeUrl().getUrl() != null ? String.format("/%s", instanceReference.getRelativeUrl().getUrl()) : "");
+        return String.format("%s%s", getNexusEndpoint(instanceReference.getRelativeUrl().getResourceType()), instanceReference.getRelativeUrl().getUrl() != null ? String.format("/%s", instanceReference.getRelativeUrl().getUrl()) : "");
     }
 
 }

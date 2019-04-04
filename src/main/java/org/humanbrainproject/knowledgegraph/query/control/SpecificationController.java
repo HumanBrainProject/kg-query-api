@@ -87,7 +87,7 @@ public class SpecificationController {
     }
 
     public Map releaseTreeBySpecification(Specification spec, Query query, NexusInstanceReference instanceReference) throws JSONException {
-        SpecificationBasedReleaseTreeBuilder builder = new SpecificationBasedReleaseTreeBuilder(spec, authorizationContext.getReadableOrganizations(query.getFilter().getRestrictToOrganizations()), ArangoDocumentReference.fromNexusInstance(instanceReference), queryContext.getExistingCollections(), configuration.getNexusBase(NexusConfiguration.ResourceType.DATA));
+        SpecificationBasedReleaseTreeBuilder builder = new SpecificationBasedReleaseTreeBuilder(spec, authorizationContext.getReadableOrganizations(query.getFilter().getRestrictToOrganizations()), ArangoDocumentReference.fromNexusInstance(instanceReference), queryContext.getExistingCollections(), configuration.getNexusBase(NexusConfiguration.ResourceType.RESOURCES));
         List<Map> results = specificationQuery.queryForSimpleMap(builder.build());
         if(results==null || results.isEmpty()){
             return null;
@@ -96,7 +96,7 @@ public class SpecificationController {
     }
 
     public Map defaultReleaseTree(NexusInstanceReference instanceReference){
-        DefaultReleaseTreeBuilder builder = new DefaultReleaseTreeBuilder(authorizationContext.getReadableOrganizations(null), ArangoDocumentReference.fromNexusInstance(instanceReference), configuration.getNexusBase(NexusConfiguration.ResourceType.DATA));
+        DefaultReleaseTreeBuilder builder = new DefaultReleaseTreeBuilder(authorizationContext.getReadableOrganizations(null), ArangoDocumentReference.fromNexusInstance(instanceReference), configuration.getNexusBase(NexusConfiguration.ResourceType.RESOURCES));
         List<Map> results = specificationQuery.queryForSimpleMap(builder.build());
         if(results==null || results.isEmpty()){
             return null;

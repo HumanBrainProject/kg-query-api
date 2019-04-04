@@ -61,7 +61,7 @@ public class NexusInstanceReference {
     }
 
     public NexusRelativeUrl getRelativeUrl() {
-        return new NexusRelativeUrl(NexusConfiguration.ResourceType.DATA, String.format("%s/%s", nexusSchema.getRelativeUrl().getUrl(), id));
+        return new NexusRelativeUrl(NexusConfiguration.ResourceType.RESOURCES, String.format("%s/%s", nexusSchema.getRelativeUrl().getUrl(), id));
     }
 
     public NexusSchemaReference getNexusSchema() {

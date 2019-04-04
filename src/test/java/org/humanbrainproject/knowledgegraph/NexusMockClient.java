@@ -75,7 +75,7 @@ public class NexusMockClient extends NexusClient {
     public JsonDocument put(NexusRelativeUrl url, Integer revision, Map payload, Credential oidc) {
        updateDocument(url, revision, payload);
         //TODO simulate payload changes
-        if(url.getResourceType()== NexusConfiguration.ResourceType.DATA) {
+        if(url.getResourceType()== NexusConfiguration.ResourceType.RESOURCES) {
             NexusInstanceReference fromUrl = NexusInstanceReference.createFromUrl(url.getUrl());
             fromUrl.setRevision(revision);
             //trigger indexing
@@ -94,7 +94,7 @@ public class NexusMockClient extends NexusClient {
     public boolean delete(NexusRelativeUrl url, Integer revision, Credential credential) {
         documents.remove(url);
         revisions.remove(url);
-        if(url.getResourceType()== NexusConfiguration.ResourceType.DATA) {
+        if(url.getResourceType()== NexusConfiguration.ResourceType.RESOURCES) {
             NexusInstanceReference fromUrl = NexusInstanceReference.createFromUrl(url.getUrl());
             fromUrl.setRevision(revision);
             //trigger indexing
@@ -113,7 +113,7 @@ public class NexusMockClient extends NexusClient {
     public JsonDocument post(NexusRelativeUrl url, Integer revision, Map payload, Credential credential) {
         updateDocument(url, revision, payload);
         //TODO simulate payload changes
-        if(url.getResourceType()== NexusConfiguration.ResourceType.DATA) {
+        if(url.getResourceType()== NexusConfiguration.ResourceType.RESOURCES) {
             NexusInstanceReference fromUrl = NexusInstanceReference.createFromUrl(url.getUrl());
             //trigger indexing
             indexInstanceInsertion(fromUrl, payload);
