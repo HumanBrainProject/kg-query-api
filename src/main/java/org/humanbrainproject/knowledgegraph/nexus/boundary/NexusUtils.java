@@ -4,6 +4,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationContext;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonLdStandardization;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusClient;
+import org.humanbrainproject.knowledgegraph.instances.control.ContextController;
 import org.humanbrainproject.knowledgegraph.instances.control.SchemaController;
 import org.humanbrainproject.knowledgegraph.nexus.control.NexusBatchUploader;
 import org.humanbrainproject.knowledgegraph.nexus.entity.*;
@@ -34,6 +35,9 @@ public class NexusUtils {
     SchemaController schemaController;
 
     @Autowired
+    ContextController contextController;
+
+    @Autowired
     ArangoQuery query;
 
     @Autowired
@@ -48,7 +52,7 @@ public class NexusUtils {
         fs.listFiles();
         FileStructureDataExtractor fe = new FileStructureDataExtractor(fs);
         NexusDataStructure data = fe.extractFile(query, standardization);
-        FileStructureUploader fu = new FileStructureUploader( data, schemaController, client,authorizationContext.getCredential(), fe, noDeletion, isSimulation);
+        FileStructureUploader fu = new FileStructureUploader( data, schemaController, contextController, client,authorizationContext.getCredential(), fe, noDeletion, isSimulation);
         uploader.uploadFileStructure(fs.getGeneratedId(),fu);
         return fs.getGeneratedId();
     }

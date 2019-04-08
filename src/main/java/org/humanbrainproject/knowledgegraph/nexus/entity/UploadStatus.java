@@ -61,6 +61,30 @@ public class UploadStatus {
         this.finishedAt = new Date();
     }
 
+    public int getSchemasFailedToProccess() {
+        return schemasFailedToProccess;
+    }
+
+    public int getContextFailedToProcess() {
+        return contextFailedToProcess;
+    }
+
+    public int getSchemasSuccefullyProccessed() {
+        return schemasSuccefullyProccessed;
+    }
+
+    public int getContextSuccefullyProcessed() {
+        return contextSuccefullyProcessed;
+    }
+
+    public int getSchemaFilesFound() {
+        return schemaFilesFound;
+    }
+
+    public int getContextFilesFound() {
+        return contextFilesFound;
+    }
+
     enum Status {
         INITIALIZING,
         PROCESSING,
@@ -75,14 +99,20 @@ public class UploadStatus {
     private int numberToDelete = 0;
     private int numberToCreate = 0;
     private int numberToUpdate = 0;
+    private int schemaFilesFound = 0;
+    private int contextFilesFound = 0;
 
     private int succefullyDeleted = 0;
     private int succefullyCreated = 0;
     private int succefullyUpdated = 0;
+    private int schemasSuccefullyProccessed = 0;
+    private int contextSuccefullyProcessed = 0;
 
     private int failedToDelete = 0;
     private int failedToCreate = 0;
     private int failedToUpdate = 0;
+    private int schemasFailedToProccess = 0;
+    private int contextFailedToProcess = 0;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern="yyyy-MM-dd@HH:mm:ss")
     private Date startedAt = null;
@@ -97,10 +127,12 @@ public class UploadStatus {
         this.status = Status.INITIALIZING;
     }
 
-    public void setInitial(int toDel, int toCreate, int toUpdate) {
+    public void setInitial(int toDel, int toCreate, int toUpdate, int schemaFilesFound, int contextFilesFound) {
         this.numberToCreate = toCreate;
         this.numberToDelete = toDel;
         this.numberToUpdate = toUpdate;
+        this.schemaFilesFound = schemaFilesFound;
+        this.contextFilesFound = contextFilesFound;
         this.startedAt = new Date();
     }
 
@@ -117,6 +149,15 @@ public class UploadStatus {
     public void setCurrentToUpdate(int succefullyUpdated, int failedToUpdate){
         this.succefullyUpdated = succefullyUpdated;
         this.failedToUpdate= failedToUpdate;
+    }
+
+    public void setSchemasProcessed(int schemasSuccefullyProccessed, int schemasFailedToProccess){
+        this.schemasSuccefullyProccessed = schemasSuccefullyProccessed;
+        this.schemasFailedToProccess= schemasFailedToProccess;
+    }
+    public void setContextsProcessed(int contextSuccefullyProcessed, int contextFailedToProcess){
+        this.contextSuccefullyProcessed = contextSuccefullyProcessed;
+        this.contextFailedToProcess = contextFailedToProcess;
     }
 
     public void setStatus(Status newStatus){

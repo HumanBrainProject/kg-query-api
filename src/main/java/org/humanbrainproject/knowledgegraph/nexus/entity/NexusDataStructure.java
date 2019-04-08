@@ -10,12 +10,17 @@ public class NexusDataStructure {
     private List<String> toDelete = new ArrayList<>();
     private Map<NexusSchemaReference, List<File>> toCreate = new HashMap<>();
     private Map<String, File> toUpdate = new HashMap<>();
-    private Set<NexusSchemaReference> schemasConcerned = new HashSet(); // Redundant?
+    private Map<NexusSchemaReference, File> schemasConcerned = new HashMap<>();
+    private Map<NexusSchemaReference, File> contextFiles = new HashMap<>();
 
     public NexusDataStructure(){ }
 
     public List<String> getToDelete() {
         return toDelete;
+    }
+
+    public Map<NexusSchemaReference, File> getContextFiles(){
+        return this.contextFiles;
     }
 
     public void addToDelete(String toDelete) {
@@ -44,11 +49,15 @@ public class NexusDataStructure {
         this.toUpdate.put(key, toUpdate);
     }
 
-    public Set<NexusSchemaReference> getSchemasConcerned() {
+    public Map<NexusSchemaReference, File> getSchemasConcerned() {
         return schemasConcerned;
     }
 
-    public void addToSchemasConcerned(NexusSchemaReference schemasConcerned) {
-        this.schemasConcerned.add(schemasConcerned);
+    public void addToSchemasConcerned(NexusSchemaReference schemasConcerned, File schemaFile) {
+        this.schemasConcerned.put(schemasConcerned, schemaFile);
+    }
+
+    public void addToContext(NexusSchemaReference ref, File context){
+        this.contextFiles.put(ref, context);
     }
 }

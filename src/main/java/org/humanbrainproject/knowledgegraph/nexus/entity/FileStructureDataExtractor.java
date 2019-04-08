@@ -30,10 +30,6 @@ public class FileStructureDataExtractor {
     private Map<NexusSchemaReference, Set<File>> filesToHandle = new HashMap();
     private NexusDataStructure nexusDataStructure = new NexusDataStructure();
     private ObjectMapper mapper = new ObjectMapper();
-
-
-
-
     private Query query(NexusSchemaReference ref){
         return new Query("{" +
                 "  \"@context\": {" +
@@ -73,7 +69,6 @@ public class FileStructureDataExtractor {
                 "}", ref, "https://schema.hbp.eu/myQuery/");
     }
 
-
     public FileStructureDataExtractor(FileStructureData data){
         this.data = data;
     }
@@ -91,9 +86,8 @@ public class FileStructureDataExtractor {
 
     // TODO Optimize all filters can be done in one pass par schema
     protected void fetchingCurrentIdentifiers(ArangoQuery query, JsonLdStandardization standardization) throws IOException, SolrServerException, JSONException, NoSuchAlgorithmException {
-
-        for(NexusSchemaReference r: this.nexusDataStructure.getSchemasConcerned()){
-            QueryResult<List<Map>> result = query.queryPropertyGraphBySpecification(this.query(r));
+        for(Map.Entry<NexusSchemaReference, File> r: this.nexusDataStructure.getSchemasConcerned().entrySet()){
+            QueryResult<List<Map>> result = query.queryPropertyGraphBySpecification(this.query(r.getKey()));
             Map<String, Tuple<String, String>> idToUUIDMap = new HashMap<>();
             result.getResults().stream().forEach(i -> {
                 List<String> identifiers;
@@ -106,7 +100,7 @@ public class FileStructureDataExtractor {
 
             });
 
-            List<String> identifierLocal = fillCreateAndUpdateList(this.filesToHandle, idToUUIDMap, r, standardization);
+            List<String> identifierLocal = fillCreateAndUpdateList(this.filesToHandle, idToUUIDMap, r.getKey(), standardization);
             idToUUIDMap.entrySet().stream().forEach( entry -> {
                 if(!identifierLocal.contains(entry.getKey())){
                     this.nexusDataStructure.addToDelete(entry.getValue().getValue1());
@@ -211,13 +205,9 @@ public class FileStructureDataExtractor {
                 for (File schemaVersionOrFile : file.listFiles()) {
                     if (schemaVersionOrFile.isDirectory()) {
                         NexusSchemaReference ref = new NexusSchemaReference(org, project,file.getName(), schemaVersionOrFile.getName());
-                        this.nexusDataStructure.addToSchemasConcerned(ref);
-                        File schemaJsonFile = Arrays.stream(schemaVersionOrFile.listFiles()).filter(f -> f.getName().equals("schema.json")).findAny().orElse(null);
-                        handleSchemaUpload(schemaJsonFile, ref);
+                        this.nexusDataStructure.addToSchemasConcerned(ref, null);
                         for (File jsonFile : schemaVersionOrFile.listFiles()) {
-                            if(!jsonFile.getName().equals("schema.json")){
-                                handleJsonFile(jsonFile, ref);
-                            }
+                            handleJsonFile(jsonFile, ref);
                         }
                     } else {
                         throw new NotImplementedException();
@@ -228,14 +218,19 @@ public class FileStructureDataExtractor {
             throw new BadRequestException("Cannot interprete schema folder structure");
         }
     }
-    protected void handleSchemaUpload(File file, NexusSchemaReference ref){
-
-    }
 
     protected void handleJsonFile(File file, NexusSchemaReference ref){
         Set<File> s = this.filesToHandle.getOrDefault(ref, new HashSet());
-        s.add(file);
-        this.filesToHandle.put(ref, s);
+        switch(file.getName()){
+            case "schema.json":
+                this.nexusDataStructure.addToSchemasConcerned(ref, file);
+                break;
+            case "context.json":
+                this.nexusDataStructure.addToContext(ref, file);
+                break;
+            default:
+                this.filesToHandle.put(ref, s);
+        }
     }
 
     public void cleanData() throws IOException {

@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 public class NexusConfiguration {
 
     public enum ResourceType {
-        DATA("data"), SCHEMA("schemas"), ORGANIZATION("organizations"), DOMAIN("domains");
+        DATA("data"), SCHEMA("schemas"), ORGANIZATION("organizations"), DOMAIN("domains"), CONTEXT("contexts");
 
         private final String urlDeclaration;
 
