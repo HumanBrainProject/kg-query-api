@@ -5,7 +5,6 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class FileStructureUploaderTest {
 
@@ -16,13 +15,15 @@ public class FileStructureUploaderTest {
         List<String> s = new ArrayList<>();
         s.add("Test");
         String result = "FailedTest";
-        FileStructureUploader.CheckedFunction<List<String>, List<String>> function = (List<String> i, int o) -> {
-            return i.stream().map(myString -> result).collect(Collectors.toList());
+        FileStructureUploader.CheckedFunction<List<String>, ErrorsAndSuccess<List<String>>> function = (List<String> i, ErrorsAndSuccess<List<String>> o) -> {
+            o.errors = new ArrayList<>();
+            o.errors.add(result);
+            return o;
         };
         try {
-            List<String> ss = fu.withRetry(4, s, function, false);
-            assert ss.size() == 1;
-            assert ss.get(0).equals(result);
+            ErrorsAndSuccess<List<String>> ss = fu.withRetry(4, s, function, false);
+            assert ss.errors.size() == 1;
+            assert ss.errors.get(0).equals(result);
         } catch (IOException e){
             assert false;
         } catch (InterruptedException e){

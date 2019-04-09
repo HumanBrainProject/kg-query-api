@@ -16,6 +16,11 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
+class ErrorsAndSuccess<T> {
+    T errors;
+    int success = 0;
+}
+
 public class FileStructureUploader {
 
     private final UploadStatus status;
@@ -31,6 +36,8 @@ public class FileStructureUploader {
     private final ObjectMapper mapper = new ObjectMapper();
 
     private org.slf4j.Logger logger = LoggerFactory.getLogger(FileStructureUploader.class);
+
+
 
     public FileStructureUploader(NexusDataStructure data, SchemaController schemaController, ContextController contextController, NexusClient nexusClient,
                                  Credential credential,FileStructureDataExtractor fileStructureDataExtractor,
@@ -86,18 +93,18 @@ public class FileStructureUploader {
 
     @FunctionalInterface
     public interface CheckedFunction<T, R> {
-        R apply(T t, int f) throws IOException;
+        R apply(T t, ErrorsAndSuccess<T> f) throws IOException;
     }
 
-    protected <T> T withRetry(Integer tries, T listToExecute, CheckedFunction<T, T> execute, boolean hasRetryDelay)  throws IOException, InterruptedException{
+    protected <T> ErrorsAndSuccess<T> withRetry(Integer tries, T listToExecute, CheckedFunction<T, ErrorsAndSuccess<T>> execute, boolean hasRetryDelay)  throws IOException, InterruptedException{
         boolean shouldContinue = true;
-        T errors = null;
+        ErrorsAndSuccess<T> errors = new ErrorsAndSuccess<>();
         while(tries < this.MAX_TRIES && shouldContinue) {
-            errors = execute.apply(listToExecute, 0);
-            if(errors == null){
+            errors = execute.apply(listToExecute, errors);
+            if(errors.errors == null){
                 shouldContinue = false;
             }else{
-                listToExecute = errors;
+                listToExecute = errors.errors;
                 tries += 1;
             }
             if(hasRetryDelay){
@@ -108,8 +115,8 @@ public class FileStructureUploader {
         return errors;
     }
 
-    protected final List<String> executeDelete(List<String> toDelete, int successfullyProcessed){
-        List<String> errors = new ArrayList<>();
+    protected final ErrorsAndSuccess<List<String>> executeDelete(List<String> toDelete,  ErrorsAndSuccess<List<String>> errorsAndSuccess ){
+        errorsAndSuccess.errors = new ArrayList<>();
         for(String s: toDelete){
             NexusRelativeUrl url = new NexusRelativeUrl(NexusConfiguration.ResourceType.DATA, s);
             JsonDocument doc = this.nexusClient.get(url, this.credential);
@@ -121,21 +128,20 @@ public class FileStructureUploader {
                 result = true;
             }
             if(!result){
-                errors.add(s);
+                errorsAndSuccess.errors.add(s);
             }else{
-                successfullyProcessed += 1;
+                errorsAndSuccess.success += 1;
             }
-            this.status.setCurrentToDelete(successfullyProcessed, errors.size());
+            this.status.setCurrentToDelete(errorsAndSuccess.success, errorsAndSuccess.errors.size());
         }
-        if(errors.isEmpty()){
-            return null;
-        }else{
-            return errors;
+        if(errorsAndSuccess.errors.isEmpty()){
+            errorsAndSuccess.errors = null;
         }
+        return errorsAndSuccess;
     }
 
-    protected final Map<String, File> executeUpdate(Map <String, File> toUpdate, int successfullyProcessed) throws IOException {
-        Map<String, File> errors = new HashMap<>();
+    protected final ErrorsAndSuccess<Map<String, File>> executeUpdate(Map <String, File> toUpdate, ErrorsAndSuccess<Map<String,File>> errorsAndSuccess) throws IOException {
+        errorsAndSuccess.errors = new HashMap<>();
         for(Map.Entry<String, File> el: toUpdate.entrySet()){
             NexusRelativeUrl url = new NexusRelativeUrl(NexusConfiguration.ResourceType.DATA, el.getKey());
             JsonDocument doc = this.nexusClient.get(url, this.credential);
@@ -152,21 +158,20 @@ public class FileStructureUploader {
                 res = new JsonDocument();
             }
             if(res == null){
-                errors.put(el.getKey(), el.getValue());
+                errorsAndSuccess.errors.put(el.getKey(), el.getValue());
             }else{
-                successfullyProcessed += 1;
+                errorsAndSuccess.success += 1;
             }
-            this.status.setCurrentToUpdate(successfullyProcessed, errors.size());
+            this.status.setCurrentToUpdate(errorsAndSuccess.success, errorsAndSuccess.errors.size());
         }
-        if(errors.isEmpty()){
-            return null;
-        }else{
-            return errors;
+        if(errorsAndSuccess.errors.isEmpty()){
+            errorsAndSuccess.errors = null;
         }
+        return errorsAndSuccess;
     }
 
-    protected final Map<NexusSchemaReference, List<File>> executeCreate(Map<NexusSchemaReference, List<File>> toCreate, int successfullyProcessed) throws IOException{
-        Map<NexusSchemaReference, List<File>> errors = new HashMap<>();
+    protected final ErrorsAndSuccess<Map<NexusSchemaReference, List<File>>> executeCreate(Map<NexusSchemaReference, List<File>> toCreate, ErrorsAndSuccess< Map<NexusSchemaReference, List<File>>> errorsAndSuccess) throws IOException{
+        errorsAndSuccess.errors = new HashMap<>();
         for(Map.Entry<NexusSchemaReference, List<File>> el: toCreate.entrySet()) {
             List<File> fileErrors = new ArrayList<>();
             for (File f : el.getValue()) {
@@ -185,23 +190,22 @@ public class FileStructureUploader {
                 if (res == null) {
                     fileErrors.add(f);
                 } else {
-                    successfullyProcessed += 1;
+                    errorsAndSuccess.success += 1;
                 }
-                this.status.setCurrentToCreate(successfullyProcessed, errors.size());
+                this.status.setCurrentToCreate( errorsAndSuccess.success,  errorsAndSuccess.errors.size());
             }
             if (!fileErrors.isEmpty()) {
-                errors.put(el.getKey(), fileErrors);
+                errorsAndSuccess.errors.put(el.getKey(), fileErrors);
             }
         }
-        if(errors.isEmpty()){
-            return null;
-        }else{
-            return errors;
+        if( errorsAndSuccess.errors.isEmpty()){
+            errorsAndSuccess.errors = null;
         }
+        return errorsAndSuccess;
     }
 
-    protected final Map<NexusSchemaReference,File> executeSchemaCreate(Map<NexusSchemaReference, File> schemasToCreate, int successfullyProcessed) throws IOException{
-        Map<NexusSchemaReference, File> errors = new HashMap<>();
+    protected final ErrorsAndSuccess<Map<NexusSchemaReference,File>> executeSchemaCreate(Map<NexusSchemaReference, File> schemasToCreate, ErrorsAndSuccess<Map<NexusSchemaReference,File>> errorsAndSuccess) throws IOException{
+        errorsAndSuccess.errors = new HashMap<>();
         for(Map.Entry<NexusSchemaReference, File> s: schemasToCreate.entrySet()){
             try{
                 if(!this.status.isSimulation()) {
@@ -212,39 +216,38 @@ public class FileStructureUploader {
                         this.schemaController.createSchema(s.getKey(), json, this.credential);
                     }
                 }
-                successfullyProcessed += 1;
+                errorsAndSuccess.success += 1;
             } catch (HttpClientErrorException e){
-                errors.put(s.getKey(), s.getValue());
+                errorsAndSuccess.errors.put(s.getKey(), s.getValue());
             }
         }
-        this.status.setSchemasProcessed(successfullyProcessed, errors.size());
-        if(errors.isEmpty()){
-            return null;
-        }else{
-            return errors;
+        this.status.setSchemasProcessed(errorsAndSuccess.success, errorsAndSuccess.errors.size());
+        if(errorsAndSuccess.errors.isEmpty()) {
+            errorsAndSuccess.errors = null;
         }
+        return errorsAndSuccess;
 
     }
 
-    protected final Map<NexusSchemaReference,File> executeContextCreate(Map<NexusSchemaReference, File> contextToCreate, int successfullyProcessed) throws IOException{
-        Map<NexusSchemaReference, File> errors = new HashMap<>();
+    protected final  ErrorsAndSuccess<Map<NexusSchemaReference,File>> executeContextCreate(Map<NexusSchemaReference, File> contextToCreate,  ErrorsAndSuccess<Map<NexusSchemaReference,File>> errorsAndSuccess) throws IOException{
+        errorsAndSuccess.errors = new HashMap<>();
         for(Map.Entry<NexusSchemaReference, File> contextEntry: contextToCreate.entrySet()){
             Map<String, Object> json = this.mapper.readValue(contextEntry.getValue(), Map.class);
             try{
                 if(!this.status.isSimulation()) {
                     this.contextController.createContext(contextEntry.getKey(), json, this.credential);
                 }
-                successfullyProcessed += 1;
+                errorsAndSuccess.success += 1;
             }catch (HttpClientErrorException e){
-                errors.put(contextEntry.getKey(), contextEntry.getValue());
+                errorsAndSuccess.errors.put(contextEntry.getKey(), contextEntry.getValue());
             }
-            this.status.setContextsProcessed(successfullyProcessed, errors.size());
+            this.status.setContextsProcessed(errorsAndSuccess.success, errorsAndSuccess.errors.size());
         }
-        if(errors.isEmpty()){
-            return null;
-        }else{
-            return errors;
+        if(errorsAndSuccess.errors.isEmpty()){
+            errorsAndSuccess.errors = null;
         }
+        return errorsAndSuccess;
+
     }
 
 
