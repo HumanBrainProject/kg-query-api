@@ -164,19 +164,23 @@ public class Structure {
 
     @Async
     public void refreshStructuredCachesAtStartup(){
-        STRUCTURE_LOCK = true;
-        logger.info("Initial population of the cache for structure queries started");
+        try {
+            STRUCTURE_LOCK = true;
+            logger.info("Initial population of the cache for structure queries started");
 
-        cacheManager.getCache("structure").put(false, getStructure(false));
-        cacheManager.getCache("structure").put(true, getStructure(true));
+            cacheManager.getCache("structure").put(false, getStructure(false));
+            cacheManager.getCache("structure").put(true, getStructure(true));
 
-        logger.info("Done with initial population of the cache for structure queries");
-        STRUCTURE_LOCK = false;
+            logger.info("Done with initial population of the cache for structure queries");
+        }
+        finally {
+            STRUCTURE_LOCK = false;
+        }
     }
 
 
     private JsonDocument getStructure(boolean withLinks) {
-        Collection<NexusSchemaReference> allSchemas = lookupMap.getLookupTable(false).values();
+        List<NexusSchemaReference> allSchemas = new ArrayList<>(lookupMap.getLookupTable(false).values());
         JsonDocument jsonDocument = new JsonDocument();
         List<JsonDocument> schemas = new ArrayList<>();
         jsonDocument.put("schemas", schemas);

@@ -50,7 +50,7 @@ public class ArangoToNexusLookupMap {
     }
 
 
-    public Map<String, NexusSchemaReference> getLookupTable(boolean refetch){
+    public synchronized Map<String, NexusSchemaReference> getLookupTable(boolean refetch){
         if(!initialFetch || schemaReferenceMap.isEmpty() || refetch){
             refetch();
         }

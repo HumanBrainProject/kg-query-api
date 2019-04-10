@@ -39,11 +39,12 @@ public class Shacl2EditorTest {
     }
 
 
-    @Test
-    public void convert() {
-        JsonDocument jsonDocument = loadShaclSchema("datashapes_morphology_invitroslicereconstructedneuronmorphology.json");
-
-        JsonDocument editor = shacl2Editor.convert(new NexusSchemaReference("foo", "bar", "foobar", "v1.0.0"), Collections.singletonList(jsonDocument));
-        System.out.println(new JsonTransformer().getMapAsJson(editor));
-    }
+//    @Test
+//    public void convert() {
+//        JsonDocument jsonDocument = loadShaclSchema("datashapes_morphology_invitroslicereconstructedneuronmorphology.json");
+//
+//        JsonDocument editor = shacl2Editor.convert(new NexusSchemaReference("foo", "bar", "foobar", "v1.0.0"), Collections.singletonList(jsonDocument));
+//
+//        System.out.println(new JsonTransformer().getMapAsJson(editor));
+//    }
 }
