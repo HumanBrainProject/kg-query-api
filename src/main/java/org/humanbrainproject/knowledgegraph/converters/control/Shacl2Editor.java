@@ -19,9 +19,12 @@ public class Shacl2Editor {
     public JsonDocument convert(NexusSchemaReference schemaReference, List<JsonDocument> shaclDocuments){
         List<ShaclShape> shapes = shaclDocuments.stream().map(shacl -> new ShaclSchema(shacl).getShaclShapes()).flatMap(List::stream).collect(Collectors.toList());
         EditorSpec editorSpec = convertShapeToSpec(schemaReference, shapes);
-        JsonDocument result = new JsonDocument();
-        result.addToProperty("uiSpec", new JsonDocument().addToProperty(schemaReference.getOrganization(), new JsonDocument().addToProperty(schemaReference.getDomain(), new JsonDocument().addToProperty(schemaReference.getSchema(), new JsonDocument().addToProperty(schemaReference.getSchemaVersion(), editorSpec.toJson())))));
-        return result;
+        if(editorSpec!=null) {
+            JsonDocument result = new JsonDocument();
+            result.addToProperty("uiSpec", new JsonDocument().addToProperty(schemaReference.getOrganization(), new JsonDocument().addToProperty(schemaReference.getDomain(), new JsonDocument().addToProperty(schemaReference.getSchema(), new JsonDocument().addToProperty(schemaReference.getSchemaVersion(), editorSpec.toJson())))));
+            return result;
+        }
+        return null;
     }
 
     private EditorSpec convertShapeToSpec(NexusSchemaReference schemaReference, List<ShaclShape> shaclShape){
@@ -34,8 +37,10 @@ public class Shacl2Editor {
            }
            return editorSpecField;
         }).collect(Collectors.toList());
-
-        return new EditorSpec(schemaReference, shaclShape.get(0).getLabel(), null, null, fields);
+        if(!shaclShape.isEmpty()) {
+            return new EditorSpec(schemaReference, shaclShape.get(0).getLabel(), null, null, fields);
+        }
+        return null;
     }
 
 

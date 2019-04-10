@@ -184,9 +184,8 @@ public class DataQueryBuilder {
                         }
                         for (SpecField field : mergeField.fields) {
                             if(field!=mergeField.fields.get(mergeField.fields.size()-1)){
-                                merge.add(trust(", true"));
+                                merge.add(trust(", true))"));
                             }
-                            merge.add(trust(")"));
                         }
                         if(!sortFieldsForMerge.isEmpty()){
                             merge.addLine(trust(""));
