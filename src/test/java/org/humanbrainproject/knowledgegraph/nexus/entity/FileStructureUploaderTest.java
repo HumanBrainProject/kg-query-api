@@ -2,7 +2,6 @@ package org.humanbrainproject.knowledgegraph.nexus.entity;
 
 import org.junit.Test;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -24,8 +23,6 @@ public class FileStructureUploaderTest {
             ErrorsAndSuccess<List<String>> ss = fu.withRetry(4, s, function, false);
             assert ss.errors.size() == 1;
             assert ss.errors.get(0).equals(result);
-        } catch (IOException e){
-            assert false;
         } catch (InterruptedException e){
             assert false;
         }

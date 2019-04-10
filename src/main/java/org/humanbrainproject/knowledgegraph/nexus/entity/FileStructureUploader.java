@@ -10,7 +10,6 @@ import org.humanbrainproject.knowledgegraph.instances.control.ContextController;
 import org.humanbrainproject.knowledgegraph.instances.control.SchemaController;
 import org.humanbrainproject.knowledgegraph.query.entity.JsonDocument;
 import org.slf4j.LoggerFactory;
-import org.springframework.web.client.HttpClientErrorException;
 
 import java.io.File;
 import java.io.IOException;
@@ -93,10 +92,10 @@ public class FileStructureUploader {
 
     @FunctionalInterface
     public interface CheckedFunction<T, R> {
-        R apply(T t, ErrorsAndSuccess<T> f) throws IOException;
+        R apply(T t, ErrorsAndSuccess<T> f);
     }
 
-    protected <T> ErrorsAndSuccess<T> withRetry(Integer tries, T listToExecute, CheckedFunction<T, ErrorsAndSuccess<T>> execute, boolean hasRetryDelay)  throws IOException, InterruptedException{
+    protected <T> ErrorsAndSuccess<T> withRetry(Integer tries, T listToExecute, CheckedFunction<T, ErrorsAndSuccess<T>> execute, boolean hasRetryDelay) throws InterruptedException{
         boolean shouldContinue = true;
         ErrorsAndSuccess<T> errors = new ErrorsAndSuccess<>();
         while(tries < this.MAX_TRIES && shouldContinue) {
@@ -118,12 +117,17 @@ public class FileStructureUploader {
     protected final ErrorsAndSuccess<List<String>> executeDelete(List<String> toDelete,  ErrorsAndSuccess<List<String>> errorsAndSuccess ){
         errorsAndSuccess.errors = new ArrayList<>();
         for(String s: toDelete){
-            NexusRelativeUrl url = new NexusRelativeUrl(NexusConfiguration.ResourceType.DATA, s);
-            JsonDocument doc = this.nexusClient.get(url, this.credential);
-            Integer rev = doc.getNexusRevision();
             boolean result = false;
             if(!this.status.isSimulation()){
-                result = this.nexusClient.delete(url, rev,this.credential);
+                try {
+                    NexusRelativeUrl url = new NexusRelativeUrl(NexusConfiguration.ResourceType.DATA, s);
+                    JsonDocument doc = this.nexusClient.get(url, this.credential);
+                    Integer rev = doc.getNexusRevision();
+                    result = this.nexusClient.delete(url, rev,this.credential);
+                }catch (Exception e){
+                    e.printStackTrace();
+                    result = false;
+                }
             }else{
                 result = true;
             }
@@ -140,18 +144,18 @@ public class FileStructureUploader {
         return errorsAndSuccess;
     }
 
-    protected final ErrorsAndSuccess<Map<String, File>> executeUpdate(Map <String, File> toUpdate, ErrorsAndSuccess<Map<String,File>> errorsAndSuccess) throws IOException {
+    protected final ErrorsAndSuccess<Map<String, File>> executeUpdate(Map <String, File> toUpdate, ErrorsAndSuccess<Map<String,File>> errorsAndSuccess) {
         errorsAndSuccess.errors = new HashMap<>();
         for(Map.Entry<String, File> el: toUpdate.entrySet()){
-            NexusRelativeUrl url = new NexusRelativeUrl(NexusConfiguration.ResourceType.DATA, el.getKey());
-            JsonDocument doc = this.nexusClient.get(url, this.credential);
-            Integer rev = doc.getNexusRevision();
-            Map<String, Object> json = this.mapper.readValue(el.getValue(), Map.class);
             JsonDocument res = null;
             if(!this.status.isSimulation()){
                 try{
+                    NexusRelativeUrl url = new NexusRelativeUrl(NexusConfiguration.ResourceType.DATA, el.getKey());
+                    JsonDocument doc = this.nexusClient.get(url, this.credential);
+                    Integer rev = doc.getNexusRevision();
+                    Map<String, Object> json = this.mapper.readValue(el.getValue(), Map.class);
                     res = this.nexusClient.put(url, rev, json, this.credential);
-                } catch (HttpClientErrorException e){
+                } catch (Exception e){
                     res = null;
                 }
             }else{
@@ -170,18 +174,18 @@ public class FileStructureUploader {
         return errorsAndSuccess;
     }
 
-    protected final ErrorsAndSuccess<Map<NexusSchemaReference, List<File>>> executeCreate(Map<NexusSchemaReference, List<File>> toCreate, ErrorsAndSuccess< Map<NexusSchemaReference, List<File>>> errorsAndSuccess) throws IOException{
+    protected final ErrorsAndSuccess<Map<NexusSchemaReference, List<File>>> executeCreate(Map<NexusSchemaReference, List<File>> toCreate, ErrorsAndSuccess< Map<NexusSchemaReference, List<File>>> errorsAndSuccess){
         errorsAndSuccess.errors = new HashMap<>();
         for(Map.Entry<NexusSchemaReference, List<File>> el: toCreate.entrySet()) {
             List<File> fileErrors = new ArrayList<>();
             for (File f : el.getValue()) {
-                NexusRelativeUrl url = new NexusRelativeUrl(NexusConfiguration.ResourceType.DATA, el.getKey().toString());
-                Map<String, Object> json = this.mapper.readValue(f, Map.class);
                 JsonDocument res = null;
                 if(!this.status.isSimulation()) {
                     try{
+                        NexusRelativeUrl url = new NexusRelativeUrl(NexusConfiguration.ResourceType.DATA, el.getKey().toString());
+                        Map<String, Object> json = this.mapper.readValue(f, Map.class);
                         res = this.nexusClient.post(url, null, json, this.credential);
-                    } catch (HttpClientErrorException e){
+                    } catch (Exception e){
                         res = null;
                     }
                 }else{
@@ -204,7 +208,7 @@ public class FileStructureUploader {
         return errorsAndSuccess;
     }
 
-    protected final ErrorsAndSuccess<Map<NexusSchemaReference,File>> executeSchemaCreate(Map<NexusSchemaReference, File> schemasToCreate, ErrorsAndSuccess<Map<NexusSchemaReference,File>> errorsAndSuccess) throws IOException{
+    protected final ErrorsAndSuccess<Map<NexusSchemaReference,File>> executeSchemaCreate(Map<NexusSchemaReference, File> schemasToCreate, ErrorsAndSuccess<Map<NexusSchemaReference,File>> errorsAndSuccess) {
         errorsAndSuccess.errors = new HashMap<>();
         for(Map.Entry<NexusSchemaReference, File> s: schemasToCreate.entrySet()){
             try{
@@ -217,7 +221,7 @@ public class FileStructureUploader {
                     }
                 }
                 errorsAndSuccess.success += 1;
-            } catch (HttpClientErrorException e){
+            } catch (Exception e){
                 errorsAndSuccess.errors.put(s.getKey(), s.getValue());
             }
         }
@@ -229,16 +233,17 @@ public class FileStructureUploader {
 
     }
 
-    protected final  ErrorsAndSuccess<Map<NexusSchemaReference,File>> executeContextCreate(Map<NexusSchemaReference, File> contextToCreate,  ErrorsAndSuccess<Map<NexusSchemaReference,File>> errorsAndSuccess) throws IOException{
+    protected final  ErrorsAndSuccess<Map<NexusSchemaReference,File>> executeContextCreate(Map<NexusSchemaReference, File> contextToCreate,  ErrorsAndSuccess<Map<NexusSchemaReference,File>> errorsAndSuccess)
+    {
         errorsAndSuccess.errors = new HashMap<>();
         for(Map.Entry<NexusSchemaReference, File> contextEntry: contextToCreate.entrySet()){
-            Map<String, Object> json = this.mapper.readValue(contextEntry.getValue(), Map.class);
             try{
+                Map<String, Object> json = this.mapper.readValue(contextEntry.getValue(), Map.class);
                 if(!this.status.isSimulation()) {
                     this.contextController.createContext(contextEntry.getKey(), json, this.credential);
                 }
                 errorsAndSuccess.success += 1;
-            }catch (HttpClientErrorException e){
+            }catch (Exception e){
                 errorsAndSuccess.errors.put(contextEntry.getKey(), contextEntry.getValue());
             }
             this.status.setContextsProcessed(errorsAndSuccess.success, errorsAndSuccess.errors.size());

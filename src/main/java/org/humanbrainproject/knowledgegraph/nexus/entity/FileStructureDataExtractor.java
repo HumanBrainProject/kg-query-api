@@ -84,7 +84,6 @@ public class FileStructureDataExtractor {
 
     }
 
-    // TODO Optimize all filters can be done in one pass par schema
     protected void fetchingCurrentIdentifiers(ArangoQuery query, JsonLdStandardization standardization) throws IOException, SolrServerException, JSONException, NoSuchAlgorithmException {
         for(Map.Entry<NexusSchemaReference, File> r: this.nexusDataStructure.getSchemasConcerned().entrySet()){
             QueryResult<List<Map>> result = query.queryPropertyGraphBySpecification(this.query(r.getKey()));
@@ -229,7 +228,8 @@ public class FileStructureDataExtractor {
                 this.nexusDataStructure.addToContext(ref, file);
                 break;
             default:
-                this.filesToHandle.put(ref, s);
+                s.add(file);
+                this.filesToHandle.put(ref,s);
         }
     }
 
