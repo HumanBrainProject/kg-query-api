@@ -108,7 +108,7 @@ public class SchemaController {
     }
 
 
-    private Map createSimpleSchema(NexusSchemaReference schemaReference) {
+    public Map createSimpleSchema(NexusSchemaReference schemaReference) {
         Map<String, Object> schema = new LinkedHashMap<>();
         schema.put(JsonLdConsts.CONTEXT, getDefaultContextPayload());
         Map<String, Object> shape = new LinkedHashMap<>();
