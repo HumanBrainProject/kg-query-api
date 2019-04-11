@@ -65,7 +65,7 @@ public class InstanceMaintenanceController {
             //Redirect links
             JsonDocument redirectedJson = pointLinksToSchema(fromNexusById, newVersion);
             NexusSchemaReference schemaReference = new NexusSchemaReference(originalSchema.getOrganization(), originalSchema.getDomain(), originalSchema.getSchema(), newVersion);
-            manipulationController.createInstanceByIdentifier(schemaReference, fromNexusById.getPrimaryIdentifier(), redirectedJson, null);
+            manipulationController.createInstanceByIdentifier(schemaReference, fromNexusById.getPrimaryIdentifier(), redirectedJson, authorizationContext.getUserId());
         }
     }
 
@@ -75,8 +75,7 @@ public class InstanceMaintenanceController {
             for (NexusInstanceReference instanceReference : instanceReferences) {
                 if (instanceReference != null) {
                     JsonDocument fromNexusById = lookupController.getFromNexusById(instanceReference);
-                    //TODO extract userId from credential
-                    IndexingMessage indexingMessage = new IndexingMessage(fromNexusById.getReference(), jsonTransformer.getMapAsJson(fromNexusById), ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_INSTANT), null);
+                    IndexingMessage indexingMessage = new IndexingMessage(fromNexusById.getReference(), jsonTransformer.getMapAsJson(fromNexusById), ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_INSTANT), authorizationContext.getUserId());
                     graphIndexing.update(indexingMessage);
                 }
             }
@@ -89,7 +88,7 @@ public class InstanceMaintenanceController {
         for (NexusInstanceReference instanceReference : allInstancesForSchema) {
             JsonDocument fromNexusById = lookupController.getFromNexusById(instanceReference);
             fromNexusById.replaceNamespace(oldNamespace, newNamespace);
-            manipulationController.createInstanceByNexusId(instanceReference.getNexusSchema(), instanceReference.getId(), instanceReference.getRevision(), fromNexusById, null);
+            manipulationController.createInstanceByNexusId(instanceReference.getNexusSchema(), instanceReference.getId(), instanceReference.getRevision(), fromNexusById, authorizationContext.getUserId());
         }
     }
 

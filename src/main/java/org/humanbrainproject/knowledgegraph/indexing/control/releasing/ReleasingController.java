@@ -1,8 +1,11 @@
 package org.humanbrainproject.knowledgegraph.indexing.control.releasing;
 
 import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoNativeRepository;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.SubSpace;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Vertex;
+import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
+import org.humanbrainproject.knowledgegraph.context.QueryContext;
 import org.humanbrainproject.knowledgegraph.indexing.control.IndexingController;
 import org.humanbrainproject.knowledgegraph.indexing.control.MessageProcessor;
 import org.humanbrainproject.knowledgegraph.indexing.control.nexusToArango.NexusToArangoIndexingProvider;
@@ -12,6 +15,9 @@ import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceR
 import org.humanbrainproject.knowledgegraph.indexing.entity.todo.DeleteTodoItem;
 import org.humanbrainproject.knowledgegraph.indexing.entity.todo.InsertTodoItem;
 import org.humanbrainproject.knowledgegraph.indexing.entity.todo.TodoList;
+import org.humanbrainproject.knowledgegraph.instances.control.InstanceLookupController;
+import org.humanbrainproject.knowledgegraph.query.entity.DatabaseScope;
+import org.humanbrainproject.knowledgegraph.query.entity.JsonDocument;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -31,6 +37,15 @@ public class ReleasingController implements IndexingController {
     @Autowired
     NexusToArangoIndexingProvider indexingProvider;
 
+    @Autowired
+    QueryContext queryContext;
+
+    @Autowired
+    InstanceLookupController instances;
+
+    @Autowired
+    ArangoNativeRepository arangoNativeRepository;
+
     @Override
     public TodoList insert(QualifiedIndexingMessage message, TodoList todoList) {
         Release release = new Release(message);
@@ -46,6 +61,22 @@ public class ReleasingController implements IndexingController {
     private void insert(NexusInstanceReference instanceToBeReleased, TodoList todoList, String timestamp, String userId) {
         String payloadFromPrimaryStore = indexingProvider.getPayloadFromPrimaryStore(instanceToBeReleased);
         QualifiedIndexingMessage qualifiedFromPrimaryStore = messageProcessor.qualify(new IndexingMessage(instanceToBeReleased, payloadFromPrimaryStore, timestamp, userId));
+        NexusInstanceReference originalId = arangoNativeRepository.findOriginalId(instanceToBeReleased);
+        queryContext.setDatabaseScope(DatabaseScope.RELEASED);
+        JsonDocument currentlyReleased = this.instances.getInstance(originalId);
+        //First release
+        if(currentlyReleased == null){
+            qualifiedFromPrimaryStore.getQualifiedMap().put(HBPVocabulary.RELEASE_FIRST_DATE, timestamp);
+            qualifiedFromPrimaryStore.getQualifiedMap().put(HBPVocabulary.RELEASE_FIRST_BY, userId);
+        } else{
+            String firstRel = (String) currentlyReleased.get( HBPVocabulary.RELEASE_FIRST_DATE);
+            String firstRelBy = (String) currentlyReleased.get( HBPVocabulary.RELEASE_FIRST_BY);
+            qualifiedFromPrimaryStore.getQualifiedMap().put(HBPVocabulary.RELEASE_FIRST_DATE, firstRel);
+            qualifiedFromPrimaryStore.getQualifiedMap().put(HBPVocabulary.RELEASE_FIRST_BY, firstRelBy);
+        }
+        qualifiedFromPrimaryStore.getQualifiedMap().put(HBPVocabulary.RELEASE_LAST_DATE, timestamp);
+        qualifiedFromPrimaryStore.getQualifiedMap().put(HBPVocabulary.RELEASE_LAST_BY, userId);
+
         Vertex vertexFromPrimaryStore = messageProcessor.createVertexStructure(qualifiedFromPrimaryStore);
         vertexFromPrimaryStore = indexingProvider.mapToOriginalSpace(vertexFromPrimaryStore, vertexFromPrimaryStore.getQualifiedIndexingMessage().getOriginalId());
         todoList.addTodoItem(new InsertTodoItem(vertexFromPrimaryStore, indexingProvider.getConnection(TargetDatabase.RELEASE)));

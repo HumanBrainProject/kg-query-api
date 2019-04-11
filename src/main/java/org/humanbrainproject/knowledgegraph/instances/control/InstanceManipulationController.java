@@ -232,7 +232,7 @@ public class InstanceManipulationController {
 
     private void immediateIndexing(Map<String, Object> payload, NexusInstanceReference newInstanceReference, String userId) {
         payload.put(HBPVocabulary.PROVENANCE_IMMEDIATE_INDEX, true);
-        IndexingMessage indexingMessage = new IndexingMessage(newInstanceReference, jsonTransformer.getMapAsJson(payload), null, userId);
+        IndexingMessage indexingMessage = new IndexingMessage(newInstanceReference, jsonTransformer.getMapAsJson(payload), ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_INSTANT), userId);
         graphIndexing.insert(indexingMessage);
     }
 
