@@ -66,24 +66,17 @@ public class ReleasingController implements IndexingController {
         NexusInstanceReference originalId = arangoNativeRepository.findOriginalId(instanceToBeReleased);
         queryContext.setDatabaseScope(DatabaseScope.RELEASED);
         JsonDocument currentlyReleased = this.instances.getInstance(originalId);
-        long timeInMS =  ZonedDateTime.parse(timestamp).toEpochSecond() * 1000;
         //First release
         if(currentlyReleased == null){
-            qualifiedFromPrimaryStore.getQualifiedMap().put(HBPVocabulary.RELEASE_FIRST_DATE, timeInMS);
+            qualifiedFromPrimaryStore.getQualifiedMap().put(HBPVocabulary.RELEASE_FIRST_DATE, timestamp);
             qualifiedFromPrimaryStore.getQualifiedMap().put(HBPVocabulary.RELEASE_FIRST_BY, userId);
         } else{
-            long firstRel;
-            if(currentlyReleased.get( HBPVocabulary.RELEASE_FIRST_DATE) instanceof Long){
-                firstRel = (Long) currentlyReleased.get( HBPVocabulary.RELEASE_FIRST_DATE);
-            }else{
-                firstRel =  ZonedDateTime.parse((String) currentlyReleased.get( HBPVocabulary.RELEASE_FIRST_DATE)).toEpochSecond() * 1000;
-
-            }
+            String firstRel = (String) currentlyReleased.get( HBPVocabulary.RELEASE_FIRST_DATE);
             String firstRelBy = (String) currentlyReleased.get( HBPVocabulary.RELEASE_FIRST_BY);
             qualifiedFromPrimaryStore.getQualifiedMap().put(HBPVocabulary.RELEASE_FIRST_DATE, firstRel);
             qualifiedFromPrimaryStore.getQualifiedMap().put(HBPVocabulary.RELEASE_FIRST_BY, firstRelBy);
         }
-        qualifiedFromPrimaryStore.getQualifiedMap().put(HBPVocabulary.RELEASE_LAST_DATE, timeInMS);
+        qualifiedFromPrimaryStore.getQualifiedMap().put(HBPVocabulary.RELEASE_LAST_DATE, timestamp);
         qualifiedFromPrimaryStore.getQualifiedMap().put(HBPVocabulary.RELEASE_LAST_BY, userId);
 
         Vertex vertexFromPrimaryStore = messageProcessor.createVertexStructure(qualifiedFromPrimaryStore);
