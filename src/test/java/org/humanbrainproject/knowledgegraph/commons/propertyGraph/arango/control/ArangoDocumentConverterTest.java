@@ -49,7 +49,7 @@ public class ArangoDocumentConverterTest {
 
         Map map = this.documentConverter.jsonTransformer.parseToMap(jsonFromLinkingInstance);
 
-        assertEquals("http://foo/v0/data/foo/core/bar/v1.0.0/fooMain", map.get(JsonLdConsts.ID));
+        assertEquals("http://bar/resources/foo/core/bar/v1.0.0/fooMain", map.get(JsonLdConsts.ID));
         assertEquals("foo/bar", map.get(ArangoVocabulary.ID));
         assertEquals("bar", map.get(ArangoVocabulary.KEY));
         assertEquals("foo/core/bar/v1.0.0/fooMain", map.get(HBPVocabulary.RELATIVE_URL_OF_INTERNAL_LINK));
@@ -195,7 +195,7 @@ public class ArangoDocumentConverterTest {
         //then
         Map map = this.documentConverter.jsonTransformer.parseToMap(json);
         assertEquals("foobar", map.get("http://foo/bar"));
-        assertEquals("http://foo/v0/data/foo/core/bar/v1.0.0/fooMain", map.get(JsonLdConsts.ID));
+        assertEquals("http://bar/resources/foo/core/bar/v1.0.0/fooMain", map.get(JsonLdConsts.ID));
         assertEquals("foo/bar", map.get(ArangoVocabulary.ID));
         assertEquals("bar", map.get(ArangoVocabulary.KEY));
         assertEquals("foo/core/bar/v1.0.0/fooMain", map.get(HBPVocabulary.RELATIVE_URL_OF_INTERNAL_LINK));

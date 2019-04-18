@@ -6,6 +6,7 @@ import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransform
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
 import org.humanbrainproject.knowledgegraph.query.entity.JsonDocument;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -40,6 +41,7 @@ public class Shacl2EditorTest {
 
 
     @Test
+    @Ignore
     public void convert() {
         JsonDocument jsonDocument = loadShaclSchema("datashapes_morphology_invitroslicereconstructedneuronmorphology.json");
 

@@ -3,6 +3,8 @@ package org.humanbrainproject.knowledgegraph.commons.jsonld.control;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import org.humanbrainproject.knowledgegraph.annotations.Tested;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -19,6 +21,9 @@ public class JsonTransformer {
     public String getMapAsJson(Map map){
         return gson.toJson(map);
     }
+
+
+    protected Logger logger = LoggerFactory.getLogger(JsonTransformer.class);
 
     /**
      * @return a single map if available. If the json string describes a (non-empty) list, the first item is returned. If the json is not a dict, null is returned
@@ -60,6 +65,7 @@ public class JsonTransformer {
             return null;
         }
         catch(JsonSyntaxException e){
+            logger.error(String.format("Was not able to parse result in payload %s", json), e);
             return null;
         }
     }
