@@ -32,6 +32,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Set;
 
 @Component
 @ToBeTested(integrationTestRequired = true, systemTestRequired = true)
@@ -175,9 +176,12 @@ public class ArangoTransaction implements DatabaseTransaction {
             if (collection.exists() && collection.getInfo().getType()==CollectionType.DOCUMENT) {
                 if (collection.documentExists(document.getKey())) {
                     try {
-                        ArangoCursor<String> result = db.query(queryFactory.queryOutboundRelationsForDocument(document, connection.getEdgesCollectionNames(), authorizationContext.getReadableOrganizations()), null, new AqlQueryOptions(), String.class);
-                        for (String id : result.asListRemaining()) {
-                            deleteDocument(ArangoDocumentReference.fromId(id), db);
+                        Set<ArangoCollectionReference> edgesCollectionNames = connection.getEdgesCollectionNames();
+                        if(!edgesCollectionNames.isEmpty()) {
+                            ArangoCursor<String> result = db.query(queryFactory.queryOutboundRelationsForDocument(document, edgesCollectionNames, authorizationContext.getReadableOrganizations()), null, new AqlQueryOptions(), String.class);
+                            for (String id : result.asListRemaining()) {
+                                deleteDocument(ArangoDocumentReference.fromId(id), db);
+                            }
                         }
                         logger.info("Deleted document: {} from database {}", document.getId(), db.name());
                     } catch (ArangoDBException dbexception) {
