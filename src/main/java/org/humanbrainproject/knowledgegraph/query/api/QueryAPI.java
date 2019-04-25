@@ -240,6 +240,23 @@ public class QueryAPI {
         }
     }
 
+    @GetMapping(value ="/{"+ORG+"}/{"+ DOMAIN+"}/{"+SCHEMA+"}/{"+VERSION+"}/{"+QUERY_ID+"}/templates/{"+TEMPLATE_ID+"}/libraries/{"+LIBRARY+"}/instances/{"+INSTANCE_ID+"}")
+    public ResponseEntity<Map> executeStoredQueryWithTemplateAndLibrary(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(QUERY_ID) String queryId, @PathVariable(TEMPLATE_ID) String templateId, @PathVariable(LIBRARY) String library, @PathVariable(INSTANCE_ID) String instanceId, @RequestParam(value = DATABASE_SCOPE, required = false) ExposedDatabaseScope databaseScope, @RequestParam(value = RESTRICT_TO_ORGANIZATIONS, required = false) String restrictToOrganizations, @ApiParam("Defines if the underlying json (the one the template is applied to) shall be part of the result as well.") @RequestParam(value = "includeOriginalJson", required = false) boolean includeOriginalJson, @ApiParam(value = ParameterConstants.AUTHORIZATION_DOC) @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken, @ApiIgnore @RequestParam Map<String, String> allRequestParams) throws Exception {
+        authorizationContext.populateAuthorizationContext(authorizationToken);
+        queryContext.populateQueryContext(databaseScope);
+
+        StoredQuery query = new StoredQuery(new NexusSchemaReference(org, domain, schema, version), queryId, null);
+        query.getFilter().restrictToOrganizations(RestUtils.splitCommaSeparatedValues(restrictToOrganizations)).restrictToSingleId(instanceId);
+        query.setTemplateId(templateId).setLibraryId(library).setReturnOriginalJson(includeOriginalJson);
+        try {
+            Map result = this.query.queryPropertyGraphByStoredSpecificationAndStoredTemplateWithId(query);
+            return ResponseEntity.ok(result);
+        } catch (StoredQueryNotFoundException e){
+            return ResponseEntity.notFound().build();
+        }
+
+    }
+
     @GetMapping(value ="/{"+ORG+"}/{"+ DOMAIN+"}/{"+SCHEMA+"}/{"+VERSION+"}/{"+QUERY_ID+"}/templates/{"+TEMPLATE_ID+"}/instances/{"+INSTANCE_ID+"}")
     public ResponseEntity<Map> executeStoredQueryWithTemplate(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(QUERY_ID) String queryId, @PathVariable(TEMPLATE_ID) String templateId, @PathVariable(INSTANCE_ID) String instanceId, @RequestParam(value = DATABASE_SCOPE, required = false) ExposedDatabaseScope databaseScope, @RequestParam(value = RESTRICT_TO_ORGANIZATIONS, required = false) String restrictToOrganizations, @ApiParam("Defines if the underlying json (the one the template is applied to) shall be part of the result as well.") @RequestParam(value = "includeOriginalJson", required = false) boolean includeOriginalJson, @ApiParam(value = ParameterConstants.AUTHORIZATION_DOC) @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken, @ApiIgnore @RequestParam Map<String, String> allRequestParams) throws Exception {
         authorizationContext.populateAuthorizationContext(authorizationToken);
@@ -251,7 +268,6 @@ public class QueryAPI {
 
         try {
             Map result = this.query.queryPropertyGraphByStoredSpecificationAndStoredTemplateWithId(query);
-
             return ResponseEntity.ok(result);
         }
         catch (StoredQueryNotFoundException e){
