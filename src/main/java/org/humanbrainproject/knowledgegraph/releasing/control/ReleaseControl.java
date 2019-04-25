@@ -2,6 +2,7 @@ package org.humanbrainproject.knowledgegraph.releasing.control;
 
 import com.github.jsonldjava.core.JsonLdConsts;
 import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
+import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationContext;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
 import org.humanbrainproject.knowledgegraph.commons.labels.SemanticsToHumanTranslator;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
@@ -30,6 +31,9 @@ import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -67,6 +71,9 @@ public class ReleaseControl {
 
     @Autowired
     InstanceManipulationController instanceManipulationController;
+
+    @Autowired
+    AuthorizationContext authorizationContext;
 
 
     public NexusInstanceReference findNexusInstanceFromInferredArangoEntry(ArangoDocumentReference arangoDocumentReference) {
@@ -205,8 +212,8 @@ public class ReleaseControl {
         payload.addType(HBPVocabulary.RELEASE_TYPE);
         NexusInstanceReference originalId = nativeRepository.findOriginalId(instanceReference);
         NexusSchemaReference releaseSchema = new NexusSchemaReference("releasing", "prov", "release", "v0.0.2");
-        NexusInstanceReference instance = instanceManipulationController.createInstanceByIdentifier(releaseSchema, originalId.getFullId(false), payload, null);
-        return new IndexingMessage(instance, jsonTransformer.getMapAsJson(payload), null, null);
+        NexusInstanceReference instance = instanceManipulationController.createInstanceByIdentifier(releaseSchema, originalId.getFullId(false), payload, authorizationContext.getUserId());
+        return new IndexingMessage(instance, jsonTransformer.getMapAsJson(payload), ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_INSTANT),  authorizationContext.getUserId());
     }
 
     public NexusInstanceReference unrelease(NexusInstanceReference instanceReference) {
