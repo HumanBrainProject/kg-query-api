@@ -48,6 +48,7 @@ public class DataQueryBuilder {
 
 
     public String build(List<String> restrictToIds, String search) {
+        search = search!=null ? search.toLowerCase() : null;
         //Define the global parameters
         ArangoAlias rootAlias = new ArangoAlias("root");
         q.setParameter("rootFieldName", rootAlias.getArangoName());
@@ -69,7 +70,7 @@ public class DataQueryBuilder {
 
         //FIXME We want to get rid of the static search parameter - this could be done dynamically but we keep it for backwards compatibility right now.
         if(search!=null){
-            q.addLine(trust("FILTER ${rootFieldName}_doc.`http://schema.org/name` LIKE @searchQuery"));
+            q.addLine(trust("FILTER LOWER(${rootFieldName}_doc.`http://schema.org/name`) LIKE @searchQuery"));
             getProcessedFilterValues().put("searchQuery", "%"+search+"%");
         }
 
