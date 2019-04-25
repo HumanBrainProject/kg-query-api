@@ -238,6 +238,7 @@ public class DataQueryBuilder {
             if(aliasStack.size()==1 && hasSort){
                 aql.add(trust("(FOR ${alias}_sort IN "));
             }
+            aql.add(trust(ensureOrder ? "(" : "UNIQUE("));
             aql.add(trust("FLATTEN("));
             if (traverseExists(traverse)) {
 
@@ -317,7 +318,8 @@ public class DataQueryBuilder {
                     fields.addLine(new ReturnBuilder(alias, traversalField, traversalField.fields).getReturnStructure());
                     while (aliasStack.size() > 1) {
                         ArangoAlias a = aliasStack.pop();
-                        fields.addLine(trust("))"));
+                        fields.addLine(trust(")))"));
+
                         if (aliasStack.size() > 1) {
                             AQL returnStructure = new AQL();
                             returnStructure.add(trust("RETURN DISTINCT ${traverseField}"));
