@@ -156,7 +156,11 @@ public class Reconciliation implements InferenceStrategy, InitializingBean {
                         userIds = new HashSet<>();
                     }
                     userIds.add((String)vertex.getQualifiedIndexingMessage().getQualifiedMap().get(HBPVocabulary.PROVENANCE_LAST_MODIFICATION_USER_ID));
-                    allAlts.put(valueByName, userIds);
+                    Set<String> cleanIds = userIds.stream().filter(id -> id != null).map(id -> {
+                        if(id.contains("/")){
+                         return id.substring(id.lastIndexOf("/") + 1);
+                    } else { return id;}}).collect(Collectors.toSet());
+                    allAlts.put(valueByName, cleanIds);
                 }
 
                 if (overrides(vertex, originOfResult, valueByName, result, valueCount)) {
