@@ -35,10 +35,7 @@ import java.io.IOException;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 @Component
 @ToBeTested(integrationTestRequired = true)
@@ -213,8 +210,22 @@ public class ReleaseControl {
         payload.addType(HBPVocabulary.RELEASE_TYPE);
         NexusInstanceReference originalId = nativeRepository.findOriginalId(instanceReference);
         NexusSchemaReference releaseSchema = new NexusSchemaReference("releasing", "prov", "release", "v0.0.2");
+        Set<NexusInstanceReference> existingReleases = nativeRepository.findOriginalIdsWithLinkTo(databaseFactory.getInferredDB(), ArangoDocumentReference.fromNexusInstance(originalId.toSubSpace(SubSpace.MAIN)), ArangoCollectionReference.fromFieldName(HBPVocabulary.RELEASE_INSTANCE));
         NexusInstanceReference instance = instanceManipulationController.createInstanceByIdentifier(releaseSchema, originalId.toSubSpace(SubSpace.MAIN).getFullId(false), payload, authorizationContext.getUserId());
-        return new IndexingMessage(instance, jsonTransformer.getMapAsJson(payload), ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_INSTANT),  authorizationContext.getUserId());
+        //TODO This is a progressive fix for a previously introduced issue. As soon as all release instances are containing an "identifier" with the main space, we can get rid of this logic.
+        NexusInstanceReference finalInstance = instance;
+        existingReleases.removeIf(instanceReference1 -> instanceReference1.isSameInstanceRegardlessOfRevision(instance));
+        boolean outdatedRelease = false;
+        for (NexusInstanceReference existingRelease : existingReleases) {
+            outdatedRelease = true;
+            System.out.println("Outdated release: "+existingRelease);
+            instanceManipulationController.deprecateInstanceByNexusId(existingRelease);
+        }
+        if(outdatedRelease){
+            //The previous deprecations have temporarily unreleased the instance. This is why we need to re-release it.
+            finalInstance = instanceManipulationController.createInstanceByIdentifier(releaseSchema, originalId.toSubSpace(SubSpace.MAIN).getFullId(false), payload, authorizationContext.getUserId());
+        }
+        return new IndexingMessage(finalInstance, jsonTransformer.getMapAsJson(payload), ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_INSTANT),  authorizationContext.getUserId());
     }
 
     public NexusInstanceReference unrelease(NexusInstanceReference instanceReference) {

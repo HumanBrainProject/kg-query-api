@@ -117,7 +117,7 @@ public class InstanceManipulationController {
     }
 
     public boolean deprecateInstanceByNexusId(NexusInstanceReference instanceReference) {
-        boolean delete = nexusClient.delete(instanceReference.getRelativeUrl(), instanceReference.getRevision() != null ? instanceReference.getRevision() : 1, authorizationContext.getCredential());
+        boolean delete = nexusClient.delete(instanceReference.getRelativeUrl(), instanceReference.getRevision(), authorizationContext.getCredential());
         if (delete) {
             immediateDeprecation(instanceReference);
         }
