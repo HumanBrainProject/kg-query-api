@@ -8,6 +8,7 @@ import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.SchemaOrgVocabulary;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
+import org.humanbrainproject.knowledgegraph.query.entity.Query;
 import org.humanbrainproject.knowledgegraph.query.entity.SpecField;
 import org.humanbrainproject.knowledgegraph.query.entity.SpecTraverse;
 import org.humanbrainproject.knowledgegraph.query.entity.Specification;
@@ -25,18 +26,23 @@ public class SpecificationBasedReleaseTreeBuilder extends AbstractReleaseTreeBui
     private final ArangoDocumentReference instanceId;
     private final AuthorizedArangoQuery q;
     private final String nexusInstanceBase;
+    private ReleaseTreeScope scope;
 
     private final Set<ArangoCollectionReference> existingCollections;
 
     private int internalFieldCounter = 0;
     private final ArangoAlias rootAlias = new ArangoAlias("root");
 
-    public SpecificationBasedReleaseTreeBuilder(Specification specification, Set<String> permissionGroupsWithReadAccess, ArangoDocumentReference instanceId, Set<ArangoCollectionReference> existingCollections, String nexusInstanceBase) {
+    public SpecificationBasedReleaseTreeBuilder(Specification specification, Set<String> permissionGroupsWithReadAccess, ArangoDocumentReference instanceId, Set<ArangoCollectionReference> existingCollections, String nexusInstanceBase, ReleaseTreeScope scope) {
         this.q = new AuthorizedArangoQuery(permissionGroupsWithReadAccess);
         this.specification = specification;
         this.instanceId = instanceId;
         this.existingCollections = existingCollections;
         this.nexusInstanceBase = nexusInstanceBase;
+        if(scope == null){
+            scope = ReleaseTreeScope.ALL;
+        }
+        this.scope = scope;
     }
 
     public String build() {
@@ -51,20 +57,32 @@ public class SpecificationBasedReleaseTreeBuilder extends AbstractReleaseTreeBui
         q.addLine(trust(""));
         q.addLine(trust("FOR ${rootDoc} IN `${collection}`")).indent();
         q.addDocumentFilter(rootAlias);
-        q.addLine(createReleaseStatusQuery(rootAlias, nexusInstanceBase).build());
         q.addLine(trust("FILTER ${rootDoc}._id == \"${id}\""));
-        List<ArangoAlias> fieldAliases = processFields(rootAlias, specification.getFields());
+        q.addLine(createReleaseStatusQuery(rootAlias, nexusInstanceBase).build());
+        List<ArangoAlias> fieldAliases = null;
+        if(!scope.name().equals(ReleaseTreeScope.TOP_INSTANCE_ONLY.name())){
+            fieldAliases = processFields(rootAlias, specification.getFields());
+        }
         q.addLine(trust("RETURN {"));
-        q.setParameter("id", instanceId.getId());
-        q.addLine(trust(" \"" + JsonLdConsts.ID + "\": ${rootDoc}.`" + JsonLdConsts.ID + "`,"));
-        q.addLine(trust(" \"" + SchemaOrgVocabulary.NAME + "\": ${rootDoc}.`" + SchemaOrgVocabulary.NAME + "`,"));
-        q.addLine(trust(" \"" + SchemaOrgVocabulary.IDENTIFIER + "\": ${rootDoc}.`" + SchemaOrgVocabulary.IDENTIFIER + "`,"));
-        handleReturnStructureOfSubfields(q, fieldAliases);
-        q.addLine(trust(" \"status\": ${rootDoc}_status,"));
-        q.addLine(trust(" \"" + JsonLdConsts.TYPE + "\": ${rootDoc}.`" + JsonLdConsts.TYPE + "`"));
+        createReturnObject(fieldAliases);
         q.addLine(trust("}"));
-
         return q.build().getValue();
+    }
+
+    private void createReturnObject(List<ArangoAlias> fieldAliases){
+        q.setParameter("id", instanceId.getId());
+        if(scope.name().equals(ReleaseTreeScope.CHILDREN_ONLY.name())){
+            handleReturnStructureOfSubfields(q, fieldAliases, true);
+        }else{
+            q.addLine(trust(" \"" + JsonLdConsts.ID + "\": ${rootDoc}.`" + JsonLdConsts.ID + "`,"));
+            q.addLine(trust(" \"" + SchemaOrgVocabulary.NAME + "\": ${rootDoc}.`" + SchemaOrgVocabulary.NAME + "`,"));
+            q.addLine(trust(" \"" + SchemaOrgVocabulary.IDENTIFIER + "\": ${rootDoc}.`" + SchemaOrgVocabulary.IDENTIFIER + "`,"));
+            if(scope.name().equals(ReleaseTreeScope.ALL.name())){
+                handleReturnStructureOfSubfields(q, fieldAliases, false);
+            }
+            q.addLine(trust(" \"status\": ${rootDoc}_status,"));
+            q.addLine(trust(" \"" + JsonLdConsts.TYPE + "\": ${rootDoc}.`" + JsonLdConsts.TYPE + "`"));
+        }
     }
 
 
@@ -114,7 +132,7 @@ public class SpecificationBasedReleaseTreeBuilder extends AbstractReleaseTreeBui
                     }
                     else if(field.hasSubFields()){
                         List<ArangoAlias> fieldAliases = processFields(alias, field.fields);
-                        handleReturnStructureOfSubfields(subQuery, fieldAliases);
+                        handleReturnStructureOfSubfields(subQuery, fieldAliases, false);
                     }
                     subQuery.addLine(trust(" \"status\": ${aliasDoc}_status,"));
                     subQuery.addLine(trust(" \"" + JsonLdConsts.TYPE + "\": ${aliasDoc}.`" + JsonLdConsts.TYPE + "`"));
@@ -132,13 +150,16 @@ public class SpecificationBasedReleaseTreeBuilder extends AbstractReleaseTreeBui
         return result;
     }
 
-    private void handleReturnStructureOfSubfields(AQL query, List<ArangoAlias> fieldAliases) {
+    private void handleReturnStructureOfSubfields(AQL query, List<ArangoAlias> fieldAliases, boolean isOnlyElement) {
         if(fieldAliases!=null && !fieldAliases.isEmpty()){
             query.addLine(trust(" \"children\": UNION_DISTINCT("));
             for (ArangoAlias fieldAlias : fieldAliases) {
                 query.addLine(new AQL().add(trust("${a},")).setParameter("a", fieldAlias.getArangoName()).build());
             }
-            query.addLine(trust("[]),"));
+            query.addLine(trust("[])"));
+            if(!isOnlyElement){
+                query.addLine(trust(","));
+            }
         }
     }
 

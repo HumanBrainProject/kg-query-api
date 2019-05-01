@@ -9,6 +9,7 @@ import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfigura
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoDatabaseFactory;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoNativeRepository;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoRepository;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.builders.ReleaseTreeScope;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.ArangoVocabulary;
@@ -87,12 +88,14 @@ public class ReleaseControl {
         return null;
     }
 
-    public ReleaseStatusResponse getReleaseStatus(NexusInstanceReference instance, boolean withChildren) {
-        Map releaseGraph = getReleaseGraph(instance);
+    public ReleaseStatusResponse getReleaseStatus(NexusInstanceReference instance, ReleaseTreeScope scope) {
+        Map releaseGraph = getReleaseGraph(instance, scope);
         if (releaseGraph != null) {
             ReleaseStatusResponse response = new ReleaseStatusResponse();
-            response.setRootStatus(ReleaseStatus.valueOf((String) releaseGraph.get("status")));
-            if (withChildren) {
+            if(!scope.name().equals(ReleaseTreeScope.CHILDREN_ONLY.name())){
+                response.setRootStatus(ReleaseStatus.valueOf((String) releaseGraph.get("status")));
+            }
+            if (!scope.name().equals(ReleaseTreeScope.TOP_INSTANCE_ONLY.name())) {
                 ReleaseStatus worstReleaseStatusOfChildren = findWorstReleaseStatusOfChildren(releaseGraph, null, true);
                 response.setChildrenStatus(worstReleaseStatusOfChildren);
             }
@@ -102,11 +105,11 @@ public class ReleaseControl {
         return null;
     }
 
-    public Map getReleaseGraph(NexusInstanceReference instanceReference) {
+    public Map getReleaseGraph(NexusInstanceReference instanceReference, ReleaseTreeScope scope) {
         try {
             StoredQuery storedQuery = new StoredQuery(instanceReference.getNexusSchema(), "search", null);
             storedQuery.getFilter().restrictToSingleId(instanceReference.getId());
-            Map releaseTree = query.queryReleaseTree(storedQuery, instanceReference);
+            Map releaseTree = query.queryReleaseTree(storedQuery, instanceReference, scope);
             return releaseTree != null ? transformReleaseStatusMap(releaseTree) : null;
 
         } catch (IOException | JSONException e) {

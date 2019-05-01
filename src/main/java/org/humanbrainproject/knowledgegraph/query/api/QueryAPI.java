@@ -9,6 +9,7 @@ import org.humanbrainproject.knowledgegraph.commons.ExternalApi;
 import org.humanbrainproject.knowledgegraph.commons.api.ParameterConstants;
 import org.humanbrainproject.knowledgegraph.commons.api.RestUtils;
 import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationContext;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.builders.ReleaseTreeScope;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.exceptions.RootCollectionNotFoundException;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.exceptions.StoredQueryNotFoundException;
 import org.humanbrainproject.knowledgegraph.context.QueryContext;
@@ -146,7 +147,7 @@ public class QueryAPI {
             StoredQuery query = new StoredQuery(schemaReference, queryId, vocab);
             query.setParameters(allRequestParams);
             query.getFilter().restrictToOrganizations(RestUtils.splitCommaSeparatedValues(restrictToOrganizations));
-            Map result = this.query.queryReleaseTree(query, new NexusInstanceReference(schemaReference, instanceId));
+            Map result = this.query.queryReleaseTree(query, new NexusInstanceReference(schemaReference, instanceId), ReleaseTreeScope.ALL);
             return ResponseEntity.ok(result);
         } catch (StoredQueryNotFoundException e){
             return ResponseEntity.notFound().build();

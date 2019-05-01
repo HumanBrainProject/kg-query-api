@@ -15,6 +15,7 @@ public class DefaultReleaseTreeBuilder extends AbstractReleaseTreeBuilder {
     private final ArangoDocumentReference instanceId;
     private final AuthorizedArangoQuery q;
     private final String nexusInstanceBase;
+    private ReleaseTreeScope scope;
 
 
     private final ArangoAlias rootAlias = new ArangoAlias("root");
@@ -23,6 +24,10 @@ public class DefaultReleaseTreeBuilder extends AbstractReleaseTreeBuilder {
         this.q = new AuthorizedArangoQuery(permissionGroupsWithReadAccess);
         this.instanceId = instanceId;
         this.nexusInstanceBase = nexusInstanceBase;
+        if(scope == null){
+            scope = ReleaseTreeScope.ALL;
+        }
+        this.scope = scope;
     }
 
     public String build() {
@@ -37,8 +42,8 @@ public class DefaultReleaseTreeBuilder extends AbstractReleaseTreeBuilder {
         q.addLine(trust(""));
         q.addLine(trust("FOR ${rootDoc} IN `${collection}`")).indent();
         q.addDocumentFilter(rootAlias);
-        q.addLine(createReleaseStatusQuery(rootAlias, nexusInstanceBase).build());
         q.addLine(trust("FILTER ${rootDoc}._id == \"${id}\""));
+        q.addLine(createReleaseStatusQuery(rootAlias, nexusInstanceBase).build());
         q.addLine(trust("RETURN {"));
         q.setParameter("id", instanceId.getId());
         q.addLine(trust(" \"" + JsonLdConsts.ID + "\": ${rootDoc}.`" + JsonLdConsts.ID + "`,"));
