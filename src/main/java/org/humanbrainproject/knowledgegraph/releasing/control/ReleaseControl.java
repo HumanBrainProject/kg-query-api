@@ -11,6 +11,7 @@ import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoRepository;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.SubSpace;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.ArangoVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.SchemaOrgVocabulary;
@@ -212,7 +213,7 @@ public class ReleaseControl {
         payload.addType(HBPVocabulary.RELEASE_TYPE);
         NexusInstanceReference originalId = nativeRepository.findOriginalId(instanceReference);
         NexusSchemaReference releaseSchema = new NexusSchemaReference("releasing", "prov", "release", "v0.0.2");
-        NexusInstanceReference instance = instanceManipulationController.createInstanceByIdentifier(releaseSchema, originalId.getFullId(false), payload, authorizationContext.getUserId());
+        NexusInstanceReference instance = instanceManipulationController.createInstanceByIdentifier(releaseSchema, originalId.toSubSpace(SubSpace.MAIN).getFullId(false), payload, authorizationContext.getUserId());
         return new IndexingMessage(instance, jsonTransformer.getMapAsJson(payload), ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_INSTANT),  authorizationContext.getUserId());
     }
 
