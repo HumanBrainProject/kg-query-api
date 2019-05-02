@@ -46,7 +46,7 @@ public class ArangoStructureRepository {
     public List<Map> getInboundRelationsForDocument(ArangoDocumentReference documentReference) {
         ArangoConnection inferredDB = databaseFactory.getInferredDB();
         Set<ArangoCollectionReference> edgesCollectionNames = inferredDB.getEdgesCollectionNames();
-        String q = queryFactory.queryInboundRelationsForDocument(documentReference, edgesCollectionNames, authorizationContext.getReadableOrganizations());
+        String q = queryFactory.queryInboundRelationsForDocument(documentReference, edgesCollectionNames, authorizationContext.getReadableOrganizations(), false);
         ArangoCursor<Map> result = inferredDB.getOrCreateDB().query(q, null, new AqlQueryOptions(), Map.class);
         return result.asListRemaining();
     }

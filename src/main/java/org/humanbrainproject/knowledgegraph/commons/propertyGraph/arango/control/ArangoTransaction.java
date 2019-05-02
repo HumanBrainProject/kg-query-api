@@ -178,14 +178,14 @@ public class ArangoTransaction implements DatabaseTransaction {
                     try {
                         Set<ArangoCollectionReference> edgesCollectionNames = connection.getEdgesCollectionNames();
                         if(!edgesCollectionNames.isEmpty()) {
-                            ArangoCursor<String> result = db.query(queryFactory.queryOutboundRelationsForDocument(document, edgesCollectionNames, authorizationContext.getReadableOrganizations()), null, new AqlQueryOptions(), String.class);
+                            String query = queryFactory.queryOutboundRelationsForDocument(document, edgesCollectionNames, authorizationContext.getReadableOrganizations(), true);
+                            ArangoCursor<String> result = db.query(query, null, new AqlQueryOptions(), String.class);
                             for (String id : result.asListRemaining()) {
                                 deleteDocument(ArangoDocumentReference.fromId(id), db);
                             }
                         }
-                        logger.info("Deleted document: {} from database {}", document.getId(), db.name());
                     } catch (ArangoDBException dbexception) {
-                        logger.error(String.format("Was not able to delete document: %s in database %s", document.getId(), db.name()), dbexception);
+                        logger.error(String.format("Was not able to delete the outgoing relation: %s in database %s", document.getId(), db.name()), dbexception);
                         throw dbexception;
                     }
                 } else {
@@ -195,7 +195,7 @@ public class ArangoTransaction implements DatabaseTransaction {
                 logger.debug("Tried to delete {} although the collection doesn't exist. Skip.", document.getId());
             }
         } else {
-            logger.error("Was not able to delete document due to missing id");
+            logger.error("Was not able to delete outgoing relation due to missing id");
         }
     }
 

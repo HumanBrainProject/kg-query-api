@@ -38,12 +38,12 @@ public class ArangoQueryFactory {
         return queryForValueWithProperty(propertyName, propertyValue, collectionsToCheck, ArangoVocabulary.ID, permissionGroupsWithReadAccess);
     }
 
-    public String queryOutboundRelationsForDocument(ArangoDocumentReference document, Set<ArangoCollectionReference> edgeCollections, Set<String> permissionGroupsWithReadAccess) {
-        return queryDirectRelationsForDocument(document, edgeCollections, permissionGroupsWithReadAccess, true);
+    public String queryOutboundRelationsForDocument(ArangoDocumentReference document, Set<ArangoCollectionReference> edgeCollections, Set<String> permissionGroupsWithReadAccess, boolean ignoreLinkingInstances) {
+        return queryDirectRelationsForDocument(document, edgeCollections, permissionGroupsWithReadAccess, true, ignoreLinkingInstances);
     }
 
-    public String queryInboundRelationsForDocument(ArangoDocumentReference document, Set<ArangoCollectionReference> edgeCollections, Set<String> permissionGroupsWithReadAccess) {
-        return queryDirectRelationsForDocument(document, edgeCollections, permissionGroupsWithReadAccess, false);
+    public String queryInboundRelationsForDocument(ArangoDocumentReference document, Set<ArangoCollectionReference> edgeCollections, Set<String> permissionGroupsWithReadAccess, boolean ignoreLinkingInstances) {
+        return queryDirectRelationsForDocument(document, edgeCollections, permissionGroupsWithReadAccess, false, ignoreLinkingInstances);
     }
 
     public String queryLinkingInstanceBetweenVertices(ArangoDocumentReference from, ArangoDocumentReference to, ArangoCollectionReference relation, Set<String> permissionGroupsWithReadAccess) {
@@ -59,7 +59,7 @@ public class ArangoQueryFactory {
     }
 
 
-    private String queryDirectRelationsForDocument(ArangoDocumentReference document, Set<ArangoCollectionReference> edgeCollections, Set<String> permissionGroupsWithReadAccess, boolean outbound) {
+    private String queryDirectRelationsForDocument(ArangoDocumentReference document, Set<ArangoCollectionReference> edgeCollections, Set<String> permissionGroupsWithReadAccess, boolean outbound, boolean ignoreLinkingInstances) {
         AuthorizedArangoQuery q = new AuthorizedArangoQuery(permissionGroupsWithReadAccess);
         q.setParameter("documentId", document.getId());
         q.setParameter("direction", outbound ? "OUTBOUND" : "INBOUND");
@@ -68,6 +68,9 @@ public class ArangoQueryFactory {
         q.addDocumentFilter(new TrustedAqlValue("doc"));
         q.addLine(trust("FOR v, e IN 1..1 ${direction} doc ${edges}"));
         q.addDocumentFilter(new TrustedAqlValue("v"));
+        if(ignoreLinkingInstances){
+            q.addLine(trust("  FILTER \""+ HBPVocabulary.LINKING_INSTANCE_TYPE+"\" NOT IN e.`"+JsonLdConsts.TYPE+"`"));
+        }
         q.addLine(trust("RETURN e." + ArangoVocabulary.ID));
         return q.build().getValue();
     }
