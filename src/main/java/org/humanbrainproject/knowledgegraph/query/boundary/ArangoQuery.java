@@ -11,6 +11,7 @@ import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoInternalRepository;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoRepository;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoToNexusLookupMap;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.builders.ReleaseTreeScope;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoNamingHelper;
@@ -101,14 +102,14 @@ public class ArangoQuery {
     }
 
 
-    public Map queryReleaseTree(Query query, NexusInstanceReference instanceReference) throws JSONException, IOException {
+    public Map queryReleaseTree(Query query, NexusInstanceReference instanceReference, ReleaseTreeScope scope) throws JSONException, IOException {
         Map map;
         if(query == null ||  query.getSpecification() == null){
             map = specificationQuery.defaultReleaseTree(instanceReference);
         }
         else {
             Specification spec = specInterpreter.readSpecification(JsonUtils.toString(standardization.fullyQualify(query.getSpecification())), getAbsoluteUrlOfRootSchema(query), null);
-            map = specificationQuery.releaseTreeBySpecification(spec, query, instanceReference);
+            map = specificationQuery.releaseTreeBySpecification(spec, query, instanceReference, scope);
         }
         map.put("children", regroup((List<Map>) map.get("children")));
         return map;
@@ -191,7 +192,7 @@ public class ArangoQuery {
         return metaQueryBySpecification(resolveStoredQuery(query));
     }
 
-    public Map queryReleaseTree(StoredQuery query, NexusInstanceReference instanceReference) throws
+    public Map queryReleaseTree(StoredQuery query, NexusInstanceReference instanceReference, ReleaseTreeScope scope) throws
             IOException, JSONException {
         Query resolvedQuery;
         try {
@@ -200,7 +201,7 @@ public class ArangoQuery {
         catch(StoredQueryNotFoundException e){
             resolvedQuery = null;
         }
-        return queryReleaseTree(resolvedQuery, instanceReference);
+        return queryReleaseTree(resolvedQuery, instanceReference, scope);
     }
 
 

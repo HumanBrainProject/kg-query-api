@@ -7,6 +7,7 @@ import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfigura
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoRepository;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.builders.DataQueryBuilder;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.builders.DefaultReleaseTreeBuilder;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.builders.ReleaseTreeScope;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.builders.SpecificationBasedReleaseTreeBuilder;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.query.SpecificationQuery;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
@@ -86,8 +87,8 @@ public class SpecificationController {
         return inner;
     }
 
-    public Map releaseTreeBySpecification(Specification spec, Query query, NexusInstanceReference instanceReference) throws JSONException {
-        SpecificationBasedReleaseTreeBuilder builder = new SpecificationBasedReleaseTreeBuilder(spec, authorizationContext.getReadableOrganizations(query.getFilter().getRestrictToOrganizations()), ArangoDocumentReference.fromNexusInstance(instanceReference), queryContext.getExistingCollections(), configuration.getNexusBase(NexusConfiguration.ResourceType.DATA));
+    public Map releaseTreeBySpecification(Specification spec, Query query, NexusInstanceReference instanceReference, ReleaseTreeScope scope) throws JSONException {
+        SpecificationBasedReleaseTreeBuilder builder = new SpecificationBasedReleaseTreeBuilder(spec, authorizationContext.getReadableOrganizations(query.getFilter().getRestrictToOrganizations()), ArangoDocumentReference.fromNexusInstance(instanceReference), queryContext.getExistingCollections(), configuration.getNexusBase(NexusConfiguration.ResourceType.DATA), scope);
         List<Map> results = specificationQuery.queryForSimpleMap(builder.build());
         if(results==null || results.isEmpty()){
             return null;
