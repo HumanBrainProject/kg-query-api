@@ -17,6 +17,7 @@ import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.exceptions.StoredQueryNotFoundException;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.ArangoVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
+import org.humanbrainproject.knowledgegraph.commons.vocabulary.SchemaOrgVocabulary;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
 import org.humanbrainproject.knowledgegraph.query.control.FreemarkerTemplating;
@@ -161,10 +162,20 @@ public class ArangoQuery {
         List<Map> internalDocuments = arangoInternalRepository.getInternalDocuments(SPECIFICATION_QUERIES);
         List<Map> result = new ArrayList<>();
         for (Map internalDocument : internalDocuments) {
-            String rootSchema = (String)((Map) internalDocument.get(GraphQueryKeys.GRAPH_QUERY_ROOT_SCHEMA)).get(JsonLdConsts.ID);
-            NexusSchemaReference fromUrl = NexusSchemaReference.createFromUrl(rootSchema);
-            if(schemaReference.getRelativeUrl().getUrl().equals(fromUrl.getRelativeUrl().getUrl())){
-                result.add(internalDocument);
+            if(internalDocument.containsKey(GraphQueryKeys.GRAPH_QUERY_ROOT_SCHEMA.getFieldName())){
+                String rootSchema = (String)((Map) internalDocument.get(GraphQueryKeys.GRAPH_QUERY_ROOT_SCHEMA.getFieldName())).get(JsonLdConsts.ID);
+                NexusSchemaReference fromUrl = NexusSchemaReference.createFromUrl(rootSchema);
+                if(schemaReference.getRelativeUrl().getUrl().equals(fromUrl.getRelativeUrl().getUrl())){
+                    JsonDocument doc = new JsonDocument(internalDocument);
+                    if(doc.containsKey(SchemaOrgVocabulary.IDENTIFIER)){
+                        JsonDocument r = new JsonDocument();
+                        r.addToProperty(SchemaOrgVocabulary.IDENTIFIER, doc.get(SchemaOrgVocabulary.IDENTIFIER));
+                        r.addToProperty(HBPVocabulary.PROVENANCE_CREATED_BY, doc.get(ArangoVocabulary.CREATED_BY_USER));
+                        r.addToProperty(SchemaOrgVocabulary.NAME, doc.getOrDefault(SchemaOrgVocabulary.NAME, ""));
+                        r.addToProperty(SchemaOrgVocabulary.DESCRIPTION, doc.getOrDefault(SchemaOrgVocabulary.DESCRIPTION, ""));
+                        result.add(r);
+                    }
+                }
             }
         }
         return result;
@@ -215,8 +226,14 @@ public class ArangoQuery {
         String id = queryReference.getName();
         jsonObject.put(ArangoVocabulary.KEY, id);
         jsonObject.put(ArangoVocabulary.ID, id);
+        jsonObject.put(SchemaOrgVocabulary.IDENTIFIER, queryReference.getSchemaReference().toString() + "/" +queryReference.getAlias());
         ArangoDocumentReference document = new ArangoDocumentReference(SPECIFICATION_QUERIES, id);
         arangoInternalRepository.insertOrUpdateDocument(document, jsonObject.toString());
+    }
+
+    public void removeSpecificationInDb(StoredQueryReference queryReference) throws IllegalAccessException {
+        ArangoDocumentReference documentRef = new ArangoDocumentReference(SPECIFICATION_QUERIES, queryReference.getName());
+        arangoInternalRepository.removeInternalDocument(documentRef);
     }
 
     public QueryResult<List<Map>> queryPropertyGraphByStoredSpecificationAndFreemarkerTemplate(StoredQuery storedQuery) throws IOException, JSONException, SolrServerException {

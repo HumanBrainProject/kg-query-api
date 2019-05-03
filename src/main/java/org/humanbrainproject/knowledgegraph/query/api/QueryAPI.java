@@ -117,8 +117,9 @@ public class QueryAPI {
         authorizationContext.populateAuthorizationContext(authorizationToken);
 
         Map queryPayload = query.getQueryPayload(new StoredQueryReference(new NexusSchemaReference(org, domain, schema, version), queryId), Map.class);
+        JsonDocument doc = new JsonDocument(queryPayload).removeAllInternalKeys();
         if (queryPayload != null) {
-            return ResponseEntity.ok(queryPayload);
+            return ResponseEntity.ok(doc);
         } else {
             return ResponseEntity.notFound().build();
         }
@@ -239,6 +240,23 @@ public class QueryAPI {
         }
     }
 
+    @GetMapping(value ="/{"+ORG+"}/{"+ DOMAIN+"}/{"+SCHEMA+"}/{"+VERSION+"}/{"+QUERY_ID+"}/templates/{"+TEMPLATE_ID+"}/libraries/{"+LIBRARY+"}/instances/{"+INSTANCE_ID+"}")
+    public ResponseEntity<Map> executeStoredQueryWithTemplateAndLibrary(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(QUERY_ID) String queryId, @PathVariable(TEMPLATE_ID) String templateId, @PathVariable(LIBRARY) String library, @PathVariable(INSTANCE_ID) String instanceId, @RequestParam(value = DATABASE_SCOPE, required = false) ExposedDatabaseScope databaseScope, @RequestParam(value = RESTRICT_TO_ORGANIZATIONS, required = false) String restrictToOrganizations, @ApiParam("Defines if the underlying json (the one the template is applied to) shall be part of the result as well.") @RequestParam(value = "includeOriginalJson", required = false) boolean includeOriginalJson, @ApiParam(value = ParameterConstants.AUTHORIZATION_DOC) @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken, @ApiIgnore @RequestParam Map<String, String> allRequestParams) throws Exception {
+        authorizationContext.populateAuthorizationContext(authorizationToken);
+        queryContext.populateQueryContext(databaseScope);
+
+        StoredQuery query = new StoredQuery(new NexusSchemaReference(org, domain, schema, version), queryId, null);
+        query.getFilter().restrictToOrganizations(RestUtils.splitCommaSeparatedValues(restrictToOrganizations)).restrictToSingleId(instanceId);
+        query.setTemplateId(templateId).setLibraryId(library).setReturnOriginalJson(includeOriginalJson);
+        try {
+            Map result = this.query.queryPropertyGraphByStoredSpecificationAndStoredTemplateWithId(query);
+            return ResponseEntity.ok(result);
+        } catch (StoredQueryNotFoundException e){
+            return ResponseEntity.notFound().build();
+        }
+
+    }
+
     @GetMapping(value ="/{"+ORG+"}/{"+ DOMAIN+"}/{"+SCHEMA+"}/{"+VERSION+"}/{"+QUERY_ID+"}/templates/{"+TEMPLATE_ID+"}/instances/{"+INSTANCE_ID+"}")
     public ResponseEntity<Map> executeStoredQueryWithTemplate(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(QUERY_ID) String queryId, @PathVariable(TEMPLATE_ID) String templateId, @PathVariable(INSTANCE_ID) String instanceId, @RequestParam(value = DATABASE_SCOPE, required = false) ExposedDatabaseScope databaseScope, @RequestParam(value = RESTRICT_TO_ORGANIZATIONS, required = false) String restrictToOrganizations, @ApiParam("Defines if the underlying json (the one the template is applied to) shall be part of the result as well.") @RequestParam(value = "includeOriginalJson", required = false) boolean includeOriginalJson, @ApiParam(value = ParameterConstants.AUTHORIZATION_DOC) @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken, @ApiIgnore @RequestParam Map<String, String> allRequestParams) throws Exception {
         authorizationContext.populateAuthorizationContext(authorizationToken);
@@ -250,7 +268,6 @@ public class QueryAPI {
 
         try {
             Map result = this.query.queryPropertyGraphByStoredSpecificationAndStoredTemplateWithId(query);
-
             return ResponseEntity.ok(result);
         }
         catch (StoredQueryNotFoundException e){
@@ -323,6 +340,23 @@ public class QueryAPI {
         }
     }
 
+    @ExternalApi
+    @ApiOperation(value="Delete a query specification in KG")
+    @DeleteMapping(value = "/{"+ORG+"}/{"+ DOMAIN+"}/{"+SCHEMA+"}/{"+VERSION+"}/{"+QUERY_ID+"}", produces=MediaType.TEXT_PLAIN)
+    public ResponseEntity<String> removeSpecificationToDB(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @ApiParam(value = "Freely defined alias for the query. Please note that only the user who has created the specification initially can update it. If an alias is already occupied, please use another one.", required = true) @PathVariable(QUERY_ID) String id, @ApiParam(value = ParameterConstants.AUTHORIZATION_DOC, required = true) @RequestHeader(value = HttpHeaders.AUTHORIZATION) String authorization) throws Exception {
+        try {
+            authorizationContext.populateAuthorizationContext(authorization);
+            query.removeSpecificationInDb(new StoredQueryReference(new NexusSchemaReference(org, domain, schema, version), id));
+            return ResponseEntity.ok("Deleted specification from database");
+        } catch (StoredQueryNotFoundException e){
+            return ResponseEntity.notFound().build();
+        } catch (HttpClientErrorException e) {
+            return ResponseEntity.status(e.getStatusCode()).build();
+        } catch (IllegalAccessException e){
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
+        }
+    }
+
     @ApiOperation(value="Execute a stored query and fetch the corresponding instances")
     @Deprecated
     @GetMapping("/{"+ORG+"}/{"+ DOMAIN+"}/{"+SCHEMA+"}/{"+VERSION+"}/{"+QUERY_ID+"}/instances/deprecated")
@@ -371,26 +405,6 @@ public class QueryAPI {
         }
     }
 
-    @ApiOperation(value="Execute a stored query for public instances (and therefore anonymously)")
-    @ExternalApi
-    @GetMapping("/{"+ORG+"}/{"+ DOMAIN+"}/{"+SCHEMA+"}/{"+VERSION+"}/{"+QUERY_ID+"}/instances/public")
-    public ResponseEntity<QueryResult> executeAnonymousStoredQuery(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(QUERY_ID) String queryId, @ApiParam(SIZE_DOC) @RequestParam(value = SIZE, required = false) Integer size, @ApiParam(START_DOC) @RequestParam(value = START, required = false) Integer start, @ApiParam(VOCAB_DOC) @RequestParam(value = VOCAB, required = false) String vocab, @ApiIgnore @RequestParam Map<String, String> allRequestParams) throws Exception {
-        try {
-            queryContext.setAllParameters(allRequestParams);
-
-            StoredQuery query = new StoredQuery(new NexusSchemaReference(org, domain, schema, version), queryId, vocab);
-            query.setParameters(allRequestParams);
-            query.getPagination().setStart(start).setSize(size);
-            QueryResult<List<Map>> result = this.query.queryPropertyGraphByStoredSpecification(query);
-            return ResponseEntity.ok(result);
-        } catch (StoredQueryNotFoundException e){
-            return ResponseEntity.notFound().build();
-        } catch (RootCollectionNotFoundException e) {
-            return ResponseEntity.ok(QueryResult.createEmptyResult());
-        } catch (HttpClientErrorException e) {
-            return ResponseEntity.status(e.getStatusCode()).build();
-        }
-    }
 
     @ApiOperation(value="Execute a stored query for a specific instance identified by its id")
     @ExternalApi

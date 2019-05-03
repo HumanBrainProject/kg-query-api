@@ -48,6 +48,7 @@ public class DataQueryBuilder {
 
 
     public String build(List<String> restrictToIds, String search) {
+        search = search!=null ? search.toLowerCase() : null;
         //Define the global parameters
         ArangoAlias rootAlias = new ArangoAlias("root");
         q.setParameter("rootFieldName", rootAlias.getArangoName());
@@ -69,7 +70,7 @@ public class DataQueryBuilder {
 
         //FIXME We want to get rid of the static search parameter - this could be done dynamically but we keep it for backwards compatibility right now.
         if(search!=null){
-            q.addLine(trust("FILTER ${rootFieldName}_doc.`http://schema.org/name` LIKE @searchQuery"));
+            q.addLine(trust("FILTER LOWER(${rootFieldName}_doc.`http://schema.org/name`) LIKE @searchQuery"));
             getProcessedFilterValues().put("searchQuery", "%"+search+"%");
         }
 
@@ -184,9 +185,8 @@ public class DataQueryBuilder {
                         }
                         for (SpecField field : mergeField.fields) {
                             if(field!=mergeField.fields.get(mergeField.fields.size()-1)){
-                                merge.add(trust(", true"));
+                                merge.add(trust(", true))"));
                             }
-                            merge.add(trust(")"));
                         }
                         if(!sortFieldsForMerge.isEmpty()){
                             merge.addLine(trust(""));
@@ -239,6 +239,7 @@ public class DataQueryBuilder {
             if(aliasStack.size()==1 && hasSort){
                 aql.add(trust("(FOR ${alias}_sort IN "));
             }
+            aql.add(trust(ensureOrder ? "(" : "UNIQUE("));
             aql.add(trust("FLATTEN("));
             if (traverseExists(traverse)) {
 
@@ -318,7 +319,8 @@ public class DataQueryBuilder {
                     fields.addLine(new ReturnBuilder(alias, traversalField, traversalField.fields).getReturnStructure());
                     while (aliasStack.size() > 1) {
                         ArangoAlias a = aliasStack.pop();
-                        fields.addLine(trust("))"));
+                        fields.addLine(trust(")))"));
+
                         if (aliasStack.size() > 1) {
                             AQL returnStructure = new AQL();
                             returnStructure.add(trust("RETURN DISTINCT ${traverseField}"));

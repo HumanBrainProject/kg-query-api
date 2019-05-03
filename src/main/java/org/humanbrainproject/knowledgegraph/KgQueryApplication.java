@@ -1,5 +1,6 @@
 package org.humanbrainproject.knowledgegraph;
 
+import akka.actor.ActorSystem;
 import org.humanbrainproject.knowledgegraph.annotations.NoTests;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoConnection;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -81,6 +82,12 @@ public class KgQueryApplication {
 	@Qualifier("released")
 	public ArangoConnection createReleasedDb() {
 		return new ArangoConnection("kg_released", false);
+	}
+
+	@Bean
+	public ActorSystem actorSystem() {
+		ActorSystem system = ActorSystem.create("uploader-actor-system");
+		return system;
 	}
 
 

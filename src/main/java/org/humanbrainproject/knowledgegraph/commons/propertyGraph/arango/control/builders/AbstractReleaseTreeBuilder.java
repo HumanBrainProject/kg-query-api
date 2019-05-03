@@ -15,6 +15,7 @@ public abstract class AbstractReleaseTreeBuilder {
     AQL createReleaseStatusQuery(ArangoAlias alias, String nexusInstanceBase) {
         AQL releaseStatusQuery = new AQL();
         releaseStatusQuery.addLine(trust("LET ${name}_release = (FOR ${name}_status_doc IN 1..1 INBOUND ${name}_doc `${releaseInstanceRelation}`"));
+        releaseStatusQuery.addLine(trust("FILTER ${name}_status_doc != NULL"));
         releaseStatusQuery.addLine(trust("LET ${name}_release_instance = SUBSTITUTE(CONCAT(${name}_status_doc.`${releaseInstanceProperty}`.`" + JsonLdConsts.ID + "`, \"?rev=\", ${name}_status_doc.`${releaseRevisionProperty}`), \"${nexusBaseForInstances}/\", \"\")"));
         releaseStatusQuery.addLine(trust("RETURN ${name}_release_instance==${name}_doc.${originalId} ? \"${releasedValue}\" : \"${changedValue}\""));
         releaseStatusQuery.addLine(trust(")"));

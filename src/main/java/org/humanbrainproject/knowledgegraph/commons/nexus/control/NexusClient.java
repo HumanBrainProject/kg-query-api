@@ -85,11 +85,11 @@ public class NexusClient {
 
     }
 
-    public JsonDocument put(NexusRelativeUrl url, Integer revision, Map payload, Credential oidc) {
+    public JsonDocument put(NexusRelativeUrl url, Integer revision, Map payload, Credential oidc) throws HttpClientErrorException {
         return put(url, revision, payload, authorizationController.getInterceptor(oidc));
     }
 
-    public JsonDocument put(NexusRelativeUrl url, Integer revision, Map payload, ClientHttpRequestInterceptor oidc) {
+    public JsonDocument put(NexusRelativeUrl url, Integer revision, Map payload, ClientHttpRequestInterceptor oidc) throws HttpClientErrorException {
         try {
             ResponseEntity<Map> result = createRestTemplate(oidc).exchange(String.format("%s%s", configuration.getEndpoint(url), revision != null ? String.format("%srev=%d", !url.getUrl().contains("?") ? "?" : "&", revision) : ""), HttpMethod.PUT, new HttpEntity<>(payload), Map.class);
             if (result.getStatusCode().is2xxSuccessful() && result.getBody() != null) {
@@ -108,6 +108,12 @@ public class NexusClient {
     }
 
     public boolean delete(NexusRelativeUrl url, Integer revision, ClientHttpRequestInterceptor oidc) {
+        if(revision==null){
+            JsonDocument document = get(url, oidc);
+            if(document!=null) {
+                revision = document.getNexusRevision();
+            }
+        }
         try {
             createRestTemplate(oidc).delete(String.format("%s%s", configuration.getEndpoint(url), revision != null ? String.format("%srev=%d", !url.getUrl().contains("?") ? "?" : "&", revision) : ""));
             return true;

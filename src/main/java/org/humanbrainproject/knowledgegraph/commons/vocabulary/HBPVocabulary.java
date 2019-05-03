@@ -31,6 +31,10 @@ public class HBPVocabulary {
     public static final String RELEASE_INSTANCE = RELEASE_TYPE.toLowerCase() + "/instance";
     public static final String RELEASE_REVISION = RELEASE_TYPE.toLowerCase() + "/revision";
     public static final String RELEASE_STATE = RELEASE_TYPE.toLowerCase() + "/state";
+    public static final String RELEASE_LAST_DATE = RELEASE_TYPE.toLowerCase() + "/lastReleaseAt";
+    public static final String RELEASE_FIRST_DATE = RELEASE_TYPE.toLowerCase() + "/firstReleaseAt";
+    public static final String RELEASE_LAST_BY = RELEASE_TYPE.toLowerCase() + "/lastReleaseBy";
+    public static final String RELEASE_FIRST_BY = RELEASE_TYPE.toLowerCase() + "/firstReleaseBy";
 
 
     //FOR INFERENCE
@@ -64,4 +68,8 @@ public class HBPVocabulary {
     public static final String SUGGESTION_STATUS = SUGGESTION + "/status";
     public static final String SUGGESTION_STATUS_CHANGED_BY = SUGGESTION_STATUS + "/updatedBy";
 
+
+    // FOR UPDATE
+    public static final String INTERNAL = HBPVocabulary.NAMESPACE + "internal";
+    public static final String INTERNAL_HASHCODE = HBPVocabulary.INTERNAL + "/hashcode";
 }

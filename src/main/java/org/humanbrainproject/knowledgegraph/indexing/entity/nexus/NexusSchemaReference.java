@@ -77,6 +77,10 @@ public class NexusSchemaReference {
         return new NexusRelativeUrl(NexusConfiguration.ResourceType.SCHEMA, String.format("%s/%s/%s", getRelativeUrlForDomain().getUrl(), getSchema(), getSchemaVersion()));
     }
 
+    public NexusRelativeUrl getRelativeUrlForContext() {
+        return new NexusRelativeUrl(NexusConfiguration.ResourceType.CONTEXT, String.format("%s/%s/%s", getRelativeUrlForDomain().getUrl(), getSchema(), getSchemaVersion()));
+    }
+
     static String extractMainOrganization(String organization) {
         String result = organization;
         for (SubSpace subSpaceName : SubSpace.values()) {

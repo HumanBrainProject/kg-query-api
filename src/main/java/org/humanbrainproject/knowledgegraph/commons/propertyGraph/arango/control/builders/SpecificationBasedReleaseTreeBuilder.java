@@ -68,72 +68,103 @@ public class SpecificationBasedReleaseTreeBuilder extends AbstractReleaseTreeBui
     }
 
 
-
-
     private List<ArangoAlias> processFields(ArangoAlias originalAlias, List<SpecField> fields) {
         List<ArangoAlias> result = new ArrayList<>();
         for (SpecField field : fields) {
-            if (field.needsTraversal()) {
-                Stack<ArangoAlias> aliasStack = new Stack<>();
-                Stack<SpecTraverse> traverseStack = new Stack<>();
-                for (SpecTraverse traverse : field.traversePath) {
-                    ArangoCollectionReference collection = ArangoCollectionReference.fromSpecTraversal(traverse);
-                    if(existingCollections.contains(collection)) {
-                        ArangoAlias alias = new ArangoAlias(ArangoAlias.fromLeafPath(traverse).getArangoName() + "_" + internalFieldCounter);
-                        AQL subQuery = new AQL();
-                        subQuery.addLine(trust("//Adding ${alias}"));
-                        subQuery.addLine(trust("LET ${alias} = ("));
-                        subQuery.addLine(trust("FOR ${aliasDoc} IN 1..1 ${inOutBound} ${previousDoc} `${relation}`"));
-                        subQuery.addLine(createReleaseStatusQuery(alias, nexusInstanceBase).build());
-                        subQuery.setParameter("alias", alias.getArangoName());
-                        subQuery.setParameter("aliasDoc", alias.getArangoDocName());
-                        subQuery.setParameter("inOutBound", traverse.reverse ? "INBOUND" : "OUTBOUND");
-                        subQuery.setParameter("previousDoc", aliasStack.empty() ? originalAlias.getArangoDocName() : aliasStack.peek().getArangoDocName());
-                        subQuery.setParameter("relation", ArangoCollectionReference.fromSpecTraversal(traverse).getName());
-                        subQuery.addDocumentFilter(alias);
-                        aliasStack.push(alias);
-                        traverseStack.push(traverse);
-                        q.addLine(subQuery.build());
-                    }
-                    else{
-                        break;
-                    }
+            if (field.isMerge()) {
+                for (SpecField specField : field.fields) {
+                    doProcessField(originalAlias, result, specField);
                 }
-                ArangoAlias previousAlias = null;
-                while(!traverseStack.empty()){
-                    SpecTraverse traverse = traverseStack.pop();
-                    ArangoAlias alias = aliasStack.pop();
-                    AQL subQuery = new AQL();
-                    subQuery.addLine(trust("RETURN DISTINCT {"));
-                    subQuery.addLine(trust(" \"" + JsonLdConsts.ID + "\": ${aliasDoc}.`" + JsonLdConsts.ID + "`,"));
-                    subQuery.addLine(trust(" \"" + SchemaOrgVocabulary.NAME + "\": ${aliasDoc}.`" + SchemaOrgVocabulary.NAME + "`,"));
-                    subQuery.addLine(trust(" \"" + SchemaOrgVocabulary.IDENTIFIER + "\": ${aliasDoc}.`" + SchemaOrgVocabulary.IDENTIFIER + "`,"));
-                    if(previousAlias!=null){
-                        subQuery.addLine(trust(" \"children\":${previousAlias},"));
-                        subQuery.setParameter("previousAlias", previousAlias.getArangoName());
-                    }
-                    else if(field.hasSubFields()){
-                        List<ArangoAlias> fieldAliases = processFields(alias, field.fields);
-                        handleReturnStructureOfSubfields(subQuery, fieldAliases);
-                    }
-                    subQuery.addLine(trust(" \"status\": ${aliasDoc}_status,"));
-                    subQuery.addLine(trust(" \"" + JsonLdConsts.TYPE + "\": ${aliasDoc}.`" + JsonLdConsts.TYPE + "`"));
-                    subQuery.addLine(trust("})"));
-                    subQuery.setParameter("aliasDoc", alias.getArangoDocName());
-                    q.addLine(subQuery.build());
-                    previousAlias = alias;
-                }
-                internalFieldCounter++;
-                if(previousAlias!=null) {
-                    result.add(previousAlias);
-                }
+            } else {
+                doProcessField(originalAlias, result, field);
             }
         }
         return result;
     }
 
+    private void doProcessField(ArangoAlias originalAlias, List<ArangoAlias> result, SpecField field) {
+        if (field.needsTraversal()) {
+            Stack<ArangoAlias> aliasStack = new Stack<>();
+            Stack<SpecTraverse> traverseStack = new Stack<>();
+            for (SpecTraverse traverse : field.traversePath) {
+                ArangoCollectionReference collection = ArangoCollectionReference.fromSpecTraversal(traverse);
+                if (existingCollections.contains(collection)) {
+                    ArangoAlias alias = new ArangoAlias(ArangoAlias.fromLeafPath(traverse).getArangoName() + "_" + internalFieldCounter);
+                    AQL subQuery = new AQL();
+                    subQuery.addLine(trust("//Adding ${alias}"));
+                    subQuery.addLine(trust("LET ${alias} = ("));
+                    ArangoAlias linkingInstanceAlias = new ArangoAlias(alias.getArangoName() + "_lnk");
+                    if (traverse.isLinkingInstance()) {
+                        subQuery.addLine(trust("FOR ${aliasDoc}, ${aliasLnkDoc} IN 1..1 ${inOutBound} ${previousDoc} `${relation}`"));
+                        subQuery.addLine(createReleaseStatusQuery(linkingInstanceAlias, nexusInstanceBase).build());
+                        subQuery.setParameter("aliasLnkDoc", linkingInstanceAlias.getArangoDocName());
+                    } else {
+                        subQuery.addLine(trust("FOR ${aliasDoc} IN 1..1 ${inOutBound} ${previousDoc} `${relation}`"));
+                    }
+                    subQuery.addLine(createReleaseStatusQuery(alias, nexusInstanceBase).build());
+                    subQuery.setParameter("alias", alias.getArangoName());
+                    subQuery.setParameter("aliasDoc", alias.getArangoDocName());
+                    subQuery.setParameter("inOutBound", traverse.reverse ? "INBOUND" : "OUTBOUND");
+                    subQuery.setParameter("previousDoc", aliasStack.empty() ? originalAlias.getArangoDocName() : aliasStack.peek().getArangoDocName());
+                    subQuery.setParameter("relation", ArangoCollectionReference.fromSpecTraversal(traverse).getName());
+                    subQuery.addDocumentFilter(alias);
+                    if (traverse.isLinkingInstance()) {
+                        aliasStack.push(linkingInstanceAlias);
+                    }
+                    aliasStack.push(alias);
+                    traverseStack.push(traverse);
+                    q.addLine(subQuery.build());
+                } else {
+                    break;
+                }
+            }
+            ArangoAlias previousAlias = null;
+            while (!traverseStack.empty()) {
+                SpecTraverse traverse = traverseStack.pop();
+                ArangoAlias alias = aliasStack.pop();
+                AQL subQuery = new AQL();
+                subQuery.addLine(trust("RETURN DISTINCT {"));
+                ArangoAlias lnkAlias;
+                if (traverse.isLinkingInstance()) {
+                    lnkAlias = aliasStack.pop();
+                    subQuery.addLine(trust(" \"" + JsonLdConsts.ID + "\": ${aliasLnkDoc}.`" + JsonLdConsts.ID + "`,"));
+                    subQuery.addLine(trust(" \"" + SchemaOrgVocabulary.NAME + "\": \"Linking instance\","));
+                    subQuery.addLine(trust(" \"" + SchemaOrgVocabulary.IDENTIFIER + "\": ${aliasLnkDoc}.`" + SchemaOrgVocabulary.IDENTIFIER + "`,"));
+                    subQuery.addLine(trust(" \"status\": ${aliasLnkDoc}_status,"));
+                    subQuery.addLine(trust(" \"" + JsonLdConsts.TYPE + "\": ${aliasLnkDoc}.`" + JsonLdConsts.TYPE + "`,"));
+                    subQuery.addLine(trust(" \"children\": [{"));
+                    subQuery.setParameter("aliasLnkDoc", lnkAlias.getArangoDocName());
+                }
+                subQuery.addLine(trust(" \"" + JsonLdConsts.ID + "\": ${aliasDoc}.`" + JsonLdConsts.ID + "`,"));
+                subQuery.addLine(trust(" \"" + SchemaOrgVocabulary.NAME + "\": ${aliasDoc}.`" + SchemaOrgVocabulary.NAME + "`,"));
+                subQuery.addLine(trust(" \"" + SchemaOrgVocabulary.IDENTIFIER + "\": ${aliasDoc}.`" + SchemaOrgVocabulary.IDENTIFIER + "`,"));
+                if (previousAlias != null) {
+                    subQuery.addLine(trust(" \"children\":${previousAlias},"));
+                    subQuery.setParameter("previousAlias", previousAlias.getArangoName());
+                } else if (field.hasSubFields()) {
+                    List<ArangoAlias> fieldAliases = processFields(alias, field.fields);
+                    handleReturnStructureOfSubfields(subQuery, fieldAliases);
+                }
+                subQuery.addLine(trust(" \"status\": ${aliasDoc}_status,"));
+                subQuery.addLine(trust(" \"" + JsonLdConsts.TYPE + "\": ${aliasDoc}.`" + JsonLdConsts.TYPE + "`"));
+                subQuery.setParameter("aliasDoc", alias.getArangoDocName());
+                if (traverse.isLinkingInstance()) {
+                    subQuery.addLine(trust("}]"));
+                }
+                subQuery.addLine(trust("})"));
+                q.addLine(subQuery.build());
+                previousAlias = alias;
+            }
+            internalFieldCounter++;
+            if (previousAlias != null) {
+                result.add(previousAlias);
+            }
+        }
+
+    }
+
     private void handleReturnStructureOfSubfields(AQL query, List<ArangoAlias> fieldAliases) {
-        if(fieldAliases!=null && !fieldAliases.isEmpty()){
+        if (fieldAliases != null && !fieldAliases.isEmpty()) {
             query.addLine(trust(" \"children\": UNION_DISTINCT("));
             for (ArangoAlias fieldAlias : fieldAliases) {
                 query.addLine(new AQL().add(trust("${a},")).setParameter("a", fieldAlias.getArangoName()).build());

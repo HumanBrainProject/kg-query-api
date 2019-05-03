@@ -118,7 +118,7 @@ public class InstanceManipulationController {
     }
 
     public boolean deprecateInstanceByNexusId(NexusInstanceReference instanceReference) {
-        boolean delete = nexusClient.delete(instanceReference.getRelativeUrl(), instanceReference.getRevision() != null ? instanceReference.getRevision() : 1, authorizationContext.getCredential());
+        boolean delete = nexusClient.delete(instanceReference.getRelativeUrl(), instanceReference.getRevision(), authorizationContext.getCredential());
         if (delete) {
             immediateDeprecation(instanceReference);
         }
@@ -233,7 +233,7 @@ public class InstanceManipulationController {
 
     private void immediateIndexing(Map<String, Object> payload, NexusInstanceReference newInstanceReference, String userId) {
         payload.put(HBPVocabulary.PROVENANCE_IMMEDIATE_INDEX, true);
-        IndexingMessage indexingMessage = new IndexingMessage(newInstanceReference, jsonTransformer.getMapAsJson(payload), null, userId);
+        IndexingMessage indexingMessage = new IndexingMessage(newInstanceReference, jsonTransformer.getMapAsJson(payload), ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_INSTANT), userId);
         graphIndexing.insert(indexingMessage);
     }
 

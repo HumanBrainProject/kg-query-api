@@ -41,11 +41,11 @@ public class ArangoNativeRepository {
     @Autowired
     ArangoRepository arangoRepository;
 
-    public Set<NexusInstanceReference> findOriginalIdsWithLinkTo(ArangoDocumentReference instanceReference, ArangoCollectionReference collectionReference) {
-        Set<ArangoCollectionReference> collections = databaseFactory.getDefaultDB().getCollections();
+    public Set<NexusInstanceReference> findOriginalIdsWithLinkTo(ArangoConnection connection, ArangoDocumentReference instanceReference, ArangoCollectionReference collectionReference) {
+        Set<ArangoCollectionReference> collections = connection.getCollections();
         if (collections.contains(instanceReference.getCollection()) && collections.contains(collectionReference)) {
             String query = queryFactory.queryOriginalIdForLink(instanceReference, collectionReference, authorizationContext.getReadableOrganizations());
-            List<String> ids = databaseFactory.getDefaultDB().getOrCreateDB().query(query, null, new AqlQueryOptions(), String.class).asListRemaining();
+            List<String> ids = connection.getOrCreateDB().query(query, null, new AqlQueryOptions(), String.class).asListRemaining();
             return ids.stream().filter(Objects::nonNull).map(NexusInstanceReference::createFromUrl).collect(Collectors.toSet());
         }
         return Collections.emptySet();
@@ -84,7 +84,8 @@ public class ArangoNativeRepository {
         if (document != null) {
             Object rev = document.get(ArangoVocabulary.NEXUS_RELATIVE_URL_WITH_REV);
             if (rev != null) {
-                return Integer.parseInt(rev.toString());
+                String revStr = rev.toString().substring(rev.toString().indexOf("?rev=") + 5);
+                return Integer.parseInt(revStr.trim());
             }
         }
         return null;

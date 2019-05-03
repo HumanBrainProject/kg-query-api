@@ -32,6 +32,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Set;
 
 @Component
 @ToBeTested(integrationTestRequired = true, systemTestRequired = true)
@@ -175,13 +176,16 @@ public class ArangoTransaction implements DatabaseTransaction {
             if (collection.exists() && collection.getInfo().getType()==CollectionType.DOCUMENT) {
                 if (collection.documentExists(document.getKey())) {
                     try {
-                        ArangoCursor<String> result = db.query(queryFactory.queryOutboundRelationsForDocument(document, connection.getEdgesCollectionNames(), authorizationContext.getReadableOrganizations()), null, new AqlQueryOptions(), String.class);
-                        for (String id : result.asListRemaining()) {
-                            deleteDocument(ArangoDocumentReference.fromId(id), db);
+                        Set<ArangoCollectionReference> edgesCollectionNames = connection.getEdgesCollectionNames();
+                        if(!edgesCollectionNames.isEmpty()) {
+                            String query = queryFactory.queryOutboundRelationsForDocument(document, edgesCollectionNames, authorizationContext.getReadableOrganizations(), true);
+                            ArangoCursor<String> result = db.query(query, null, new AqlQueryOptions(), String.class);
+                            for (String id : result.asListRemaining()) {
+                                deleteDocument(ArangoDocumentReference.fromId(id), db);
+                            }
                         }
-                        logger.info("Deleted document: {} from database {}", document.getId(), db.name());
                     } catch (ArangoDBException dbexception) {
-                        logger.error(String.format("Was not able to delete document: %s in database %s", document.getId(), db.name()), dbexception);
+                        logger.error(String.format("Was not able to delete the outgoing relation: %s in database %s", document.getId(), db.name()), dbexception);
                         throw dbexception;
                     }
                 } else {
@@ -191,7 +195,7 @@ public class ArangoTransaction implements DatabaseTransaction {
                 logger.debug("Tried to delete {} although the collection doesn't exist. Skip.", document.getId());
             }
         } else {
-            logger.error("Was not able to delete document due to missing id");
+            logger.error("Was not able to delete outgoing relation due to missing id");
         }
     }
 

@@ -2,6 +2,7 @@ package org.humanbrainproject.knowledgegraph.releasing.control;
 
 import com.github.jsonldjava.core.JsonLdConsts;
 import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
+import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationContext;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
 import org.humanbrainproject.knowledgegraph.commons.labels.SemanticsToHumanTranslator;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
@@ -10,6 +11,7 @@ import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoRepository;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.SubSpace;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.ArangoVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.SchemaOrgVocabulary;
@@ -30,10 +32,10 @@ import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 
 @Component
 @ToBeTested(integrationTestRequired = true)
@@ -67,6 +69,9 @@ public class ReleaseControl {
 
     @Autowired
     InstanceManipulationController instanceManipulationController;
+
+    @Autowired
+    AuthorizationContext authorizationContext;
 
 
     public NexusInstanceReference findNexusInstanceFromInferredArangoEntry(ArangoDocumentReference arangoDocumentReference) {
@@ -203,9 +208,24 @@ public class ReleaseControl {
         payload.addReference(HBPVocabulary.RELEASE_INSTANCE, configuration.getAbsoluteUrl(instanceReference));
         payload.put(HBPVocabulary.RELEASE_REVISION, revision);
         payload.addType(HBPVocabulary.RELEASE_TYPE);
+        NexusInstanceReference originalId = nativeRepository.findOriginalId(instanceReference);
         NexusSchemaReference releaseSchema = new NexusSchemaReference("releasing", "prov", "release", "v0.0.2");
-        NexusInstanceReference instance = instanceManipulationController.createInstanceByIdentifier(releaseSchema, instanceReference.getFullId(false), payload, null);
-        return new IndexingMessage(instance, jsonTransformer.getMapAsJson(payload), null, null);
+        Set<NexusInstanceReference> existingReleases = nativeRepository.findOriginalIdsWithLinkTo(databaseFactory.getInferredDB(), ArangoDocumentReference.fromNexusInstance(originalId.toSubSpace(SubSpace.MAIN)), ArangoCollectionReference.fromFieldName(HBPVocabulary.RELEASE_INSTANCE));
+        NexusInstanceReference instance = instanceManipulationController.createInstanceByIdentifier(releaseSchema, originalId.toSubSpace(SubSpace.MAIN).getFullId(false), payload, authorizationContext.getUserId());
+        //TODO This is a progressive fix for a previously introduced issue. As soon as all release instances are containing an "identifier" with the main space, we can get rid of this logic.
+        NexusInstanceReference finalInstance = instance;
+        existingReleases.removeIf(instanceReference1 -> instanceReference1.isSameInstanceRegardlessOfRevision(instance));
+        boolean outdatedRelease = false;
+        for (NexusInstanceReference existingRelease : existingReleases) {
+            outdatedRelease = true;
+            System.out.println("Outdated release: "+existingRelease);
+            instanceManipulationController.deprecateInstanceByNexusId(existingRelease);
+        }
+        if(outdatedRelease){
+            //The previous deprecations have temporarily unreleased the instance. This is why we need to re-release it.
+            finalInstance = instanceManipulationController.createInstanceByIdentifier(releaseSchema, originalId.toSubSpace(SubSpace.MAIN).getFullId(false), payload, authorizationContext.getUserId());
+        }
+        return new IndexingMessage(finalInstance, jsonTransformer.getMapAsJson(payload), ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_INSTANT),  authorizationContext.getUserId());
     }
 
     public NexusInstanceReference unrelease(NexusInstanceReference instanceReference) {
@@ -215,10 +235,11 @@ public class ReleaseControl {
             Object relativeUrl = document.get(ArangoVocabulary.NEXUS_RELATIVE_URL);
             if (relativeUrl != null) {
                 NexusInstanceReference fromUrl = NexusInstanceReference.createFromUrl((String) relativeUrl);
+                NexusInstanceReference originalFrom = nativeRepository.findOriginalId(fromUrl);
                 //Find release instance
-                Set<NexusInstanceReference> releases = nativeRepository.findOriginalIdsWithLinkTo(ArangoDocumentReference.fromNexusInstance(fromUrl), ArangoCollectionReference.fromFieldName(HBPVocabulary.RELEASE_INSTANCE));
+                Set<NexusInstanceReference> releases = nativeRepository.findOriginalIdsWithLinkTo(databaseFactory.getInferredDB(), ArangoDocumentReference.fromNexusInstance(originalFrom.toSubSpace(SubSpace.MAIN)), ArangoCollectionReference.fromFieldName(HBPVocabulary.RELEASE_INSTANCE));
                 for (NexusInstanceReference nexusInstanceReference : releases) {
-                    Integer currentRevision = nativeRepository.getCurrentRevision(ArangoDocumentReference.fromNexusInstance(fromUrl));
+                    Integer currentRevision = nativeRepository.getCurrentRevision(ArangoDocumentReference.fromNexusInstance(nexusInstanceReference));
                     nexusInstanceReference.setRevision(currentRevision);
                     instanceManipulationController.deprecateInstanceByNexusId(nexusInstanceReference);
                 }
