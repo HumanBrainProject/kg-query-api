@@ -108,6 +108,12 @@ public class NexusClient {
     }
 
     public boolean delete(NexusRelativeUrl url, Integer revision, ClientHttpRequestInterceptor oidc) {
+        if(revision==null){
+            JsonDocument document = get(url, oidc);
+            if(document!=null) {
+                revision = document.getNexusRevision();
+            }
+        }
         try {
             createRestTemplate(oidc).delete(String.format("%s%s", configuration.getEndpoint(url), revision != null ? String.format("%srev=%d", !url.getUrl().contains("?") ? "?" : "&", revision) : ""));
             return true;

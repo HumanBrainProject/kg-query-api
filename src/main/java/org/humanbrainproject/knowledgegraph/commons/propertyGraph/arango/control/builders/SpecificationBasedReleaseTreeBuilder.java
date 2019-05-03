@@ -113,7 +113,14 @@ public class SpecificationBasedReleaseTreeBuilder extends AbstractReleaseTreeBui
                     AQL subQuery = new AQL();
                     subQuery.addLine(trust("//Adding ${alias}"));
                     subQuery.addLine(trust("LET ${alias} = ("));
-                    subQuery.addLine(trust("FOR ${aliasDoc} IN 1..1 ${inOutBound} ${previousDoc} `${relation}`"));
+                    ArangoAlias linkingInstanceAlias = new ArangoAlias(alias.getArangoName() + "_lnk");
+                    if (traverse.isLinkingInstance()) {
+                        subQuery.addLine(trust("FOR ${aliasDoc}, ${aliasLnkDoc} IN 1..1 ${inOutBound} ${previousDoc} `${relation}`"));
+                        subQuery.addLine(createReleaseStatusQuery(linkingInstanceAlias, nexusInstanceBase).build());
+                        subQuery.setParameter("aliasLnkDoc", linkingInstanceAlias.getArangoDocName());
+                    } else {
+                        subQuery.addLine(trust("FOR ${aliasDoc} IN 1..1 ${inOutBound} ${previousDoc} `${relation}`"));
+                    }
                     subQuery.addLine(createReleaseStatusQuery(alias, nexusInstanceBase).build());
                     subQuery.setParameter("alias", alias.getArangoName());
                     subQuery.setParameter("aliasDoc", alias.getArangoDocName());
@@ -121,6 +128,9 @@ public class SpecificationBasedReleaseTreeBuilder extends AbstractReleaseTreeBui
                     subQuery.setParameter("previousDoc", aliasStack.empty() ? originalAlias.getArangoDocName() : aliasStack.peek().getArangoDocName());
                     subQuery.setParameter("relation", ArangoCollectionReference.fromSpecTraversal(traverse).getName());
                     subQuery.addDocumentFilter(alias);
+                    if (traverse.isLinkingInstance()) {
+                        aliasStack.push(linkingInstanceAlias);
+                    }
                     aliasStack.push(alias);
                     traverseStack.push(traverse);
                     q.addLine(subQuery.build());
@@ -135,6 +145,17 @@ public class SpecificationBasedReleaseTreeBuilder extends AbstractReleaseTreeBui
                 ArangoAlias alias = aliasStack.pop();
                 AQL subQuery = new AQL();
                 subQuery.addLine(trust("RETURN DISTINCT {"));
+                ArangoAlias lnkAlias;
+                if (traverse.isLinkingInstance()) {
+                    lnkAlias = aliasStack.pop();
+                    subQuery.addLine(trust(" \"" + JsonLdConsts.ID + "\": ${aliasLnkDoc}.`" + JsonLdConsts.ID + "`,"));
+                    subQuery.addLine(trust(" \"" + SchemaOrgVocabulary.NAME + "\": \"Linking instance\","));
+                    subQuery.addLine(trust(" \"" + SchemaOrgVocabulary.IDENTIFIER + "\": ${aliasLnkDoc}.`" + SchemaOrgVocabulary.IDENTIFIER + "`,"));
+                    subQuery.addLine(trust(" \"status\": ${aliasLnkDoc}_status,"));
+                    subQuery.addLine(trust(" \"" + JsonLdConsts.TYPE + "\": ${aliasLnkDoc}.`" + JsonLdConsts.TYPE + "`,"));
+                    subQuery.addLine(trust(" \"children\": [{"));
+                    subQuery.setParameter("aliasLnkDoc", lnkAlias.getArangoDocName());
+                }
                 subQuery.addLine(trust(" \"" + JsonLdConsts.ID + "\": ${aliasDoc}.`" + JsonLdConsts.ID + "`,"));
                 subQuery.addLine(trust(" \"" + SchemaOrgVocabulary.NAME + "\": ${aliasDoc}.`" + SchemaOrgVocabulary.NAME + "`,"));
                 subQuery.addLine(trust(" \"" + SchemaOrgVocabulary.IDENTIFIER + "\": ${aliasDoc}.`" + SchemaOrgVocabulary.IDENTIFIER + "`,"));
@@ -148,8 +169,11 @@ public class SpecificationBasedReleaseTreeBuilder extends AbstractReleaseTreeBui
                 }
                 subQuery.addLine(trust(" \"status\": ${aliasDoc}_status,"));
                 subQuery.addLine(trust(" \"" + JsonLdConsts.TYPE + "\": ${aliasDoc}.`" + JsonLdConsts.TYPE + "`"));
-                subQuery.addLine(trust("})"));
                 subQuery.setParameter("aliasDoc", alias.getArangoDocName());
+                if (traverse.isLinkingInstance()) {
+                    subQuery.addLine(trust("}]"));
+                }
+                subQuery.addLine(trust("})"));
                 q.addLine(subQuery.build());
                 previousAlias = alias;
             }
