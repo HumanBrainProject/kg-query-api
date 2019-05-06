@@ -33,6 +33,20 @@ public class JsonDocument extends LinkedHashMap<String, Object>{
         return this;
     }
 
+    public boolean isOfType(String lookupType){
+        Object type = get(JsonLdConsts.TYPE);
+        if(type!=null && lookupType!=null){
+            if(type instanceof String){
+                return type.equals(lookupType);
+            }
+            else if(type instanceof Collection){
+                return ((Collection)type).contains(lookupType);
+            }
+        }
+        return false;
+    }
+
+
     public void addType(String type){
         addToProperty(JsonLdConsts.TYPE, type);
     }
