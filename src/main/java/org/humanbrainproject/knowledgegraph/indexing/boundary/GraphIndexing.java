@@ -63,7 +63,6 @@ public class GraphIndexing {
             for (IndexingController indexingController : getIndexingControllers()) {
                 indexingController.insert(qualifiedSpec, todoList);
             }
-
             //Execute
             transaction.execute(todoList);
         } else {
