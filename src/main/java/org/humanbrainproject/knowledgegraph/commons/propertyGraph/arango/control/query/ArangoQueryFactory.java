@@ -69,7 +69,7 @@ public class ArangoQueryFactory {
         q.addLine(trust("FOR v, e IN 1..1 ${direction} doc ${edges}"));
         q.addDocumentFilter(new TrustedAqlValue("v"));
         if(ignoreLinkingInstances){
-            q.addLine(trust("  FILTER \""+ HBPVocabulary.LINKING_INSTANCE_TYPE+"\" NOT IN e.`"+JsonLdConsts.TYPE+"`"));
+            q.addLine(trust("  FILTER e.`"+JsonLdConsts.TYPE+"` == NULL OR \"" + HBPVocabulary.LINKING_INSTANCE_TYPE+"\" NOT IN e.`"+JsonLdConsts.TYPE+"`"));
         }
         q.addLine(trust("RETURN e." + ArangoVocabulary.ID));
         return q.build().getValue();
