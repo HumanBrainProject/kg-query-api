@@ -91,6 +91,11 @@ public class ArangoTransaction implements DatabaseTransaction {
                     }
                 }
                 else {
+                    ArangoCollection targetCollection = databaseConnection.getOrCreateDB().collection(reference.getCollection().getName());
+                    if(targetCollection.exists() && targetCollection.getInfo().getType() == CollectionType.EDGES){
+                        logger.error(String.format("Tried to insert a document into an edge collection (%s). This has to be an invalid payload (maybe the document was not properly defined to be a linking instance)", reference.getCollection().getName()));
+                        break;
+                    }
                     //Remove already existing instances
                     deleteOutgoingRelations(reference, databaseConnection);
                     deleteDocument(reference, database);
