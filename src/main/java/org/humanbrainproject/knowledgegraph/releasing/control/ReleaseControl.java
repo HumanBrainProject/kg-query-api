@@ -17,6 +17,7 @@ import org.humanbrainproject.knowledgegraph.commons.vocabulary.ArangoVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.SchemaOrgVocabulary;
 import org.humanbrainproject.knowledgegraph.indexing.entity.IndexingMessage;
+import org.humanbrainproject.knowledgegraph.indexing.entity.knownSemantics.LinkingInstance;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
 import org.humanbrainproject.knowledgegraph.instances.boundary.Instances;
@@ -124,6 +125,7 @@ public class ReleaseControl {
         } else {
             map.put("label", identifier);
         }
+
         if (map.containsKey(JsonLdConsts.TYPE)) {
             Object types = map.get(JsonLdConsts.TYPE);
             Object relevantType = null;
@@ -136,6 +138,11 @@ public class ReleaseControl {
                 map.put("type", semanticsToHumanTranslator.translateSemanticValueToHumanReadableLabel(relevantType.toString()));
             }
         }
+
+        if (new JsonDocument(map).isOfType(HBPVocabulary.LINKING_INSTANCE_TYPE)) {
+            map.put("isAssociation", true);
+        }
+
         if (map.containsKey(JsonLdConsts.ID)) {
             NexusInstanceReference fromUrl = NexusInstanceReference.createFromUrl((String) map.get(JsonLdConsts.ID));
             if (fromUrl != null) {
