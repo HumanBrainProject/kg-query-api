@@ -67,7 +67,7 @@ public class QueryInternalAPI {
     public ResponseEntity<QueryResult> queryResolveByIdentifier(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken) {
         try {authorizationContext.populateAuthorizationContext(authorizationToken);
             Query query = new Query(identifierQuery, new NexusSchemaReference(org, domain, schema, version), "https://schema.hbp.eu/myQuery/");
-            QueryResult<List<Map>> result = this.query.queryPropertyGraphBySpecification(query);
+            QueryResult<List<Map>> result = this.query.queryPropertyGraphBySpecification(query, null);
             return ResponseEntity.ok(result);
         } catch (RootCollectionNotFoundException e) {
             return ResponseEntity.ok(QueryResult.createEmptyResult());

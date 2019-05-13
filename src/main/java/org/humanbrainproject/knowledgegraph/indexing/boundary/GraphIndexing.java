@@ -68,8 +68,6 @@ public class GraphIndexing {
         } else {
             logger.info("Skipping indexing of instance " + message.getInstanceReference() + " because we have indexed a later revision already");
         }
-
-
         return todoList;
     }
 

@@ -3,12 +3,10 @@ package org.humanbrainproject.knowledgegraph.query.control;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.humanbrainproject.knowledgegraph.annotations.Tested;
 import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationContext;
+import org.humanbrainproject.knowledgegraph.commons.authorization.entity.InternalMasterKey;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoRepository;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.builders.DataQueryBuilder;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.builders.DefaultReleaseTreeBuilder;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.builders.ReleaseTreeScope;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.builders.SpecificationBasedReleaseTreeBuilder;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.builders.*;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.query.SpecificationQuery;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
@@ -43,6 +41,7 @@ public class SpecificationController {
 
     @Autowired
     ArangoRepository repository;
+
 
     public QueryResult<List<Map>> metaSpecification(Specification spec) {
         JsonDocument fields = buildMetaSpecification(spec.getFields());
@@ -87,13 +86,21 @@ public class SpecificationController {
         return inner;
     }
 
-    public Map releaseTreeBySpecification(Specification spec, Query query, NexusInstanceReference instanceReference, ReleaseTreeScope scope) throws JSONException {
-        SpecificationBasedReleaseTreeBuilder builder = new SpecificationBasedReleaseTreeBuilder(spec, authorizationContext.getReadableOrganizations(query.getFilter().getRestrictToOrganizations()), ArangoDocumentReference.fromNexusInstance(instanceReference), queryContext.getExistingCollections(), configuration.getNexusBase(NexusConfiguration.ResourceType.DATA), scope);
+
+    public Map scopeTreeBySpecification(Specification spec, Query query, NexusInstanceReference instanceReference, TreeScope scope){
+        return getTreeBySpecification(new SpecificationBasedScopeBuilder(spec, authorizationContext.getReadableOrganizations(new InternalMasterKey(), query!=null ? query.getFilter().getRestrictToOrganizations() : null), ArangoDocumentReference.fromNexusInstance(instanceReference), queryContext.getExistingCollections(), configuration.getNexusBase(NexusConfiguration.ResourceType.DATA), scope));
+    }
+
+    private Map getTreeBySpecification(SpecificationBasedScopeBuilder builder){
         List<Map> results = specificationQuery.queryForSimpleMap(builder.build());
         if(results==null || results.isEmpty()){
             return null;
         }
         return results.get(0);
+    }
+
+    public Map releaseTreeBySpecification(Specification spec, Query query, NexusInstanceReference instanceReference, TreeScope scope) throws JSONException {
+        return getTreeBySpecification(new SpecificationBasedReleaseTreeBuilder(spec, authorizationContext.getReadableOrganizations(query.getFilter().getRestrictToOrganizations()), ArangoDocumentReference.fromNexusInstance(instanceReference), queryContext.getExistingCollections(), configuration.getNexusBase(NexusConfiguration.ResourceType.DATA), scope));
     }
 
     public Map defaultReleaseTree(NexusInstanceReference instanceReference){
@@ -106,10 +113,12 @@ public class SpecificationController {
     }
 
 
-    public QueryResult<List<Map>> queryForSpecification(Specification spec, Pagination pagination, Filter filter) throws IOException, SolrServerException {
+    public QueryResult<List<Map>> queryForSpecification(Specification spec, Pagination pagination, Filter filter, String queryName) throws IOException, SolrServerException {
         Set<String> readableOrganizations = authorizationContext.getReadableOrganizations(filter.getRestrictToOrganizations());
+        Set<String> invitations = queryName!=null ? authorizationContext.getInvitations(queryName) : null;
+
         Set<ArangoCollectionReference> existingCollections = queryContext.getExistingCollections();
-        DataQueryBuilder queryBuilderNew = new DataQueryBuilder(spec, readableOrganizations, pagination, queryContext.getAllParameters(), existingCollections);
+        DataQueryBuilder queryBuilderNew = new DataQueryBuilder(spec, readableOrganizations, invitations, pagination, queryContext.getAllParameters(), existingCollections);
         return specificationQuery.queryForData(queryBuilderNew, filter.getRestrictToIds(), filter.getQueryString());
     }
 

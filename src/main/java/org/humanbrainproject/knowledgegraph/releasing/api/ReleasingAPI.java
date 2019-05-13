@@ -3,7 +3,7 @@ package org.humanbrainproject.knowledgegraph.releasing.api;
 import io.swagger.annotations.Api;
 import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationContext;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.builders.ReleaseTreeScope;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.builders.TreeScope;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.exceptions.StoredQueryNotFoundException;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.releasing.boundary.Releasing;
@@ -34,7 +34,7 @@ public class ReleasingAPI {
     Releasing releasing;
 
     @GetMapping(value = "/{" + ORG + "}/{" + DOMAIN + "}/{" + SCHEMA + "}/{" + VERSION + "}/{" + ID + "}", consumes = {MediaType.WILDCARD})
-    public ResponseEntity<ReleaseStatusResponse> getReleaseStatus(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(ID) String id, @RequestParam(value = "releaseTreeScope", defaultValue = "ALL") ReleaseTreeScope scope, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization) {
+    public ResponseEntity<ReleaseStatusResponse> getReleaseStatus(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(ID) String id, @RequestParam(value = "releaseTreeScope", defaultValue = "ALL") TreeScope scope, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization) {
         try {
             authorizationContext.populateAuthorizationContext(authorization);
             ReleaseStatusResponse releaseStatus = releasing.getReleaseStatus(new NexusInstanceReference(org, domain, schema, version, id), scope);
@@ -51,7 +51,7 @@ public class ReleasingAPI {
 
 
     @PostMapping(consumes = {MediaType.APPLICATION_JSON})
-    public ResponseEntity<List<ReleaseStatusResponse>> getReleaseStatusList(@RequestBody List<String> relativeNexusIds, @RequestParam(value = "releaseTreeScope", defaultValue = "ALL") ReleaseTreeScope scope, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization) {
+    public ResponseEntity<List<ReleaseStatusResponse>> getReleaseStatusList(@RequestBody List<String> relativeNexusIds, @RequestParam(value = "releaseTreeScope", defaultValue = "ALL") TreeScope scope, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization) {
         try {
             authorizationContext.populateAuthorizationContext(authorization);
             if (relativeNexusIds != null) {

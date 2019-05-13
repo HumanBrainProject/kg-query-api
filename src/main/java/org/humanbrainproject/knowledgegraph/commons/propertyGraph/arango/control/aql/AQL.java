@@ -1,5 +1,6 @@
 package org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.aql;
 
+import com.github.jsonldjava.core.JsonLdConsts;
 import org.apache.commons.text.StringSubstitutor;
 import org.humanbrainproject.knowledgegraph.annotations.NoTests;
 import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
@@ -16,6 +17,7 @@ import java.util.stream.Collectors;
 public class AQL {
 
     public final String WHITELIST_ALIAS = "whitelist";
+    public final String INVITATION_ALIAS = "invitation";
 
     final Map<String, String> parameters = new LinkedHashMap<>();
     private StringBuilder query = new StringBuilder();
@@ -86,6 +88,9 @@ public class AQL {
     }
 
     public TrustedAqlValue listValues(Set<String> values) {
+        if(values==null){
+            return trust("");
+        }
         return listValuesWithQuote('"', values);
     }
 
@@ -149,7 +154,7 @@ public class AQL {
 
     public AQL addDocumentFilterWithWhitelistFilter(TrustedAqlValue documentAlias) {
         addDocumentFilter(documentAlias);
-        addLine(trust("FILTER "+documentAlias.getValue()+"."+ ArangoVocabulary.PERMISSION_GROUP+" IN "+WHITELIST_ALIAS));
+        addLine(trust("FILTER "+documentAlias.getValue()+"."+ ArangoVocabulary.PERMISSION_GROUP+" IN "+WHITELIST_ALIAS+" OR "+documentAlias.getValue()+".`"+ JsonLdConsts.ID+"` IN "+INVITATION_ALIAS));
         return this;
     }
 }

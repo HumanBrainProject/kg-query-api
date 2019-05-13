@@ -5,6 +5,7 @@ import org.humanbrainproject.knowledgegraph.commons.api.Client;
 import org.humanbrainproject.knowledgegraph.commons.api.RestUtils;
 import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationContext;
 import org.humanbrainproject.knowledgegraph.commons.authorization.control.SystemOidcClient;
+import org.humanbrainproject.knowledgegraph.commons.authorization.control.UserInformation;
 import org.humanbrainproject.knowledgegraph.commons.authorization.entity.OidcAccessToken;
 import org.humanbrainproject.knowledgegraph.commons.suggestion.SuggestionStatus;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
@@ -86,9 +87,8 @@ public class SuggestionAPI {
     @GetMapping(value="/user", consumes = {MediaType.APPLICATION_JSON, RestUtils.APPLICATION_LD_JSON, MediaType.WILDCARD}, produces = MediaType.APPLICATION_JSON)
     public ResponseEntity<List<Map>> getSuggestionOfUser(@RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization, @RequestHeader(value = CLIENT, required = false) Client client, @RequestParam(value = "status") SuggestionStatus status) throws Exception{
         authorizationContext.populateAuthorizationContext(authorization, client);
-        Map user = OIDCclient.getUserInfo(new OidcAccessToken().setToken(authorization));
-        String userId = (String) user.get("sub");
-        List<Map> instances = suggest.getUserSuggestions(userId, status);
+        UserInformation user = OIDCclient.getUserInfo(new OidcAccessToken().setToken(authorization));
+        List<Map> instances = suggest.getUserSuggestions(user.getUserId(), status);
         if(instances != null){
             return ResponseEntity.ok(instances);
         }else {
@@ -99,12 +99,10 @@ public class SuggestionAPI {
     @PostMapping(value="/{"+ ORG+"}/{"+DOMAIN+"}/{"+SCHEMA+"}/{"+VERSION+"}/{"+ INSTANCE_ID +"}/accept", consumes = {MediaType.APPLICATION_JSON, RestUtils.APPLICATION_LD_JSON, MediaType.WILDCARD}, produces = MediaType.APPLICATION_JSON)
     public ResponseEntity<List<Map>> acceptSuggestion(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(INSTANCE_ID) String instanceId, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization, @RequestHeader(value = CLIENT, required = false) Client client) throws HttpClientErrorException{
         authorizationContext.populateAuthorizationContext(authorization, client);
-        Map user = OIDCclient.getUserInfo(new OidcAccessToken().setToken(authorization));
-        String userId = (String) user.get("sub");
+        UserInformation user = OIDCclient.getUserInfo(new OidcAccessToken().setToken(authorization));
         NexusInstanceReference suggestionInstanceRef = new NexusInstanceReference(org, domain, schema, version, instanceId);
         try {
-
-           JsonDocument m = suggest.changeSuggestionStatus(suggestionInstanceRef, SuggestionStatus.ACCEPTED, userId);
+           JsonDocument m = suggest.changeSuggestionStatus(suggestionInstanceRef, SuggestionStatus.ACCEPTED, user.getUserId());
            if(m != null){
                return ResponseEntity.ok().build();
            }else{
@@ -118,11 +116,10 @@ public class SuggestionAPI {
     @PostMapping(value="/{"+ ORG+"}/{"+DOMAIN+"}/{"+SCHEMA+"}/{"+VERSION+"}/{"+ INSTANCE_ID +"}/reject", consumes = {MediaType.APPLICATION_JSON, RestUtils.APPLICATION_LD_JSON, MediaType.WILDCARD}, produces = MediaType.APPLICATION_JSON)
     public ResponseEntity<List<Map>> rejectSuggestion(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(INSTANCE_ID) String instanceId, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization, @RequestHeader(value = CLIENT, required = false) Client client) throws HttpClientErrorException{
         authorizationContext.populateAuthorizationContext(authorization, client);
-        Map user = OIDCclient.getUserInfo(new OidcAccessToken().setToken(authorization));
-        String userId = (String) user.get("sub");
+        UserInformation user = OIDCclient.getUserInfo(new OidcAccessToken().setToken(authorization));
         NexusInstanceReference suggestionInstanceRef = new NexusInstanceReference(org, domain, schema, version, instanceId);
         try {
-            JsonDocument m = suggest.changeSuggestionStatus(suggestionInstanceRef, SuggestionStatus.REJECTED, userId);
+            JsonDocument m = suggest.changeSuggestionStatus(suggestionInstanceRef, SuggestionStatus.REJECTED, user.getUserId());
             if(m != null){
                 return ResponseEntity.ok().build();
             }else{

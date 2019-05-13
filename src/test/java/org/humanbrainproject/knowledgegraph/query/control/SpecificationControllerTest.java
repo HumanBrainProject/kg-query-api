@@ -3,7 +3,7 @@ package org.humanbrainproject.knowledgegraph.query.control;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationContext;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoRepository;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.builders.ReleaseTreeScope;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.builders.TreeScope;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.query.SpecificationQuery;
 import org.humanbrainproject.knowledgegraph.context.QueryContext;
 import org.humanbrainproject.knowledgegraph.query.entity.Filter;
@@ -40,7 +40,7 @@ public class SpecificationControllerTest {
         Map fakeResult = Mockito.mock(Map.class);
         Query query = new Query("foo", TestObjectFactory.fooInstanceReference().getNexusSchema(), "fooVocab");
         Mockito.doReturn(Collections.singletonList(fakeResult)).when(this.specificationController.specificationQuery).queryForSimpleMap(Mockito.any());
-        this.specificationController.releaseTreeBySpecification(Mockito.mock(Specification.class), query, null, ReleaseTreeScope.ALL);
+        this.specificationController.releaseTreeBySpecification(Mockito.mock(Specification.class), query, null, TreeScope.ALL);
     }
 
 
@@ -51,7 +51,7 @@ public class SpecificationControllerTest {
         Mockito.doReturn(Collections.singletonList(fakeResult)).when(this.specificationController.specificationQuery).queryForSimpleMap(Mockito.any());
         Specification mock = Mockito.mock(Specification.class);
         Mockito.doReturn(TestObjectFactory.fooInstanceReference().getNexusSchema().getRelativeUrl().getUrl()).when(mock).getRootSchema();
-        Map map = this.specificationController.releaseTreeBySpecification(mock, query, TestObjectFactory.fooInstanceReference(), ReleaseTreeScope.ALL);
+        Map map = this.specificationController.releaseTreeBySpecification(mock, query, TestObjectFactory.fooInstanceReference(), TreeScope.ALL);
         Assert.assertEquals(fakeResult, map);
     }
 
@@ -60,7 +60,7 @@ public class SpecificationControllerTest {
     public void queryForSpecification() throws IOException, SolrServerException {
         QueryResult fakeResult = Mockito.mock(QueryResult.class);
         Mockito.doReturn(fakeResult).when(this.specificationController.specificationQuery).queryForData(Mockito.any(), Mockito.any(), Mockito.any());
-        QueryResult<List<Map>> listQueryResult = this.specificationController.queryForSpecification(Mockito.mock(Specification.class), null, new Filter());
+        QueryResult<List<Map>> listQueryResult = this.specificationController.queryForSpecification(Mockito.mock(Specification.class), null, new Filter(), null);
         Assert.assertEquals(fakeResult, listQueryResult);
     }
 }

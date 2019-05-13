@@ -4,7 +4,10 @@ import com.google.gson.Gson;
 import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.commons.authorization.entity.OidcAccessToken;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.*;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -76,7 +79,8 @@ public class SystemOidcClient {
         this.currentToken = new OidcAccessToken().setToken(tokenResponse.get(ACCESS_TOKEN_KEY).toString());
     }
 
-    public Map<String, Object> getUserInfo(OidcAccessToken token){
+    @Cacheable("userInfoByToken")
+    public UserInformation getUserInfo(OidcAccessToken token){
         Map map = readConfigFile();
         String host = map.get(OPENID_HOST_KEY).toString();
         String url =  getUrlFromConfig(host, USER_INFO);
@@ -85,8 +89,14 @@ public class SystemOidcClient {
         headers.set("Authorization", token.getBearerToken());
         HttpEntity<String> entity = new HttpEntity<>(headers);
         ResponseEntity<Map> res = restTemplate.exchange(url, HttpMethod.GET, entity, Map.class);
-        return res.getBody();
+        return new UserInformation(res.getBody());
     }
+
+    @CacheEvict(allEntries = true, cacheNames = "userInfoByToken")
+    @Scheduled(fixedDelay = 24 * 60 * 60 * 1000)
+    public void clearUserInfoTokenCache() {
+    }
+
 
     public OidcAccessToken getAuthorizationToken(){
         if(currentToken==null) {

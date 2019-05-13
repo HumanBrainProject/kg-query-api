@@ -15,6 +15,8 @@ import org.humanbrainproject.knowledgegraph.commons.vocabulary.ArangoVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.SchemaOrgVocabulary;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
+import org.humanbrainproject.knowledgegraph.query.boundary.CodeGenerator;
+import org.humanbrainproject.knowledgegraph.query.entity.GraphQueryKeys;
 import org.humanbrainproject.knowledgegraph.releasing.entity.ReleaseStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -117,6 +119,16 @@ public class ArangoQueryFactory {
         return null;
     }
 
+    public String queryRootSchemasForQueryId(String queryId){
+        AQL q = new AQL();
+        q.setParameter("queryId", queryId);
+        q.addLine(trust("FOR doc IN `"+ CodeGenerator.SPECIFICATION_QUERIES.getName()+"`")).indent();
+        q.addLine(trust("FILTER doc.`_id` LIKE \"%-${queryId}\""));
+        q.addLine(trust("RETURN doc.`"+ GraphQueryKeys.GRAPH_QUERY_ROOT_SCHEMA.getFieldName()+"`.`"+JsonLdConsts.ID+"`"));
+        return q.build().getValue();
+    }
+
+
     @UnauthorizedAccess("We're returning information about specifications - this is meta information and non-sensitive")
     public String getAll(ArangoCollectionReference collection) {
         AQL q = new AQL();
@@ -142,7 +154,7 @@ public class ArangoQueryFactory {
         outboundSubquery.addDocumentFilter(new TrustedAqlValue("v"));
         outboundSubquery.addLine(trust("RETURN p")).outdent();
 
-        AuthorizedArangoQuery inboundSubquery = new AuthorizedArangoQuery(permissionGroupsWithReadAccess, true);
+        AuthorizedArangoQuery inboundSubquery = new AuthorizedArangoQuery(permissionGroupsWithReadAccess,true);
         inboundSubquery.setTrustedParameter("edges", edges);
 
         inboundSubquery.addLine(trust("FOR v, e, p IN 1..1 INBOUND doc ${edges}")).indent();
@@ -186,7 +198,7 @@ public class ArangoQueryFactory {
     }
 
     private TrustedAqlValue childrenStatus(ArangoDocumentReference rootInstance, String startingVertex, Integer level, Integer maxDepth, Set<ArangoCollectionReference> edgeCollections, Set<String> permissionGroupsWithReadAccess) {
-        AuthorizedArangoQuery query = new AuthorizedArangoQuery(permissionGroupsWithReadAccess, level > 0);
+        AuthorizedArangoQuery query = new AuthorizedArangoQuery(permissionGroupsWithReadAccess, null,level > 0);
         String name = "level" + level;
         TrustedAqlValue childrenQuery = new TrustedAqlValue("[]");
         if (level < maxDepth) {

@@ -97,8 +97,8 @@ public class DataQueryBuilder {
     }
 
 
-    public DataQueryBuilder(Specification specification, Set<String> permissionGroupsWithReadAccess, Pagination pagination, Map<String, String> filterValues, Set<ArangoCollectionReference> existingCollections) {
-        this.q = new AuthorizedArangoQuery(permissionGroupsWithReadAccess);
+    public DataQueryBuilder(Specification specification, Set<String> permissionGroupsWithReadAccess, Set<String> invitations, Pagination pagination, Map<String, String> filterValues, Set<ArangoCollectionReference> existingCollections) {
+        this.q = new AuthorizedArangoQuery(permissionGroupsWithReadAccess, invitations);
         this.specification = specification;
         this.pagination = pagination;
         this.filterValues = new HashMap<>(filterValues);

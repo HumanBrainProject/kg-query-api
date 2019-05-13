@@ -10,9 +10,10 @@ import org.humanbrainproject.knowledgegraph.releasing.entity.ReleaseStatus;
 
 import static org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.aql.AQL.*;
 
-public abstract class AbstractReleaseTreeBuilder {
+public class ReleaseStatusQuery {
 
-    AQL createReleaseStatusQuery(ArangoAlias alias, String nexusInstanceBase) {
+
+    public static AQL createReleaseStatusQuery(ArangoAlias alias, String nexusInstanceBase) {
         AQL releaseStatusQuery = new AQL();
         releaseStatusQuery.addLine(trust("LET ${name}_release = (FOR ${name}_status_doc IN 1..1 INBOUND ${name}_doc `${releaseInstanceRelation}`"));
         releaseStatusQuery.addLine(trust("FILTER ${name}_status_doc != NULL"));
@@ -31,5 +32,4 @@ public abstract class AbstractReleaseTreeBuilder {
         releaseStatusQuery.setParameter("notReleasedValue", ReleaseStatus.NOT_RELEASED.name());
         return releaseStatusQuery;
     }
-
 }
