@@ -69,6 +69,7 @@ public class HBPVocabulary {
     public static final String SUGGESTION_STATUS_CHANGED_BY = SUGGESTION_STATUS + "/updatedBy";
 
 
+
     // FOR UPDATE
     public static final String INTERNAL = HBPVocabulary.NAMESPACE + "internal";
     public static final String INTERNAL_HASHCODE = HBPVocabulary.INTERNAL + "/hashcode";

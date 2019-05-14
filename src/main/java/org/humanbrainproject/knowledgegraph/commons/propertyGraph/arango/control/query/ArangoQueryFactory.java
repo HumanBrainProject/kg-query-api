@@ -4,6 +4,7 @@ import com.github.jsonldjava.core.JsonLdConsts;
 import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.UnauthorizedAccess;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.EqualsFilter;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.aql.AuthorizedArangoQuery;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.aql.TrustedAqlValue;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.aql.AQL;
@@ -21,6 +22,7 @@ import org.humanbrainproject.knowledgegraph.releasing.entity.ReleaseStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -461,11 +463,21 @@ public class ArangoQueryFactory {
 
 
     public String queryInstanceBySchemaAndFilter(ArangoCollectionReference collectionReference, String filterKey, String filterValue, Set<String> permissionGroupsWithReadAccess) {
+        return queryInstanceBySchemaAndFilter(collectionReference, Collections.singletonList(new EqualsFilter(filterKey, filterValue)), permissionGroupsWithReadAccess);
+    }
+
+
+    public String queryInstanceBySchemaAndFilter(ArangoCollectionReference collectionReference, List<EqualsFilter> equalsFilters, Set<String> permissionGroupsWithReadAccess) {
         AuthorizedArangoQuery query = new AuthorizedArangoQuery(permissionGroupsWithReadAccess);
         query.setParameter("type", collectionReference.getName());
         query.addLine(trust("FOR doc IN `${type}`"));
         query.addDocumentFilter(new TrustedAqlValue(("doc")));
-        query.indent().addLine(trust("FILTER doc.`" + filterKey + "` ==\"" + filterValue + "\""));
+        int filter = 0;
+        for (EqualsFilter equalsFilter : equalsFilters) {
+            query.indent().addLine(trust("FILTER doc.`" + equalsFilter.key.getValue() + "` ==\"${filter"+filter+"}\""));
+            query.setParameter("filter"+filter, equalsFilter.getValue());
+            filter++;
+        }
         query.addLine(trust("RETURN doc"));
         return query.build().getValue();
     }

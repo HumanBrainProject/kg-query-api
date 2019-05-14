@@ -177,6 +177,12 @@ public class ArangoInferredRepository {
         }
     }
 
+    public List<Map> findInstancesBySchemaAndFilter(NexusSchemaReference schema, List<EqualsFilter> filters, boolean asSystemUser){
+        String query = queryFactory.queryInstanceBySchemaAndFilter(ArangoCollectionReference.fromNexusSchemaReference(schema), filters, asSystemUser ? Collections.singleton(schema.getOrganization()) : authorizationContext.getReadableOrganizations());
+        ArangoCursor<Map> result = databaseFactory.getInferredDB().getOrCreateDB().query(query, null, new AqlQueryOptions(), Map.class);
+        return result.asListRemaining();
+    }
+
     public List<Map> getIncomingLinks(NexusInstanceReference ref){
         String query = queryFactory.queryIncomingLinks(ref, this.getCollectionNames(), authorizationContext.getReadableOrganizations());
         ArangoCursor<Map> result = databaseFactory.getInferredDB().getOrCreateDB().query(query, null, new AqlQueryOptions(), Map.class);
