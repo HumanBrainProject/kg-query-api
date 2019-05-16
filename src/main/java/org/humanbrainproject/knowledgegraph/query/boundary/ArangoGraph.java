@@ -65,7 +65,8 @@ public class ArangoGraph {
                             type = ((List) type).isEmpty() ? null : ((List) type).get(0);
                         }
                         node.put("name", translator.translateSemanticValueToHumanReadableLabel((String) type));
-                        node.put("dataType", type);
+                        node.put("schemas", NexusInstanceReference.createFromUrl(id).getNexusSchema().toString());
+                        node.put("dataType",type);
                         node.put("title", vertex.get(SchemaOrgVocabulary.NAME));
                         nodesList.add(node);
                         documentIds.add(id);
