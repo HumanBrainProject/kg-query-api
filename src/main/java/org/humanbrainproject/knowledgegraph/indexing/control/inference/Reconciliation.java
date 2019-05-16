@@ -146,7 +146,6 @@ public class Reconciliation implements InferenceStrategy, InitializingBean {
             List<Vertex> verticesWithProperty = vertices.stream().filter(v -> v.getQualifiedIndexingMessage().getQualifiedMap().get(currentProperty) != null).collect(Collectors.toList());
             Object result = null;
             Vertex originOfResult = null;
-            Map<Object, Integer> valueCount = new HashMap<>();
             Map<Object, Set<String>> allAlts = new HashMap<>();
             for (Vertex vertex : verticesWithProperty) {
                 Object valueByName = vertex.getQualifiedIndexingMessage().getQualifiedMap().get(currentProperty);
@@ -163,7 +162,7 @@ public class Reconciliation implements InferenceStrategy, InitializingBean {
                     allAlts.put(valueByName, cleanIds);
                 }
 
-                if (overrides(vertex, originOfResult, valueByName, result, valueCount)) {
+                if (overrides(vertex, originOfResult, result)) {
                     result = valueByName;
                     originOfResult = vertex;
                 }
@@ -220,35 +219,24 @@ public class Reconciliation implements InferenceStrategy, InitializingBean {
     }
 
 
-    private boolean overrides(Vertex potentialOverride, Vertex currentVertex, Object potentialValue, Object currentValue, Map<Object, Integer> valueCount) {
+    private boolean overrides(Vertex potentialOverride, Vertex currentVertex, Object currentValue) {
         int i = compareVertexPower(potentialOverride, currentVertex);
-        Integer count = valueCount.get(potentialValue);
-        if (count == null) {
-            count = 0;
-        }
-        count += 1;
-        valueCount.put(potentialValue, count);
         boolean overrides = currentValue == null;
         if (i > 0) {
             overrides = true;
         } else if (i == 0 && !overrides) {
-            Integer counts = valueCount.get(potentialValue);
-            Integer countsOfCurrentResult = valueCount.get(currentValue);
-            if (counts > countsOfCurrentResult) {
-                overrides = true;
-            } else if (counts.intValue() == countsOfCurrentResult.intValue()) {
-                LocalDateTime indexedAt = getModifedAt(potentialOverride);
-                if (currentVertex != null) {
-                    if (indexedAt != null) {
-                        LocalDateTime originIndexedAt = getModifedAt(currentVertex);
-                        if (originIndexedAt == null || indexedAt.isAfter(originIndexedAt)) {
-                            overrides = true;
-                        }
+            LocalDateTime indexedAt = getModifedAt(potentialOverride);
+            if (currentVertex != null) {
+                if (indexedAt != null) {
+                    LocalDateTime originIndexedAt = getModifedAt(currentVertex);
+                    if (originIndexedAt == null || indexedAt.isAfter(originIndexedAt)) {
+                        overrides = true;
                     }
-                } else {
-                    overrides = true;
                 }
+            } else {
+                overrides = true;
             }
+
         }
         return overrides;
     }
