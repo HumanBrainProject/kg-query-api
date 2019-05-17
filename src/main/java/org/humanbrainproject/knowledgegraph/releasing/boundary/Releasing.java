@@ -1,7 +1,7 @@
 package org.humanbrainproject.knowledgegraph.releasing.boundary;
 
 import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.builders.ReleaseTreeScope;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.builders.TreeScope;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.releasing.control.ReleaseControl;
 import org.humanbrainproject.knowledgegraph.releasing.entity.ReleaseStatusResponse;
@@ -25,12 +25,12 @@ public class Releasing {
         return releaseControl.unrelease(instanceReference);
     }
 
-    public ReleaseStatusResponse getReleaseStatus(NexusInstanceReference instanceReference, ReleaseTreeScope scope) {
+    public ReleaseStatusResponse getReleaseStatus(NexusInstanceReference instanceReference, TreeScope scope) {
         return releaseControl.getReleaseStatus(instanceReference, scope);
     }
 
     public Map<String, Object> getReleaseGraph(NexusInstanceReference instanceReference) {
-        return releaseControl.getReleaseGraph(instanceReference, ReleaseTreeScope.ALL);
+        return releaseControl.getReleaseGraph(instanceReference, TreeScope.ALL);
     }
 
 }

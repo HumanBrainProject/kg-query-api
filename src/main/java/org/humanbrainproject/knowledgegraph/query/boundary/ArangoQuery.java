@@ -11,7 +11,7 @@ import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoInternalRepository;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoRepository;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoToNexusLookupMap;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.builders.ReleaseTreeScope;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.builders.TreeScope;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoNamingHelper;
@@ -102,7 +102,7 @@ public class ArangoQuery {
     }
 
 
-    public Map queryReleaseTree(Query query, NexusInstanceReference instanceReference, ReleaseTreeScope scope) throws JSONException, IOException {
+    public Map queryReleaseTree(Query query, NexusInstanceReference instanceReference, TreeScope scope) throws JSONException, IOException {
         Map map;
         if(query == null ||  query.getSpecification() == null){
             map = specificationQuery.defaultReleaseTree(instanceReference);
@@ -140,14 +140,14 @@ public class ArangoQuery {
     }
 
 
-    public QueryResult<List<Map>> queryPropertyGraphBySpecification(Query query) throws JSONException, IOException, SolrServerException {
+    public QueryResult<List<Map>> queryPropertyGraphBySpecification(Query query, String queryId) throws JSONException, IOException, SolrServerException {
         Map<String, Object> context = null;
         if (query.getVocabulary() != null) {
             context = new LinkedHashMap<>();
             context.put(JsonLdConsts.VOCAB, query.getVocabulary());
         }
         Specification spec = specInterpreter.readSpecification(JsonUtils.toString(standardization.fullyQualify(query.getSpecification())),  getAbsoluteUrlOfRootSchema(query), query.getParameters());
-        QueryResult<List<Map>> result = specificationQuery.queryForSpecification(spec, query.getPagination(), query.getFilter());
+        QueryResult<List<Map>> result = specificationQuery.queryForSpecification(spec, query.getPagination(), query.getFilter(), queryId);
         if (context != null) {
             result.setResults(standardization.applyContext(result.getResults(), context));
         }
@@ -192,7 +192,7 @@ public class ArangoQuery {
         return metaQueryBySpecification(resolveStoredQuery(query));
     }
 
-    public Map queryReleaseTree(StoredQuery query, NexusInstanceReference instanceReference, ReleaseTreeScope scope) throws
+    public Map queryReleaseTree(StoredQuery query, NexusInstanceReference instanceReference, TreeScope scope) throws
             IOException, JSONException {
         Query resolvedQuery;
         try {
@@ -207,7 +207,7 @@ public class ArangoQuery {
 
     public QueryResult<List<Map>> queryPropertyGraphByStoredSpecification(StoredQuery query) throws
             IOException, JSONException, SolrServerException {
-        return queryPropertyGraphBySpecification(resolveStoredQuery(query));
+        return queryPropertyGraphBySpecification(resolveStoredQuery(query), query.getStoredQueryReference().getAlias());
     }
 
     private Query resolveStoredQuery(StoredQuery storedQuery) {

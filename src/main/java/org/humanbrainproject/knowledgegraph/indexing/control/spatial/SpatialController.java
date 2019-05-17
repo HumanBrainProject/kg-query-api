@@ -9,9 +9,9 @@ import org.humanbrainproject.knowledgegraph.indexing.control.MessageProcessor;
 import org.humanbrainproject.knowledgegraph.indexing.control.nexusToArango.NexusToArangoIndexingProvider;
 import org.humanbrainproject.knowledgegraph.indexing.control.spatial.rasterizer.TwoDimensionRasterizer;
 import org.humanbrainproject.knowledgegraph.indexing.entity.QualifiedIndexingMessage;
-import org.humanbrainproject.knowledgegraph.indexing.entity.todo.TodoList;
 import org.humanbrainproject.knowledgegraph.indexing.entity.knownSemantics.SpatialAnchoring;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
+import org.humanbrainproject.knowledgegraph.indexing.entity.todo.TodoList;
 import org.humanbrainproject.knowledgegraph.query.entity.ThreeDVector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,9 +46,15 @@ public class SpatialController implements IndexingController {
         SpatialAnchoring spatial = new SpatialAnchoring(message);
         if (spatial.isInstance()) {
             logger.info("Found spatial anchoring insert - trigger indexing in Solr");
-            Collection<ThreeDVector> rasterized = new TwoDimensionRasterizer(spatial.getCoordinates()).raster();
+            Collection<ThreeDVector> points;
+            if(spatial.getFormat().isRasterize()) {
+                points = new TwoDimensionRasterizer(spatial.getTransformation()).raster();
+            }
+            else{
+                points = spatial.getCoordinatesForPointClouds();
+            }
             try{
-                solr.registerPoints(ArangoDocumentReference.fromNexusInstance(spatial.getLocatedInstance()).getId(), spatial.getReferenceSpace(), rasterized);
+                solr.registerPoints(ArangoDocumentReference.fromNexusInstance(spatial.getLocatedInstance()).getId(), spatial.getReferenceSpace(), points);
             }
             catch (IOException | SolrServerException e){
                 throw new RuntimeException(e);

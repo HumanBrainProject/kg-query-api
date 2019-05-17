@@ -54,9 +54,14 @@ public class HBPVocabulary {
 
     //FOR SPATIAL
     public static final String SPATIAL_TYPE = HBPVocabulary.NAMESPACE+ "SpatialAnchoring";
-    public static final String SPATIAL_COORDINATES = SPATIAL_TYPE.toLowerCase()+"/coordinates";
-    public static final String SPATIAL_REFERENCESPACE =  SPATIAL_TYPE.toLowerCase()+ "/referenceSpace";
-    public static final String SPATIAL_LOCATED_INSTANCE =  SPATIAL_TYPE.toLowerCase()+"/locatedInstance";
+
+    public static final String SPATIAL_NAMESPACE = SPATIAL_TYPE.toLowerCase()+"/";
+
+
+    public static final String SPATIAL_FORMAT = SPATIAL_NAMESPACE+"format";
+    public static final String SPATIAL_COORDINATES = SPATIAL_NAMESPACE+"coordinates";
+    public static final String SPATIAL_REFERENCESPACE =  SPATIAL_NAMESPACE+ "referenceSpace";
+    public static final String SPATIAL_LOCATED_INSTANCE =  SPATIAL_NAMESPACE+"locatedInstance";
 
     public static final String SUGGESTION = HBPVocabulary.NAMESPACE+ "suggestion";
 
@@ -67,6 +72,7 @@ public class HBPVocabulary {
 
     public static final String SUGGESTION_STATUS = SUGGESTION + "/status";
     public static final String SUGGESTION_STATUS_CHANGED_BY = SUGGESTION_STATUS + "/updatedBy";
+
 
 
     // FOR UPDATE

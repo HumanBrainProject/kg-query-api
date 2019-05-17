@@ -3,6 +3,6 @@ package org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.contro
 import org.humanbrainproject.knowledgegraph.annotations.NoTests;
 
 @NoTests(NoTests.TRIVIAL)
-public enum ReleaseTreeScope {
+public enum TreeScope {
     TOP_INSTANCE_ONLY, CHILDREN_ONLY, ALL
 }

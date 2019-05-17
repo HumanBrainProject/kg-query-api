@@ -9,7 +9,7 @@ import org.humanbrainproject.knowledgegraph.commons.ExternalApi;
 import org.humanbrainproject.knowledgegraph.commons.api.ParameterConstants;
 import org.humanbrainproject.knowledgegraph.commons.api.RestUtils;
 import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationContext;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.builders.ReleaseTreeScope;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.builders.TreeScope;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.exceptions.RootCollectionNotFoundException;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.exceptions.StoredQueryNotFoundException;
 import org.humanbrainproject.knowledgegraph.context.QueryContext;
@@ -81,7 +81,7 @@ public class QueryAPI {
             query.setParameters(allRequestParams);
             query.getFilter().restrictToOrganizations(RestUtils.splitCommaSeparatedValues(organizations)).setQueryString(searchTerm);
             query.getPagination().setStart(start).setSize(size);
-            QueryResult<List<Map>> result = this.query.queryPropertyGraphBySpecification(query);
+            QueryResult<List<Map>> result = this.query.queryPropertyGraphBySpecification(query, null);
 
             return ResponseEntity.ok(result);
         } catch (RootCollectionNotFoundException e) {
@@ -147,7 +147,7 @@ public class QueryAPI {
             StoredQuery query = new StoredQuery(schemaReference, queryId, vocab);
             query.setParameters(allRequestParams);
             query.getFilter().restrictToOrganizations(RestUtils.splitCommaSeparatedValues(restrictToOrganizations));
-            Map result = this.query.queryReleaseTree(query, new NexusInstanceReference(schemaReference, instanceId), ReleaseTreeScope.ALL);
+            Map result = this.query.queryReleaseTree(query, new NexusInstanceReference(schemaReference, instanceId), TreeScope.ALL);
             return ResponseEntity.ok(result);
         } catch (StoredQueryNotFoundException e){
             return ResponseEntity.notFound().build();
@@ -289,7 +289,7 @@ public class QueryAPI {
             query.setParameters(allRequestParams);
             query.getFilter().restrictToOrganizations(RestUtils.splitCommaSeparatedValues(organizations)).setQueryString(searchTerm);
             query.getPagination().setStart(start).setSize(size);
-            QueryResult<List<Map>> result = this.query.queryPropertyGraphBySpecification(query);
+            QueryResult<List<Map>> result = this.query.queryPropertyGraphBySpecification(query, null);
             result.setImportantMessage("This query is executed with a mode thought for query testing only (with throttled performance). Please register your query if you're happy with it. It's easy and you gain speed ;)!");
             return ResponseEntity.ok(result);
         } catch (RootCollectionNotFoundException e) {
@@ -310,7 +310,7 @@ public class QueryAPI {
             Query query = new Query(payload, new NexusSchemaReference(org, domain, schema, version), vocab);
             query.setParameters(allRequestParams);
             query.getFilter().restrictToSingleId(instanceId).restrictToOrganizations(RestUtils.splitCommaSeparatedValues(restrictToOrganizations));
-            QueryResult<List<Map>> result = this.query.queryPropertyGraphBySpecification(query);
+            QueryResult<List<Map>> result = this.query.queryPropertyGraphBySpecification(query, null);
 
             if (result.getResults().size() >= 1) {
                 Map body = result.getResults().get(0);

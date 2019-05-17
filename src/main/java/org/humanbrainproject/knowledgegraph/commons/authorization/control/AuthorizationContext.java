@@ -18,6 +18,8 @@ public interface AuthorizationContext {
 
     Set<String> getReadableOrganizations();
 
+    Set<String> getInvitations(String query);
+
     Set<String> getReadableOrganizations(Credential credential, List<String> whitelistedOrganizations);
 
     Set<String> getReadableOrganizations(List<String> whitelistedOrganizations);

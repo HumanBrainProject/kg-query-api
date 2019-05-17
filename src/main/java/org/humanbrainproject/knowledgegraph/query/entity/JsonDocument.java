@@ -7,6 +7,7 @@ import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.NexusVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.SchemaOrgVocabulary;
 import org.humanbrainproject.knowledgegraph.indexing.entity.Alternative;
+import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.AbsoluteNexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 
 import java.util.*;
@@ -82,6 +83,7 @@ public class JsonDocument extends LinkedHashMap<String, Object>{
     public String getNexusId(){
         return (String) get(ArangoVocabulary.NEXUS_UUID);
     }
+
 
 
     public NexusInstanceReference getReference(){

@@ -6,6 +6,7 @@ import org.humanbrainproject.knowledgegraph.commons.authorization.entity.Credent
 import org.humanbrainproject.knowledgegraph.commons.authorization.entity.InternalMasterKey;
 import org.humanbrainproject.knowledgegraph.commons.authorization.entity.OidcAccessToken;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.SubSpace;
+import org.humanbrainproject.knowledgegraph.scopes.boundary.Scope;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.stereotype.Component;
@@ -23,6 +24,11 @@ import java.util.Set;
 @Component
 @RequestScope
 public class DefaultAuthorizationContext implements AuthorizationContext {
+
+    @Autowired
+    Scope scope;
+
+
     @Autowired
     AuthorizationController authorizationController;
 
@@ -94,5 +100,10 @@ public class DefaultAuthorizationContext implements AuthorizationContext {
     @Override
     public ClientHttpRequestInterceptor getInterceptor(){
         return authorizationController.getInterceptor(getCredential());
+    }
+
+    @Override
+    public Set<String> getInvitations(String query) {
+        return scope.getIdWhitelistForUser(query, getCredential());
     }
 }

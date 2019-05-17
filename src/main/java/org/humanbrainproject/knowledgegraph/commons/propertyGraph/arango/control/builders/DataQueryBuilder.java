@@ -97,8 +97,8 @@ public class DataQueryBuilder {
     }
 
 
-    public DataQueryBuilder(Specification specification, Set<String> permissionGroupsWithReadAccess, Pagination pagination, Map<String, String> filterValues, Set<ArangoCollectionReference> existingCollections) {
-        this.q = new AuthorizedArangoQuery(permissionGroupsWithReadAccess);
+    public DataQueryBuilder(Specification specification, Set<String> permissionGroupsWithReadAccess, Set<String> invitations, Pagination pagination, Map<String, String> filterValues, Set<ArangoCollectionReference> existingCollections) {
+        this.q = new AuthorizedArangoQuery(permissionGroupsWithReadAccess, invitations);
         this.specification = specification;
         this.pagination = pagination;
         this.filterValues = new HashMap<>(filterValues);
@@ -115,9 +115,9 @@ public class DataQueryBuilder {
         if (field.isDirectChild()) {
             return representation.add(trust("${parentAlias}.`${originalKey}`")).setParameter("parentAlias", alias.getArangoDocName()).setParameter("originalKey", field.getLeafPath().pathName).build();
         } else if (field.hasGrouping()) {
-            return representation.add(representation.preventAqlInjection(ArangoAlias.fromSpecField(field).getArangoName() + "_grp")).build();
+            return representation.add(preventAqlInjection(ArangoAlias.fromSpecField(field).getArangoName() + "_grp")).build();
         } else {
-            return representation.add(representation.preventAqlInjection(ArangoAlias.fromSpecField(field).getArangoName())).build();
+            return representation.add(preventAqlInjection(ArangoAlias.fromSpecField(field).getArangoName())).build();
         }
     }
 
@@ -248,7 +248,7 @@ public class DataQueryBuilder {
                     aql.add(trust(", ${aliasDoc}_traverse_e"));
                 }
                 aql.addLine(trust(" IN 1..1 ${direction} ${parentAliasDoc} `${edgeCollection}`"));
-                aql.indent().addDocumentFilterWithWhitelistFilter(trust(aql.preventAqlInjection(alias.getArangoDocName()).getValue() + "_traverse"));
+                aql.indent().addDocumentFilterWithWhitelistFilter(trust(preventAqlInjection(alias.getArangoDocName()).getValue() + "_traverse"));
                 if (ensureOrder) {
                     aql.addLine(trust("SORT ${aliasDoc}_traverse_e." + ArangoVocabulary.ORDER_NUMBER + " ASC"));
                 }

@@ -14,6 +14,7 @@ import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.exceptions.StoredQueryNotFoundException;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.ArangoVocabulary;
+import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +23,8 @@ import org.springframework.stereotype.Component;
 import javax.ws.rs.NotFoundException;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Component
 @ToBeTested(systemTestRequired = true)
@@ -102,6 +105,17 @@ public class ArangoInternalRepository {
             throw e;
         }
     }
+
+    public Set<NexusSchemaReference> getSchemasWithSpecification(String queryId){
+        String query = queryFactory.queryRootSchemasForQueryId(queryId);
+        try {
+            return getDB().query(query, null, new AqlQueryOptions(), String.class).asListRemaining().stream().map(url -> NexusSchemaReference.createFromUrl(url)).collect(Collectors.toSet());
+        } catch (ArangoDBException e) {
+            logger.error("Arango query exception - {}", query);
+            throw e;
+        }
+    }
+
 
     public List<Map> getInternalDocuments(ArangoCollectionReference collection) {
         String query = queryFactory.getAllInternalDocumentsOfACollection(collection);

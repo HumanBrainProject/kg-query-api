@@ -10,12 +10,12 @@ import java.util.Set;
 
 import static org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.aql.AQL.*;
 
-public class DefaultReleaseTreeBuilder extends AbstractReleaseTreeBuilder {
+public class DefaultReleaseTreeBuilder {
 
     private final ArangoDocumentReference instanceId;
     private final AuthorizedArangoQuery q;
     private final String nexusInstanceBase;
-    private ReleaseTreeScope scope;
+    private TreeScope scope;
 
 
     private final ArangoAlias rootAlias = new ArangoAlias("root");
@@ -25,7 +25,7 @@ public class DefaultReleaseTreeBuilder extends AbstractReleaseTreeBuilder {
         this.instanceId = instanceId;
         this.nexusInstanceBase = nexusInstanceBase;
         if(scope == null){
-            scope = ReleaseTreeScope.ALL;
+            scope = TreeScope.ALL;
         }
         this.scope = scope;
     }
@@ -43,7 +43,7 @@ public class DefaultReleaseTreeBuilder extends AbstractReleaseTreeBuilder {
         q.addLine(trust("FOR ${rootDoc} IN `${collection}`")).indent();
         q.addDocumentFilter(rootAlias);
         q.addLine(trust("FILTER ${rootDoc}._id == \"${id}\""));
-        q.addLine(createReleaseStatusQuery(rootAlias, nexusInstanceBase).build());
+        q.addLine(ReleaseStatusQuery.createReleaseStatusQuery(rootAlias, nexusInstanceBase).build());
         q.addLine(trust("RETURN {"));
         q.setParameter("id", instanceId.getId());
         q.addLine(trust(" \"" + JsonLdConsts.ID + "\": ${rootDoc}.`" + JsonLdConsts.ID + "`,"));

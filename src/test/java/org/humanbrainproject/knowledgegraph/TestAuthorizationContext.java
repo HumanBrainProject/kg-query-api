@@ -75,4 +75,9 @@ public class TestAuthorizationContext implements AuthorizationContext {
     public Set<String> getReadableOrganizations(Credential credential, List<String> whitelistedOrganizations) {
         return null;
     }
+
+    @Override
+    public Set<String> getInvitations(String query) {
+        return null;
+    }
 }

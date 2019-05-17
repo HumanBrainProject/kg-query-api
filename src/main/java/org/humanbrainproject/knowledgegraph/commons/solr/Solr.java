@@ -8,6 +8,7 @@ import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.schema.FieldTypeDefinition;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest;
 import org.apache.solr.client.solrj.response.Group;
+import org.apache.solr.client.solrj.response.GroupCommand;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrInputDocument;
@@ -179,6 +180,7 @@ public class Solr implements InitializingBean {
                     document.addField("c", p.toString());
                     try {
                         UpdateResponse response = solr.add(solrCore, document);
+                        logger.info(String.format("Indexed point %s for reference %s in space \"%s\" in Solr in %d ms", p.toString(), id, referenceSpace, response.getElapsedTime()));
                     } catch (SolrServerException | IOException e) {
                         logger.error("Was not able to index document into Solr", e);
                     }
@@ -207,7 +209,8 @@ public class Solr implements InitializingBean {
         query.setRows(Long.valueOf(matches).intValue());
         query.setParam("group", true);
         query.setParam("group.field", "aid");
-        return query(query).getGroupResponse().getValues().get(0).getValues().stream().map(Group::getGroupValue).collect(Collectors.toList());
+        List<Group> groups = query(query).getGroupResponse().getValues().get(0).getValues();
+        return groups.stream().map(group -> (String)((List)group.getResult().get(0).get("aid")).get(0)).collect(Collectors.toList());
     }
 
 

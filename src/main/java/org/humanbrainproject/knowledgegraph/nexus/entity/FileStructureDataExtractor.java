@@ -86,7 +86,7 @@ public class FileStructureDataExtractor {
 
     protected void fetchingCurrentIdentifiers(ArangoQuery query, JsonLdStandardization standardization) throws IOException, SolrServerException, JSONException, NoSuchAlgorithmException {
         for(Map.Entry<NexusSchemaReference, File> r: this.nexusDataStructure.getSchemasConcerned().entrySet()){
-            QueryResult<List<Map>> result = query.queryPropertyGraphBySpecification(this.query(r.getKey()));
+            QueryResult<List<Map>> result = query.queryPropertyGraphBySpecification(this.query(r.getKey()), null);
             Map<String, Tuple<String, String>> idToUUIDMap = new HashMap<>();
             result.getResults().stream().forEach(i -> {
                 List<String> identifiers;
