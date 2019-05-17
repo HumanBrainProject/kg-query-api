@@ -33,15 +33,15 @@ public class SpecificationBasedReleaseTreeBuilder extends SpecificationBasedScop
 
     @Override
     protected void handleReturnOfExtraFields(AQL query, TrustedAqlValue alias, boolean linkingInstance){
-        query.addLine(trust(" \"" + JsonLdConsts.TYPE + "\": ${rootDoc}.`" + JsonLdConsts.TYPE + "`,"));
+        query.addLine(trust(" \"" + JsonLdConsts.TYPE + "\": ${"+alias.getValue()+"}.`" + JsonLdConsts.TYPE + "`,"));
         query.addLine(trust(" \"status\": ${"+alias.getValue()+"}_status,"));
         if(linkingInstance){
             query.addLine(trust(" \"" + SchemaOrgVocabulary.NAME + "\": \"Linking instance\","));
         }
         else {
-            query.addLine(trust(" \"" + SchemaOrgVocabulary.NAME + "\": ${aliasDoc}.`" + SchemaOrgVocabulary.NAME + "`,"));
+            query.addLine(trust(" \"" + SchemaOrgVocabulary.NAME + "\": ${"+alias.getValue()+"}.`" + SchemaOrgVocabulary.NAME + "`,"));
         }
-        query.addLine(trust(" \"" + SchemaOrgVocabulary.IDENTIFIER + "\": ${aliasDoc}.`" + SchemaOrgVocabulary.IDENTIFIER + "`,"));
+        query.addLine(trust(" \"" + SchemaOrgVocabulary.IDENTIFIER + "\": ${"+alias.getValue()+"}.`" + SchemaOrgVocabulary.IDENTIFIER + "`,"));
     }
 
 }

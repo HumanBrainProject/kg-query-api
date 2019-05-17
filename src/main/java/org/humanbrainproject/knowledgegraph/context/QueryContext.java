@@ -1,6 +1,7 @@
 package org.humanbrainproject.knowledgegraph.context;
 
 import com.arangodb.ArangoCursor;
+import com.arangodb.ArangoDBException;
 import com.arangodb.ArangoDatabase;
 import com.arangodb.model.AqlQueryOptions;
 import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
@@ -10,6 +11,9 @@ import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.
 import org.humanbrainproject.knowledgegraph.query.entity.DatabaseScope;
 import org.humanbrainproject.knowledgegraph.query.entity.ExposedDatabaseScope;
 import org.humanbrainproject.knowledgegraph.query.entity.Pagination;
+import org.humanbrainproject.knowledgegraph.releasing.control.ReleaseControl;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.annotation.RequestScope;
@@ -27,6 +31,8 @@ import java.util.Set;
 @ToBeTested(easy = true)
 public class QueryContext {
 
+
+    protected Logger logger = LoggerFactory.getLogger(QueryContext.class);
     @Autowired
     ArangoDatabaseFactory databaseFactory;
 
@@ -76,7 +82,13 @@ public class QueryContext {
                 options.count(true);
             }
         }
-        return getDatabase().query(aqlQuery, bindParameters, options, returnType);
+        try {
+            return getDatabase().query(aqlQuery, bindParameters, options, returnType);
+        }
+        catch(ArangoDBException ex){
+            logger.error(String.format("Was not able to execute the query: \n%s", aqlQuery), ex);
+            throw ex;
+        }
     }
 
     private transient Set<ArangoCollectionReference> existingCollections;
