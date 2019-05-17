@@ -3,6 +3,7 @@ package org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.contro
 import com.arangodb.ArangoCollection;
 import com.arangodb.ArangoCursor;
 import com.arangodb.ArangoDBException;
+import com.arangodb.ArangoDatabase;
 import com.arangodb.model.AqlQueryOptions;
 import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationContext;
@@ -178,9 +179,14 @@ public class ArangoInferredRepository {
     }
 
     public List<Map> findInstancesBySchemaAndFilter(NexusSchemaReference schema, List<EqualsFilter> filters, boolean asSystemUser){
-        String query = queryFactory.queryInstanceBySchemaAndFilter(ArangoCollectionReference.fromNexusSchemaReference(schema), filters, asSystemUser ? Collections.singleton(schema.getOrganization()) : authorizationContext.getReadableOrganizations());
-        ArangoCursor<Map> result = databaseFactory.getInferredDB().getOrCreateDB().query(query, null, new AqlQueryOptions(), Map.class);
-        return result.asListRemaining();
+        ArangoDatabase database = databaseFactory.getInferredDB().getOrCreateDB();
+        ArangoCollectionReference collection = ArangoCollectionReference.fromNexusSchemaReference(schema);
+        if(database.collection(collection.getName()).exists()) {
+            String query = queryFactory.queryInstanceBySchemaAndFilter(collection, filters, asSystemUser ? Collections.singleton(schema.getOrganization()) : authorizationContext.getReadableOrganizations());
+            ArangoCursor<Map> result = database.query(query, null, new AqlQueryOptions(), Map.class);
+            return result.asListRemaining();
+        }
+        return Collections.emptyList();
     }
 
     public List<Map> getIncomingLinks(NexusInstanceReference ref){
