@@ -3,6 +3,8 @@ package org.humanbrainproject.knowledgegraph.indexing.control.spatial.rasterizer
 import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.indexing.control.spatial.transformation.ThreeDTransformation;
 import org.humanbrainproject.knowledgegraph.query.entity.ThreeDVector;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.FileWriter;
 import java.io.IOException;
@@ -20,6 +22,7 @@ public class TwoDimensionRasterizer {
 
     private final ThreeDTransformation transformation;
 
+    private static Logger logger = LoggerFactory.getLogger(TwoDimensionRasterizer.class);
 
     private int width = 100;
     private int height = 100;
@@ -127,7 +130,7 @@ public class TwoDimensionRasterizer {
             throw new RuntimeException(e);
         }
 
-        System.out.println("Rendered version available at file:///tmp/draw.html");
+        logger.info("Rendered version available at file:///tmp/draw.html");
 
     }
 

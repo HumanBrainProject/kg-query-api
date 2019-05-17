@@ -179,6 +179,7 @@ public class Solr implements InitializingBean {
                     document.addField("c", p.toString());
                     try {
                         UpdateResponse response = solr.add(solrCore, document);
+                        logger.info(String.format("Indexed point %s for reference %s in space \"%s\" in Solr in %d ms", p.toString(), id, referenceSpace, response.getElapsedTime()));
                     } catch (SolrServerException | IOException e) {
                         logger.error("Was not able to index document into Solr", e);
                     }
