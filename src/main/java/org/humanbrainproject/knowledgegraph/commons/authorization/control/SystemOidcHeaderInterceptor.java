@@ -35,7 +35,7 @@ public class SystemOidcHeaderInterceptor implements ClientHttpRequestInterceptor
     private void setAuthTokenToRequest(HttpRequest request) {
         OidcAccessToken token = getToken();
         if (token != null) {
-            request.getHeaders().add("Authorization", token.getBearerToken());
+            request.getHeaders().set("Authorization", token.getBearerToken());
         }
     }
 
