@@ -7,12 +7,13 @@ import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.builders.TreeScope;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
-import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
 import org.humanbrainproject.knowledgegraph.query.boundary.ArangoQuery;
 import org.humanbrainproject.knowledgegraph.query.control.SpecificationController;
 import org.humanbrainproject.knowledgegraph.query.control.SpecificationInterpreter;
 import org.humanbrainproject.knowledgegraph.query.entity.Specification;
 import org.humanbrainproject.knowledgegraph.query.entity.StoredQueryReference;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.cache.annotation.CacheEvict;
@@ -26,6 +27,9 @@ import java.util.Map;
 
 @Component
 public class ScopeTreeController {
+
+
+    private static Logger logger = LoggerFactory.getLogger(ScopeTreeController.class);
 
     @Autowired
     JsonLdStandardization standardization;
@@ -45,7 +49,7 @@ public class ScopeTreeController {
 
     @Cacheable("scopeTree")
     public Map getScopeTree(NexusInstanceReference instanceReference, String queryId) {
-        System.out.println(String.format("Finding scope for %s with the query %s", instanceReference.getRelativeUrl().getUrl(), queryId));
+        logger.info(String.format("Finding scope for %s with the query %s", instanceReference.getRelativeUrl().getUrl(), queryId));
         StoredQueryReference queryReference = new StoredQueryReference(instanceReference.getNexusSchema(), queryId);
         String payload = arangoInternalRepository.getInternalDocumentByKey(new ArangoDocumentReference(ArangoQuery.SPECIFICATION_QUERIES, queryReference.getName()), String.class);
         if (payload != null) {

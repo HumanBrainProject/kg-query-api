@@ -1,6 +1,5 @@
 package org.humanbrainproject.knowledgegraph.scopes.boundary;
 
-import net.bytebuddy.dynamic.Nexus;
 import org.humanbrainproject.knowledgegraph.commons.authorization.control.SystemOidcClient;
 import org.humanbrainproject.knowledgegraph.commons.authorization.control.UserInformation;
 import org.humanbrainproject.knowledgegraph.commons.authorization.entity.Credential;
@@ -12,6 +11,7 @@ import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceR
 import org.humanbrainproject.knowledgegraph.scopes.control.InvitationController;
 import org.humanbrainproject.knowledgegraph.scopes.control.ScopeEvaluator;
 import org.humanbrainproject.knowledgegraph.scopes.entity.Invitation;
+import org.humanbrainproject.knowledgegraph.scopes.entity.InvitedUser;
 import org.humanbrainproject.knowledgegraph.users.control.UserController;
 import org.humanbrainproject.knowledgegraph.users.entity.User;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,9 +40,13 @@ public class Scope {
     NexusConfiguration configuration;
 
 
-    public Set<String> getInvitedUsersForId(NexusInstanceReference instanceReference){
+    public Set<InvitedUser> getInvitedUsersForId(NexusInstanceReference instanceReference){
         Set<User> invitedUsersByInstance = invitationController.getInvitedUsersByInstance(instanceReference);
-        return invitedUsersByInstance.stream().map(User::getUserId).collect(Collectors.toSet());
+        return invitedUsersByInstance.stream().map(u -> {
+            InvitedUser invitedUser = new InvitedUser();
+            invitedUser.setUserId(u.getUserId());
+            return invitedUser;
+        }).collect(Collectors.toSet());
     }
 
     public Set<String> getIdWhitelistForUser(String query, Credential credential){

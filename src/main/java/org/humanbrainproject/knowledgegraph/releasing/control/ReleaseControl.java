@@ -36,7 +36,10 @@ import java.io.IOException;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @Component
 @ToBeTested(integrationTestRequired = true)
@@ -227,7 +230,7 @@ public class ReleaseControl {
         boolean outdatedRelease = false;
         for (NexusInstanceReference existingRelease : existingReleases) {
             outdatedRelease = true;
-            System.out.println("Outdated release: "+existingRelease);
+            logger.info("Outdated release: "+existingRelease);
             instanceManipulationController.deprecateInstanceByNexusId(existingRelease);
         }
         if(outdatedRelease){
