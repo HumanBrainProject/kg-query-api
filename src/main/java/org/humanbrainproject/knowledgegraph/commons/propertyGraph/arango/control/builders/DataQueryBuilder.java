@@ -70,7 +70,7 @@ public class DataQueryBuilder {
 
         //FIXME We want to get rid of the static search parameter - this could be done dynamically but we keep it for backwards compatibility right now.
         if(search!=null){
-            q.addLine(trust("FILTER LOWER(${rootFieldName}_doc.`http://schema.org/name`) LIKE @searchQuery"));
+            q.addLine(trust("FILTER LOWER(${rootFieldName}_doc.`http://schema.org/name`) LIKE @searchQuery OR LOWER(${rootFieldName}_doc.`http://www.w3.org/2000/01/rdf-schema#label`) LIKE @searchQuery "));
             getProcessedFilterValues().put("searchQuery", "%"+search+"%");
         }
 
