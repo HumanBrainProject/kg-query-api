@@ -42,6 +42,7 @@ import static org.humanbrainproject.knowledgegraph.commons.api.ParameterConstant
 @RestController
 @RequestMapping(value = "/query", produces = MediaType.APPLICATION_JSON)
 @ToBeTested(easy = true)
+@CrossOrigin
 @Api(value = "/query", description = "The API for querying the knowledge graph")
 public class QueryAPI {
 
