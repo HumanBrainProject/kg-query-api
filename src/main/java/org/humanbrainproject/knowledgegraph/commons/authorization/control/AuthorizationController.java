@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.stereotype.Component;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -51,16 +52,18 @@ public class AuthorizationController {
     }
 
 
-    final LRUMap<Credential, Set<AccessRight>> tokenToAccessRights = new LRUMap<>();
+    final Map<String, Set<AccessRight>> tokenToAccessRights = Collections.synchronizedMap(new LRUMap<>());
 
     Set<AccessRight> getAccessRights(Credential credential) {
-        if (tokenToAccessRights.containsKey(credential)) {
-            return tokenToAccessRights.get(credential);
+        if (credential instanceof OidcAccessToken && tokenToAccessRights.containsKey(((OidcAccessToken)credential).getBearerToken())) {
+            return tokenToAccessRights.get(((OidcAccessToken)credential).getBearerToken());
         }
         Set<String> allOrganizations = nexusClient.getAllOrganizations(getInterceptor(credential));
         //TODO right now, we only have the differentiation if a organization is visible or not - we therefore only can tell that there is at least READ access. We should have other means to ensure WRITE access.
         Set<AccessRight> accessRights = allOrganizations.stream().map(org -> new AccessRight(org.replace(nexusConfiguration.getNexusBase(NexusConfiguration.ResourceType.ORGANIZATION)+"/", ""), AccessRight.Permission.READ)).collect(Collectors.toSet());
-        tokenToAccessRights.put(credential, accessRights);
+        if (credential instanceof OidcAccessToken && tokenToAccessRights.containsKey(((OidcAccessToken)credential).getBearerToken())) {
+            tokenToAccessRights.put(((OidcAccessToken)credential).getBearerToken(), accessRights);
+        }
         return accessRights;
     }
 
