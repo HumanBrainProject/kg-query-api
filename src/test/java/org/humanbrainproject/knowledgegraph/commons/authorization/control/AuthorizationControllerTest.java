@@ -82,7 +82,8 @@ public class AuthorizationControllerTest {
         //given
         OidcAccessToken token = new OidcAccessToken();
         AccessRight right = new AccessRight("foo", AccessRight.Permission.READ);
-        controller.tokenToAccessRights.put(token, new HashSet<>(Arrays.asList(right)));
+        token.setToken("foobar");
+        controller.tokenToAccessRights.put(token.getBearerToken(), new HashSet<>(Arrays.asList(right)));
 
 
         //when
@@ -101,8 +102,9 @@ public class AuthorizationControllerTest {
     public void getReadableOrganizationsNullWhitelist(){
         //given
         OidcAccessToken token = new OidcAccessToken();
+        token.setToken("foobar");
         AccessRight right = new AccessRight("foo", AccessRight.Permission.READ);
-        controller.tokenToAccessRights.put(token, new HashSet<>(Arrays.asList(right)));
+        controller.tokenToAccessRights.put(token.getBearerToken(), new HashSet<>(Arrays.asList(right)));
 
         //when
         Set<String> readableOrganizations = controller.getReadableOrganizations(token, null);
@@ -117,7 +119,7 @@ public class AuthorizationControllerTest {
         //given
         OidcAccessToken token = new OidcAccessToken();
         AccessRight right = new AccessRight("foo", AccessRight.Permission.READ);
-        controller.tokenToAccessRights.put(token, new HashSet<>(Arrays.asList(right)));
+        controller.tokenToAccessRights.put(token.getBearerToken(), new HashSet<>(Arrays.asList(right)));
 
         //when
         Set<String> readableOrganizations = controller.getReadableOrganizations(token, Arrays.asList("foo", "bar"));
@@ -131,8 +133,9 @@ public class AuthorizationControllerTest {
     public void getReadableOrganizationsWithWhitelistNoMatch(){
         //given
         OidcAccessToken token = new OidcAccessToken();
+        token.setToken("foobar");
         AccessRight right = new AccessRight("foo", AccessRight.Permission.READ);
-        controller.tokenToAccessRights.put(token, new HashSet<>(Arrays.asList(right)));
+        controller.tokenToAccessRights.put(token.getBearerToken(), new HashSet<>(Arrays.asList(right)));
 
         //when
         Set<String> readableOrganizations = controller.getReadableOrganizations(token, Arrays.asList("bar"));
@@ -147,8 +150,9 @@ public class AuthorizationControllerTest {
         //given
         Map<String, Object> arangoInstance = TestObjectFactory.createArangoInstanceSkeleton("fooinstance", "foopermission");
         OidcAccessToken token = new OidcAccessToken();
+        token.setToken("foobar");
         AccessRight right = new AccessRight("foopermission", AccessRight.Permission.READ);
-        controller.tokenToAccessRights.put(token, new HashSet<>(Arrays.asList(right)));
+        controller.tokenToAccessRights.put(token.getBearerToken(), new HashSet<>(Arrays.asList(right)));
 
         //when
         boolean readable = controller.isReadable(arangoInstance, token);
@@ -162,8 +166,9 @@ public class AuthorizationControllerTest {
         //given
         Map<String, Object> arangoInstance = TestObjectFactory.createArangoInstanceSkeleton("fooinstance", "foopermission");
         OidcAccessToken token = new OidcAccessToken();
+        token.setToken("foobar");
         AccessRight right = new AccessRight("barpermission", AccessRight.Permission.READ);
-        controller.tokenToAccessRights.put(token, new HashSet<>(Arrays.asList(right)));
+        controller.tokenToAccessRights.put(token.getBearerToken(), new HashSet<>(Arrays.asList(right)));
 
         //when
         boolean readable = controller.isReadable(arangoInstance, token);
