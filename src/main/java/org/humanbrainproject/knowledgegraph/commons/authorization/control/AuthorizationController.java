@@ -51,7 +51,6 @@ public class AuthorizationController {
         return (String)userInfo.get("sub");
     }
 
-
     final Map<String, Set<AccessRight>> tokenToAccessRights = Collections.synchronizedMap(new LRUMap<>());
 
     Set<AccessRight> getAccessRights(Credential credential) {

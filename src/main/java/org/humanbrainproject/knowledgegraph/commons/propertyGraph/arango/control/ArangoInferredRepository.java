@@ -42,12 +42,12 @@ public class ArangoInferredRepository {
 
 
     public Set<ArangoCollectionReference> getCollectionNames() {
-        ArangoConnection inferredDB = databaseFactory.getInferredDB();
+        ArangoConnection inferredDB = databaseFactory.getInferredDB(true);
         return inferredDB.getEdgesCollectionNames();
     }
 
     public boolean hasInstances(ArangoCollectionReference reference){
-        ArangoCollection collection = databaseFactory.getInferredDB().getOrCreateDB().collection(reference.getName());
+        ArangoCollection collection = databaseFactory.getInferredDB(true).getOrCreateDB().collection(reference.getName());
         boolean exists = collection.exists();
         if(!exists){
             return false;
@@ -66,7 +66,7 @@ public class ArangoInferredRepository {
         AqlQueryOptions options = new AqlQueryOptions().count(true).fullCount(true);
         Map m = new HashMap();
         try {
-            ArangoCursor<Map> q = databaseFactory.getInferredDB().getOrCreateDB().query(query, null, options, Map.class);
+            ArangoCursor<Map> q = databaseFactory.getInferredDB(false).getOrCreateDB().query(query, null, options, Map.class);
             m.put("count", q.getCount());
             m.put("fullCount", q.getStats().getFullCount());
             m.put("data", q.asListRemaining());
@@ -89,7 +89,7 @@ public class ArangoInferredRepository {
         AqlQueryOptions options = new AqlQueryOptions().count(true).fullCount(true);
         Map m = new HashMap();
         try {
-            ArangoCursor<Map> q = databaseFactory.getInferredDB().getOrCreateDB().query(query, null, options, Map.class);
+            ArangoCursor<Map> q = databaseFactory.getInferredDB(false).getOrCreateDB().query(query, null, options, Map.class);
             m.put("count", q.getCount());
             m.put("fullCount", q.getStats().getFullCount());
             m.put("data", q.asListRemaining());
@@ -119,7 +119,7 @@ public class ArangoInferredRepository {
         List<ArangoCollectionReference> types = schemasWithOccurences.stream().map(m -> ArangoCollectionReference.fromFieldName(m.get("type").toString())).collect(Collectors.toList());
         String query = queryFactory.querySuggestionByField(ArangoCollectionReference.fromNexusSchemaReference(schemaReference), ArangoCollectionReference.fromFieldName(fieldName), searchTerm, pagination != null ? pagination.getStart() : null, pagination != null ? pagination.getSize() : null, authorizationContext.getReadableOrganizations(), types);
         try {
-            ArangoCursor<Map> cursor = databaseFactory.getInferredDB().getOrCreateDB().query(query, null, options, Map.class);
+            ArangoCursor<Map> cursor = databaseFactory.getInferredDB(false).getOrCreateDB().query(query, null, options, Map.class);
             Long count;
             if (pagination!=null && pagination.getSize() != null) {
                 count = cursor.getStats().getFullCount();
@@ -146,13 +146,13 @@ public class ArangoInferredRepository {
 
     public List<Map> getSchemasWithOccurences(NexusSchemaReference schemaReference, String fieldName){
         String query = queryFactory.queryOccurenceOfSchemasInRelation(ArangoCollectionReference.fromNexusSchemaReference(schemaReference), ArangoCollectionReference.fromFieldName(fieldName),  authorizationContext.getReadableOrganizations());
-        ArangoCursor<Map> result = databaseFactory.getInferredDB().getOrCreateDB().query(query, null, new AqlQueryOptions(), Map.class);
+        ArangoCursor<Map> result = databaseFactory.getInferredDB(false).getOrCreateDB().query(query, null, new AqlQueryOptions(), Map.class);
         return result.asListRemaining();
     }
 
     public Map getUserSuggestionOfSpecificInstance(NexusInstanceReference instanceReference, NexusInstanceReference userRef){
         String query = queryFactory.querySuggestionInstanceByUser(instanceReference ,userRef, authorizationContext.getReadableOrganizations());
-        ArangoCursor<Map> result = databaseFactory.getInferredDB().getOrCreateDB().query(query, null, new AqlQueryOptions(), Map.class);
+        ArangoCursor<Map> result = databaseFactory.getInferredDB(false).getOrCreateDB().query(query, null, new AqlQueryOptions(), Map.class);
         List<Map> l = result.asListRemaining();
         if(l.isEmpty()){
             return null;
@@ -163,13 +163,13 @@ public class ArangoInferredRepository {
 
     public List<Map> getSuggestionsByUser(NexusInstanceReference ref, SuggestionStatus status){
         String query = queryFactory.querySuggestionsByUser(ref, status, authorizationContext.getReadableOrganizations());
-        ArangoCursor<Map> result = databaseFactory.getInferredDB().getOrCreateDB().query(query, null, new AqlQueryOptions(), Map.class);
+        ArangoCursor<Map> result = databaseFactory.getInferredDB(false).getOrCreateDB().query(query, null, new AqlQueryOptions(), Map.class);
         return result.asListRemaining();
     }
 
     public Map findInstanceBySchemaAndFilter(NexusSchemaReference schema, String filterKey, String filterValue){
         String query = queryFactory.queryInstanceBySchemaAndFilter(ArangoCollectionReference.fromNexusSchemaReference(schema), filterKey, filterValue, authorizationContext.getReadableOrganizations());
-        ArangoCursor<Map> result = databaseFactory.getInferredDB().getOrCreateDB().query(query, null, new AqlQueryOptions(), Map.class);
+        ArangoCursor<Map> result = databaseFactory.getInferredDB(false).getOrCreateDB().query(query, null, new AqlQueryOptions(), Map.class);
         List<Map> l = result.asListRemaining();
         if(l.isEmpty()){
             return null;
@@ -179,7 +179,7 @@ public class ArangoInferredRepository {
     }
 
     public List<Map> findInstancesBySchemaAndFilter(NexusSchemaReference schema, List<EqualsFilter> filters, boolean asSystemUser){
-        ArangoDatabase database = databaseFactory.getInferredDB().getOrCreateDB();
+        ArangoDatabase database = databaseFactory.getInferredDB(asSystemUser).getOrCreateDB();
         ArangoCollectionReference collection = ArangoCollectionReference.fromNexusSchemaReference(schema);
         if(database.collection(collection.getName()).exists()) {
             String query = queryFactory.queryInstanceBySchemaAndFilter(collection, filters, asSystemUser ? Collections.singleton(schema.getOrganization()) : authorizationContext.getReadableOrganizations());
@@ -191,7 +191,7 @@ public class ArangoInferredRepository {
 
     public List<Map> getIncomingLinks(NexusInstanceReference ref){
         String query = queryFactory.queryIncomingLinks(ref, this.getCollectionNames(), authorizationContext.getReadableOrganizations());
-        ArangoCursor<Map> result = databaseFactory.getInferredDB().getOrCreateDB().query(query, null, new AqlQueryOptions(), Map.class);
+        ArangoCursor<Map> result = databaseFactory.getInferredDB(false).getOrCreateDB().query(query, null, new AqlQueryOptions(), Map.class);
         return result.asListRemaining();
     }
 

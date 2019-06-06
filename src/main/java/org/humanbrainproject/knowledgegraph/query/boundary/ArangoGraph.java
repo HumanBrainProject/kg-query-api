@@ -43,7 +43,7 @@ public class ArangoGraph {
     SemanticsToHumanTranslator translator;
 
     public Map getGraph(NexusInstanceReference instance, Integer step) {
-        List<Map> maps = arangoRepository.inDepthGraph(ArangoDocumentReference.fromNexusInstance(instance), step, databaseFactory.getInferredDB());
+        List<Map> maps = arangoRepository.inDepthGraph(ArangoDocumentReference.fromNexusInstance(instance), step, databaseFactory.getInferredDB(false));
         JsonDocument result = new JsonDocument();
         List<Map<String, Object>> nodesList = new ArrayList<>();
         List<Map<String, Object>> linksList = new ArrayList<>();

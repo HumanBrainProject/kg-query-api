@@ -23,7 +23,7 @@ public class TestDatabaseController extends ArangoDatabaseFactory {
     }
 
     @Override
-    public ArangoConnection getDefaultDB() {
+    public ArangoConnection getDefaultDB(boolean asSystemUser) {
         return defaultTestDB;
     }
 }

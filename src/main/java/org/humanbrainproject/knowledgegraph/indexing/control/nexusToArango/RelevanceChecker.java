@@ -30,7 +30,7 @@ public class RelevanceChecker {
      * @return true if the message should be processed (there is no newer instance in the database) or false if it can be skipped
      */
     public boolean isMessageRelevant(QualifiedIndexingMessage message) {
-        Map document = repository.getDocument(ArangoDocumentReference.fromNexusInstance(message.getOriginalMessage().getInstanceReference()), databaseFactory.getDefaultDB());
+        Map document = repository.getDocument(ArangoDocumentReference.fromNexusInstance(message.getOriginalMessage().getInstanceReference()), databaseFactory.getDefaultDB(true));
         if (document != null) {
             JsonDocument doc = new JsonDocument(document);
             Integer existingNexusRevision = doc.getNexusRevision();
