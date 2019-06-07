@@ -119,8 +119,8 @@ public class QueryAPI {
         authorizationContext.populateAuthorizationContext(authorizationToken);
 
         Map queryPayload = query.getQueryPayload(new StoredQueryReference(new NexusSchemaReference(org, domain, schema, version), queryId), Map.class);
-        JsonDocument doc = new JsonDocument(queryPayload).removeAllInternalKeys();
         if (queryPayload != null) {
+            JsonDocument doc = new JsonDocument(queryPayload).removeAllInternalKeys();
             return ResponseEntity.ok(doc);
         } else {
             return ResponseEntity.notFound().build();
