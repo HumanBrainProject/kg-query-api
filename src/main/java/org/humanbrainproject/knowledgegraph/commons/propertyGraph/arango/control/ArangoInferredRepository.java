@@ -119,7 +119,11 @@ public class ArangoInferredRepository {
         List<ArangoCollectionReference> types = schemasWithOccurences.stream().map(m -> ArangoCollectionReference.fromFieldName(m.get("type").toString())).collect(Collectors.toList());
         String query = queryFactory.querySuggestionByField(ArangoCollectionReference.fromNexusSchemaReference(schemaReference), ArangoCollectionReference.fromFieldName(fieldName), searchTerm, pagination != null ? pagination.getStart() : null, pagination != null ? pagination.getSize() : null, authorizationContext.getReadableOrganizations(), types);
         try {
-            ArangoCursor<Map> cursor = databaseFactory.getInferredDB().getOrCreateDB().query(query, null, options, Map.class);
+            Map<String, Object> map = new HashMap<>();
+            if(searchTerm!=null){
+                map.put("searchTerm", ("%"+searchTerm+"%").toLowerCase());
+            }
+            ArangoCursor<Map> cursor = databaseFactory.getInferredDB().getOrCreateDB().query(query, map, options, Map.class);
             Long count;
             if (pagination!=null && pagination.getSize() != null) {
                 count = cursor.getStats().getFullCount();
