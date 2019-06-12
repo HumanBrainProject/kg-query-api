@@ -7,7 +7,6 @@ import org.humanbrainproject.knowledgegraph.commons.authorization.entity.Interna
 import org.humanbrainproject.knowledgegraph.commons.authorization.entity.OidcAccessToken;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.SubSpace;
 import org.humanbrainproject.knowledgegraph.scopes.boundary.Scope;
-import org.ietf.jgss.Oid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.stereotype.Component;
