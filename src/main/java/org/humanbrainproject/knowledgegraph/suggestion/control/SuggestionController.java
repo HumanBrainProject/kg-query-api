@@ -43,8 +43,8 @@ public class SuggestionController {
     @Autowired
     NexusConfiguration nexusConfiguration;
 
-    public QueryResult<List<Map>> simpleSuggestByField(NexusSchemaReference originalSchema, String field, String search, Pagination pagination){
-        return repository.getSuggestionsByField(originalSchema, field, search, pagination);
+    public QueryResult<List<Map>> simpleSuggestByField(NexusSchemaReference originalSchema, String field, String type, String search, Pagination pagination){
+        return repository.getSuggestionsByField(originalSchema, field, type, search, pagination);
 
     }
 

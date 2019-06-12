@@ -16,6 +16,7 @@ import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaRef
 import org.humanbrainproject.knowledgegraph.query.entity.JsonDocument;
 import org.humanbrainproject.knowledgegraph.query.entity.Pagination;
 import org.humanbrainproject.knowledgegraph.query.entity.QueryResult;
+import org.humanbrainproject.knowledgegraph.query.entity.SpecTraverse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -106,12 +107,9 @@ public class ArangoInferredRepository {
     }
 
     @AuthorizedAccess
-    public QueryResult<List<Map>> getSuggestionsByField(NexusSchemaReference schemaReference, String fieldName, String searchTerm, Pagination pagination){
+    public QueryResult<List<Map>> getSuggestionsByField(NexusSchemaReference schemaReference, String fieldName, String type, String searchTerm, Pagination pagination){
         ArangoDatabase database = databaseFactory.getInferredDB(false).getOrCreateDB();
         ArangoCollectionReference relationCollection = ArangoCollectionReference.fromFieldName(fieldName);
-        if(!database.collection(relationCollection.getName()).exists()){
-            return QueryResult.createEmptyResult();
-        }
         QueryResult<List<Map>> result = new QueryResult<>();
         AqlQueryOptions options = new AqlQueryOptions();
         if (pagination!=null && pagination.getSize() != null) {
@@ -119,11 +117,17 @@ public class ArangoInferredRepository {
         } else {
             options.count(true);
         }
-
-        List<Map> schemasWithOccurences = getSchemasWithOccurences(schemaReference, fieldName);
-        List<ArangoCollectionReference> types = schemasWithOccurences.stream().map(m -> ArangoCollectionReference.fromFieldName(m.get("type").toString())).collect(Collectors.toList());
-
-        String query = queryFactory.querySuggestionByField(ArangoCollectionReference.fromNexusSchemaReference(schemaReference), relationCollection, searchTerm, pagination != null ? pagination.getStart() : null, pagination != null ? pagination.getSize() : null, authorizationContext.getReadableOrganizations(), types);
+        List<ArangoCollectionReference> types = new ArrayList<>();
+        boolean relationExists = database.collection(relationCollection.getName()).exists();
+        if(relationExists){
+            List<Map> schemasWithOccurences = getSchemasWithOccurences(schemaReference, fieldName);
+            types = schemasWithOccurences.stream().map(m -> ArangoCollectionReference.fromFieldName(m.get("type").toString())).collect(Collectors.toList());
+        }
+        ArangoCollectionReference defaultType = ArangoCollectionReference.fromSpecTraversal(new SpecTraverse(type, false));
+        if(!types.contains(defaultType)){
+            types.add(defaultType);
+        }
+        String query = queryFactory.querySuggestionByField(ArangoCollectionReference.fromNexusSchemaReference(schemaReference), relationExists ? relationCollection : null, searchTerm, pagination != null ? pagination.getStart() : null, pagination != null ? pagination.getSize() : null, authorizationContext.getReadableOrganizations(), types);
         try {
             Map<String, Object> map = new HashMap<>();
             if(searchTerm!=null){

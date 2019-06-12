@@ -20,8 +20,8 @@ public class Suggest {
     @Autowired
     SuggestionController suggestionController;
 
-    public QueryResult<List<Map>> suggestByField(NexusSchemaReference schemaReference, String field, String search, Pagination pagination){
-        return suggestionController.simpleSuggestByField(schemaReference, field, search, pagination);
+    public QueryResult<List<Map>> suggestByField(NexusSchemaReference schemaReference, String field, String type, String search, Pagination pagination){
+        return suggestionController.simpleSuggestByField(schemaReference, field, type, search, pagination);
     }
 
     public NexusInstanceReference createSuggestionInstanceForUser(NexusInstanceReference ref, String userId, String clientIdExtension) throws NotFoundException{

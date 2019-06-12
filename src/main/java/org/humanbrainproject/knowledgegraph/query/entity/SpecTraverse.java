@@ -12,6 +12,10 @@ public class SpecTraverse {
 
 
     public SpecTraverse(String pathName, boolean reverse) {
+        //Remove trailing slash
+        if(pathName.startsWith("/")){
+            pathName = pathName.substring(1);
+        }
         this.pathName = pathName;
         this.reverse = reverse;
     }
