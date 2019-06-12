@@ -79,7 +79,7 @@ public class ReleaseControl {
 
 
     public NexusInstanceReference findNexusInstanceFromInferredArangoEntry(ArangoDocumentReference arangoDocumentReference) {
-        Map document = arangoRepository.getDocument(arangoDocumentReference, databaseFactory.getInferredDB());
+        Map document = arangoRepository.getDocument(arangoDocumentReference, databaseFactory.getInferredDB(false));
         if (document != null) {
             Object originalId = document.get(ArangoVocabulary.NEXUS_RELATIVE_URL_WITH_REV);
             if (originalId instanceof String) {
@@ -222,7 +222,7 @@ public class ReleaseControl {
         payload.addType(HBPVocabulary.RELEASE_TYPE);
         NexusInstanceReference originalId = nativeRepository.findOriginalId(instanceReference);
         NexusSchemaReference releaseSchema = new NexusSchemaReference("releasing", "prov", "release", "v0.0.2");
-        Set<NexusInstanceReference> existingReleases = nativeRepository.findOriginalIdsWithLinkTo(databaseFactory.getInferredDB(), ArangoDocumentReference.fromNexusInstance(originalId.toSubSpace(SubSpace.MAIN)), ArangoCollectionReference.fromFieldName(HBPVocabulary.RELEASE_INSTANCE));
+        Set<NexusInstanceReference> existingReleases = nativeRepository.findOriginalIdsWithLinkTo(databaseFactory.getInferredDB(false), ArangoDocumentReference.fromNexusInstance(originalId.toSubSpace(SubSpace.MAIN)), ArangoCollectionReference.fromFieldName(HBPVocabulary.RELEASE_INSTANCE));
         NexusInstanceReference instance = instanceManipulationController.createInstanceByIdentifier(releaseSchema, originalId.toSubSpace(SubSpace.MAIN).getFullId(false), payload, authorizationContext.getUserId());
         //TODO This is a progressive fix for a previously introduced issue. As soon as all release instances are containing an "identifier" with the main space, we can get rid of this logic.
         NexusInstanceReference finalInstance = instance;
@@ -242,14 +242,14 @@ public class ReleaseControl {
 
     public NexusInstanceReference unrelease(NexusInstanceReference instanceReference) {
         //We need the original id because the releasing mechanism needs to point to the real instance to ensure the right revision. We can do that by pointing to the nexus relative url of the inferred instance.
-        Map document = arangoRepository.getDocument(ArangoDocumentReference.fromNexusInstance(instanceReference), databaseFactory.getInferredDB());
+        Map document = arangoRepository.getDocument(ArangoDocumentReference.fromNexusInstance(instanceReference), databaseFactory.getInferredDB(false));
         if (document != null) {
             Object relativeUrl = document.get(ArangoVocabulary.NEXUS_RELATIVE_URL);
             if (relativeUrl != null) {
                 NexusInstanceReference fromUrl = NexusInstanceReference.createFromUrl((String) relativeUrl);
                 NexusInstanceReference originalFrom = nativeRepository.findOriginalId(fromUrl);
                 //Find release instance
-                Set<NexusInstanceReference> releases = nativeRepository.findOriginalIdsWithLinkTo(databaseFactory.getInferredDB(), ArangoDocumentReference.fromNexusInstance(originalFrom.toSubSpace(SubSpace.MAIN)), ArangoCollectionReference.fromFieldName(HBPVocabulary.RELEASE_INSTANCE));
+                Set<NexusInstanceReference> releases = nativeRepository.findOriginalIdsWithLinkTo(databaseFactory.getInferredDB(false), ArangoDocumentReference.fromNexusInstance(originalFrom.toSubSpace(SubSpace.MAIN)), ArangoCollectionReference.fromFieldName(HBPVocabulary.RELEASE_INSTANCE));
                 for (NexusInstanceReference nexusInstanceReference : releases) {
                     Integer currentRevision = nativeRepository.getCurrentRevision(ArangoDocumentReference.fromNexusInstance(nexusInstanceReference));
                     nexusInstanceReference.setRevision(currentRevision);

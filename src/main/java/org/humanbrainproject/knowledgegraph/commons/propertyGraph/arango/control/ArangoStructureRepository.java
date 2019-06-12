@@ -33,7 +33,7 @@ public class ArangoStructureRepository {
 
 
     public List<Map> getAttributesWithCount(ArangoCollectionReference reference) {
-        ArangoDatabase db = databaseFactory.getInferredDB().getOrCreateDB();
+        ArangoDatabase db = databaseFactory.getInferredDB(true).getOrCreateDB();
         if (db.collection(reference.getName()).exists()) {
             String q = queryFactory.getAttributesWithCount(reference);
             ArangoCursor<Map> result = db.query(q, null, new AqlQueryOptions(), Map.class);
@@ -44,7 +44,7 @@ public class ArangoStructureRepository {
     }
 
     public List<Map> getInboundRelationsForDocument(ArangoDocumentReference documentReference) {
-        ArangoConnection inferredDB = databaseFactory.getInferredDB();
+        ArangoConnection inferredDB = databaseFactory.getInferredDB(false);
         Set<ArangoCollectionReference> edgesCollectionNames = inferredDB.getEdgesCollectionNames();
         String q = queryFactory.queryInboundRelationsForDocument(documentReference, edgesCollectionNames, authorizationContext.getReadableOrganizations(), false);
         ArangoCursor<Map> result = inferredDB.getOrCreateDB().query(q, null, new AqlQueryOptions(), Map.class);
@@ -52,7 +52,7 @@ public class ArangoStructureRepository {
     }
 
     public List<Map> getDirectRelationsWithType(ArangoCollectionReference collectionReference, boolean outbound){
-        ArangoConnection inferredDB = databaseFactory.getInferredDB();
+        ArangoConnection inferredDB = databaseFactory.getInferredDB(true);
         if(inferredDB.getOrCreateDB().collection(collectionReference.getName()).exists()) {
             Set<ArangoCollectionReference> edgesCollectionNames = inferredDB.getEdgesCollectionNames();
             String q = queryFactory.queryDirectRelationsWithType(collectionReference, edgesCollectionNames, outbound);

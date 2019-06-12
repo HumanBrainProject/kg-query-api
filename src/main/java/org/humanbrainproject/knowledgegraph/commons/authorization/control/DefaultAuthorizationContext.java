@@ -28,6 +28,8 @@ public class DefaultAuthorizationContext implements AuthorizationContext {
     @Autowired
     Scope scope;
 
+    @Autowired
+    SystemOidcClient oidcClient;
 
     @Autowired
     AuthorizationController authorizationController;
@@ -82,6 +84,7 @@ public class DefaultAuthorizationContext implements AuthorizationContext {
         this.client = client;
     }
 
+
     @Override
     public Client getClient() {
         return client;
@@ -105,5 +108,14 @@ public class DefaultAuthorizationContext implements AuthorizationContext {
     @Override
     public Set<String> getInvitations(String query) {
         return scope.getIdWhitelistForUser(query, getCredential());
+    }
+
+    @Override
+    public boolean isAllowedToSeeCuratedInstances() {
+        Credential c = getCredential();
+        if(c instanceof OidcAccessToken) {
+            return oidcClient.getUserInfo(((OidcAccessToken)c)).hasCuratedPermission();
+        }
+        else return c instanceof InternalMasterKey;
     }
 }

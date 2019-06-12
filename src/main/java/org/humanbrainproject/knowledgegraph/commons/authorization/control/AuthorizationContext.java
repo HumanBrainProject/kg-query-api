@@ -37,4 +37,6 @@ public interface AuthorizationContext {
     ClientHttpRequestInterceptor getInterceptor();
 
     String getUserId();
+
+    boolean isAllowedToSeeCuratedInstances();
 }

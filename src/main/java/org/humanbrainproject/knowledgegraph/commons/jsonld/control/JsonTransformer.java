@@ -2,9 +2,14 @@ package org.humanbrainproject.knowledgegraph.commons.jsonld.control;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
+import com.google.gson.stream.MalformedJsonException;
 import org.humanbrainproject.knowledgegraph.annotations.Tested;
+import org.humanbrainproject.knowledgegraph.indexing.boundary.GraphIndexing;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import java.net.MalformedURLException;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -15,6 +20,7 @@ import java.util.stream.Collectors;
 public class JsonTransformer {
 
     Gson gson = new Gson();
+    private Logger logger = LoggerFactory.getLogger(JsonTransformer.class);
 
     public String getMapAsJson(Map map){
         return gson.toJson(map);
@@ -24,17 +30,22 @@ public class JsonTransformer {
      * @return a single map if available. If the json string describes a (non-empty) list, the first item is returned. If the json is not a dict, null is returned
      */
     public Map parseToMap(String json) {
-        Object o = gson.fromJson(json, Object.class);
-        if(o instanceof Map){
-            return (Map)o;
-        }
-        else if(o instanceof List && !((List)o).isEmpty()){
-            Object firstElement = ((List) o).get(0);
-            if(firstElement instanceof Map){
-                return (Map)firstElement;
+        try {
+            Object o = gson.fromJson(json, Object.class);
+            if (o instanceof Map) {
+                return (Map) o;
+            } else if (o instanceof List && !((List) o).isEmpty()) {
+                Object firstElement = ((List) o).get(0);
+                if (firstElement instanceof Map) {
+                    return (Map) firstElement;
+                }
             }
+            return null;
         }
-        return null;
+        catch(RuntimeException e){
+            logger.error(String.format("Was not able to parse JSON:\n%s", json), e);
+            throw e;
+        }
     }
 
     /**

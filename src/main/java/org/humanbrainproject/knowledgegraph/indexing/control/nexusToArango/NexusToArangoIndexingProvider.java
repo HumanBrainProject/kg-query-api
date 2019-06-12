@@ -55,7 +55,7 @@ public class NexusToArangoIndexingProvider {
     }
 
     public Set<NexusInstanceReference> findInstancesWithLinkTo(String originalParentProperty, NexusInstanceReference originalId) {
-        return nativeRepository.findOriginalIdsWithLinkTo(databaseFactory.getDefaultDB(), ArangoDocumentReference.fromNexusInstance(originalId), ArangoCollectionReference.fromFieldName(originalParentProperty));
+        return nativeRepository.findOriginalIdsWithLinkTo(databaseFactory.getDefaultDB(false), ArangoDocumentReference.fromNexusInstance(originalId), ArangoCollectionReference.fromFieldName(originalParentProperty));
     }
 
     public Vertex mapToOriginalSpace(Vertex vertex, NexusInstanceReference originalId) {
@@ -77,11 +77,11 @@ public class NexusToArangoIndexingProvider {
     public ArangoConnection getConnection(TargetDatabase database) {
         switch (database) {
             case NATIVE:
-                return databaseFactory.getDefaultDB();
+                return databaseFactory.getDefaultDB(false);
             case RELEASE:
                 return databaseFactory.getReleasedDB();
             case INFERRED:
-                return databaseFactory.getInferredDB();
+                return databaseFactory.getInferredDB(false);
         }
         return null;
     }

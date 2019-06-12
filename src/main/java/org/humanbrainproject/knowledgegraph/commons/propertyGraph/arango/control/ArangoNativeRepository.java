@@ -55,11 +55,11 @@ public class ArangoNativeRepository {
      * @return the reference to an instance based on the identifier value - this originates always from original space and the original id has to be resolved first, if it shall be used in another scope.
      */
     public NexusInstanceReference findBySchemaOrgIdentifier(ArangoCollectionReference collectionReference, String value) {
-        if (!databaseFactory.getDefaultDB().getOrCreateDB().collection(collectionReference.getName()).exists()) {
+        if (!databaseFactory.getDefaultDB(false).getOrCreateDB().collection(collectionReference.getName()).exists()) {
             return null;
         }
         String query = queryFactory.queryForValueWithProperty(SchemaOrgVocabulary.IDENTIFIER, value, Collections.singleton(collectionReference), ArangoVocabulary.NEXUS_RELATIVE_URL_WITH_REV, authorizationContext.getReadableOrganizations());
-        List<List> result = query == null ? new ArrayList<>() : databaseFactory.getDefaultDB().getOrCreateDB().query(query, null, new AqlQueryOptions(), List.class).asListRemaining();
+        List<List> result = query == null ? new ArrayList<>() : databaseFactory.getDefaultDB(false).getOrCreateDB().query(query, null, new AqlQueryOptions(), List.class).asListRemaining();
         if (result.size() == 1) {
             if (result.get(0) != null) {
                 List list = (List) result.get(0);
@@ -80,7 +80,7 @@ public class ArangoNativeRepository {
 
 
     public Integer getCurrentRevision(ArangoDocumentReference documentReference) {
-        Map document = arangoRepository.getDocument(documentReference, databaseFactory.getDefaultDB());
+        Map document = arangoRepository.getDocument(documentReference, databaseFactory.getDefaultDB(false));
         if (document != null) {
             Object rev = document.get(ArangoVocabulary.NEXUS_RELATIVE_URL_WITH_REV);
             if (rev != null) {
@@ -92,11 +92,11 @@ public class ArangoNativeRepository {
     }
 
     public JsonDocument getInstance(ArangoDocumentReference instanceReference) {
-        return arangoRepository.getInstance(instanceReference, databaseFactory.getDefaultDB());
+        return arangoRepository.getInstance(instanceReference, databaseFactory.getDefaultDB(false));
     }
 
     public Map getDocument(ArangoDocumentReference documentReference) {
-        return arangoRepository.getDocument(documentReference, databaseFactory.getDefaultDB());
+        return arangoRepository.getDocument(documentReference, databaseFactory.getDefaultDB(false));
     }
 
     /**
@@ -107,7 +107,7 @@ public class ArangoNativeRepository {
         for (SubSpace subSpace : SubSpace.values()) {
             if (byKey == null) {
                 ArangoDocumentReference arangoDocumentReferenceInSubSpace = ArangoDocumentReference.fromNexusInstance(reference.toSubSpace(subSpace));
-                byKey = arangoRepository.getDocumentByKey(arangoDocumentReferenceInSubSpace, Map.class, databaseFactory.getDefaultDB());
+                byKey = arangoRepository.getDocumentByKey(arangoDocumentReferenceInSubSpace, Map.class, databaseFactory.getDefaultDB(true));
             }
         }
         NexusInstanceReference result = reference.clone();
@@ -131,7 +131,7 @@ public class ArangoNativeRepository {
                 originalReference = NexusInstanceReference.createFromUrl((String) byKey.get(JsonLdConsts.ID));
             }
             if (originalReference != null && !reference.isSameInstanceRegardlessOfRevision(originalReference)) {
-                Map originalObject = arangoRepository.getDocumentByKey(ArangoDocumentReference.fromNexusInstance(originalReference), Map.class, databaseFactory.getDefaultDB());
+                Map originalObject = arangoRepository.getDocumentByKey(ArangoDocumentReference.fromNexusInstance(originalReference), Map.class, databaseFactory.getDefaultDB(true));
                 if (originalObject != null) {
                     Object originalRev = originalObject.get(ArangoVocabulary.NEXUS_REV);
                     if (originalRev != null) {
