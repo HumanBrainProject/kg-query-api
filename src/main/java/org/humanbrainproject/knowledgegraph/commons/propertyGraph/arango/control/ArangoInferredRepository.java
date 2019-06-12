@@ -107,6 +107,11 @@ public class ArangoInferredRepository {
 
     @AuthorizedAccess
     public QueryResult<List<Map>> getSuggestionsByField(NexusSchemaReference schemaReference, String fieldName, String searchTerm, Pagination pagination){
+        ArangoDatabase database = databaseFactory.getInferredDB(false).getOrCreateDB();
+        ArangoCollectionReference relationCollection = ArangoCollectionReference.fromFieldName(fieldName);
+        if(!database.collection(relationCollection.getName()).exists()){
+            return QueryResult.createEmptyResult();
+        }
         QueryResult<List<Map>> result = new QueryResult<>();
         AqlQueryOptions options = new AqlQueryOptions();
         if (pagination!=null && pagination.getSize() != null) {
@@ -117,9 +122,14 @@ public class ArangoInferredRepository {
 
         List<Map> schemasWithOccurences = getSchemasWithOccurences(schemaReference, fieldName);
         List<ArangoCollectionReference> types = schemasWithOccurences.stream().map(m -> ArangoCollectionReference.fromFieldName(m.get("type").toString())).collect(Collectors.toList());
-        String query = queryFactory.querySuggestionByField(ArangoCollectionReference.fromNexusSchemaReference(schemaReference), ArangoCollectionReference.fromFieldName(fieldName), searchTerm, pagination != null ? pagination.getStart() : null, pagination != null ? pagination.getSize() : null, authorizationContext.getReadableOrganizations(), types);
+
+        String query = queryFactory.querySuggestionByField(ArangoCollectionReference.fromNexusSchemaReference(schemaReference), relationCollection, searchTerm, pagination != null ? pagination.getStart() : null, pagination != null ? pagination.getSize() : null, authorizationContext.getReadableOrganizations(), types);
         try {
-            ArangoCursor<Map> cursor = databaseFactory.getInferredDB(false).getOrCreateDB().query(query, null, options, Map.class);
+            Map<String, Object> map = new HashMap<>();
+            if(searchTerm!=null){
+                map.put("searchTerm", ("%"+searchTerm+"%").toLowerCase());
+            }
+            ArangoCursor<Map> cursor = database.query(query, map, options, Map.class);
             Long count;
             if (pagination!=null && pagination.getSize() != null) {
                 count = cursor.getStats().getFullCount();

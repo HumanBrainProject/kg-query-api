@@ -402,9 +402,7 @@ public class ArangoQueryFactory {
 
         query.setParameter("originCollection", originalCollection.getName());
         query.setParameter("relationCollection", relationCollection.getName());
-        query.setParameter("nameField", SchemaOrgVocabulary.NAME);
         query.setParameter("idField", HBPVocabulary.RELATIVE_URL_OF_INTERNAL_LINK);
-        query.setParameter("searchTerm", searchTerm);
         query.setParameter("start", String.valueOf(start));
         query.setTrustedParameter("schemas", query.listCollections(types.stream().map(ArangoCollectionReference::getName).collect(Collectors.toSet())));
 
@@ -415,12 +413,13 @@ public class ArangoQueryFactory {
         query.addDocumentFilter(trust("doc"));
         query.indent().addLine(trust("LET relation = (FOR r IN OUTBOUND doc `${relationCollection}`"));
         query.addDocumentFilter(trust("r"));
+        query.add(trust("LET name = FIRST(UNION(TO_ARRAY(r.`"+SchemaOrgVocabulary.NAME+"`), TO_ARRAY(r.`http://www.w3.org/2000/01/rdf-schema#label`)))"));
         if (searchTerm != null) {
-            query.addLine(trust("&& like(r.`${nameField}`, \"%${searchTerm}%\", true)"));
+            query.addLine(trust("FILTER like(r.`"+SchemaOrgVocabulary.NAME+"`, @searchTerm, true) || like(r.`http://www.w3.org/2000/01/rdf-schema#label`, @searchTerm, true)"));
         }
         query.addLine(trust("RETURN {"));
         query.indent().addLine(trust("\"id\":  r.`${idField}`,"));
-        query.addLine(trust("\"name\": r.`${nameField}`"));
+        query.addLine(trust("\"name\": name"));
         query.addLine(trust("}"));
         query.outdent().addLine(trust(")"));
         query.addLine(trust("RETURN relation"));
@@ -438,13 +437,15 @@ public class ArangoQueryFactory {
         query.addLine(trust("LET fromSchemas = FLATTEN(FOR schema IN schemas"));
         query.addLine(trust("LET schemaInstance = (FOR i IN schema"));
         query.addDocumentFilter(trust("i"));
+        query.add(trust("LET name = FIRST(UNION(TO_ARRAY(i.`"+SchemaOrgVocabulary.NAME+"`), TO_ARRAY(i.`http://www.w3.org/2000/01/rdf-schema#label`)))"));
+
         if (searchTerm != null) {
-            query.addLine(trust("&& like(i.`${nameField}`, \"%${searchTerm}%\", true)"));
+            query.addLine(trust("FILTER like(i.`"+SchemaOrgVocabulary.NAME+"`, @searchTerm, true) || like(i.`http://www.w3.org/2000/01/rdf-schema#label`, @searchTerm, true)"));
         }
-        query.addLine(trust("SORT i.`${nameField}` ASC"));
+        query.addLine(trust("SORT i.`"+SchemaOrgVocabulary.NAME+"` ASC, i.`http://www.w3.org/2000/01/rdf-schema#label` ASC"));
         query.addLine(trust("RETURN {"));
         query.indent().addLine(trust("\"id\":  i.`${idField}`,"));
-        query.addLine(trust("\"name\": i.`${nameField}`"));
+        query.addLine(trust("\"name\": name"));
         query.addLine(trust("}"));
         query.outdent().addLine(trust(")"));
         query.addLine(trust("FILTER schemaInstance NOT IN relations"));
