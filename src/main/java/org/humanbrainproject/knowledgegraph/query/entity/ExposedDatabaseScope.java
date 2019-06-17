@@ -5,7 +5,7 @@ import org.humanbrainproject.knowledgegraph.annotations.NoTests;
 @NoTests(NoTests.TRIVIAL)
 public enum ExposedDatabaseScope {
 
-    RELEASED;
+    RELEASED, INFERRED;
 
     public DatabaseScope toDatabaseScope() {
         switch (this) {
