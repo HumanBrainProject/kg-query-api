@@ -85,4 +85,9 @@ public class TestAuthorizationContext implements AuthorizationContext {
     public Set<String> getInvitations(String query) {
         return null;
     }
+
+    @Override
+    public boolean isAllowedToSeeReleasedInstancesOnly() {
+        return false;
+    }
 }

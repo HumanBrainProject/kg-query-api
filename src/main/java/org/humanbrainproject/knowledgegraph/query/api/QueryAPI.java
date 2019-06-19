@@ -10,6 +10,7 @@ import org.humanbrainproject.knowledgegraph.commons.api.ParameterConstants;
 import org.humanbrainproject.knowledgegraph.commons.api.RestUtils;
 import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationContext;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.builders.TreeScope;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.exceptions.IllegalDatabaseScope;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.exceptions.RootCollectionNotFoundException;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.exceptions.StoredQueryNotFoundException;
 import org.humanbrainproject.knowledgegraph.context.QueryContext;
@@ -85,6 +86,8 @@ public class QueryAPI {
             QueryResult<List<Map>> result = this.query.queryPropertyGraphBySpecification(query, null);
 
             return ResponseEntity.ok(result);
+        } catch (IllegalDatabaseScope e){
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         } catch (RootCollectionNotFoundException e) {
             return ResponseEntity.ok(QueryResult.createEmptyResult());
         } catch (HttpClientErrorException e) {
@@ -150,9 +153,9 @@ public class QueryAPI {
             query.getFilter().restrictToOrganizations(RestUtils.splitCommaSeparatedValues(restrictToOrganizations));
             Map result = this.query.queryReleaseTree(query, new NexusInstanceReference(schemaReference, instanceId), TreeScope.ALL);
             return ResponseEntity.ok(result);
-        } catch (StoredQueryNotFoundException e){
-            return ResponseEntity.notFound().build();
-        } catch (RootCollectionNotFoundException e) {
+        } catch (IllegalDatabaseScope e){
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        } catch (StoredQueryNotFoundException | RootCollectionNotFoundException e){
             return ResponseEntity.notFound().build();
         } catch (HttpClientErrorException e) {
             return ResponseEntity.status(e.getStatusCode()).build();
@@ -166,6 +169,8 @@ public class QueryAPI {
             StoredQuery query = new StoredQuery(new NexusSchemaReference(org, domain, schema, version), queryId, vocab);
             QueryResult<List<Map>> result = this.query.metaQueryPropertyGraphByStoredSpecification(query);
             return ResponseEntity.ok(result);
+        } catch (IllegalDatabaseScope e){
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         } catch (StoredQueryNotFoundException e){
             return ResponseEntity.notFound().build();
         } catch (HttpClientErrorException e) {
@@ -189,6 +194,8 @@ public class QueryAPI {
             QueryResult<Map> result = this.query.metaQueryPropertyGraphByStoredSpecificationAndFreemarkerTemplate(query);
 
             return ResponseEntity.ok(RestUtils.toJsonResultIfPossible(result));
+        } catch (IllegalDatabaseScope e){
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         } catch (StoredQueryNotFoundException e){
             return ResponseEntity.notFound().build();
         } catch (HttpClientErrorException e) {
@@ -209,9 +216,9 @@ public class QueryAPI {
             Map result = this.query.queryPropertyGraphByStoredSpecificationAndTemplateWithId(query, template);
 
             return ResponseEntity.ok(result);
-        } catch (StoredQueryNotFoundException e){
-            return ResponseEntity.notFound().build();
-        } catch (RootCollectionNotFoundException e) {
+        } catch (IllegalDatabaseScope e){
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        } catch (StoredQueryNotFoundException | RootCollectionNotFoundException e){
             return ResponseEntity.notFound().build();
         } catch (HttpClientErrorException e) {
             return ResponseEntity.status(e.getStatusCode()).build();
@@ -237,6 +244,8 @@ public class QueryAPI {
             QueryResult<List<Map>> result = this.query.queryPropertyGraphByStoredSpecificationAndFreemarkerTemplate(query);
 
             return ResponseEntity.ok(result);
+        } catch (IllegalDatabaseScope e){
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         } catch (StoredQueryNotFoundException e){
             return ResponseEntity.notFound().build();
         }
@@ -253,6 +262,8 @@ public class QueryAPI {
         try {
             Map result = this.query.queryPropertyGraphByStoredSpecificationAndStoredTemplateWithId(query);
             return ResponseEntity.ok(result);
+        } catch (IllegalDatabaseScope e){
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         } catch (StoredQueryNotFoundException e){
             return ResponseEntity.notFound().build();
         }
@@ -271,8 +282,9 @@ public class QueryAPI {
         try {
             Map result = this.query.queryPropertyGraphByStoredSpecificationAndStoredTemplateWithId(query);
             return ResponseEntity.ok(result);
-        }
-        catch (StoredQueryNotFoundException e){
+        } catch (IllegalDatabaseScope e){
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        } catch (StoredQueryNotFoundException e){
             return ResponseEntity.notFound().build();
         }
     }
@@ -293,6 +305,8 @@ public class QueryAPI {
             QueryResult<List<Map>> result = this.query.queryPropertyGraphBySpecification(query, null);
             result.setImportantMessage("This query is executed with a mode thought for query testing only (with throttled performance). Please register your query if you're happy with it. It's easy and you gain speed ;)!");
             return ResponseEntity.ok(result);
+        } catch (IllegalDatabaseScope e){
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         } catch (RootCollectionNotFoundException e) {
             return ResponseEntity.ok(QueryResult.createEmptyResult());
         } catch (HttpClientErrorException e) {
@@ -320,6 +334,8 @@ public class QueryAPI {
             } else {
                 return ResponseEntity.notFound().build();
             }
+        } catch (IllegalDatabaseScope e){
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         } catch (RootCollectionNotFoundException e) {
             return ResponseEntity.notFound().build();
         } catch (HttpClientErrorException e) {
@@ -335,6 +351,8 @@ public class QueryAPI {
             authorizationContext.populateAuthorizationContext(authorization);
             query.storeSpecificationInDb(payload, new StoredQueryReference(new NexusSchemaReference(org, domain, schema, version), id));
             return ResponseEntity.ok("Saved specification to database");
+        } catch (IllegalDatabaseScope e){
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         } catch (HttpClientErrorException e) {
             return ResponseEntity.status(e.getStatusCode()).build();
         } catch (IllegalAccessException e){
@@ -350,6 +368,8 @@ public class QueryAPI {
             authorizationContext.populateAuthorizationContext(authorization);
             query.removeSpecificationInDb(new StoredQueryReference(new NexusSchemaReference(org, domain, schema, version), id));
             return ResponseEntity.ok("Deleted specification from database");
+        } catch (IllegalDatabaseScope e){
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         } catch (StoredQueryNotFoundException e){
             return ResponseEntity.notFound().build();
         } catch (HttpClientErrorException e) {
@@ -375,6 +395,8 @@ public class QueryAPI {
             QueryResult<List<Map>> result = this.query.queryPropertyGraphByStoredSpecification(query);
 
             return ResponseEntity.ok(result);
+        } catch (IllegalDatabaseScope e){
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         } catch (StoredQueryNotFoundException e){
             return ResponseEntity.notFound().build();
         } catch (RootCollectionNotFoundException e) {
@@ -400,6 +422,8 @@ public class QueryAPI {
             StoredQuery q = new StoredQuery(new NexusSchemaReference(org, domain, schema, version), queryId, null);
             List<ParameterDescription> parameters = query.listQueryParameters(q);
             return ResponseEntity.ok(parameters);
+        } catch (IllegalDatabaseScope e){
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         } catch (StoredQueryNotFoundException e){
             return ResponseEntity.notFound().build();
         } catch (HttpClientErrorException e) {
@@ -426,6 +450,8 @@ public class QueryAPI {
             } else {
                 return ResponseEntity.notFound().build();
             }
+        } catch (IllegalDatabaseScope e){
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         } catch (StoredQueryNotFoundException e){
             return ResponseEntity.notFound().build();
         } catch (RootCollectionNotFoundException e) {
