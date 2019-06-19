@@ -50,7 +50,7 @@ public class SuggestionAPI {
 
 
     @PostMapping(value="/{"+ ORG+"}/{"+DOMAIN+"}/{"+SCHEMA+"}/{"+VERSION+"}/fields", consumes = {MediaType.APPLICATION_JSON, RestUtils.APPLICATION_LD_JSON}, produces = MediaType.APPLICATION_JSON)
-    public ResponseEntity<QueryResult<List<Map>>> getStructureForSchemaByField(@RequestBody(required = false) String payload, @PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @RequestParam(value = "field") String field, @RequestParam(value = SEARCH, required = false) String search, @RequestParam(value = SIZE, required = false) Integer size, @RequestParam(value = START, required = false) Integer start, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization){
+    public ResponseEntity<QueryResult<List<Map>>> getStructureForSchemaByField(@RequestBody(required = false) String payload, @PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @RequestParam(value = "field") String field, @RequestParam(value = "type") String type, @RequestParam(value = SEARCH, required = false) String search, @RequestParam(value = SIZE, required = false) Integer size, @RequestParam(value = START, required = false) Integer start, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization){
         authorizationContext.populateAuthorizationContext(authorization);
 
         NexusSchemaReference schemaReference = new NexusSchemaReference(org, domain, schema, version);
@@ -60,7 +60,7 @@ public class SuggestionAPI {
         pagination.setSize(size);
         logger.info(String.format("Loading suggestion for object %s and field %s", schemaReference, field));
         logger.info(String.format("Payload: %s", payload));
-        return ResponseEntity.ok(suggest.suggestByField(schemaReference, field, search, pagination));
+        return ResponseEntity.ok(suggest.suggestByField(schemaReference, field, type, search, pagination));
     }
 
     @PostMapping(value="/{"+ ORG+"}/{"+DOMAIN+"}/{"+SCHEMA+"}/{"+VERSION+"}/{"+ INSTANCE_ID +"}/instance/{userId}", consumes = {MediaType.APPLICATION_JSON, RestUtils.APPLICATION_LD_JSON, MediaType.WILDCARD}, produces = MediaType.APPLICATION_JSON)
