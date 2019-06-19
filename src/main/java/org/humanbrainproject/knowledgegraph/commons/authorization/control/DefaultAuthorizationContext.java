@@ -60,16 +60,28 @@ public class DefaultAuthorizationContext implements AuthorizationContext {
 
     @Override
     public Set<String> getReadableOrganizations(){
+        if(isAllowedToSeeReleasedInstancesOnly()){
+            //We ensure the access to the released database in a different place. If somebody has access to the released space only, we will provide it for all spaces.
+            return authorizationController.getReadableOrganizations(new InternalMasterKey(), null);
+        }
         return authorizationController.getReadableOrganizations(getCredential(), null);
     }
 
     @Override
     public Set<String> getReadableOrganizations(Credential credential, List<String> whitelistedOrganizations){
+        if(isAllowedToSeeReleasedInstancesOnly()){
+            //We ensure the access to the released database in a different place. If somebody has access to the released space only, we will provide it for all spaces.
+            return authorizationController.getReadableOrganizations(new InternalMasterKey(), whitelistedOrganizations);
+        }
         return authorizationController.getReadableOrganizations(credential, whitelistedOrganizations);
     }
 
     @Override
     public Set<String> getReadableOrganizations(List<String> whitelistedOrganizations) {
+        if(isAllowedToSeeReleasedInstancesOnly()){
+            //We ensure the access to the released database in a different place. If somebody has access to the released space only, we will provide it for all spaces.
+            return authorizationController.getReadableOrganizations(new InternalMasterKey(), whitelistedOrganizations);
+        }
         return authorizationController.getReadableOrganizations(getCredential(), whitelistedOrganizations);
     }
 
@@ -114,8 +126,19 @@ public class DefaultAuthorizationContext implements AuthorizationContext {
     public boolean isAllowedToSeeCuratedInstances() {
         Credential c = getCredential();
         if(c instanceof OidcAccessToken) {
-            return oidcClient.getUserInfo(((OidcAccessToken)c)).hasCuratedPermission();
+            UserInformation userInfo = oidcClient.getUserInfo(((OidcAccessToken) c));
+            return userInfo.hasCuratedPermission() && !userInfo.hasReleasedPermission();
         }
         else return c instanceof InternalMasterKey;
+    }
+
+    @Override
+    public boolean isAllowedToSeeReleasedInstancesOnly() {
+        Credential c = getCredential();
+        if(c instanceof OidcAccessToken) {
+            UserInformation userInfo = oidcClient.getUserInfo(((OidcAccessToken) c));
+            return !userInfo.hasCuratedPermission() && userInfo.hasReleasedPermission();
+        }
+        else return false;
     }
 }

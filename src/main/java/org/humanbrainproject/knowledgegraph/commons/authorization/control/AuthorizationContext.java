@@ -39,4 +39,6 @@ public interface AuthorizationContext {
     String getUserId();
 
     boolean isAllowedToSeeCuratedInstances();
+
+    boolean isAllowedToSeeReleasedInstancesOnly();
 }
