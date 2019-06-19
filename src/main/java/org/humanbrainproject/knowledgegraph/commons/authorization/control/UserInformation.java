@@ -27,4 +27,16 @@ public class UserInformation extends HashMap<String, Object> {
         return g!=null && g.contains("kg-curatedInstances");
     }
 
+    public boolean hasReleasedPermission(){
+        Object groups = get("groups");
+        List<String> g = null;
+        if(groups instanceof List){
+            g = (List)groups;
+        }
+        else if(groups instanceof String){
+            g = Arrays.asList(((String) groups).split(","));
+        }
+        return g!=null && g.contains("kg-releasedInstances");
+    }
+
 }
