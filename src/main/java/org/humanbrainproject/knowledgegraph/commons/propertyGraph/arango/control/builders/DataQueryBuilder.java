@@ -1,5 +1,6 @@
 package org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.builders;
 
+import com.github.jsonldjava.core.JsonLdConsts;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.aql.AQL;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.aql.AuthorizedArangoQuery;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.aql.TrustedAqlValue;
@@ -257,7 +258,14 @@ public class DataQueryBuilder {
                     //Reverse connections can not be embedded - we therefore can shortcut the query.
                     aql.addLine(trust("FOR ${aliasDoc} IN ${aliasDoc}s"));
                 } else {
-                    aql.addLine(trust("FOR ${aliasDoc} IN APPEND(${aliasDoc}s, FLATTEN([${parentAliasDoc}.`${fieldPath}`]), true)"));
+                    aql.addLine(trust("LET ${aliasDoc}_merged = (FOR ${aliasDoc}_merged_embedded IN TO_ARRAY(${parentAliasDoc}.`${fieldPath}`)"));
+                    aql.indent().addLine(trust("LET ${aliasDoc}_merged_fromLinked = (FOR ${aliasDoc}_merged_fromLinked_l IN ${aliasDoc}s"));
+                    aql.indent().addLine(trust("FILTER ${aliasDoc}_merged_embedded.`"+ JsonLdConsts.ID+"` != null AND ${aliasDoc}_merged_embedded.`"+JsonLdConsts.ID+"` != \"\" AND ${aliasDoc}_merged_embedded.`"+JsonLdConsts.ID+"` != [] AND ${aliasDoc}_merged_embedded.`"+JsonLdConsts.ID+"` == ${aliasDoc}_merged_fromLinked_l.`"+JsonLdConsts.ID+"`"));
+                    aql.addLine(trust("RETURN ${aliasDoc}_merged_fromLinked_l"));
+                    aql.outdent().addLine(trust(")"));
+                    aql.addLine(trust("RETURN ${aliasDoc}_merged_fromLinked != [] ? ${aliasDoc}_merged_fromLinked[0] : ${aliasDoc}_merged_embedded"));
+                    aql.outdent().addLine(trust(")"));
+                    aql.addLine(trust("FOR ${aliasDoc} IN APPEND(${aliasDoc}_merged, ${aliasDoc}s, true)"));
                 }
             } else {
                 // the traverse collection does not exist - we therefore short-cut by only asking for the instances of a potentially embedded document.
