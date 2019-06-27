@@ -1,6 +1,7 @@
 package org.humanbrainproject.knowledgegraph.instances.api;
 
 import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiParam;
 import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationContext;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
@@ -14,7 +15,10 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.HttpClientErrorException;
 
 import javax.ws.rs.core.MediaType;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.humanbrainproject.knowledgegraph.commons.api.ParameterConstants.*;
 
@@ -44,6 +48,15 @@ public class InstancesAPI {
         } catch (HttpClientErrorException e){
             return ResponseEntity.status(e.getStatusCode()).build();
         }
+    }
+
+
+    @PostMapping("/")
+    public ResponseEntity<List<Map>> getInstancesByIds(@RequestBody @ApiParam("The relative ids (starting with the organization) which shall be fetched") List<String> ids, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken){
+        authorizationContext.populateAuthorizationContext(authorizationToken);
+        Set<NexusInstanceReference> references = ids.stream().map(id -> NexusInstanceReference.createFromUrl(id)).collect(Collectors.toSet());
+        List<Map> results = instances.getInstancesByReferences(references);
+        return ResponseEntity.ok(results);
     }
 
 

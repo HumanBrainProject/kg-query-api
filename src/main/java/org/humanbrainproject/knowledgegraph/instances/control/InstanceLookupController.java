@@ -25,6 +25,7 @@ import javax.json.Json;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Component
@@ -136,5 +137,12 @@ public class InstanceLookupController {
         }
         return null;
     }
+
+
+    public List<Map> getInstancesByReferences(Set<NexusInstanceReference> references){
+        Set<ArangoDocumentReference> documentReferences = references.stream().map(ArangoDocumentReference::fromNexusInstance).collect(Collectors.toSet());
+        return arangoRepository.listInstanceByReferences(documentReferences, queryContext.getDatabaseConnection());
+    }
+
 
 }

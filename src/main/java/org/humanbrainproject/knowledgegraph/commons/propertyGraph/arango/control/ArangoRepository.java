@@ -143,4 +143,12 @@ public class ArangoRepository {
         return null;
     }
 
+    @AuthorizedAccess
+    public List<Map> listInstanceByReferences(Set<ArangoDocumentReference> documentReferences, ArangoConnection driver){
+        String query = queryFactory.listInstancesByReferences(documentReferences, authorizationContext.getReadableOrganizations());
+        ArangoCursor<Map> q = driver.getOrCreateDB().query(query, null, new AqlQueryOptions(), Map.class);
+        return q.asListRemaining();
+    }
+
+
 }

@@ -18,6 +18,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @ToBeTested(integrationTestRequired = true, systemTestRequired = true)
 @Component
@@ -79,6 +80,10 @@ public class Instances {
 
     public void translateNamespaces(NexusSchemaReference schema, String oldNamespace, String newNamespace) {
         instanceMaintenanceController.translateNamespaces(schema, oldNamespace, newNamespace);
+    }
+
+    public List<Map> getInstancesByReferences(Set<NexusInstanceReference> references){
+        return lookupController.getInstancesByReferences(references);
     }
 
 }
