@@ -12,6 +12,7 @@ import org.humanbrainproject.knowledgegraph.indexing.control.MessageProcessor;
 import org.humanbrainproject.knowledgegraph.indexing.control.nexusToArango.NexusToArangoIndexingProvider;
 import org.humanbrainproject.knowledgegraph.indexing.entity.IndexingMessage;
 import org.humanbrainproject.knowledgegraph.indexing.entity.QualifiedIndexingMessage;
+import org.humanbrainproject.knowledgegraph.indexing.entity.knownSemantics.SpatialAnchoring;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.query.entity.BoundingBox;
 import org.humanbrainproject.knowledgegraph.query.entity.SpecField;
@@ -84,8 +85,9 @@ public class TestObjectFactory {
     private static Map<String, Object> createSpatialAnchoringPayload() {
         Map<String, Object> fullyQualified = new LinkedHashMap<>();
         fullyQualified.put(JsonLdConsts.TYPE, HBPVocabulary.SPATIAL_TYPE);
-        fullyQualified.put(HBPVocabulary.SPATIAL_LOCATED_INSTANCE, "foo");
+        fullyQualified.put(HBPVocabulary.SPATIAL_LOCATED_INSTANCE, "https://nexus-dev.humanbrainproject.org/data/test/core/test/v1.0.0/foo");
         fullyQualified.put(HBPVocabulary.SPATIAL_REFERENCESPACE, "bar");
+        fullyQualified.put(HBPVocabulary.SPATIAL_FORMAT, SpatialAnchoring.SpatialAnchoringFormat.QuickNii.getIdentifier());
         fullyQualified.put(HBPVocabulary.SPATIAL_COORDINATES, "116.76450275662296, 420.38180695602125, 371.05990195986874, 32.25523977201931, -483.5743708352436, -69.49201572740994, 88.9241921312597, 51.94987159616494, -320.22912581890387");
         return fullyQualified;
     }

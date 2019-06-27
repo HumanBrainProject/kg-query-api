@@ -68,6 +68,8 @@ public class SpatialController implements IndexingController {
         SpatialAnchoring spatial = new SpatialAnchoring(message);
         if (spatial.isInstance()) {
             logger.info("Found spatial anchoring update - trigger indexing in Solr");
+            solr.delete(ArangoDocumentReference.fromNexusInstance(spatial.getLocatedInstance()).getId(), spatial.getReferenceSpace());
+            insert(message, todoList);
 
         }
         return todoList;
@@ -75,7 +77,6 @@ public class SpatialController implements IndexingController {
 
     @Override
     public TodoList delete(NexusInstanceReference instanceToBeRemoved, TodoList todoList) {
-        //TODO check if instance is registered in spatial search - if so, remove it.
         return todoList;
     }
 
