@@ -188,6 +188,18 @@ public class Solr implements InitializingBean {
         solr.commit(solrCore);
     }
 
+    public void delete(String id, String referenceSpace)  {
+        try {
+            UpdateResponse response = solr.deleteByQuery(solrCore, "aid:" + id+" AND r:"+referenceSpace);
+            logger.info(String.format("Removed points for id %s in space \"%s\" in Solr in %d ms", id, referenceSpace, response.getElapsedTime()));
+        } catch (SolrServerException | IOException e) {
+            e.printStackTrace();
+            logger.error("Was not able to remove document(s) in Solr", e);
+        }
+
+    }
+
+
 
     private QueryResponse query(SolrQuery query) throws IOException, SolrServerException {
         return getSolr().query(solrCore, query);
