@@ -298,6 +298,7 @@ public class QueryAPI {
             //Thread.sleep(2000);
             authorizationContext.populateAuthorizationContext(authorizationToken);
             queryContext.populateQueryContext(databaseScope);
+            queryContext.setAllParameters(allRequestParams);
             Query query = new Query(payload, new NexusSchemaReference(org, domain, schema, version), vocab);
             query.setParameters(allRequestParams);
             query.getFilter().restrictToOrganizations(RestUtils.splitCommaSeparatedValues(organizations)).setQueryString(searchTerm);
@@ -321,7 +322,7 @@ public class QueryAPI {
             //Thread.sleep(2000);
             authorizationContext.populateAuthorizationContext(authorizationToken);
             queryContext.populateQueryContext(databaseScope);
-
+            queryContext.setAllParameters(allRequestParams);
             Query query = new Query(payload, new NexusSchemaReference(org, domain, schema, version), vocab);
             query.setParameters(allRequestParams);
             query.getFilter().restrictToSingleId(instanceId).restrictToOrganizations(RestUtils.splitCommaSeparatedValues(restrictToOrganizations));

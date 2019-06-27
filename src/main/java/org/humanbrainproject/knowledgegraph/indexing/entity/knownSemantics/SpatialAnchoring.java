@@ -8,6 +8,7 @@ import org.humanbrainproject.knowledgegraph.indexing.entity.QualifiedIndexingMes
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.query.entity.ThreeDVector;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -68,6 +69,12 @@ public class SpatialAnchoring extends KnownSemantic {
         Object o = spec.getQualifiedMap().get(HBPVocabulary.SPATIAL_COORDINATES);
         if(o instanceof List){
             return ((List<?>)o).stream().filter(c -> c instanceof Map).map(c -> from3ValueCoordinateList((Map) c)).collect(Collectors.toSet());
+        }
+        else if (o instanceof Map){
+            ThreeDVector threeDVector = from3ValueCoordinateList((Map) o);
+            if(threeDVector!=null){
+                return Collections.singleton(threeDVector);
+            }
         }
         return null;
     }
