@@ -15,6 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.HttpClientErrorException;
+import springfox.documentation.annotations.ApiIgnore;
 
 import javax.ws.rs.core.MediaType;
 import java.io.IOException;
@@ -55,10 +56,10 @@ public class InstancesAPI {
 
 
     @PostMapping("/{queryId}")
-    public ResponseEntity<List<Map>> getInstancesByIds(@RequestBody @ApiParam("The relative ids (starting with the organization) which shall be fetched") List<String> ids, @PathVariable("queryId") String queryId,  @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken, @ApiParam(VOCAB_DOC)  @RequestParam(value = VOCAB, required = false) String vocab) throws SolrServerException, IOException, JSONException {
+    public ResponseEntity<List<Map>> getInstancesByIds(@RequestBody @ApiParam("The relative ids (starting with the organization) which shall be fetched") List<String> ids, @PathVariable("queryId") String queryId,  @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken, @ApiParam(VOCAB_DOC)  @RequestParam(value = VOCAB, required = false) String vocab, @ApiIgnore @RequestParam Map<String, String> allRequestParams) throws SolrServerException, IOException, JSONException {
         authorizationContext.populateAuthorizationContext(authorizationToken);
         Set<NexusInstanceReference> references = ids.stream().map(id -> NexusInstanceReference.createFromUrl(id)).collect(Collectors.toSet());
-        List<Map> results = instances.getInstancesByReferences(references, queryId, vocab);
+        List<Map> results = instances.getInstancesByReferences(references, queryId, vocab, allRequestParams);
         return ResponseEntity.ok(results);
     }
 

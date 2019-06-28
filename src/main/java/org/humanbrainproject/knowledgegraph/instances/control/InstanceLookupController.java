@@ -148,12 +148,13 @@ public class InstanceLookupController {
     }
 
 
-    public List<Map> getInstancesByReferences(Set<NexusInstanceReference> references, String queryId, String vocab) throws SolrServerException, IOException, JSONException {
+    public List<Map> getInstancesByReferences(Set<NexusInstanceReference> references, String queryId, String vocab, Map<String, String> queryParams) throws SolrServerException, IOException, JSONException {
 
         Set<NexusSchemaReference> schemas = references.stream().map(NexusInstanceReference::getNexusSchema).collect(Collectors.toSet());
         Map<ArangoCollectionReference, StoredQuery> queryMap = new HashMap<>();
         for (NexusSchemaReference schema : schemas) {
             StoredQuery storedQuery = new StoredQuery(schema, queryId, vocab);
+            storedQuery.setParameters(queryParams);
             try {
                 arangoQuery.resolveStoredQuery(storedQuery);
                 queryMap.put(ArangoCollectionReference.fromNexusSchemaReference(schema), storedQuery);
