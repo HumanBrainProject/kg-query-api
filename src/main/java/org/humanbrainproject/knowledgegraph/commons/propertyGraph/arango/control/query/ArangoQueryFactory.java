@@ -485,7 +485,7 @@ public class ArangoQueryFactory {
             query.add(trust("LET coll"+collectionCount+" = (FOR doc"+collectionCount+" IN `")).add(collectionName).addLine(trust("`"));
             query.addDocumentFilter(trust("doc"+collectionCount));
             query.addLine(trust("FILTER doc"+collectionCount+"."+ArangoVocabulary.KEY+" IN [${ids"+collectionCount+"}]"));
-            query.addLine(trust("RETURN doc"+collectionCount+")"));
+            query.addLine(trust("RETURN UNSET(doc"+collectionCount+", [\""+ArangoVocabulary.KEY+"\", \""+ArangoVocabulary.ID+"\", \""+ArangoVocabulary.REV+"\"]))"));
 
             List<ArangoDocumentReference> arangoDocumentReferences = referencesByCollection.get(reference);
             TrustedAqlValue ids = query.listValues(arangoDocumentReferences.stream().map(ArangoDocumentReference::getKey).collect(Collectors.toSet()));

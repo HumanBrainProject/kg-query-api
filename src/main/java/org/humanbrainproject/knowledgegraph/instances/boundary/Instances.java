@@ -1,5 +1,6 @@
 package org.humanbrainproject.knowledgegraph.instances.boundary;
 
+import org.apache.solr.client.solrj.SolrServerException;
 import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.SubSpace;
@@ -14,8 +15,10 @@ import org.humanbrainproject.knowledgegraph.query.entity.QueryResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -82,8 +85,8 @@ public class Instances {
         instanceMaintenanceController.translateNamespaces(schema, oldNamespace, newNamespace);
     }
 
-    public List<Map> getInstancesByReferences(Set<NexusInstanceReference> references){
-        return lookupController.getInstancesByReferences(references);
+    public List<Map> getInstancesByReferences(Set<NexusInstanceReference> references, String queryId) throws SolrServerException, JSONException, IOException {
+        return lookupController.getInstancesByReferences(references, queryId);
     }
 
 }

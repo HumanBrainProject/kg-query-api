@@ -210,7 +210,7 @@ public class ArangoQuery {
         return queryPropertyGraphBySpecification(resolveStoredQuery(query), query.getStoredQueryReference().getAlias());
     }
 
-    private Query resolveStoredQuery(StoredQuery storedQuery) {
+    public Query resolveStoredQuery(StoredQuery storedQuery) {
         String queryPayload = getQueryPayload(storedQuery.getStoredQueryReference(), String.class);
         if(queryPayload==null){
             throw new StoredQueryNotFoundException("Did not find query "+storedQuery.getStoredQueryReference().getName());

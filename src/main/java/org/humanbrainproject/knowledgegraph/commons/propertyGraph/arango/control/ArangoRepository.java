@@ -5,6 +5,7 @@ import com.arangodb.ArangoCursor;
 import com.arangodb.ArangoDBException;
 import com.arangodb.ArangoDatabase;
 import com.arangodb.model.AqlQueryOptions;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationContext;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.AuthorizedAccess;
@@ -13,13 +14,18 @@ import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.ArangoVocabulary;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
+import org.humanbrainproject.knowledgegraph.query.boundary.ArangoQuery;
 import org.humanbrainproject.knowledgegraph.query.entity.JsonDocument;
+import org.humanbrainproject.knowledgegraph.query.entity.Query;
 import org.humanbrainproject.knowledgegraph.query.entity.QueryResult;
+import org.humanbrainproject.knowledgegraph.query.entity.StoredQuery;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -34,6 +40,9 @@ public class ArangoRepository {
 
     @Autowired
     ArangoQueryFactory queryFactory;
+
+    @Autowired
+    ArangoQuery arangoQuery;
 
     <T> T getDocumentByKey(ArangoDocumentReference document, Class<T> clazz, ArangoConnection connection) {
         Map doc = getDocument(document, connection);
@@ -144,10 +153,27 @@ public class ArangoRepository {
     }
 
     @AuthorizedAccess
-    public List<Map> listInstanceByReferences(Set<ArangoDocumentReference> documentReferences, ArangoConnection driver){
-        String query = queryFactory.listInstancesByReferences(documentReferences, authorizationContext.getReadableOrganizations());
+    public List<Map> listInstanceByReferences(Map<ArangoCollectionReference, List<ArangoDocumentReference>> documentReferences, ArangoConnection driver, Map<ArangoCollectionReference, StoredQuery> queryMap) throws JSONException, SolrServerException, IOException {
+        Set<ArangoDocumentReference> noExplicitQuery = new HashSet<>();
+        List<Map> allResults = new ArrayList<>();
+
+        for (ArangoCollectionReference collection : documentReferences.keySet()) {
+            if(queryMap.containsKey(collection)){
+                StoredQuery query = queryMap.get(collection);
+                String[] ids = documentReferences.get(collection).stream().map(ArangoDocumentReference::getKey).distinct().toArray(String[]::new);
+                query.getFilter().restrictToIds(ids);
+                QueryResult<List<Map>> listQueryResult = arangoQuery.queryPropertyGraphByStoredSpecification(query);
+                allResults.addAll(listQueryResult.getResults());
+                logger.info(String.format("Collection %s has a explicit query - treat it differently", collection.getName()));
+            }
+            else{
+                noExplicitQuery.addAll(documentReferences.get(collection));
+            }
+        }
+        String query = queryFactory.listInstancesByReferences(noExplicitQuery, authorizationContext.getReadableOrganizations());
         ArangoCursor<Map> q = driver.getOrCreateDB().query(query, null, new AqlQueryOptions(), Map.class);
-        return q.asListRemaining();
+        allResults.addAll(q.asListRemaining());
+        return allResults;
     }
 
 
