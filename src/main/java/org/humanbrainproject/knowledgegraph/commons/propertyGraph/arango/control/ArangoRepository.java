@@ -170,9 +170,11 @@ public class ArangoRepository {
                 noExplicitQuery.addAll(documentReferences.get(collection));
             }
         }
-        String query = queryFactory.listInstancesByReferences(noExplicitQuery, authorizationContext.getReadableOrganizations());
-        ArangoCursor<Map> q = driver.getOrCreateDB().query(query, null, new AqlQueryOptions(), Map.class);
-        allResults.addAll(q.asListRemaining());
+        if(!noExplicitQuery.isEmpty()) {
+            String query = queryFactory.listInstancesByReferences(noExplicitQuery, authorizationContext.getReadableOrganizations());
+            ArangoCursor<Map> q = driver.getOrCreateDB().query(query, null, new AqlQueryOptions(), Map.class);
+            allResults.addAll(q.asListRemaining());
+        }
         return allResults;
     }
 

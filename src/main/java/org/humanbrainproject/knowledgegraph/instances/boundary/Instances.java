@@ -85,8 +85,8 @@ public class Instances {
         instanceMaintenanceController.translateNamespaces(schema, oldNamespace, newNamespace);
     }
 
-    public List<Map> getInstancesByReferences(Set<NexusInstanceReference> references, String queryId) throws SolrServerException, JSONException, IOException {
-        return lookupController.getInstancesByReferences(references, queryId);
+    public List<Map> getInstancesByReferences(Set<NexusInstanceReference> references, String queryId, String vocab) throws SolrServerException, JSONException, IOException {
+        return lookupController.getInstancesByReferences(references, queryId, vocab);
     }
 
 }

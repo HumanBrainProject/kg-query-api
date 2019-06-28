@@ -3,6 +3,7 @@ package org.humanbrainproject.knowledgegraph.query.boundary;
 import com.github.jsonldjava.core.JsonLdConsts;
 import com.github.jsonldjava.utils.JsonUtils;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.tinkerpop.gremlin.structure.T;
 import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonLdStandardization;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonTransformer;
@@ -213,9 +214,13 @@ public class ArangoQuery {
     public Query resolveStoredQuery(StoredQuery storedQuery) {
         String queryPayload = getQueryPayload(storedQuery.getStoredQueryReference(), String.class);
         if(queryPayload==null){
-            throw new StoredQueryNotFoundException("Did not find query "+storedQuery.getStoredQueryReference().getName());
+            StoredQueryReference globalDefinition = new StoredQueryReference(StoredQueryReference.GLOBAL_QUERY_SCHEMA, storedQuery.getStoredQueryReference().getAlias());
+            queryPayload = getQueryPayload(globalDefinition, String.class);
+            if(queryPayload==null) {
+                throw new StoredQueryNotFoundException("Did not find query " + storedQuery.getStoredQueryReference().getName());
+            }
         }
-        return queryPayload==null ? null : new Query(storedQuery, queryPayload);
+        return new Query(storedQuery, queryPayload);
     }
 
 
