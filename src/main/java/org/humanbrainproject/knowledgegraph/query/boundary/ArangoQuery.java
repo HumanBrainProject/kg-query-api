@@ -214,10 +214,15 @@ public class ArangoQuery {
     public Query resolveStoredQuery(StoredQuery storedQuery) {
         String queryPayload = getQueryPayload(storedQuery.getStoredQueryReference(), String.class);
         if(queryPayload==null){
-            StoredQueryReference globalDefinition = new StoredQueryReference(StoredQueryReference.GLOBAL_QUERY_SCHEMA, storedQuery.getStoredQueryReference().getAlias());
-            queryPayload = getQueryPayload(globalDefinition, String.class);
+            NexusSchemaReference organizationGlobalQuery = new NexusSchemaReference(storedQuery.getStoredQueryReference().getSchemaReference().getOrganization(), StoredQueryReference.GLOBAL_QUERY_SCHEMA.getDomain(), StoredQueryReference.GLOBAL_QUERY_SCHEMA.getSchema(), StoredQueryReference.GLOBAL_QUERY_SCHEMA.getSchemaVersion());
+            StoredQueryReference organizationDefinition = new StoredQueryReference(organizationGlobalQuery, storedQuery.getStoredQueryReference().getAlias());
+            queryPayload = getQueryPayload(organizationDefinition, String.class);
             if(queryPayload==null) {
-                throw new StoredQueryNotFoundException("Did not find query " + storedQuery.getStoredQueryReference().getName());
+                StoredQueryReference globalDefinition = new StoredQueryReference(StoredQueryReference.GLOBAL_QUERY_SCHEMA, storedQuery.getStoredQueryReference().getAlias());
+                queryPayload = getQueryPayload(globalDefinition, String.class);
+                if (queryPayload == null) {
+                    throw new StoredQueryNotFoundException("Did not find query " + storedQuery.getStoredQueryReference().getName());
+                }
             }
         }
         return new Query(storedQuery, queryPayload);
