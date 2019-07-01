@@ -24,6 +24,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -472,6 +473,46 @@ public class ArangoQueryFactory {
     public String queryInstanceBySchemaAndFilter(ArangoCollectionReference collectionReference, String filterKey, String filterValue, Set<String> permissionGroupsWithReadAccess) {
         return queryInstanceBySchemaAndFilter(collectionReference, Collections.singletonList(new EqualsFilter(filterKey, filterValue)), permissionGroupsWithReadAccess);
     }
+
+
+    public String listInstancesByReferences(Set<ArangoDocumentReference> documentReferences, Set<String> permissionGroupsWithReadAccess){
+        AuthorizedArangoQuery query = new AuthorizedArangoQuery(permissionGroupsWithReadAccess);
+        Map<ArangoCollectionReference, List<ArangoDocumentReference>> referencesByCollection = documentReferences.stream().collect(Collectors.groupingBy(ArangoDocumentReference::getCollection));
+
+        int collectionCount =0;
+        for (ArangoCollectionReference reference : referencesByCollection.keySet()) {
+            TrustedAqlValue collectionName = AQL.preventAqlInjection(reference.getName());
+            query.add(trust("LET coll"+collectionCount+" = (FOR doc"+collectionCount+" IN `")).add(collectionName).addLine(trust("`"));
+            query.addDocumentFilter(trust("doc"+collectionCount));
+            query.addLine(trust("FILTER doc"+collectionCount+"."+ArangoVocabulary.KEY+" IN [${ids"+collectionCount+"}]"));
+            query.addLine(trust("RETURN UNSET(doc"+collectionCount+", [\""+ArangoVocabulary.KEY+"\", \""+ArangoVocabulary.ID+"\", \""+ArangoVocabulary.REV+"\"]))"));
+
+            List<ArangoDocumentReference> arangoDocumentReferences = referencesByCollection.get(reference);
+            TrustedAqlValue ids = query.listValues(arangoDocumentReferences.stream().map(ArangoDocumentReference::getKey).collect(Collectors.toSet()));
+            query.setTrustedParameter("ids"+collectionCount, ids);
+
+            collectionCount++;
+        }
+        if(referencesByCollection.size()==1){
+            query.addLine(trust("LET result = coll0"));
+        }
+        else {
+            query.add(trust("LET result = UNION_DISTINCT("));
+            for (int i = 0; i < referencesByCollection.size(); i++) {
+                query.add(trust("coll" + i));
+                if (i < referencesByCollection.size() - 1) {
+                    query.add(trust(", "));
+                }
+            }
+            query.addLine(trust(")"));
+        }
+        query.addLine(trust("FOR d IN result"));
+        query.indent().addLine(trust("RETURN d"));
+
+
+        return query.build().getValue();
+    }
+
 
 
     public String queryInstanceBySchemaAndFilter(ArangoCollectionReference collectionReference, List<EqualsFilter> equalsFilters, Set<String> permissionGroupsWithReadAccess) {

@@ -7,6 +7,8 @@ import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaRef
 @NoTests(NoTests.TRIVIAL)
 public class StoredQueryReference {
 
+    public static final NexusSchemaReference GLOBAL_QUERY_SCHEMA = new NexusSchemaReference("hbpkg", "global", "queries", "v1.0.0");
+
     private final String name;
     private final NexusSchemaReference schemaReference;
     private final String alias;

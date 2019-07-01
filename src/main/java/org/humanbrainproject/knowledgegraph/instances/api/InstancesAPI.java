@@ -1,20 +1,28 @@
 package org.humanbrainproject.knowledgegraph.instances.api;
 
 import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiParam;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationContext;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.instances.boundary.Instances;
 import org.humanbrainproject.knowledgegraph.query.boundary.ArangoGraph;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.HttpClientErrorException;
+import springfox.documentation.annotations.ApiIgnore;
 
 import javax.ws.rs.core.MediaType;
+import java.io.IOException;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.humanbrainproject.knowledgegraph.commons.api.ParameterConstants.*;
 
@@ -44,6 +52,15 @@ public class InstancesAPI {
         } catch (HttpClientErrorException e){
             return ResponseEntity.status(e.getStatusCode()).build();
         }
+    }
+
+
+    @PostMapping("/{queryId}")
+    public ResponseEntity<List<Map>> getInstancesByIds(@RequestBody @ApiParam("The relative ids (starting with the organization) which shall be fetched") List<String> ids, @PathVariable("queryId") String queryId,  @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken, @ApiParam(VOCAB_DOC)  @RequestParam(value = VOCAB, required = false) String vocab, @ApiIgnore @RequestParam Map<String, String> allRequestParams) throws SolrServerException, IOException, JSONException {
+        authorizationContext.populateAuthorizationContext(authorizationToken);
+        Set<NexusInstanceReference> references = ids.stream().map(id -> NexusInstanceReference.createFromUrl(id)).collect(Collectors.toSet());
+        List<Map> results = instances.getInstancesByReferences(references, queryId, vocab, allRequestParams);
+        return ResponseEntity.ok(results);
     }
 
 

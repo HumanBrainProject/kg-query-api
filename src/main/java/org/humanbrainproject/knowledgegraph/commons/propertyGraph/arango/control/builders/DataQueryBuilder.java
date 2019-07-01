@@ -619,7 +619,7 @@ public class DataQueryBuilder {
             if (field.fieldFilter != null && field.fieldFilter.getOp()!=null && !field.fieldFilter.getOp().isInstanceFilter()) {
                 TrustedAqlValue fieldFilter = createFieldFilter(field.fieldFilter);
                 if (fieldFilter != null) {
-                    aql.addLine(trust("AND ${field}${fieldFilter}"));
+                    aql.addLine(trust("AND LOWER(${field})${fieldFilter}"));
                     aql.setTrustedParameter("fieldFilter", fieldFilter);
                 }
             }
@@ -652,7 +652,7 @@ public class DataQueryBuilder {
                 }
                 DataQueryBuilder.this.processedFilterValues.put(key, value);
                 AQL aql = new AQL();
-                aql.add(trust("@${field}"));
+                aql.add(trust("LOWER(@${field})"));
                 aql.setParameter("field", key);
                 return aql.build();
             }

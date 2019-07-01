@@ -1,30 +1,34 @@
 package org.humanbrainproject.knowledgegraph.instances.control;
 
+import org.apache.solr.client.solrj.SolrServerException;
 import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationContext;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusClient;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.AuthorizedAccess;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoDatabaseFactory;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoInternalRepository;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoNativeRepository;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoRepository;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoCollectionReference;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
+import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.exceptions.StoredQueryNotFoundException;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.SubSpace;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.NexusVocabulary;
 import org.humanbrainproject.knowledgegraph.context.QueryContext;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
-import org.humanbrainproject.knowledgegraph.query.entity.DatabaseScope;
-import org.humanbrainproject.knowledgegraph.query.entity.JsonDocument;
-import org.humanbrainproject.knowledgegraph.query.entity.Pagination;
-import org.humanbrainproject.knowledgegraph.query.entity.QueryResult;
+import org.humanbrainproject.knowledgegraph.query.boundary.ArangoQuery;
+import org.humanbrainproject.knowledgegraph.query.entity.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.stereotype.Component;
 
 import javax.json.Json;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.io.IOException;
+import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Component
@@ -45,6 +49,12 @@ public class InstanceLookupController {
 
     @Autowired
     ArangoNativeRepository arangoNativeRepository;
+
+    @Autowired
+    ArangoInternalRepository arangoInternalRepository;
+
+    @Autowired
+    ArangoQuery arangoQuery;
 
 
     private Logger logger = LoggerFactory.getLogger(InstanceLookupController.class);
@@ -123,7 +133,7 @@ public class InstanceLookupController {
     }
 
     public QueryResult<List<Map>> getInstances(NexusSchemaReference schemaReference, String searchTerm, Pagination pagination) {
-        return arangoRepository.getInstances(ArangoCollectionReference.fromNexusSchemaReference(schemaReference), pagination!=null ? pagination.getStart() : null, pagination!=null ? pagination.getSize() : null, searchTerm, queryContext.getDatabaseConnection());
+        return arangoRepository.getInstances(ArangoCollectionReference.fromNexusSchemaReference(schemaReference), pagination != null ? pagination.getStart() : null, pagination != null ? pagination.getSize() : null, searchTerm, queryContext.getDatabaseConnection());
     }
 
     public JsonDocument findInstanceByIdentifier(NexusSchemaReference schema, String identifier) {
@@ -135,6 +145,26 @@ public class InstanceLookupController {
             }
         }
         return null;
+    }
+
+
+    public List<Map> getInstancesByReferences(Set<NexusInstanceReference> references, String queryId, String vocab, Map<String, String> queryParams) throws SolrServerException, IOException, JSONException {
+
+        Set<NexusSchemaReference> schemas = references.stream().map(NexusInstanceReference::getNexusSchema).collect(Collectors.toSet());
+        Map<ArangoCollectionReference, StoredQuery> queryMap = new HashMap<>();
+        for (NexusSchemaReference schema : schemas) {
+            StoredQuery storedQuery = new StoredQuery(schema, queryId, vocab);
+            storedQuery.setParameters(queryParams);
+            try {
+                arangoQuery.resolveStoredQuery(storedQuery);
+                queryMap.put(ArangoCollectionReference.fromNexusSchemaReference(schema), storedQuery);
+            }
+            catch (StoredQueryNotFoundException e){
+                logger.debug(String.format("Did not find stored query for %s - default behavior applies", schema.getRelativeUrl().getUrl()));
+            }
+        }
+        Map<ArangoCollectionReference, List<ArangoDocumentReference>> referencesByCollection = references.stream().map(ArangoDocumentReference::fromNexusInstance).collect(Collectors.groupingBy(ArangoDocumentReference::getCollection));
+        return arangoRepository.listInstanceByReferences(referencesByCollection, queryContext.getDatabaseConnection(), queryMap);
     }
 
 }
