@@ -60,7 +60,7 @@ public class SuggestionAPI {
         pagination.setSize(size);
         logger.info(String.format("Loading suggestion for object %s and field %s", schemaReference, field));
         logger.info(String.format("Payload: %s", payload));
-        return ResponseEntity.ok(suggest.suggestByField(schemaReference, field, type, search, pagination));
+        return ResponseEntity.ok(suggest.suggestByField(schemaReference, field, type, search != null ? search.trim() : null, pagination));
     }
 
     @PostMapping(value="/{"+ ORG+"}/{"+DOMAIN+"}/{"+SCHEMA+"}/{"+VERSION+"}/{"+ INSTANCE_ID +"}/instance/{userId}", consumes = {MediaType.APPLICATION_JSON, RestUtils.APPLICATION_LD_JSON, MediaType.WILDCARD}, produces = MediaType.APPLICATION_JSON)
