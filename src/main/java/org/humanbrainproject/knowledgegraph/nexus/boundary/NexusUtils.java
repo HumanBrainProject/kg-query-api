@@ -4,11 +4,13 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationContext;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonLdStandardization;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusClient;
+import org.humanbrainproject.knowledgegraph.context.QueryContext;
 import org.humanbrainproject.knowledgegraph.instances.control.ContextController;
 import org.humanbrainproject.knowledgegraph.instances.control.SchemaController;
 import org.humanbrainproject.knowledgegraph.nexus.control.NexusBatchUploader;
 import org.humanbrainproject.knowledgegraph.nexus.entity.*;
 import org.humanbrainproject.knowledgegraph.query.boundary.ArangoQuery;
+import org.humanbrainproject.knowledgegraph.query.entity.DatabaseScope;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.stereotype.Component;
@@ -46,11 +48,16 @@ public class NexusUtils {
     @Autowired
     AuthorizationContext authorizationContext;
 
+    @Autowired
+    QueryContext queryContext;
+
     public UUID uploadFileStructure(InputStream payload, boolean noDeletion, boolean isSimulation) throws IOException, SolrServerException, JSONException, NoSuchAlgorithmException {
         BufferedInputStream bis = new BufferedInputStream(payload);
         FileStructureData fs = new FileStructureData(new ZipInputStream(bis));
         fs.listFiles();
         FileStructureDataExtractor fe = new FileStructureDataExtractor(fs);
+        //We need to ensure that we're operating on the native space. -> let's switch the database scope.
+        queryContext.setDatabaseScope(DatabaseScope.NATIVE);
         NexusDataStructure data = fe.extractFile(query, standardization);
         FileStructureUploader fu = new FileStructureUploader( data, schemaController, contextController, client,authorizationContext.getCredential(), fe, noDeletion, isSimulation);
         uploader.uploadFileStructure(fs.getGeneratedId(),fu);
