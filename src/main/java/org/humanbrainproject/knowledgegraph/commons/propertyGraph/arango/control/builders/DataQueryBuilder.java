@@ -652,7 +652,12 @@ public class DataQueryBuilder {
                 }
                 DataQueryBuilder.this.processedFilterValues.put(key, value);
                 AQL aql = new AQL();
-                aql.add(trust("LOWER(@${field})"));
+                if(fieldFilter.getOp().isInstanceFilter()){
+                    aql.add(trust("@${field}"));
+                }
+                else {
+                    aql.add(trust("LOWER(@${field})"));
+                }
                 aql.setParameter("field", key);
                 return aql.build();
             }
