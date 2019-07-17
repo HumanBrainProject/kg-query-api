@@ -9,6 +9,7 @@ import org.humanbrainproject.knowledgegraph.commons.ExternalApi;
 import org.humanbrainproject.knowledgegraph.commons.api.ParameterConstants;
 import org.humanbrainproject.knowledgegraph.commons.api.RestUtils;
 import org.humanbrainproject.knowledgegraph.commons.authorization.control.AuthorizationContext;
+import org.humanbrainproject.knowledgegraph.commons.logging.LoggingUtils;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.builders.TreeScope;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.exceptions.IllegalDatabaseScope;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.exceptions.RootCollectionNotFoundException;
@@ -20,6 +21,8 @@ import org.humanbrainproject.knowledgegraph.query.boundary.ArangoQuery;
 import org.humanbrainproject.knowledgegraph.query.boundary.CodeGenerator;
 import org.humanbrainproject.knowledgegraph.query.entity.*;
 import org.humanbrainproject.knowledgegraph.query.entity.fieldFilter.ParameterDescription;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.http.HttpHeaders;
@@ -30,9 +33,12 @@ import org.springframework.web.client.HttpClientErrorException;
 import springfox.documentation.annotations.ApiIgnore;
 
 import javax.ws.rs.core.MediaType;
+import javax.xml.bind.DatatypeConverter;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Map;
 import java.util.zip.ZipEntry;
@@ -47,7 +53,7 @@ import static org.humanbrainproject.knowledgegraph.commons.api.ParameterConstant
 @Api(value = "/query", description = "The API for querying the knowledge graph")
 public class QueryAPI {
 
-
+    private Logger log = LoggerFactory.getLogger(QueryAPI.class);
     @Autowired
     AuthorizationContext authorizationContext;
 
@@ -59,7 +65,6 @@ public class QueryAPI {
 
     @Autowired
     CodeGenerator codeGenerator;
-
 
     @GetMapping("/{"+QUERY_ID+"}/schemas")
     public ResponseEntity<List<JsonDocument>> getSchemasWithQuery(@PathVariable(QUERY_ID) String queryId, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken) {
@@ -299,12 +304,15 @@ public class QueryAPI {
             authorizationContext.populateAuthorizationContext(authorizationToken);
             queryContext.populateQueryContext(databaseScope);
             queryContext.setAllParameters(allRequestParams);
-            Query query = new Query(payload, new NexusSchemaReference(org, domain, schema, version), vocab);
+            NexusSchemaReference schemaReference = new NexusSchemaReference(org, domain, schema, version);
+            Query query = new Query(payload,schemaReference, vocab);
             query.setParameters(allRequestParams);
             query.getFilter().restrictToOrganizations(RestUtils.splitCommaSeparatedValues(organizations)).setQueryString(searchTerm);
             query.getPagination().setStart(start).setSize(size);
             QueryResult<List<Map>> result = this.query.queryPropertyGraphBySpecification(query, null);
+            String userHashedId = LoggingUtils.hashUserId(authorizationContext.getUserId());
             result.setImportantMessage("This query is executed with a mode thought for query testing only (with throttled performance). Please register your query if you're happy with it. It's easy and you gain speed ;)!");
+            log.info(String.format("[Query][Result] - schema: %s - total: %s - user: %s - payload - %s", schemaReference.toString(), result.getTotal(), userHashedId, payload.replaceAll("\n", "").replaceAll(" ", "")));
             return ResponseEntity.ok(result);
         } catch (IllegalDatabaseScope e){
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
@@ -323,14 +331,18 @@ public class QueryAPI {
             authorizationContext.populateAuthorizationContext(authorizationToken);
             queryContext.populateQueryContext(databaseScope);
             queryContext.setAllParameters(allRequestParams);
-            Query query = new Query(payload, new NexusSchemaReference(org, domain, schema, version), vocab);
+            NexusSchemaReference schemaReference = new NexusSchemaReference(org, domain, schema, version);
+            Query query = new Query(payload, schemaReference, vocab);
             query.setParameters(allRequestParams);
             query.getFilter().restrictToSingleId(instanceId).restrictToOrganizations(RestUtils.splitCommaSeparatedValues(restrictToOrganizations));
             QueryResult<List<Map>> result = this.query.queryPropertyGraphBySpecification(query, null);
 
             if (result.getResults().size() >= 1) {
                 Map body = result.getResults().get(0);
+
                 body.put("importantMessage", "This query is executed with a mode thought for query testing only (with throttled performance). Please register your query if you're happy with it. It's easy and you gain speed ;)!");
+                String userHashedId = LoggingUtils.hashUserId(authorizationContext.getUserId());
+                log.info(String.format("[Query][Result] - schema: %s - instanceid: %s - user: %s - payload - %s", schemaReference.toString(), instanceId, userHashedId, payload.replaceAll("\n", "").replaceAll(" ", "")));
                 return ResponseEntity.ok(body);
             } else {
                 return ResponseEntity.notFound().build();
@@ -385,16 +397,19 @@ public class QueryAPI {
     @GetMapping("/{"+ORG+"}/{"+ DOMAIN+"}/{"+SCHEMA+"}/{"+VERSION+"}/{"+QUERY_ID+"}/instances/deprecated")
     public ResponseEntity<QueryResult> executeStoredQuery(@PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(QUERY_ID) String queryId, @ApiParam(SIZE_DOC) @RequestParam(value = SIZE, required = false) Integer size, @ApiParam(START_DOC) @RequestParam(value = START, required = false) Integer start, @RequestParam(value = DATABASE_SCOPE, required = false) ExposedDatabaseScope databaseScope, @ApiParam(SEARCH_DOC) @RequestParam(value = SEARCH, required = false) String searchTerm, @ApiParam(VOCAB_DOC) @RequestParam(value = VOCAB, required = false) String vocab, @ApiParam(RESTRICTED_ORGANIZATION_DOC) @RequestParam(value = RESTRICT_TO_ORGANIZATIONS, required = false) String restrictToOrganizations,  @ApiParam(value = ParameterConstants.AUTHORIZATION_DOC) @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationToken, @ApiIgnore @RequestParam Map<String, String> allRequestParams) throws Exception {
         try {
+
+
             authorizationContext.populateAuthorizationContext(authorizationToken);
             queryContext.populateQueryContext(databaseScope);
             queryContext.setAllParameters(allRequestParams);
-
-            StoredQuery query = new StoredQuery(new NexusSchemaReference(org, domain, schema, version), queryId, vocab);
+            NexusSchemaReference schemaRef = new NexusSchemaReference(org, domain, schema, version);
+            StoredQuery query = new StoredQuery(schemaRef, queryId, vocab);
             query.setParameters(allRequestParams);
             query.getFilter().restrictToOrganizations(RestUtils.splitCommaSeparatedValues(restrictToOrganizations)).setQueryString(searchTerm);
             query.getPagination().setStart(start).setSize(size);
             QueryResult<List<Map>> result = this.query.queryPropertyGraphByStoredSpecification(query);
-
+            String userHashedId = LoggingUtils.hashUserId(authorizationContext.getUserId());
+            log.info(String.format("[Query][Result] - schema: %s - queryid: %s - total: %d - user: %s", schemaRef.toString(), queryId, result.getTotal(), userHashedId));
             return ResponseEntity.ok(result);
         } catch (IllegalDatabaseScope e){
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
@@ -406,6 +421,8 @@ public class QueryAPI {
             return ResponseEntity.status(e.getStatusCode()).build();
         }
     }
+
+
 
     @ApiOperation(value="Execute a stored query and fetch the corresponding instances")
     @ExternalApi
@@ -440,13 +457,15 @@ public class QueryAPI {
         try {
             authorizationContext.populateAuthorizationContext(authorizationToken);
             queryContext.populateQueryContext(databaseScope);
-
-            StoredQuery query = new StoredQuery(new NexusSchemaReference(org, domain, schema, version), queryId, vocab);
+            NexusSchemaReference schemaRef =new NexusSchemaReference(org, domain, schema, version);
+            StoredQuery query = new StoredQuery(schemaRef, queryId, vocab);
             query.setParameters(allRequestParams);
             query.getFilter().restrictToOrganizations(RestUtils.splitCommaSeparatedValues(restrictToOrganizations)).restrictToSingleId(instanceId);
 
             QueryResult<List<Map>> result = this.query.queryPropertyGraphByStoredSpecification(query);
             if (result.getResults().size() >= 1) {
+                String hashedUserId = LoggingUtils.hashUserId(authorizationContext.getUserId());
+                log.info(String.format("[Query][Result] - schema: %s - queryid: %s - instanceid: %s - user: %s", schemaRef.toString(), queryId, instanceId, hashedUserId));
                 return ResponseEntity.ok(result.getResults().get(0));
             } else {
                 return ResponseEntity.notFound().build();
