@@ -60,6 +60,7 @@ public class DefaultAuthorizationContext implements AuthorizationContext {
 
     @Override
     public Set<String> getReadableOrganizations(){
+        //WARNING: Make sure, that when giving access to the full blown organization list, make sure, the access to the database is restricted to RELEASED ONLY! (handled in the org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoDatabaseFactory
         if(isAllowedToSeeReleasedInstancesOnly()){
             //We ensure the access to the released database in a different place. If somebody has access to the released space only, we will provide it for all spaces.
             return authorizationController.getReadableOrganizations(new InternalMasterKey(), null);
@@ -69,6 +70,7 @@ public class DefaultAuthorizationContext implements AuthorizationContext {
 
     @Override
     public Set<String> getReadableOrganizations(Credential credential, List<String> whitelistedOrganizations){
+        //WARNING: Make sure, that when giving access to the full blown organization list, make sure, the access to the database is restricted to RELEASED ONLY! (handled in the org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoDatabaseFactory
         if(isAllowedToSeeReleasedInstancesOnly()){
             //We ensure the access to the released database in a different place. If somebody has access to the released space only, we will provide it for all spaces.
             return authorizationController.getReadableOrganizations(new InternalMasterKey(), whitelistedOrganizations);
@@ -78,6 +80,7 @@ public class DefaultAuthorizationContext implements AuthorizationContext {
 
     @Override
     public Set<String> getReadableOrganizations(List<String> whitelistedOrganizations) {
+        //WARNING: Make sure, that when giving access to the full blown organization list, make sure, the access to the database is restricted to RELEASED ONLY! (handled in the org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoDatabaseFactory
         if(isAllowedToSeeReleasedInstancesOnly()){
             //We ensure the access to the released database in a different place. If somebody has access to the released space only, we will provide it for all spaces.
             return authorizationController.getReadableOrganizations(new InternalMasterKey(), whitelistedOrganizations);
@@ -122,15 +125,6 @@ public class DefaultAuthorizationContext implements AuthorizationContext {
         return scope.getIdWhitelistForUser(query, getCredential());
     }
 
-    @Override
-    public boolean isAllowedToSeeCuratedInstances() {
-        Credential c = getCredential();
-        if(c instanceof OidcAccessToken) {
-            UserInformation userInfo = oidcClient.getUserInfo(((OidcAccessToken) c));
-            return userInfo.hasCuratedPermission() && !userInfo.hasReleasedPermission();
-        }
-        else return c instanceof InternalMasterKey;
-    }
 
     @Override
     public boolean isAllowedToSeeReleasedInstancesOnly() {

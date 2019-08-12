@@ -17,11 +17,6 @@ public class TestAuthorizationContext implements AuthorizationContext {
     }
 
     @Override
-    public boolean isAllowedToSeeCuratedInstances() {
-        return false;
-    }
-
-    @Override
     public void setCredential(String oidcToken) {
 
     }

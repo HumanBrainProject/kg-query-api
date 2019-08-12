@@ -38,14 +38,14 @@ public class ArangoDatabaseFactory {
     }
 
     public ArangoConnection getDefaultDB(boolean asSystemUser) {
-        if(asSystemUser || authorizationContext.isAllowedToSeeCuratedInstances()){
+        if(asSystemUser || !authorizationContext.isAllowedToSeeReleasedInstancesOnly()){
             return defaultDB;
         }
         throw new IllegalDatabaseScope("You've tried to read from the default space - this is not allowed with your token.");
     }
 
     public ArangoConnection getInferredDB(boolean asSystemUser) {
-        if(asSystemUser || authorizationContext.isAllowedToSeeCuratedInstances()){
+        if(asSystemUser || !authorizationContext.isAllowedToSeeReleasedInstancesOnly()){
             return inferredDB;
         }
         throw new IllegalDatabaseScope("You've tried to read from the curated space - this is not allowed with your token.");

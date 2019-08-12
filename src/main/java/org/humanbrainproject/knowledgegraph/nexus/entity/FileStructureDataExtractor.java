@@ -2,6 +2,7 @@ package org.humanbrainproject.knowledgegraph.nexus.entity;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
+import org.apache.commons.lang.NotImplementedException;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.JsonLdStandardization;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Tuple;
@@ -13,7 +14,6 @@ import org.humanbrainproject.knowledgegraph.query.entity.Query;
 import org.humanbrainproject.knowledgegraph.query.entity.QueryResult;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.configurationprocessor.json.JSONException;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import javax.ws.rs.BadRequestException;
 import java.io.File;
