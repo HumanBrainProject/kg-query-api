@@ -66,7 +66,7 @@ public class JsonDocument extends LinkedHashMap<String, Object>{
                 return (String) identifier;
             }
         }
-        return null;
+        return getNexusId();
     }
 
     public Integer getNexusRevision(){
