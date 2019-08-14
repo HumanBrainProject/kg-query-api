@@ -141,7 +141,7 @@ public class NexusClient {
                 return new JsonDocument(result.getBody());
             }
         } catch (HttpClientErrorException e) {
-            logger.error("Was not able to create instance in nexus {}", e.getResponseBodyAsString());
+            logger.error("Was not able to create instance in nexus {} \n\npayload: \n{}", e.getResponseBodyAsString(), jsonTransformer.getMapAsJson(payload));
             throw e;
         }
         return null;
