@@ -415,9 +415,9 @@ public class ArangoQueryFactory {
             query.addDocumentFilter(trust("doc"));
             query.indent().addLine(trust("LET relation = (FOR r IN OUTBOUND doc `${relationCollection}`"));
             query.addDocumentFilter(trust("r"));
-            query.add(trust("LET name = FIRST(UNION(TO_ARRAY(r.`" + SchemaOrgVocabulary.NAME + "`), TO_ARRAY(r.`http://www.w3.org/2000/01/rdf-schema#label`)))"));
+            query.add(trust("LET name = FIRST(UNION(TO_ARRAY(r.`" + SchemaOrgVocabulary.NAME + "`), TO_ARRAY(r.`http://www.w3.org/2000/01/rdf-schema#label`), TO_ARRAY(r.`http://schema.org/givenName`)))"));
             if (searchTerm != null) {
-                query.addLine(trust("FILTER like(r.`" + SchemaOrgVocabulary.NAME + "`, @searchTerm, true) || like(r.`http://www.w3.org/2000/01/rdf-schema#label`, @searchTerm, true)"));
+                query.addLine(trust("FILTER like(r.`" + SchemaOrgVocabulary.NAME + "`, @searchTerm, true) || like(r.`http://www.w3.org/2000/01/rdf-schema#label`, @searchTerm, true) || like(r.`http://schema.org/givenName`, @searchTerm, true)"));
             }
             query.addLine(trust("RETURN {"));
             query.indent().addLine(trust("\"id\":  r.`${idField}`,"));
@@ -444,12 +444,12 @@ public class ArangoQueryFactory {
         query.addLine(trust("LET fromSchemas = FLATTEN(FOR schema IN schemas"));
         query.addLine(trust("LET schemaInstance = (FOR i IN schema"));
         query.addDocumentFilter(trust("i"));
-        query.add(trust("LET name = FIRST(UNION(TO_ARRAY(i.`"+SchemaOrgVocabulary.NAME+"`), TO_ARRAY(i.`http://www.w3.org/2000/01/rdf-schema#label`)))"));
+        query.add(trust("LET name = FIRST(UNION(TO_ARRAY(i.`"+SchemaOrgVocabulary.NAME+"`), TO_ARRAY(i.`http://www.w3.org/2000/01/rdf-schema#label`), TO_ARRAY(i.`http://schema.org/givenName`)))"));
 
         if (searchTerm != null) {
-            query.addLine(trust("FILTER like(i.`"+SchemaOrgVocabulary.NAME+"`, @searchTerm, true) || like(i.`http://www.w3.org/2000/01/rdf-schema#label`, @searchTerm, true)"));
+            query.addLine(trust("FILTER like(i.`"+SchemaOrgVocabulary.NAME+"`, @searchTerm, true) || like(i.`http://www.w3.org/2000/01/rdf-schema#label`, @searchTerm, true) || like(i.`http://schema.org/givenName`, @searchTerm, true)"));
         }
-        query.addLine(trust("SORT i.`"+SchemaOrgVocabulary.NAME+"` ASC, i.`http://www.w3.org/2000/01/rdf-schema#label` ASC"));
+        query.addLine(trust("SORT i.`"+SchemaOrgVocabulary.NAME+"` ASC, i.`http://www.w3.org/2000/01/rdf-schema#label` ASC, i.`http://schema.org/givenName` ASC"));
         query.addLine(trust("RETURN {"));
         query.indent().addLine(trust("\"id\":  i.`${idField}`,"));
         query.addLine(trust("\"name\": name"));
