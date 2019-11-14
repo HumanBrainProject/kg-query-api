@@ -219,7 +219,6 @@ public class QueryAPI {
             query.getFilter().restrictToOrganizations(RestUtils.splitCommaSeparatedValues(restrictToOrganizations)).restrictToSingleId(instanceId);
             query.setReturnOriginalJson(includeOriginalJson);
             Map result = this.query.queryPropertyGraphByStoredSpecificationAndTemplateWithId(query, template);
-
             return ResponseEntity.ok(result);
         } catch (IllegalDatabaseScope e){
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
@@ -244,6 +243,7 @@ public class QueryAPI {
 
         StoredQuery query = new StoredQuery(new NexusSchemaReference(org, domain, schema, version), queryId, null);
         query.getFilter().restrictToOrganizations(RestUtils.splitCommaSeparatedValues(restrictToOrganizations)).setQueryString(searchTerm);
+        query.getPagination().setStart(start).setSize(size);
         query.setTemplateId(templateId).setLibraryId(library).setReturnOriginalJson(includeOriginalJson);
         try {
             QueryResult<List<Map>> result = this.query.queryPropertyGraphByStoredSpecificationAndFreemarkerTemplate(query);
@@ -263,6 +263,7 @@ public class QueryAPI {
 
         StoredQuery query = new StoredQuery(new NexusSchemaReference(org, domain, schema, version), queryId, null);
         query.getFilter().restrictToOrganizations(RestUtils.splitCommaSeparatedValues(restrictToOrganizations)).restrictToSingleId(instanceId);
+
         query.setTemplateId(templateId).setLibraryId(library).setReturnOriginalJson(includeOriginalJson);
         try {
             Map result = this.query.queryPropertyGraphByStoredSpecificationAndStoredTemplateWithId(query);

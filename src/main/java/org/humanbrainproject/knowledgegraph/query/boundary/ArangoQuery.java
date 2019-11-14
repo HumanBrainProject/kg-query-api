@@ -289,7 +289,7 @@ public class ArangoQuery {
         r.setApiName(queryResult.getApiName());
         r.setTotal(queryResult.getTotal());
         r.setSize(queryResult.getSize());
-        r.setStart(queryResult.getSize());
+        r.setStart(queryResult.getStart());
         return r;
     }
 
