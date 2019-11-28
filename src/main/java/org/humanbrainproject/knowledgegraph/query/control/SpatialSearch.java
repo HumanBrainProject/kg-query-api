@@ -30,7 +30,7 @@ public class SpatialSearch {
 
     private Map<BoundingBox, Set<ArangoDocumentReference>> cache = new HashMap<>();
 
-    public Set<ArangoDocumentReference> minimalBoundingBox(BoundingBox box) throws IOException, SolrServerException {
+    public Set<ArangoDocumentReference> minimalBoundingBox(BoundingBox box) throws IOException {
         if(cache.get(box)!=null){
             return cache.get(box);
         }

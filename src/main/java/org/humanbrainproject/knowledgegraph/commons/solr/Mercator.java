@@ -1,27 +1,28 @@
 package org.humanbrainproject.knowledgegraph.commons.solr;
 
 
-import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.response.Group;
-import org.apache.solr.client.solrj.response.QueryResponse;
+import com.google.gson.Gson;
 import org.humanbrainproject.knowledgegraph.annotations.ToBeTested;
 import org.humanbrainproject.knowledgegraph.query.entity.BoundingBox;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.*;
 
 @Component
 @ToBeTested(systemTestRequired = true)
 public class Mercator {
+
+    @Autowired
+    Gson gson;
 
     @Value("${org.humanbrainproject.knowledgegraph.mercator.base}")
     String mercatorBase;
@@ -41,16 +42,9 @@ public class Mercator {
 //    }
 
 
-    private SolrClient solr;
 
     protected Logger logger = LoggerFactory.getLogger(Solr.class);
 
-    private SolrClient getSolr() {
-        if (solr == null) {
-            solr = new HttpSolrClient.Builder(mercatorBase).build();
-        }
-        return solr;
-    }
 
 //    private void registerFieldType(String name, String clazz, String subFieldType, int dimension) throws IOException, SolrServerException {
 //        FieldTypeDefinition fieldTypeDefinition = new FieldTypeDefinition();
@@ -194,26 +188,34 @@ public class Mercator {
 
 
 
-    private QueryResponse query(SolrQuery query) throws IOException, SolrServerException {
-        return getSolr().query(mercatorCore, query);
+    private List<String> query(MercatorFilter filters) throws IOException {
+
+        RestTemplate template = new RestTemplate();
+        Map<String, Object> params = new HashMap<>();
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<String> entity = new HttpEntity<String>(gson.toJson(filters), headers);
+        List<String> o = Arrays.asList(template.postForEntity(mercatorBase + "/spatial-search/cores/10k/spatial_objects", entity, String[].class, params).getBody());
+        return o;
     }
 
-    public List<String> queryIdsOfMinimalBoundingBox(BoundingBox boundingBox) throws IOException, SolrServerException {
-        SolrQuery query = new SolrQuery("*:*");
-        String coordinateQuery = String.format("c:[\"%s\" TO \"%s\"]", boundingBox.getFrom(), boundingBox.getTo());
-        String referenceSpaceQuery = String.format("r:\"%s\"", boundingBox.getReferenceSpace());
-        query.setFilterQueries(coordinateQuery, referenceSpaceQuery);
-        query.setFields("aid");
-        query.setRows(0);
-        QueryResponse response = query(query);
-        long matches = response.getResults().getNumFound();
-        if (matches == 0) {
-            return Collections.emptyList();
-        }
-        query.setRows(Long.valueOf(matches).intValue());
-        query.setParam("group", true);
-        query.setParam("group.field", "aid");
-        return query(query).getGroupResponse().getValues().get(0).getValues().stream().map(Group::getGroupValue).collect(Collectors.toList());
+    public  List<String> queryIdsOfMinimalBoundingBox(BoundingBox boundingBox) throws IOException {
+        List<List<Double>> viewPort = new ArrayList<>();
+        List<Double> from = new ArrayList<>();
+        from.add(boundingBox.getFrom().getX());
+        from.add(boundingBox.getFrom().getY());
+        from.add(boundingBox.getFrom().getZ());
+        List<Double> to = new ArrayList<>();
+        to.add(boundingBox.getTo().getX());
+        to.add(boundingBox.getTo().getY());
+        to.add(boundingBox.getTo().getZ());
+        viewPort.add(from);
+        viewPort.add(to);
+        MercatorFilter filter = new MercatorFilter();
+//        filter.setReferenceSpace(boundingBox.getReferenceSpace());
+
+        filter.setViewPort(viewPort);
+        return query(filter);
     }
 
 }
