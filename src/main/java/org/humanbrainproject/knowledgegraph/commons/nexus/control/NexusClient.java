@@ -120,7 +120,7 @@ public class NexusClient {
         } catch (HttpClientErrorException e) {
             if (e.getStatusCode() == HttpStatus.CONFLICT) {
                 logger.info("Was not able to remove the instance {} due to a conflict. It seems as it is already deprecated", url.getUrl());
-                return false;
+                return true;
             }
             else{
                 logger.error("Was not able to delete the instance", e);
