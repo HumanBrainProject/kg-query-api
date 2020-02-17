@@ -19,12 +19,14 @@ public class NexusInstanceReference {
 
     protected static Logger logger = LoggerFactory.getLogger(NexusInstanceReference.class);
 
-
-
     public static NexusInstanceReference createFromUrl(String url) {
         NexusSchemaReference schema = NexusSchemaReference.createFromUrl(url);
         if (schema != null) {
-            String id = url.substring(url.indexOf(schema.getRelativeUrl().getUrl()) + schema.getRelativeUrl().getUrl().length()+1);
+            int index = url.indexOf(schema.getRelativeUrl().getUrl()) + schema.getRelativeUrl().getUrl().length();
+            if(url.length()<=index) {
+                return null;
+            }
+            String id = url.substring(index+1);
             UriComponents uri = UriComponentsBuilder.fromUriString(id).build();
             NexusInstanceReference reference = new NexusInstanceReference(schema, uri.getPath());
             if(uri.getQueryParams().containsKey("rev")){
