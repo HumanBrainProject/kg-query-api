@@ -1,5 +1,6 @@
 package org.humanbrainproject.knowledgegraph.commons.logging;
 
+import javax.xml.bind.DatatypeConverter;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
@@ -14,7 +15,7 @@ public class LoggingUtils {
             if(md != null){
                 md.update(userId.getBytes());
                 byte[] digest = md.digest();
-                userHashedId = new String(digest).toUpperCase();
+                userHashedId = DatatypeConverter.printHexBinary(digest).toUpperCase();
             }
         }
         return userHashedId;
