@@ -11,7 +11,7 @@ import java.util.Map;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class QueryResult<T> {
 
-    private ExposedDatabaseScope databaseScope;
+    private String databaseScope;
     private String importantMessage;
     private String apiName;
     private T results;
@@ -67,11 +67,11 @@ public class QueryResult<T> {
         this.start = start;
     }
 
-    public ExposedDatabaseScope getDatabaseScope() {
+    public String getDatabaseScope() {
         return databaseScope;
     }
 
-    public void setDatabaseScope(ExposedDatabaseScope databaseScope) {
+    public void setDatabaseScope(String databaseScope) {
         this.databaseScope = databaseScope;
     }
 

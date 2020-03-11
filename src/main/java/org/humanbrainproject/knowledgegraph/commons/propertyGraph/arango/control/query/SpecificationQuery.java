@@ -65,14 +65,7 @@ public class SpecificationQuery {
 
     public QueryResult<List<Map>> query(String aqlQuery, String apiName, Pagination pagination, Map<String, Object> bindParameters){
         QueryResult<List<Map>> result = new QueryResult<>();
-        switch(queryContext.getDatabaseScope()){
-            case INFERRED:
-                result.setDatabaseScope(ExposedDatabaseScope.INFERRED);
-                break;
-            case RELEASED:
-                result.setDatabaseScope(ExposedDatabaseScope.RELEASED);
-                break;
-        }
+        result.setDatabaseScope(queryContext.getDatabaseScope().name());
         result.setApiName(apiName);
         if(pagination!=null) {
             result.setStart((long) pagination.getStart());
