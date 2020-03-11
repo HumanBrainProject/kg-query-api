@@ -11,6 +11,7 @@ import java.util.Map;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class QueryResult<T> {
 
+    private ExposedDatabaseScope databaseScope;
     private String importantMessage;
     private String apiName;
     private T results;
@@ -64,6 +65,14 @@ public class QueryResult<T> {
 
     public void setStart(Long start) {
         this.start = start;
+    }
+
+    public ExposedDatabaseScope getDatabaseScope() {
+        return databaseScope;
+    }
+
+    public void setDatabaseScope(ExposedDatabaseScope databaseScope) {
+        this.databaseScope = databaseScope;
     }
 
     public static QueryResult<List<Map>> createSingleton(String apiName, Map map){
