@@ -7,6 +7,7 @@ import org.humanbrainproject.knowledgegraph.query.entity.fieldFilter.ExampleValu
 public class ParameterConstants {
 
     public static final String TEMPLATE_ID = "templateId";
+    public static final String EDITOR_SPEFICATION_ID = "editorSpecId";
     public static final String QUERY_ID = "queryId";
     public static final String ORG = "org";
     public static final String DOMAIN = "domain";

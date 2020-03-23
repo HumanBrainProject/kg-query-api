@@ -9,6 +9,7 @@ import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.excepti
 import org.humanbrainproject.knowledgegraph.context.QueryContext;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
 import org.humanbrainproject.knowledgegraph.query.boundary.ArangoQuery;
+import org.humanbrainproject.knowledgegraph.query.boundary.EditorSpecifications;
 import org.humanbrainproject.knowledgegraph.query.boundary.Templating;
 import org.humanbrainproject.knowledgegraph.query.entity.Query;
 import org.humanbrainproject.knowledgegraph.query.entity.QueryResult;
@@ -49,6 +50,9 @@ public class QueryInternalAPI {
     @Autowired
     Templating templating;
 
+    @Autowired
+    EditorSpecifications editorSpecifications;
+
 
     @PutMapping(value = "/{"+ORG+"}/{"+ DOMAIN+"}/{"+SCHEMA+"}/{"+VERSION+"}/{"+QUERY_ID+"}/templates/{"+TEMPLATE_ID+"}")
     public ResponseEntity<Void> saveFreemarkerTemplate(@RequestBody String template, @PathVariable(ORG) String org, @PathVariable(DOMAIN) String domain, @PathVariable(SCHEMA) String schema, @PathVariable(VERSION) String version, @PathVariable(QUERY_ID) String queryId, @PathVariable(TEMPLATE_ID) String templateId, @RequestParam(value = "lib", required = false) String library, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization) {
@@ -62,6 +66,12 @@ public class QueryInternalAPI {
     public ResponseEntity<Void> saveFreemarkerLibrary(@RequestBody String library, @PathVariable(TEMPLATE_ID) String templateId, @PathVariable(LIBRARY) String libraryId, @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization) throws Exception {
         authorizationContext.populateAuthorizationContext(authorization);
         templating.saveLibrary(library, libraryId, templateId);
+        return null;
+    }
+
+    @PutMapping(value = "/editorSpecifications/{"+EDITOR_SPEFICATION_ID+ "}")
+    public ResponseEntity<Void> saveEditorSpecification(@RequestBody String specification, @PathVariable(EDITOR_SPEFICATION_ID) String editorSpecId) {
+        editorSpecifications.saveSpecification(specification, editorSpecId);
         return null;
     }
 
