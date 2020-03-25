@@ -41,6 +41,9 @@ public class QueryInternalAPI {
     AuthorizationContext authorizationContext;
 
     @Autowired
+    QueryContext queryContext;
+
+    @Autowired
     ArangoQuery query;
 
     @Autowired
@@ -70,7 +73,7 @@ public class QueryInternalAPI {
             QueryResult<List<Map>> result = this.query.queryPropertyGraphBySpecification(query, null);
             return ResponseEntity.ok(result);
         } catch (RootCollectionNotFoundException e) {
-            return ResponseEntity.ok(QueryResult.createEmptyResult());
+            return ResponseEntity.ok(QueryResult.createEmptyResult(queryContext.getDatabaseScope().name()));
         } catch (HttpClientErrorException e) {
             return ResponseEntity.status(e.getStatusCode()).build();
         } catch(HttpServerErrorException e){

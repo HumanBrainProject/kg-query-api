@@ -75,8 +75,9 @@ public class QueryResult<T> {
         this.databaseScope = databaseScope;
     }
 
-    public static QueryResult<List<Map>> createSingleton(String apiName, Map map){
+    public static QueryResult<List<Map>> createSingleton(String apiName, Map map, String databaseScope){
         QueryResult<List<Map>> result = new QueryResult<>();
+        result.setDatabaseScope(databaseScope);
         result.setApiName(apiName);
         result.setResults(Collections.singletonList(map));
         result.setStart(0L);
@@ -86,8 +87,9 @@ public class QueryResult<T> {
     }
 
 
-    public static QueryResult<List<Map>> createEmptyResult(){
+    public static QueryResult<List<Map>> createEmptyResult(String databaseScope){
         QueryResult<List<Map>> result = new QueryResult<>();
+        result.setDatabaseScope(databaseScope);
         result.setResults(Collections.emptyList());
         result.setStart(0L);
         result.setTotal(0L);

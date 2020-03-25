@@ -52,7 +52,7 @@ public class SpecificationController {
             }
         }
         fields.addToProperty(GraphQueryKeys.GRAPH_QUERY_SPECIFICATION.getFieldName(), specificationInfo);
-        return  QueryResult.createSingleton(spec.getName(), fields);
+        return QueryResult.createSingleton(spec.getName(), fields, queryContext.getDatabaseScope().name());
     }
 
     private JsonDocument buildMetaSpecification(List<SpecField> specFields) {

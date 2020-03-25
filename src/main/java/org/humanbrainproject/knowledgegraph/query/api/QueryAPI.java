@@ -91,7 +91,7 @@ public class QueryAPI {
         } catch (IllegalDatabaseScope e) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         } catch (RootCollectionNotFoundException e) {
-            return ResponseEntity.ok(QueryResult.createEmptyResult());
+            return ResponseEntity.ok(QueryResult.createEmptyResult(queryContext.getDatabaseScope().name()));
         } catch (HttpClientErrorException e) {
             return ResponseEntity.status(e.getStatusCode()).build();
         }
@@ -193,8 +193,8 @@ public class QueryAPI {
 
             StoredQuery query = new StoredQuery(new NexusSchemaReference(org, domain, schema, version), queryId, null);
             query.setTemplateId(templateId).setLibraryId(library).setReturnOriginalJson(includeOriginalJson);
-            QueryResult<Map> result = this.query.metaQueryPropertyGraphByStoredSpecificationAndFreemarkerTemplate(query);
 
+            QueryResult<Map> result = this.query.metaQueryPropertyGraphByStoredSpecificationAndFreemarkerTemplate(query);
             return ResponseEntity.ok(RestUtils.toJsonResultIfPossible(result));
         } catch (IllegalDatabaseScope e) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
@@ -315,7 +315,7 @@ public class QueryAPI {
         } catch (IllegalDatabaseScope e) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         } catch (RootCollectionNotFoundException e) {
-            return ResponseEntity.ok(QueryResult.createEmptyResult());
+            return ResponseEntity.ok(QueryResult.createEmptyResult(queryContext.getDatabaseScope().name()));
         } catch (HttpClientErrorException e) {
             return ResponseEntity.status(e.getStatusCode()).build();
         }
@@ -414,7 +414,7 @@ public class QueryAPI {
         } catch (StoredQueryNotFoundException e) {
             return ResponseEntity.notFound().build();
         } catch (RootCollectionNotFoundException e) {
-            return ResponseEntity.ok(QueryResult.createEmptyResult());
+            return ResponseEntity.ok(QueryResult.createEmptyResult(queryContext.getDatabaseScope().name()));
         } catch (HttpClientErrorException e) {
             return ResponseEntity.status(e.getStatusCode()).build();
         }

@@ -20,6 +20,7 @@ import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.excepti
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.ArangoVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.SchemaOrgVocabulary;
+import org.humanbrainproject.knowledgegraph.context.QueryContext;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
 import org.humanbrainproject.knowledgegraph.query.control.FreemarkerTemplating;
@@ -42,6 +43,9 @@ import java.util.stream.Collectors;
 public class ArangoQuery {
 
     public static final ArangoCollectionReference SPECIFICATION_QUERIES = new ArangoCollectionReference("specification_queries");
+
+    @Autowired
+    QueryContext queryContext;
 
     @Autowired
     ArangoDatabaseFactory databaseFactory;
@@ -285,6 +289,7 @@ public class ArangoQuery {
         else{
             r = new QueryResult<>();
         }
+        r.setDatabaseScope(queryContext.getDatabaseScope().name());
         r.setResults(result);
         r.setApiName(queryResult.getApiName());
         r.setTotal(queryResult.getTotal());

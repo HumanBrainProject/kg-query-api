@@ -178,7 +178,7 @@ public class InstancesInternalAPI {
 
             NexusSchemaReference schemaReference = new NexusSchemaReference(org, domain, schema, version);
             QueryResult<List<Map>> instances = this.instances.getInstances(schemaReference, searchTerm, new Pagination().setSize(size).setStart(start));
-            return instances != null ? ResponseEntity.ok(instances) : ResponseEntity.ok(QueryResult.createEmptyResult());
+            return instances != null ? ResponseEntity.ok(instances) : ResponseEntity.ok(QueryResult.createEmptyResult(queryContext.getDatabaseScope().name()));
         } catch (HttpClientErrorException e) {
             return ResponseEntity.status(e.getStatusCode()).build();
         }
@@ -211,7 +211,7 @@ public class InstancesInternalAPI {
                         //This means we can delete the original instance as it is not released
                         queryContext.setDatabaseScope(DatabaseScope.NATIVE);
                         if(this.instances.removeInstance(originalId)){
-                            return  ResponseEntity.ok(QueryResult.createEmptyResult());
+                            return  ResponseEntity.ok(QueryResult.createEmptyResult(queryContext.getDatabaseScope().name()));
                         }
                     }else{
                         List<String> ids = linksReleased.stream().map(l -> (String)((Map)l.get("doc")).get(HBPVocabulary.RELATIVE_URL_OF_INTERNAL_LINK)).collect(Collectors.toList());
