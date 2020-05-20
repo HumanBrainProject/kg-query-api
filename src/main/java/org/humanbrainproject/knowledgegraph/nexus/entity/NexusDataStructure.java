@@ -23,7 +23,7 @@ import java.util.*;
 
 public class NexusDataStructure {
 
-    private List<String> toDelete = new ArrayList<>();
+    private Set<String> toDelete = new HashSet<>();
     private Map<NexusSchemaReference, List<File>> toCreate = new HashMap<>();
     private Map<String, File> toUpdate = new HashMap<>();
     private Map<NexusSchemaReference, File> schemasConcerned = new HashMap<>();
@@ -31,7 +31,7 @@ public class NexusDataStructure {
 
     public NexusDataStructure(){ }
 
-    public List<String> getToDelete() {
+    public Set<String> getToDelete() {
         return toDelete;
     }
 

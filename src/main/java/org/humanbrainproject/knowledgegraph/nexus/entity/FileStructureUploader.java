@@ -20,6 +20,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.humanbrainproject.knowledgegraph.commons.authorization.entity.Credential;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusClient;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
+import org.humanbrainproject.knowledgegraph.commons.vocabulary.NexusVocabulary;
+import org.humanbrainproject.knowledgegraph.commons.vocabulary.SchemaOrgVocabulary;
+import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusRelativeUrl;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
 import org.humanbrainproject.knowledgegraph.instances.control.ContextController;
@@ -31,9 +34,9 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
-class ErrorsAndSuccess<T> {
-    T errors;
-    int success = 0;
+class ErrorsAndSuccess<ErrorType, SuccessType> {
+    ErrorType errors;
+    SuccessType success;
 }
 
 public class FileStructureUploader {
@@ -107,13 +110,13 @@ public class FileStructureUploader {
     }
 
     @FunctionalInterface
-    public interface CheckedFunction<T, R> {
-        R apply(T t, ErrorsAndSuccess<T> f);
+    public interface CheckedFunction<T, R, E> {
+        E apply(T t, ErrorsAndSuccess<T, R> f);
     }
 
-    protected <T> ErrorsAndSuccess<T> withRetry(Integer tries, T listToExecute, CheckedFunction<T, ErrorsAndSuccess<T>> execute, boolean hasRetryDelay) throws InterruptedException{
+    protected <T, R> ErrorsAndSuccess<T, R> withRetry(Integer tries, T listToExecute, CheckedFunction<T, R, ErrorsAndSuccess<T, R>> execute, boolean hasRetryDelay) throws InterruptedException{
         boolean shouldContinue = true;
-        ErrorsAndSuccess<T> errors = new ErrorsAndSuccess<>();
+        ErrorsAndSuccess<T, R> errors = new ErrorsAndSuccess<>();
         while(tries < this.MAX_TRIES && shouldContinue) {
             errors = execute.apply(listToExecute, errors);
             if(errors.errors == null){
@@ -130,13 +133,16 @@ public class FileStructureUploader {
         return errors;
     }
 
-    protected final ErrorsAndSuccess<List<String>> executeDelete(List<String> toDelete,  ErrorsAndSuccess<List<String>> errorsAndSuccess ){
-        errorsAndSuccess.errors = new ArrayList<>();
+    protected final ErrorsAndSuccess<Set<String>, Set<NexusRelativeUrl>> executeDelete(Set<String> toDelete,  ErrorsAndSuccess<Set<String>, Set<NexusRelativeUrl>> errorsAndSuccess ){
+        errorsAndSuccess.errors = new HashSet<>();
+        if( errorsAndSuccess.success == null){
+            errorsAndSuccess.success = new HashSet<>();
+        }
         for(String s: toDelete){
             boolean result = false;
+            NexusRelativeUrl url = new NexusRelativeUrl(NexusConfiguration.ResourceType.DATA, s);
             if(!this.status.isSimulation()){
                 try {
-                    NexusRelativeUrl url = new NexusRelativeUrl(NexusConfiguration.ResourceType.DATA, s);
                     JsonDocument doc = this.nexusClient.get(url, this.credential);
                     Integer rev = doc.getNexusRevision();
                     result = this.nexusClient.delete(url, rev,this.credential);
@@ -148,11 +154,11 @@ public class FileStructureUploader {
                 result = true;
             }
             if(!result){
-                errorsAndSuccess.errors.add(s);
+                errorsAndSuccess.errors.add(url.toString());
             }else{
-                errorsAndSuccess.success += 1;
+                errorsAndSuccess.success.add(url);
             }
-            this.status.setCurrentToDelete(errorsAndSuccess.success, errorsAndSuccess.errors.size());
+            this.status.setCurrentToDelete(errorsAndSuccess);
         }
         if(errorsAndSuccess.errors.isEmpty()){
             errorsAndSuccess.errors = null;
@@ -160,17 +166,23 @@ public class FileStructureUploader {
         return errorsAndSuccess;
     }
 
-    protected final ErrorsAndSuccess<Map<String, File>> executeUpdate(Map <String, File> toUpdate, ErrorsAndSuccess<Map<String,File>> errorsAndSuccess) {
+    protected final ErrorsAndSuccess<Map<String, File>, Map<NexusRelativeUrl, Map<String, Object>>> executeUpdate(Map <String, File> toUpdate, ErrorsAndSuccess<Map<String,File>,  Map<NexusRelativeUrl, Map<String, Object>>> errorsAndSuccess) {
         errorsAndSuccess.errors = new HashMap<>();
+        if( errorsAndSuccess.success == null) {
+            errorsAndSuccess.success = new HashMap<>();
+        }
         for(Map.Entry<String, File> el: toUpdate.entrySet()){
             JsonDocument res = null;
+            NexusRelativeUrl url = new NexusRelativeUrl(NexusConfiguration.ResourceType.DATA, el.getKey());
+            HashMap<String, Object> successInfo = new HashMap<>();
             if(!this.status.isSimulation()){
                 try{
-                    NexusRelativeUrl url = new NexusRelativeUrl(NexusConfiguration.ResourceType.DATA, el.getKey());
                     JsonDocument doc = this.nexusClient.get(url, this.credential);
                     Integer rev = doc.getNexusRevision();
                     Map<String, Object> json = this.mapper.readValue(el.getValue(), Map.class);
                     res = this.nexusClient.put(url, rev, json, this.credential);
+                    successInfo.put(SchemaOrgVocabulary.IDENTIFIER, doc.getPrimaryIdentifier());
+                    successInfo.put(NexusVocabulary.REVISION_ALIAS, doc.getNexusRevision());
                 } catch (Exception e){
                     res = null;
                 }
@@ -180,9 +192,9 @@ public class FileStructureUploader {
             if(res == null){
                 errorsAndSuccess.errors.put(el.getKey(), el.getValue());
             }else{
-                errorsAndSuccess.success += 1;
+                errorsAndSuccess.success.put(url, successInfo);
             }
-            this.status.setCurrentToUpdate(errorsAndSuccess.success, errorsAndSuccess.errors.size());
+            this.status.setCurrentToUpdate(errorsAndSuccess);
         }
         if(errorsAndSuccess.errors.isEmpty()){
             errorsAndSuccess.errors = null;
@@ -190,17 +202,23 @@ public class FileStructureUploader {
         return errorsAndSuccess;
     }
 
-    protected final ErrorsAndSuccess<Map<NexusSchemaReference, List<File>>> executeCreate(Map<NexusSchemaReference, List<File>> toCreate, ErrorsAndSuccess< Map<NexusSchemaReference, List<File>>> errorsAndSuccess){
+    protected final ErrorsAndSuccess<Map<NexusSchemaReference, List<File>>, Map<NexusRelativeUrl, Map<String, Object>>> executeCreate(Map<NexusSchemaReference, List<File>> toCreate, ErrorsAndSuccess< Map<NexusSchemaReference, List<File>>,  Map<NexusRelativeUrl, Map<String, Object>>> errorsAndSuccess){
         errorsAndSuccess.errors = new HashMap<>();
+        if( errorsAndSuccess.success == null){
+            errorsAndSuccess.success = new HashMap<>();
+        }
         for(Map.Entry<NexusSchemaReference, List<File>> el: toCreate.entrySet()) {
             List<File> fileErrors = new ArrayList<>();
             for (File f : el.getValue()) {
                 JsonDocument res = null;
+                NexusRelativeUrl url = new NexusRelativeUrl(NexusConfiguration.ResourceType.DATA, el.getKey().toString());
+                HashMap<String, Object> successInfo = new HashMap<>();
                 if(!this.status.isSimulation()) {
                     try{
-                        NexusRelativeUrl url = new NexusRelativeUrl(NexusConfiguration.ResourceType.DATA, el.getKey().toString());
                         Map<String, Object> json = this.mapper.readValue(f, Map.class);
                         res = this.nexusClient.post(url, null, json, this.credential);
+                        successInfo.put(SchemaOrgVocabulary.IDENTIFIER, res.getPrimaryIdentifier());
+                        successInfo.put(NexusVocabulary.REVISION_ALIAS, res.getNexusRevision());
                     } catch (Exception e){
                         res = null;
                     }
@@ -210,9 +228,9 @@ public class FileStructureUploader {
                 if (res == null) {
                     fileErrors.add(f);
                 } else {
-                    errorsAndSuccess.success += 1;
+                    errorsAndSuccess.success.put(url, successInfo);
                 }
-                this.status.setCurrentToCreate( errorsAndSuccess.success,  errorsAndSuccess.errors.size());
+                this.status.setCurrentToCreate(errorsAndSuccess);
             }
             if (!fileErrors.isEmpty()) {
                 errorsAndSuccess.errors.put(el.getKey(), fileErrors);
@@ -224,8 +242,11 @@ public class FileStructureUploader {
         return errorsAndSuccess;
     }
 
-    protected final ErrorsAndSuccess<Map<NexusSchemaReference,File>> executeSchemaCreate(Map<NexusSchemaReference, File> schemasToCreate, ErrorsAndSuccess<Map<NexusSchemaReference,File>> errorsAndSuccess) {
+    protected final ErrorsAndSuccess<Map<NexusSchemaReference,File>, Integer> executeSchemaCreate(Map<NexusSchemaReference, File> schemasToCreate, ErrorsAndSuccess<Map<NexusSchemaReference,File>, Integer> errorsAndSuccess) {
         errorsAndSuccess.errors = new HashMap<>();
+        if( errorsAndSuccess.success == null){
+            errorsAndSuccess.success = 0;
+        }
         for(Map.Entry<NexusSchemaReference, File> s: schemasToCreate.entrySet()){
             try{
                 if(!this.status.isSimulation()) {
@@ -241,7 +262,7 @@ public class FileStructureUploader {
                 errorsAndSuccess.errors.put(s.getKey(), s.getValue());
             }
         }
-        this.status.setSchemasProcessed(errorsAndSuccess.success, errorsAndSuccess.errors.size());
+        this.status.setSchemasProcessed(errorsAndSuccess);
         if(errorsAndSuccess.errors.isEmpty()) {
             errorsAndSuccess.errors = null;
         }
@@ -249,9 +270,12 @@ public class FileStructureUploader {
 
     }
 
-    protected final  ErrorsAndSuccess<Map<NexusSchemaReference,File>> executeContextCreate(Map<NexusSchemaReference, File> contextToCreate,  ErrorsAndSuccess<Map<NexusSchemaReference,File>> errorsAndSuccess)
+    protected final  ErrorsAndSuccess<Map<NexusSchemaReference,File>, Integer> executeContextCreate(Map<NexusSchemaReference, File> contextToCreate,  ErrorsAndSuccess<Map<NexusSchemaReference,File>, Integer> errorsAndSuccess)
     {
         errorsAndSuccess.errors = new HashMap<>();
+        if( errorsAndSuccess.success == null){
+            errorsAndSuccess.success = 0;
+        }
         for(Map.Entry<NexusSchemaReference, File> contextEntry: contextToCreate.entrySet()){
             try{
                 Map<String, Object> json = this.mapper.readValue(contextEntry.getValue(), Map.class);
@@ -262,7 +286,7 @@ public class FileStructureUploader {
             }catch (Exception e){
                 errorsAndSuccess.errors.put(contextEntry.getKey(), contextEntry.getValue());
             }
-            this.status.setContextsProcessed(errorsAndSuccess.success, errorsAndSuccess.errors.size());
+            this.status.setContextsProcessed(errorsAndSuccess);
         }
         if(errorsAndSuccess.errors.isEmpty()){
             errorsAndSuccess.errors = null;

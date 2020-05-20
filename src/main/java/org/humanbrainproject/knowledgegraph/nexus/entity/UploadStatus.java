@@ -17,10 +17,22 @@
 package org.humanbrainproject.knowledgegraph.nexus.entity;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusRelativeUrl;
+import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
 
+import java.io.File;
 import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public class UploadStatus {
+    private ErrorsAndSuccess<Map<NexusSchemaReference, List<File>>, Map<NexusRelativeUrl, Map<String, Object>>> errorsAndSuccessOnCreation;
+    private ErrorsAndSuccess<Map<String, File>, Map<NexusRelativeUrl, Map<String, Object>>> errorsAndSuccessOnUpdate;
+    private ErrorsAndSuccess<Set<String>, Set<NexusRelativeUrl>> errorsAndSuccessOnDelete;
+    private ErrorsAndSuccess<Map<NexusSchemaReference, File>, Integer> errorsAndSuccessOnSchemaProcessing;
+    private ErrorsAndSuccess<Map<NexusSchemaReference, File>, Integer> errorsAndSuccessOnContextProcessing;
+
     public Status getStatus() {
         return status;
     }
@@ -37,28 +49,28 @@ public class UploadStatus {
         return numberToUpdate;
     }
 
-    public int getFailedToUpdated() {
-        return failedToUpdate;
+    public Set<String> getFailedToUpdated() {
+        return errorsAndSuccessOnUpdate.errors.keySet();
     }
 
-    public int getSuccefullyDeleted() {
-        return succefullyDeleted;
+    public Set<NexusRelativeUrl> getSuccefullyDeleted() {
+        return errorsAndSuccessOnDelete.success;
     }
 
-    public int getSuccefullyCreated() {
-        return succefullyCreated;
+    public  Map<NexusRelativeUrl, Map<String, Object>> getSuccefullyCreated() {
+        return errorsAndSuccessOnCreation.success;
     }
 
-    public int getSuccefullyUpdated() {
-        return succefullyUpdated;
+    public Map<NexusRelativeUrl, Map<String, Object>> getSuccefullyUpdated() {
+        return errorsAndSuccessOnUpdate.success;
     }
 
-    public int getFailedToDeleted() {
-        return failedToDelete;
+    public Set<String> getFailedToDeleted() {
+        return errorsAndSuccessOnDelete.errors;
     }
 
-    public int getFailedToCreated() {
-        return failedToCreate;
+    public Set<NexusSchemaReference> getFailedToCreate() {
+        return errorsAndSuccessOnCreation.errors.keySet();
     }
 
     public boolean isSimulation() {
@@ -77,20 +89,20 @@ public class UploadStatus {
         this.finishedAt = new Date();
     }
 
-    public int getSchemasFailedToProccess() {
-        return schemasFailedToProccess;
+    public Set<NexusSchemaReference> getSchemasFailedToProccess() {
+        return errorsAndSuccessOnSchemaProcessing.errors.keySet();
     }
 
-    public int getContextFailedToProcess() {
-        return contextFailedToProcess;
+    public Set<NexusSchemaReference> getContextFailedToProcess() {
+        return errorsAndSuccessOnContextProcessing.errors.keySet();
     }
 
     public int getSchemasSuccefullyProccessed() {
-        return schemasSuccefullyProccessed;
+        return errorsAndSuccessOnSchemaProcessing.success;
     }
 
     public int getContextSuccefullyProcessed() {
-        return contextSuccefullyProcessed;
+        return errorsAndSuccessOnContextProcessing.success;
     }
 
     public int getSchemaFilesFound() {
@@ -118,18 +130,6 @@ public class UploadStatus {
     private int schemaFilesFound = 0;
     private int contextFilesFound = 0;
 
-    private int succefullyDeleted = 0;
-    private int succefullyCreated = 0;
-    private int succefullyUpdated = 0;
-    private int schemasSuccefullyProccessed = 0;
-    private int contextSuccefullyProcessed = 0;
-
-    private int failedToDelete = 0;
-    private int failedToCreate = 0;
-    private int failedToUpdate = 0;
-    private int schemasFailedToProccess = 0;
-    private int contextFailedToProcess = 0;
-
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern="yyyy-MM-dd@HH:mm:ss")
     private Date startedAt = null;
 
@@ -152,28 +152,23 @@ public class UploadStatus {
         this.startedAt = new Date();
     }
 
-    public void setCurrentToDelete(int succefullyDeleted, int failedToDeleted){
-        this.succefullyDeleted = succefullyDeleted;
-        this.failedToDelete = failedToDeleted;
+    public void setCurrentToDelete(ErrorsAndSuccess<Set<String>, Set<NexusRelativeUrl>> errorsAndSuccessOnDelete){
+        this.errorsAndSuccessOnDelete = errorsAndSuccessOnDelete;
     }
 
-    public void setCurrentToCreate(int succefullyCreated, int failedToCreate){
-        this.succefullyCreated = succefullyCreated;
-        this.failedToCreate = failedToCreate;
+    public void setCurrentToCreate(ErrorsAndSuccess<Map<NexusSchemaReference, List<File>>, Map<NexusRelativeUrl, Map<String, Object>>> errorsAndSuccessOnCreation){
+        this.errorsAndSuccessOnCreation = errorsAndSuccessOnCreation;
     }
 
-    public void setCurrentToUpdate(int succefullyUpdated, int failedToUpdate){
-        this.succefullyUpdated = succefullyUpdated;
-        this.failedToUpdate= failedToUpdate;
+    public void setCurrentToUpdate(ErrorsAndSuccess<Map<String, File>, Map<NexusRelativeUrl, Map<String, Object>>> errorsAndSuccessOnUpdate){
+        this.errorsAndSuccessOnUpdate = errorsAndSuccessOnUpdate;
     }
 
-    public void setSchemasProcessed(int schemasSuccefullyProccessed, int schemasFailedToProccess){
-        this.schemasSuccefullyProccessed = schemasSuccefullyProccessed;
-        this.schemasFailedToProccess= schemasFailedToProccess;
+    public void setSchemasProcessed(ErrorsAndSuccess<Map<NexusSchemaReference,File>, Integer> errorsAndSuccessOnSchemaProcessing){
+        this.errorsAndSuccessOnSchemaProcessing = errorsAndSuccessOnSchemaProcessing;
     }
-    public void setContextsProcessed(int contextSuccefullyProcessed, int contextFailedToProcess){
-        this.contextSuccefullyProcessed = contextSuccefullyProcessed;
-        this.contextFailedToProcess = contextFailedToProcess;
+    public void setContextsProcessed(ErrorsAndSuccess<Map<NexusSchemaReference,File>, Integer> errorsAndSuccessOnContextProcessing){
+        this.errorsAndSuccessOnContextProcessing = errorsAndSuccessOnContextProcessing;
     }
 
     public void setStatus(Status newStatus){
