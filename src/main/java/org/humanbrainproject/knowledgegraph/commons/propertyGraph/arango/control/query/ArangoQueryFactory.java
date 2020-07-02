@@ -456,10 +456,12 @@ public class ArangoQueryFactory {
         }
 
         query.addLine(trust("LET schemas = [${schemas}]"));
+        query.addLine(trust("LET uniqueIds = (FOR r in relationsPriorized RETURN DISTINCT r.id)"));
 
         query.addLine(trust("LET fromSchemas = FLATTEN(FOR schema IN schemas"));
         query.addLine(trust("LET schemaInstance = (FOR i IN schema"));
         query.addDocumentFilter(trust("i"));
+        query.addLine(trust("FILTER i.`https://schema.hbp.eu/relativeUrl` NOT IN uniqueIds"));
         query.add(trust("LET name = FIRST(UNION(TO_ARRAY(i.`"+SchemaOrgVocabulary.NAME+"`), TO_ARRAY(i.`http://www.w3.org/2000/01/rdf-schema#label`), TO_ARRAY(i.`http://schema.org/familyName`)))"));
 
         if (searchTerm != null) {
