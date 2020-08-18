@@ -27,7 +27,6 @@ import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusClient;
 import org.humanbrainproject.knowledgegraph.commons.nexus.control.NexusConfiguration;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.control.ArangoNativeRepository;
 import org.humanbrainproject.knowledgegraph.commons.propertyGraph.arango.entity.ArangoDocumentReference;
-import org.humanbrainproject.knowledgegraph.commons.propertyGraph.entity.Vertex;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.HBPVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.NexusVocabulary;
 import org.humanbrainproject.knowledgegraph.commons.vocabulary.SchemaOrgVocabulary;
@@ -183,22 +182,27 @@ public class InstanceManipulationController {
         return createInstanceByNexusId(nexusSchemaReference, id, revision, payload, userId, new InternalMasterKey());
     }
 
+    private boolean isValidFieldUpdateKey(String property){
+        return property != null && !property.startsWith("@") && !property.startsWith(HBPVocabulary.PROVENANCE) && !property.startsWith(HBPVocabulary.INFERENCE_TYPE.toLowerCase());
+    }
+
     private void evaluateFieldUpdateTime(Map previousInstance, Map<String, Object> newInstance, String nowInISO){
         Map<String, String> fieldUpdateTimes;
         if(previousInstance == null){
             fieldUpdateTimes = new HashMap<>();
-            newInstance.keySet().forEach(k ->fieldUpdateTimes.put(k, nowInISO));
+            newInstance.keySet().stream().filter(this::isValidFieldUpdateKey).forEach(k ->fieldUpdateTimes.put(k, nowInISO));
         }
         else{
             fieldUpdateTimes = (Map<String, String>) previousInstance.getOrDefault(HBPVocabulary.PROVENANCE_FIELD_UPDATES, new HashMap<>());
             for (String key : newInstance.keySet()) {
-                if(!previousInstance.containsKey(key)){
-                    fieldUpdateTimes.put(key, nowInISO);
-                }
-                else{
-                    Object previousValue = previousInstance.get(key);
-                    if(previousValue == null || !previousValue.equals(newInstance.get(key))){
+                if(isValidFieldUpdateKey(key)) {
+                    if (!previousInstance.containsKey(key)) {
                         fieldUpdateTimes.put(key, nowInISO);
+                    } else {
+                        Object previousValue = previousInstance.get(key);
+                        if (previousValue == null || !previousValue.equals(newInstance.get(key))) {
+                            fieldUpdateTimes.put(key, nowInISO);
+                        }
                     }
                 }
             }
