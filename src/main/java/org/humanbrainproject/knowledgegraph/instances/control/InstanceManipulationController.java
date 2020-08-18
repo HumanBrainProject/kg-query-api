@@ -194,6 +194,7 @@ public class InstanceManipulationController {
         }
         else{
             fieldUpdateTimes = (Map<String, String>) previousInstance.getOrDefault(HBPVocabulary.PROVENANCE_FIELD_UPDATES, new HashMap<>());
+            Object previousDocumentModification = previousInstance.get(HBPVocabulary.PROVENANCE_MODIFIED_AT);
             for (String key : newInstance.keySet()) {
                 if(isValidFieldUpdateKey(key)) {
                     if (!previousInstance.containsKey(key)) {
@@ -202,6 +203,9 @@ public class InstanceManipulationController {
                         Object previousValue = previousInstance.get(key);
                         if (previousValue == null || !previousValue.equals(newInstance.get(key))) {
                             fieldUpdateTimes.put(key, nowInISO);
+                        }
+                        else if (!fieldUpdateTimes.containsKey(key) && previousDocumentModification!=null){
+                            fieldUpdateTimes.put(key, previousDocumentModification.toString());
                         }
                     }
                 }
