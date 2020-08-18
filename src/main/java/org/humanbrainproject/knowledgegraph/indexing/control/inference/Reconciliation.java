@@ -152,7 +152,7 @@ public class Reconciliation implements InferenceStrategy, InitializingBean {
     private void removeInternalFieldsFromAlternatives(JsonDocument doc){
         Map<String, Alternative> alternatives = (Map) doc.get(HBPVocabulary.INFERENCE_ALTERNATIVES);
         if(alternatives != null){
-            alternatives.entrySet().stream().filter(k -> !k.getKey().startsWith("@") && !k.getKey().startsWith("_") && !k.getValue().getUserIds().isEmpty());
+            alternatives.entrySet().stream().filter(k -> !k.getKey().startsWith("@") && !k.getKey().startsWith("_") && !k.getKey().startsWith(HBPVocabulary.PROVENANCE) && !k.getValue().getUserIds().isEmpty());
             doc.put(HBPVocabulary.INFERENCE_ALTERNATIVES, alternatives);
         }
     }
