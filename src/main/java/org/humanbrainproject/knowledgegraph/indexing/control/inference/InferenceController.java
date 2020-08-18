@@ -42,7 +42,7 @@ import java.util.*;
 @ToBeTested
 public class InferenceController implements IndexingController {
 
-    private final static List<JsonPath> EDGE_BLACKLIST_FOR_INFERENCE = Arrays.asList(new JsonPath(HBPVocabulary.INFERENCE_OF), new JsonPath(HBPVocabulary.INFERENCE_EXTENDS));
+    private final static List<JsonPath> EDGE_BLACKLIST_FOR_INFERENCE = Arrays.asList(new JsonPath(HBPVocabulary.INFERENCE_OF), new JsonPath(HBPVocabulary.INFERENCE_EXTENDS), new JsonPath(HBPVocabulary.PROVENANCE_FIELD_UPDATES));
 
     @Autowired
     MessageProcessor messageProcessor;
