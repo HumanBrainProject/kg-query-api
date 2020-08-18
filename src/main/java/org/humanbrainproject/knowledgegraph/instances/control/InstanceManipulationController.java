@@ -48,9 +48,7 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Map;
+import java.util.*;
 
 @ToBeTested(integrationTestRequired = true)
 @Component
@@ -185,6 +183,28 @@ public class InstanceManipulationController {
         return createInstanceByNexusId(nexusSchemaReference, id, revision, payload, userId, new InternalMasterKey());
     }
 
+    private void evaluateFieldUpdateTime(Map previousInstance, Map<String, Object> newInstance, String nowInISO){
+        Map<String, String> fieldUpdateTimes;
+        if(previousInstance == null){
+            fieldUpdateTimes = new HashMap<>();
+            newInstance.keySet().forEach(k ->fieldUpdateTimes.put(k, nowInISO));
+        }
+        else{
+            fieldUpdateTimes = (Map<String, String>) previousInstance.getOrDefault(HBPVocabulary.PROVENANCE_FIELD_UPDATES, new HashMap<>());
+            for (String key : newInstance.keySet()) {
+                if(!previousInstance.containsKey(key)){
+                    fieldUpdateTimes.put(key, nowInISO);
+                }
+                else{
+                    Object previousValue = previousInstance.get(key);
+                    if(previousValue == null || !previousValue.equals(newInstance.get(key))){
+                        fieldUpdateTimes.put(key, nowInISO);
+                    }
+                }
+            }
+        }
+        newInstance.put(HBPVocabulary.PROVENANCE_FIELD_UPDATES, fieldUpdateTimes);
+    }
 
     private NexusInstanceReference createInstanceByNexusId(NexusSchemaReference nexusSchemaReference, String id, Integer revision, Map<String, Object> payload, String userId, Credential credential) {
         if(credential==null){
@@ -206,13 +226,14 @@ public class InstanceManipulationController {
         }
         NexusInstanceReference nexusInstanceReference = new NexusInstanceReference(nexusSchemaReference, id).setRevision(revision);
         NexusInstanceReference newInstanceReference = null;
-        payload.put(HBPVocabulary.PROVENANCE_MODIFIED_AT, ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_INSTANT));
+        String nowInISO = ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_INSTANT);
+        payload.put(HBPVocabulary.PROVENANCE_MODIFIED_AT, nowInISO);
         if(userId != null){
             payload.put(HBPVocabulary.PROVENANCE_LAST_MODIFICATION_USER_ID, userId);
         }
+        Map map = nexusClient.get(nexusInstanceReference.getRelativeUrl(), credential);
+        evaluateFieldUpdateTime(map, payload, nowInISO);
         if (revision == null || revision == 1) {
-            Map map = nexusClient.get(nexusInstanceReference.getRelativeUrl(), credential);
-
             if (map == null) {
                 Map post = nexusClient.post(new NexusRelativeUrl(NexusConfiguration.ResourceType.DATA, nexusInstanceReference.getNexusSchema().getRelativeUrl().getUrl()), null, payload, interceptor);
                 if (post != null && post.containsKey(JsonLdConsts.ID)) {

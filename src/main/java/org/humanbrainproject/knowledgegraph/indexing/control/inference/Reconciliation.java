@@ -178,7 +178,7 @@ public class Reconciliation implements InferenceStrategy, InitializingBean {
                     allAlts.put(valueByName, cleanIds);
                 }
 
-                if (overrides(vertex, originOfResult, result)) {
+                if (overrides(vertex, originOfResult, result, currentProperty)) {
                     result = valueByName;
                     originOfResult = vertex;
                 }
@@ -226,25 +226,33 @@ public class Reconciliation implements InferenceStrategy, InitializingBean {
         }
     }
 
-    private LocalDateTime getModifedAt(Vertex vertex) {
-        Object indexedAt = vertex.getQualifiedIndexingMessage().getQualifiedMap().get(HBPVocabulary.PROVENANCE_MODIFIED_AT);
-        if (indexedAt instanceof String) {
-            return LocalDateTime.parse((String) indexedAt, DateTimeFormatter.ISO_ZONED_DATE_TIME);
+    private LocalDateTime getModifiedAt(Vertex vertex, String property) {
+        Map qualifiedMap = vertex.getQualifiedIndexingMessage().getQualifiedMap();
+        Object fieldUpdates = qualifiedMap.get(HBPVocabulary.PROVENANCE_FIELD_UPDATES);
+        //Fallback logic since update times got introduced later, we have to check if it's there. If not, we fall back to the modification date of the underlying document.
+        if(fieldUpdates instanceof Map && ((Map)fieldUpdates).get(property) instanceof String){
+            return LocalDateTime.parse((String)((Map)fieldUpdates).get(property), DateTimeFormatter.ISO_ZONED_DATE_TIME);
+        }
+        else {
+            Object indexedAt = qualifiedMap.get(HBPVocabulary.PROVENANCE_MODIFIED_AT);
+            if (indexedAt instanceof String) {
+                return LocalDateTime.parse((String) indexedAt, DateTimeFormatter.ISO_ZONED_DATE_TIME);
+            }
         }
         return null;
     }
 
 
-    private boolean overrides(Vertex potentialOverride, Vertex currentVertex, Object currentValue) {
+    private boolean overrides(Vertex potentialOverride, Vertex currentVertex, Object currentValue, String property) {
         int i = compareVertexPower(potentialOverride, currentVertex);
         boolean overrides = currentValue == null;
         if (i > 0) {
             overrides = true;
         } else if (i == 0 && !overrides) {
-            LocalDateTime indexedAt = getModifedAt(potentialOverride);
+            LocalDateTime indexedAt = getModifiedAt(potentialOverride, property);
             if (currentVertex != null) {
                 if (indexedAt != null) {
-                    LocalDateTime originIndexedAt = getModifedAt(currentVertex);
+                    LocalDateTime originIndexedAt = getModifiedAt(currentVertex, property);
                     if (originIndexedAt == null || indexedAt.isAfter(originIndexedAt)) {
                         overrides = true;
                     }

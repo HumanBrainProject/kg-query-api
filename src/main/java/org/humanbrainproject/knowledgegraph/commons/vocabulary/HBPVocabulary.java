@@ -35,6 +35,7 @@ public class HBPVocabulary {
     // FOR PROVENANCE
     private static final String PROVENANCE = NAMESPACE+"provenance/";
     public static final String PROVENANCE_MODIFIED_AT = PROVENANCE + "modifiedAt";
+    public static final String PROVENANCE_FIELD_UPDATES = PROVENANCE + "fieldUpdates";
     public static final String PROVENANCE_CREATED_AT = PROVENANCE + "createdAt";
     public static final String PROVENANCE_LAST_MODIFICATION_USER_ID = PROVENANCE + "lastModificationUserId";
     public static final String PROVENANCE_REVISION = PROVENANCE + "revision";
