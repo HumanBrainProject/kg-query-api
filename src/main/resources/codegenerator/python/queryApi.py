@@ -33,8 +33,9 @@ class KGClient:
         url = "{}/{}/instances?databaseScope={}&size={}&start={}{}".format("RELEASED" if self.released else "INFERRED", root_schema, query_name, size if size is not None else "", start if start is not None else "", filter_parameters if filter_parameters is not None else "")
         return self.http_client.get(url)
 
-    def released():
+    def released(self):
         self.released = True
+        return self
 
     @staticmethod
     def _get_configuration():
