@@ -28,14 +28,14 @@ class KGClient:
 
     def __init__(self, auth_client: AbstractAuthClient, endpoint: str):
         self.http_client = HttpClient(endpoint, "", auth_client=auth_client)
-        self.released = False
+        self._released = False
 
     def query(self, root_schema, query_name, size, start, filter_parameters):
         url = "{}/{}/instances?databaseScope={}&size={}&start={}{}".format(root_schema, query_name, "RELEASED" if self.released else "INFERRED", size if size is not None else "", start if start is not None else "", filter_parameters if filter_parameters is not None else "")
         return self.http_client.get(url)
 
     def released(self):
-        self.released = True
+        self._released = True
         return self
 
     @staticmethod
