@@ -87,7 +87,7 @@ public class SystemOidcClient {
                 params.add(o.toString(), map.get(o).toString());
             }
         }
-        params.add("grant_type", "refresh_token");
+        params.add("grant_type", "client_credentials");
         HttpEntity<Map> request = new HttpEntity<>(params, headers);
         RestTemplate template = new RestTemplate();
         return template.postForObject(tokenUrl, request, String.class);
