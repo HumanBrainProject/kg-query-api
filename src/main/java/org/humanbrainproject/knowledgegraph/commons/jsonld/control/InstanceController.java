@@ -32,7 +32,7 @@ import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.AbsoluteNexusI
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusInstanceReference;
 import org.humanbrainproject.knowledgegraph.instances.control.InstanceManipulationController;
 import org.humanbrainproject.knowledgegraph.query.entity.JsonDocument;
-import org.humanbrainproject.knowledgegraph.users.entity.User;
+import org.humanbrainproject.knowledgegraph.users.entity.UserByName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,7 +54,7 @@ public abstract class InstanceController<T extends JsonLdObject> {
     InstanceManipulationController instanceManipulationController;
 
     public T findUniqueInstance(List<EqualsFilter> filters, JsonLdStructure<T> structure, boolean asSystemUser) {
-        List<Map> instances = inferredRepository.findInstancesBySchemaAndFilter(User.STRUCTURE.getNexusSchemaReference(), filters, asSystemUser);
+        List<Map> instances = inferredRepository.findInstancesBySchemaAndFilter(UserByName.STRUCTURE.getNexusSchemaReference(), filters, asSystemUser);
         if (instances != null && !instances.isEmpty()) {
             if (instances.size() > 1) {
                 logger.error(String.format("Found %d instances instead of a unique", instances.size()));

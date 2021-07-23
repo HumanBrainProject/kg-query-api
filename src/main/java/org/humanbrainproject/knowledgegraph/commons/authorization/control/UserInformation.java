@@ -38,6 +38,10 @@ public class UserInformation extends HashMap<String, Object> {
         return (String) get("sub");
     }
 
+    public String getUserName(){
+        return (String) get("preferred_username");
+    }
+
     public boolean hasCuratedPermission(){
         Object groups = get("groups");
         List<String> g = null;

@@ -36,7 +36,7 @@ import org.humanbrainproject.knowledgegraph.scopes.control.ScopeEvaluator;
 import org.humanbrainproject.knowledgegraph.scopes.entity.Invitation;
 import org.humanbrainproject.knowledgegraph.scopes.entity.InvitedUser;
 import org.humanbrainproject.knowledgegraph.users.control.UserController;
-import org.humanbrainproject.knowledgegraph.users.entity.User;
+import org.humanbrainproject.knowledgegraph.users.entity.UserByName;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -64,10 +64,10 @@ public class Scope {
 
 
     public Set<InvitedUser> getInvitedUsersForId(NexusInstanceReference instanceReference){
-        Set<User> invitedUsersByInstance = invitationController.getInvitedUsersByInstance(instanceReference);
+        Set<UserByName> invitedUsersByInstance = invitationController.getInvitedUsersByInstance(instanceReference);
         return invitedUsersByInstance.stream().map(u -> {
             InvitedUser invitedUser = new InvitedUser();
-            invitedUser.setUserId(u.getUserId());
+            invitedUser.setUserName(u.getUserName());
             return invitedUser;
         }).collect(Collectors.toSet());
     }
@@ -75,7 +75,7 @@ public class Scope {
     public Set<String> getIdWhitelistForUser(String query, Credential credential){
         if(credential instanceof OidcAccessToken) {
             UserInformation userInfo = oidcClient.getUserInfo((OidcAccessToken)credential);
-            User user = userController.findUniqueInstance(Collections.singletonList(new EqualsFilter(User.USER_ID_FIELD, userInfo.getUserId())), User.STRUCTURE, true);
+            UserByName user = userController.findUniqueInstance(Collections.singletonList(new EqualsFilter(UserByName.USER_NAME_FIELD, userInfo.getUserName())), UserByName.STRUCTURE, true);
             Set<NexusInstanceReference> invitations = user==null ? null : invitationController.getInvitations(user);
             if (invitations != null && !invitations.isEmpty()) {
                 return scopeEvaluator.getScope(invitations, query);
@@ -84,18 +84,18 @@ public class Scope {
         return Collections.emptySet();
     }
 
-    public void removeScopeFromUser(NexusInstanceReference instanceReference, String userId){
-        User user = userController.findUniqueInstance(Collections.singletonList(new EqualsFilter(User.USER_ID_FIELD, userId)), User.STRUCTURE, true);
+    public void removeScopeFromUser(NexusInstanceReference instanceReference, String userName){
+        UserByName user = userController.findUniqueInstance(Collections.singletonList(new EqualsFilter(UserByName.USER_NAME_FIELD, userName)), UserByName.STRUCTURE, true);
         if(user!=null) {
             invitationController.removeInvitation(new AbsoluteNexusInstanceReference(user.getInstanceReference(), configuration), new AbsoluteNexusInstanceReference(instanceReference, configuration));
         }
     }
 
-    public void addScopeToUser(NexusInstanceReference instanceReference, String userId){
-        User user = userController.findUniqueInstance(Collections.singletonList(new EqualsFilter(User.USER_ID_FIELD, userId)), User.STRUCTURE, true);
+    public void addScopeToUser(NexusInstanceReference instanceReference, String userName){
+        UserByName user = userController.findUniqueInstance(Collections.singletonList(new EqualsFilter(UserByName.USER_NAME_FIELD, userName)), UserByName.STRUCTURE, true);
         if(user==null){
             //Invited user does not yet exist.
-            user = userController.createInstance(new User(userId));
+            user = userController.createInstance(new UserByName(userName));
         }
         Set<NexusInstanceReference> invitations = invitationController.getInvitations(user);
         if(!invitations.contains(instanceReference)) {
