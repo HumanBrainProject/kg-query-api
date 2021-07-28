@@ -51,7 +51,7 @@ public class UserInformation extends HashMap<String, Object> {
         else if(groups instanceof String){
             g = Arrays.asList(((String) groups).split(","));
         }
-        return g!=null && g.contains("kg-curatedInstances");
+        return g!=null && g.contains("group-kg-curatedInstances");
     }
 
     public boolean hasReleasedPermission(){
@@ -63,7 +63,7 @@ public class UserInformation extends HashMap<String, Object> {
         else if(groups instanceof String){
             g = Arrays.asList(((String) groups).split(","));
         }
-        return g!=null && g.contains("kg-releasedInstances");
+        return g!=null && g.contains("group-kg-releasedInstances");
     }
 
 }
