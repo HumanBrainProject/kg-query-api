@@ -38,6 +38,10 @@ public class UserInformation extends HashMap<String, Object> {
         return (String) get("sub");
     }
 
+    public String getUserName(){
+        return (String) get("preferred_username");
+    }
+
     public boolean hasCuratedPermission(){
         Object groups = get("groups");
         List<String> g = null;
@@ -47,7 +51,7 @@ public class UserInformation extends HashMap<String, Object> {
         else if(groups instanceof String){
             g = Arrays.asList(((String) groups).split(","));
         }
-        return g!=null && g.contains("kg-curatedInstances");
+        return g!=null && g.contains("group-kg-curatedInstances");
     }
 
     public boolean hasReleasedPermission(){
@@ -59,7 +63,7 @@ public class UserInformation extends HashMap<String, Object> {
         else if(groups instanceof String){
             g = Arrays.asList(((String) groups).split(","));
         }
-        return g!=null && g.contains("kg-releasedInstances");
+        return g!=null && g.contains("group-kg-releasedInstances");
     }
 
 }

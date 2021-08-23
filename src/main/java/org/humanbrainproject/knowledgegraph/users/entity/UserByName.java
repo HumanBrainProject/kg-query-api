@@ -28,31 +28,29 @@ import org.humanbrainproject.knowledgegraph.commons.entity.JsonLdStructure;
 import org.humanbrainproject.knowledgegraph.indexing.entity.nexus.NexusSchemaReference;
 import org.humanbrainproject.knowledgegraph.query.entity.JsonDocument;
 
-import java.util.Map;
+public class UserByName extends JsonLdObject {
 
-public class User extends JsonLdObject {
+    public final static JsonLdStructure<UserByName> STRUCTURE = new JsonLdStructure(new NexusSchemaReference("hbpkg", "core", "user", "v0.0.1"), UserByName.class);
+    public final static String USER_NAME_FIELD = STRUCTURE.getFieldNameInNamespace("userName");
 
-    public final static JsonLdStructure<User> STRUCTURE = new JsonLdStructure(new NexusSchemaReference("hbpkg", "core", "user", "v0.0.1"), User.class);
-    public final static String USER_ID_FIELD = STRUCTURE.getFieldNameInNamespace("userId");
+    private final String userName;
 
-    private final String userId;
-
-    public User(String userId) {
+    public UserByName(String userName) {
         super(STRUCTURE);
-        this.userId = userId;
+        this.userName = userName;
     }
 
-    public User(JsonLdStructure jsonLdStructure, JsonDocument fromDB) {
+    public UserByName(JsonLdStructure jsonLdStructure, JsonDocument fromDB) {
         super(jsonLdStructure, fromDB);
-        this.userId = (String)fromDB.get(USER_ID_FIELD);
+        this.userName = (String) fromDB.get(USER_NAME_FIELD);
     }
 
     @Override
     protected void addFieldsToJson(JsonDocument jsonDocument) {
-        jsonDocument.addToProperty(USER_ID_FIELD, userId);
+        jsonDocument.addToProperty(USER_NAME_FIELD, userName);
     }
 
-    public String getUserId() {
-        return userId;
+    public String getUserName() {
+        return userName;
     }
 }

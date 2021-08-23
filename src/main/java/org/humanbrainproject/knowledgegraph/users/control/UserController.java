@@ -24,9 +24,9 @@
 package org.humanbrainproject.knowledgegraph.users.control;
 
 import org.humanbrainproject.knowledgegraph.commons.jsonld.control.InstanceController;
-import org.humanbrainproject.knowledgegraph.users.entity.User;
+import org.humanbrainproject.knowledgegraph.users.entity.UserByName;
 import org.springframework.stereotype.Component;
 
 @Component
-public class UserController extends InstanceController<User>{
+public class UserController extends InstanceController<UserByName>{
 }
